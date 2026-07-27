@@ -1,0 +1,294 @@
+---
+description: Backend development rules for Magyen Platform
+alwaysApply: true
+---
+
+# Magyen Platform - Backend Rules
+
+You are a Senior Software Engineer working on Magyen Platform.
+
+Every response, implementation and refactor MUST respect these rules.
+
+---
+
+# Project
+
+Magyen Platform is an intelligent platform for textile manufacturing companies.
+
+The system is NOT a CRUD application.
+
+The goal is to help users make better business decisions.
+
+Business value is always more important than framework conventions.
+
+---
+
+# Architecture
+
+Follow these architectural decisions without exception.
+
+- Java 21
+- Spring Boot 3.5+
+- Maven
+- Modular Monolith
+- Clean Architecture
+- Lightweight Domain Driven Design (DDD)
+
+Never propose another architecture unless explicitly requested.
+
+---
+
+# Package Structure
+
+Use only this package structure.
+
+com.magyen.platform
+
+commercial
+
+production
+
+inventory
+
+finance
+
+administration
+
+intelligence
+
+shared
+
+config
+
+Do not create additional top-level business modules.
+
+---
+
+# Internal Module Structure
+
+Each module must follow this structure.
+
+application
+
+domain
+
+infrastructure
+
+presentation
+
+Do not introduce controller/service/repository architectures outside this structure.
+
+---
+
+# Domain Layer
+
+The Domain layer is the most important layer.
+
+It must contain only business logic.
+
+Allowed:
+
+- Entities
+- Value Objects
+- Domain Services
+- Domain Events
+- Repository Interfaces (Ports)
+
+Forbidden:
+
+- Spring annotations
+- JPA annotations if avoidable
+- REST
+- Controllers
+- DTOs
+- External APIs
+- Infrastructure code
+
+The Domain must never depend on Spring Boot.
+
+---
+
+# Application Layer
+
+Contains application use cases.
+
+Responsibilities:
+
+- Execute business use cases
+- Coordinate domain objects
+- Call repository interfaces
+- Publish domain events
+
+Must not contain persistence details.
+
+---
+
+# Infrastructure Layer
+
+Contains implementation details.
+
+Examples:
+
+- Spring Data JPA
+- Repositories
+- External Services
+- Adapters
+- Configuration
+
+Infrastructure depends on Domain.
+
+Domain never depends on Infrastructure.
+
+---
+
+# Presentation Layer
+
+Contains:
+
+- REST Controllers
+- Request DTOs
+- Response DTOs
+- Validation
+- Mappers
+
+Controllers must remain thin.
+
+Business logic is forbidden inside controllers.
+
+---
+
+# Dependency Rule
+
+Always respect this dependency direction.
+
+Presentation
+
+↓
+
+Application
+
+↓
+
+Domain
+
+↑
+
+Infrastructure
+
+Never violate this rule.
+
+---
+
+# Naming
+
+Code language:
+
+English
+
+Documentation language:
+
+Spanish
+
+Use descriptive names.
+
+Examples:
+
+createQuotation()
+
+approveProductionOrder()
+
+calculateRemainingBalance()
+
+Avoid abbreviations.
+
+Avoid generic names such as:
+
+data
+
+temp
+
+obj
+
+value
+
+item
+
+---
+
+# Business Language
+
+Always use the ubiquitous language.
+
+Examples:
+
+Quotation
+
+ProductionOrder
+
+Customer
+
+Fabric
+
+Operator
+
+InventoryMovement
+
+Payment
+
+Never invent alternative business names.
+
+---
+
+# Code Style
+
+Prefer readability over cleverness.
+
+Methods should be short.
+
+Classes should have one responsibility.
+
+Avoid deep nesting.
+
+Avoid duplicated logic.
+
+---
+
+# AI Behaviour
+
+Before generating code:
+
+Analyze the existing architecture.
+
+Respect every ADR.
+
+Respect Project Constitution.
+
+Respect Software Architecture Document.
+
+Never generate code that breaks architecture.
+
+If there is uncertainty:
+
+Ask.
+
+Do not invent.
+
+---
+
+# Output Style
+
+When implementing features:
+
+1. Explain the approach.
+
+2. Explain why it respects the architecture.
+
+3. Generate the code.
+
+4. Mention any architectural implications.
+
+Never skip the explanation.
+
+Never optimize prematurely.
+
+Always prioritize maintainability.
