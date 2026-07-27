@@ -126,3 +126,265 @@ Este componente transformará los datos del negocio en recomendaciones, alertas 
 Operational Intelligence nunca reemplazará al usuario.
 
 Su función será asistir la toma de decisiones mediante reglas de negocio y, en versiones futuras, mediante Inteligencia Artificial.
+
+---
+
+# 6. Organización del Backend
+
+El backend de Magyen Platform seguirá una arquitectura basada en capacidades del negocio (Business Capabilities).
+
+Cada módulo representará una responsabilidad claramente definida dentro de la empresa.
+
+Los módulos serán independientes entre sí y se comunicarán únicamente mediante interfaces bien definidas y servicios de aplicación.
+
+No se permitirá compartir lógica de negocio entre módulos sin pasar por el Shared Kernel o por contratos explícitos.
+
+---
+
+## 6.1 Estructura General
+
+El proyecto backend estará organizado bajo el siguiente paquete base.
+
+```
+com.magyen.platform
+```
+
+A partir de este paquete se construirán los módulos principales.
+
+```
+com.magyen.platform
+
+├── commercial
+├── production
+├── inventory
+├── finance
+├── administration
+├── intelligence
+├── shared
+└── config
+```
+
+---
+
+## 6.2 Responsabilidad de cada módulo
+
+### Commercial
+
+Gestiona toda la relación con el cliente.
+
+Responsabilidades:
+
+- Prospectos
+- Clientes
+- Cotizaciones
+- Conversaciones
+- Seguimiento comercial
+
+No tendrá responsabilidades relacionadas con producción.
+
+---
+
+### Production
+
+Representa el proceso de fabricación.
+
+Responsabilidades:
+
+- Órdenes de Producción
+- Planeación
+- Etapas
+- Asignaciones
+- Estado de Producción
+- Seguimiento
+
+Será considerado el núcleo operativo de la plataforma.
+
+---
+
+### Inventory
+
+Gestiona los recursos físicos.
+
+Responsabilidades:
+
+- Materias primas
+- Telas
+- Insumos
+- Entradas
+- Salidas
+- Existencias
+
+No conocerá información financiera.
+
+---
+
+### Finance
+
+Gestiona el flujo económico.
+
+Responsabilidades:
+
+- Pagos
+- Anticipos
+- Facturación
+- Cuentas por cobrar
+- Indicadores financieros
+
+No gestionará inventario ni producción.
+
+---
+
+### Administration
+
+Gestiona la configuración general del sistema.
+
+Responsabilidades:
+
+- Usuarios
+- Roles
+- Permisos
+- Parámetros
+- Configuración
+
+---
+
+### Intelligence
+
+Representa el cerebro de Magyen Platform.
+
+Responsabilidades:
+
+- Reglas de decisión
+- Alertas
+- Priorización
+- Recomendaciones
+- Analítica
+
+Este módulo nunca modificará directamente el estado del negocio.
+
+Su función será generar conocimiento para apoyar la toma de decisiones.
+
+---
+
+### Shared
+
+Contendrá únicamente componentes reutilizables por toda la plataforma.
+
+Ejemplos:
+
+- Excepciones comunes
+- Objetos de Valor
+- Eventos de Dominio
+- Utilidades
+- Interfaces compartidas
+
+Nunca contendrá lógica específica de un módulo.
+
+---
+
+### Config
+
+Contendrá la configuración técnica del sistema.
+
+Ejemplos:
+
+- Spring Configuration
+- Seguridad
+- Beans
+- Configuración global
+
+No contendrá reglas del negocio.
+
+---
+
+## 6.3 Arquitectura Interna de cada módulo
+
+Todos los módulos seguirán exactamente la misma estructura.
+
+```
+module/
+
+application/
+
+domain/
+
+infrastructure/
+
+presentation/
+```
+
+### application
+
+Contendrá los Casos de Uso del negocio.
+
+Será el punto de entrada para ejecutar operaciones.
+
+---
+
+### domain
+
+Contendrá el corazón del negocio.
+
+Aquí vivirán:
+
+- Entidades
+- Objetos de Valor
+- Servicios de Dominio
+- Eventos de Dominio
+- Interfaces (Ports)
+
+Este paquete nunca dependerá de Spring Boot.
+
+---
+
+### infrastructure
+
+Implementará los detalles técnicos.
+
+Ejemplos:
+
+- JPA
+- Repositorios
+- Adaptadores
+- Integraciones externas
+
+---
+
+### presentation
+
+Representará los puntos de entrada del sistema.
+
+Ejemplos:
+
+- REST Controllers
+- DTOs
+- Validaciones
+- Mappers
+
+La lógica del negocio nunca será implementada aquí.
+
+---
+
+## 6.4 Reglas de Dependencia
+
+Las dependencias deberán seguir el siguiente flujo.
+
+Presentation
+
+↓
+
+Application
+
+↓
+
+Domain
+
+↑
+
+Infrastructure
+
+El dominio nunca dependerá de infraestructura.
+
+Spring Boot nunca será conocido por el dominio.
+
+Esta regla será obligatoria durante todo el desarrollo de Magyen Platform.
