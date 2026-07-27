@@ -28,7 +28,7 @@ Business value is always more important than framework conventions.
 Follow these architectural decisions without exception.
 
 - Java 21
-- Spring Boot 3.5+
+- Spring Boot 4.1.0
 - Maven
 - Modular Monolith
 - Clean Architecture
