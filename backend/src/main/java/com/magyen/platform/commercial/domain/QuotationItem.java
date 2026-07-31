@@ -47,7 +47,10 @@ public class QuotationItem {
         return new QuotationItem(UUID.randomUUID(), productName, quantity, fabric, color, unitPrice);
     }
 
-    static QuotationItem reconstitute(
+    /**
+     * Reconstruye un ítem desde persistencia. No aplica lógica de creación de negocio.
+     */
+    public static QuotationItem reconstitute(
             UUID id,
             String productName,
             int quantity,
