@@ -44,7 +44,7 @@ public class QuotationItemEntity {
     @Column(name = "subtotal", nullable = false, precision = 19, scale = 2)
     private BigDecimal subtotal;
 
-    protected QuotationItemEntity() {
+    public QuotationItemEntity() {
     }
 
     public UUID getId() {

@@ -52,7 +52,7 @@ public class QuotationEntity {
     @OneToMany(mappedBy = "quotation", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<QuotationItemEntity> items = new ArrayList<>();
 
-    protected QuotationEntity() {
+    public QuotationEntity() {
     }
 
     public UUID getId() {
