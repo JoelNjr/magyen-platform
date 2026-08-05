@@ -1,8 +1,13 @@
 package com.magyen.platform.commercial.infrastructure.configuration;
 
+import com.magyen.platform.commercial.application.usecase.ApproveQuotationUseCase;
+import com.magyen.platform.commercial.application.usecase.CreateOrderFromQuotationUseCase;
 import com.magyen.platform.commercial.application.usecase.CreateQuotationUseCase;
+import com.magyen.platform.commercial.domain.OrderRepository;
 import com.magyen.platform.commercial.domain.QuotationRepository;
+import com.magyen.platform.commercial.infrastructure.persistence.mapper.OrderPersistenceMapper;
 import com.magyen.platform.commercial.infrastructure.persistence.mapper.QuotationPersistenceMapper;
+import com.magyen.platform.commercial.presentation.order.mapper.OrderPresentationMapper;
 import com.magyen.platform.commercial.presentation.quotation.mapper.QuotationPresentationMapper;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,12 +24,35 @@ public class CommercialConfiguration {
     }
 
     @Bean
+    public OrderPresentationMapper orderPresentationMapper() {
+        return new OrderPresentationMapper();
+    }
+
+    @Bean
     public QuotationPersistenceMapper quotationPersistenceMapper() {
         return new QuotationPersistenceMapper();
     }
 
     @Bean
+    public OrderPersistenceMapper orderPersistenceMapper() {
+        return new OrderPersistenceMapper();
+    }
+
+    @Bean
     public CreateQuotationUseCase createQuotationUseCase(QuotationRepository quotationRepository) {
         return new CreateQuotationUseCase(quotationRepository);
+    }
+
+    @Bean
+    public ApproveQuotationUseCase approveQuotationUseCase(QuotationRepository quotationRepository) {
+        return new ApproveQuotationUseCase(quotationRepository);
+    }
+
+    @Bean
+    public CreateOrderFromQuotationUseCase createOrderFromQuotationUseCase(
+            QuotationRepository quotationRepository,
+            OrderRepository orderRepository
+    ) {
+        return new CreateOrderFromQuotationUseCase(quotationRepository, orderRepository);
     }
 }

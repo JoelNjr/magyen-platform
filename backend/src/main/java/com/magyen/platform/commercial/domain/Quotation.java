@@ -3,6 +3,7 @@ package com.magyen.platform.commercial.domain;
 import com.magyen.platform.commercial.domain.exception.QuotationDomainException;
 import com.magyen.platform.shared.domain.Money;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -116,6 +117,35 @@ public class Quotation {
         recalculateTotal();
     }
 
+    /**
+     * Aprueba la cotización tras la aceptación del cliente.
+     * <p>
+     * Transición válida: {@link QuotationStatus#DRAFT} → {@link QuotationStatus#APPROVED}.
+     */
+    public void approve() {
+        if (status == QuotationStatus.APPROVED) {
+            throw new QuotationDomainException("An approved quotation cannot be approved again");
+        }
+
+        if (status == QuotationStatus.CLOSED) {
+            throw new QuotationDomainException("A closed quotation cannot be approved");
+        }
+
+        if (status != QuotationStatus.DRAFT) {
+            throw new QuotationDomainException(
+                    "Only a draft quotation can be approved. Current status: " + status
+            );
+        }
+
+        ensureHasAtLeastOneProduct();
+
+        if (total.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new QuotationDomainException("Quotation total must be greater than zero");
+        }
+
+        this.status = QuotationStatus.APPROVED;
+    }
+
     public void changeStatus(QuotationStatus newStatus) {
         Objects.requireNonNull(newStatus, "Status must not be null");
 
@@ -222,7 +252,7 @@ public class Quotation {
 
     private static void validateUnitPrice(Money unitPrice) {
         Objects.requireNonNull(unitPrice, "Unit price must not be null");
-        if (unitPrice.getAmount().compareTo(java.math.BigDecimal.ZERO) <= 0) {
+        if (unitPrice.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
             throw new QuotationDomainException("Unit price must be greater than zero");
         }
     }
