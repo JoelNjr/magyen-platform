@@ -1,7 +1,11 @@
 package com.magyen.platform.production.infrastructure.configuration;
 
 import com.magyen.platform.commercial.domain.OrderRepository;
+import com.magyen.platform.production.application.usecase.AddProductionOperationUseCase;
+import com.magyen.platform.production.application.usecase.AssignProductionOperationOperatorUseCase;
+import com.magyen.platform.production.application.usecase.CompleteProductionOperationUseCase;
 import com.magyen.platform.production.application.usecase.CreateProductionOrderFromOrderUseCase;
+import com.magyen.platform.production.application.usecase.StartProductionOperationUseCase;
 import com.magyen.platform.production.domain.ProductionOrderRepository;
 import com.magyen.platform.production.infrastructure.persistence.mapper.ProductionPersistenceMapper;
 import com.magyen.platform.production.presentation.productionorder.mapper.ProductionPresentationMapper;
@@ -30,5 +34,33 @@ public class ProductionConfiguration {
             ProductionOrderRepository productionOrderRepository
     ) {
         return new CreateProductionOrderFromOrderUseCase(orderRepository, productionOrderRepository);
+    }
+
+    @Bean
+    public AddProductionOperationUseCase addProductionOperationUseCase(
+            ProductionOrderRepository productionOrderRepository
+    ) {
+        return new AddProductionOperationUseCase(productionOrderRepository);
+    }
+
+    @Bean
+    public AssignProductionOperationOperatorUseCase assignProductionOperationOperatorUseCase(
+            ProductionOrderRepository productionOrderRepository
+    ) {
+        return new AssignProductionOperationOperatorUseCase(productionOrderRepository);
+    }
+
+    @Bean
+    public StartProductionOperationUseCase startProductionOperationUseCase(
+            ProductionOrderRepository productionOrderRepository
+    ) {
+        return new StartProductionOperationUseCase(productionOrderRepository);
+    }
+
+    @Bean
+    public CompleteProductionOperationUseCase completeProductionOperationUseCase(
+            ProductionOrderRepository productionOrderRepository
+    ) {
+        return new CompleteProductionOperationUseCase(productionOrderRepository);
     }
 }

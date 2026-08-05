@@ -95,8 +95,10 @@ public class ProductionOperation {
 
     /**
      * Asigna un operador responsable de la operación.
+     * <p>
+     * Solo invocable desde el agregado {@link ProductionOrder}.
      */
-    public void assignOperator(String operator) {
+    void assignOperator(String operator) {
         if (operator == null || operator.isBlank()) {
             throw new ProductionDomainException("Assigned operator must not be blank");
         }
@@ -107,8 +109,9 @@ public class ProductionOperation {
      * Inicia la ejecución de la operación.
      * <p>
      * Transición válida: {@link ProductionOperationStatus#PENDING} → {@link ProductionOperationStatus#IN_PROGRESS}.
+     * Solo invocable desde el agregado {@link ProductionOrder}.
      */
-    public void start() {
+    void start() {
         if (status == ProductionOperationStatus.IN_PROGRESS) {
             throw new ProductionDomainException("Production operation is already in progress");
         }
@@ -131,8 +134,9 @@ public class ProductionOperation {
      * Completa la ejecución de la operación.
      * <p>
      * Transición válida: {@link ProductionOperationStatus#IN_PROGRESS} → {@link ProductionOperationStatus#COMPLETED}.
+     * Solo invocable desde el agregado {@link ProductionOrder}.
      */
-    public void complete() {
+    void complete() {
         if (status == ProductionOperationStatus.COMPLETED) {
             throw new ProductionDomainException("Production operation is already completed");
         }

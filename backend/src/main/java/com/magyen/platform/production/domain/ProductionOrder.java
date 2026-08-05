@@ -176,6 +176,7 @@ public class ProductionOrder {
      * Agrega una operación de fabricación a la Orden de Producción.
      * <p>
      * Solo permitido mientras el estado sea {@link ProductionStatus#CREATED}.
+     * No permite tipos de operación duplicados dentro de la misma orden.
      */
     public void addOperation(
             ProductionOperationType type,
@@ -184,6 +185,8 @@ public class ProductionOrder {
             String observations
     ) {
         ensureEditable();
+        Objects.requireNonNull(type, "Operation type must not be null");
+        ensureOperationTypeIsUnique(type);
 
         ProductionOperation operation = ProductionOperation.create(
                 type,
@@ -207,6 +210,27 @@ public class ProductionOrder {
         if (!removed) {
             throw new ProductionDomainException("Production operation not found: " + operationId);
         }
+    }
+
+    /**
+     * Asigna un operador a una operación de fabricación existente.
+     */
+    public void assignOperator(UUID operationId, String operator) {
+        findOperation(operationId).assignOperator(operator);
+    }
+
+    /**
+     * Inicia una operación de fabricación existente.
+     */
+    public void startOperation(UUID operationId) {
+        findOperation(operationId).start();
+    }
+
+    /**
+     * Completa una operación de fabricación existente.
+     */
+    public void completeOperation(UUID operationId) {
+        findOperation(operationId).complete();
     }
 
     public UUID getId() {
@@ -269,6 +293,28 @@ public class ProductionOrder {
                             + status
             );
         }
+    }
+
+    private void ensureOperationTypeIsUnique(ProductionOperationType type) {
+        boolean typeAlreadyExists = operations.stream()
+                .anyMatch(operation -> operation.getType() == type);
+
+        if (typeAlreadyExists) {
+            throw new ProductionDomainException(
+                    "A production operation of type " + type + " already exists in this production order"
+            );
+        }
+    }
+
+    private ProductionOperation findOperation(UUID operationId) {
+        Objects.requireNonNull(operationId, "Operation id must not be null");
+
+        return operations.stream()
+                .filter(operation -> operation.getId().equals(operationId))
+                .findFirst()
+                .orElseThrow(() -> new ProductionDomainException(
+                        "Production operation not found: " + operationId
+                ));
     }
 
     private void ensureAllOperationsCompleted() {
