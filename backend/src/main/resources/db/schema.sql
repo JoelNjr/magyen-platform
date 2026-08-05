@@ -86,3 +86,46 @@ CREATE INDEX idx_orders_quotation_id
 
 CREATE INDEX idx_order_items_order_id
     ON order_items (order_id);
+
+-- Production module
+-- Aggregate: ProductionOrder / ProductionOperation
+
+CREATE TABLE production_orders (
+    id                  uuid            NOT NULL,
+    order_id            uuid            NOT NULL,
+    creation_date       date            NOT NULL,
+    status              varchar(30)     NOT NULL,
+    priority            varchar(30)     NOT NULL,
+    planned_start_date  date            NULL,
+    planned_end_date    date            NULL,
+    observations        varchar(2000)   NULL,
+    CONSTRAINT production_orders_pkey PRIMARY KEY (id),
+    CONSTRAINT production_orders_order_id_key UNIQUE (order_id)
+);
+
+CREATE TABLE production_operations (
+    id                      uuid            NOT NULL,
+    production_order_id     uuid            NOT NULL,
+    type                    varchar(30)     NOT NULL,
+    status                  varchar(30)     NOT NULL,
+    assigned_operator       varchar(255)    NULL,
+    planned_start_date      date            NULL,
+    planned_end_date        date            NULL,
+    actual_start_date       date            NULL,
+    actual_end_date         date            NULL,
+    observations            varchar(2000)   NULL,
+    CONSTRAINT production_operations_pkey PRIMARY KEY (id),
+    CONSTRAINT fk_production_operations_production_order
+        FOREIGN KEY (production_order_id)
+        REFERENCES production_orders (id)
+        ON DELETE CASCADE
+);
+
+CREATE INDEX idx_production_orders_status
+    ON production_orders (status);
+
+CREATE INDEX idx_production_orders_order_id
+    ON production_orders (order_id);
+
+CREATE INDEX idx_production_operations_production_order_id
+    ON production_operations (production_order_id);

@@ -1,13 +1,18 @@
 package com.magyen.platform.commercial.presentation.quotation.controller;
 
+import com.magyen.platform.commercial.application.dto.AddQuotationItemCommand;
+import com.magyen.platform.commercial.application.dto.AddQuotationItemResult;
 import com.magyen.platform.commercial.application.dto.ApproveQuotationCommand;
 import com.magyen.platform.commercial.application.dto.ApproveQuotationResult;
 import com.magyen.platform.commercial.application.dto.CreateQuotationCommand;
 import com.magyen.platform.commercial.application.dto.CreateQuotationResult;
+import com.magyen.platform.commercial.application.usecase.AddQuotationItemUseCase;
 import com.magyen.platform.commercial.application.usecase.ApproveQuotationUseCase;
 import com.magyen.platform.commercial.application.usecase.CreateQuotationUseCase;
 import com.magyen.platform.commercial.presentation.quotation.mapper.QuotationPresentationMapper;
+import com.magyen.platform.commercial.presentation.quotation.request.AddQuotationItemRequest;
 import com.magyen.platform.commercial.presentation.quotation.request.CreateQuotationRequest;
+import com.magyen.platform.commercial.presentation.quotation.response.AddQuotationItemResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.ApproveQuotationResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.CreateQuotationResponse;
 import org.springframework.http.HttpStatus;
@@ -32,15 +37,18 @@ public class QuotationController {
 
     private final CreateQuotationUseCase createQuotationUseCase;
     private final ApproveQuotationUseCase approveQuotationUseCase;
+    private final AddQuotationItemUseCase addQuotationItemUseCase;
     private final QuotationPresentationMapper quotationPresentationMapper;
 
     public QuotationController(
             CreateQuotationUseCase createQuotationUseCase,
             ApproveQuotationUseCase approveQuotationUseCase,
+            AddQuotationItemUseCase addQuotationItemUseCase,
             QuotationPresentationMapper quotationPresentationMapper
     ) {
         this.createQuotationUseCase = createQuotationUseCase;
         this.approveQuotationUseCase = approveQuotationUseCase;
+        this.addQuotationItemUseCase = addQuotationItemUseCase;
         this.quotationPresentationMapper = quotationPresentationMapper;
     }
 
@@ -51,6 +59,18 @@ public class QuotationController {
         CreateQuotationCommand command = quotationPresentationMapper.toCommand(request);
         CreateQuotationResult result = createQuotationUseCase.execute(command);
         CreateQuotationResponse response = quotationPresentationMapper.toResponse(result);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PostMapping("/{quotationId}/items")
+    public ResponseEntity<AddQuotationItemResponse> addQuotationItem(
+            @PathVariable UUID quotationId,
+            @RequestBody AddQuotationItemRequest request
+    ) {
+        AddQuotationItemCommand command = quotationPresentationMapper.toAddItemCommand(quotationId, request);
+        AddQuotationItemResult result = addQuotationItemUseCase.execute(command);
+        AddQuotationItemResponse response = quotationPresentationMapper.toAddItemResponse(result);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }

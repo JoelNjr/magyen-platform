@@ -1,5 +1,6 @@
 package com.magyen.platform.commercial.infrastructure.configuration;
 
+import com.magyen.platform.commercial.application.usecase.AddQuotationItemUseCase;
 import com.magyen.platform.commercial.application.usecase.ApproveQuotationUseCase;
 import com.magyen.platform.commercial.application.usecase.CreateOrderFromQuotationUseCase;
 import com.magyen.platform.commercial.application.usecase.CreateQuotationUseCase;
@@ -46,6 +47,11 @@ public class CommercialConfiguration {
     @Bean
     public ApproveQuotationUseCase approveQuotationUseCase(QuotationRepository quotationRepository) {
         return new ApproveQuotationUseCase(quotationRepository);
+    }
+
+    @Bean
+    public AddQuotationItemUseCase addQuotationItemUseCase(QuotationRepository quotationRepository) {
+        return new AddQuotationItemUseCase(quotationRepository);
     }
 
     @Bean

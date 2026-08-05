@@ -95,6 +95,12 @@ public class Quotation {
     }
 
     public void addItem(String productName, int quantity, String fabric, String color, Money unitPrice) {
+        if (status != QuotationStatus.DRAFT) {
+            throw new QuotationDomainException(
+                    "Items can only be added while the quotation is draft. Current status: " + status
+            );
+        }
+
         validateQuantity(quantity);
         validateUnitPrice(unitPrice);
 
