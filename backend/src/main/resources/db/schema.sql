@@ -129,3 +129,25 @@ CREATE INDEX idx_production_orders_order_id
 
 CREATE INDEX idx_production_operations_production_order_id
     ON production_operations (production_order_id);
+
+-- Inventory module
+-- Aggregate: InventoryItem
+
+CREATE TABLE inventory_items (
+    id                  uuid            NOT NULL,
+    material_code       varchar(100)    NOT NULL,
+    name                varchar(255)    NOT NULL,
+    category            varchar(255)    NOT NULL,
+    unit_of_measure     varchar(50)     NOT NULL,
+    stock               numeric(19, 4)  NOT NULL,
+    minimum_stock       numeric(19, 4)  NOT NULL,
+    status              varchar(30)     NOT NULL,
+    CONSTRAINT inventory_items_pkey PRIMARY KEY (id),
+    CONSTRAINT inventory_items_material_code_key UNIQUE (material_code)
+);
+
+CREATE INDEX idx_inventory_items_material_code
+    ON inventory_items (material_code);
+
+CREATE INDEX idx_inventory_items_status
+    ON inventory_items (status);
