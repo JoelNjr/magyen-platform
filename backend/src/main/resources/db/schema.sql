@@ -151,3 +151,18 @@ CREATE INDEX idx_inventory_items_material_code
 
 CREATE INDEX idx_inventory_items_status
     ON inventory_items (status);
+
+-- Finance module
+-- Aggregate: Payment
+
+CREATE TABLE payments (
+    id                  uuid            NOT NULL,
+    order_id            uuid            NOT NULL,
+    amount              numeric(19, 2)  NOT NULL,
+    payment_date        date            NOT NULL,
+    observations        varchar(2000)   NULL,
+    CONSTRAINT payments_pkey PRIMARY KEY (id)
+);
+
+CREATE INDEX idx_payments_order_id
+    ON payments (order_id);
