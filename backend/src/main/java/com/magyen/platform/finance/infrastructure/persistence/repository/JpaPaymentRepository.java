@@ -61,4 +61,11 @@ public class JpaPaymentRepository implements PaymentRepository {
                 .map(paymentPersistenceMapper::toDomain)
                 .toList();
     }
+
+    @Override
+    public List<Payment> findAll() {
+        return springDataPaymentRepository.findAll().stream()
+                .map(paymentPersistenceMapper::toDomain)
+                .toList();
+    }
 }

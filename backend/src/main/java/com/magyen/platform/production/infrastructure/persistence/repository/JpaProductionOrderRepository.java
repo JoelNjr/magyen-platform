@@ -6,6 +6,7 @@ import com.magyen.platform.production.infrastructure.persistence.entity.Producti
 import com.magyen.platform.production.infrastructure.persistence.mapper.ProductionPersistenceMapper;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -59,5 +60,12 @@ public class JpaProductionOrderRepository implements ProductionOrderRepository {
 
         return springDataProductionOrderRepository.findByOrderId(orderId)
                 .map(productionPersistenceMapper::toDomain);
+    }
+
+    @Override
+    public List<ProductionOrder> findAll() {
+        return springDataProductionOrderRepository.findAll().stream()
+                .map(productionPersistenceMapper::toDomain)
+                .toList();
     }
 }

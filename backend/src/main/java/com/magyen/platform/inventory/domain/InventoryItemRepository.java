@@ -1,5 +1,6 @@
 package com.magyen.platform.inventory.domain;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -15,4 +16,6 @@ public interface InventoryItemRepository {
     Optional<InventoryItem> findById(UUID id);
 
     Optional<InventoryItem> findByCode(MaterialCode materialCode);
+
+    List<InventoryItem> findAll();
 }

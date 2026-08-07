@@ -16,4 +16,6 @@ public interface PaymentRepository {
     Optional<Payment> findById(UUID id);
 
     List<Payment> findByOrderId(UUID orderId);
+
+    List<Payment> findAll();
 }

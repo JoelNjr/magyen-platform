@@ -7,6 +7,7 @@ import com.magyen.platform.inventory.infrastructure.persistence.entity.Inventory
 import com.magyen.platform.inventory.infrastructure.persistence.mapper.InventoryPersistenceMapper;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -59,5 +60,12 @@ public class JpaInventoryItemRepository implements InventoryItemRepository {
 
         return springDataInventoryItemRepository.findByMaterialCode(materialCode.getValue())
                 .map(inventoryPersistenceMapper::toDomain);
+    }
+
+    @Override
+    public List<InventoryItem> findAll() {
+        return springDataInventoryItemRepository.findAll().stream()
+                .map(inventoryPersistenceMapper::toDomain)
+                .toList();
     }
 }

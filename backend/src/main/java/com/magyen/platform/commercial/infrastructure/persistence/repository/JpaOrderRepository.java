@@ -6,6 +6,7 @@ import com.magyen.platform.commercial.infrastructure.persistence.entity.OrderEnt
 import com.magyen.platform.commercial.infrastructure.persistence.mapper.OrderPersistenceMapper;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -50,5 +51,12 @@ public class JpaOrderRepository implements OrderRepository {
 
         return springDataOrderRepository.findById(id)
                 .map(orderPersistenceMapper::toDomain);
+    }
+
+    @Override
+    public List<Order> findAll() {
+        return springDataOrderRepository.findAll().stream()
+                .map(orderPersistenceMapper::toDomain)
+                .toList();
     }
 }
