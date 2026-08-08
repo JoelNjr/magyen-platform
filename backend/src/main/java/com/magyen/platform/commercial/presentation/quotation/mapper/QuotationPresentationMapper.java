@@ -6,14 +6,18 @@ import com.magyen.platform.commercial.application.dto.ApproveQuotationCommand;
 import com.magyen.platform.commercial.application.dto.ApproveQuotationResult;
 import com.magyen.platform.commercial.application.dto.CreateQuotationCommand;
 import com.magyen.platform.commercial.application.dto.CreateQuotationResult;
+import com.magyen.platform.commercial.application.dto.GetQuotationCommand;
+import com.magyen.platform.commercial.application.dto.GetQuotationResult;
 import com.magyen.platform.commercial.application.dto.GetQuotationsResult;
 import com.magyen.platform.commercial.presentation.quotation.request.AddQuotationItemRequest;
 import com.magyen.platform.commercial.presentation.quotation.request.CreateQuotationRequest;
 import com.magyen.platform.commercial.presentation.quotation.response.AddQuotationItemResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.ApproveQuotationResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.CreateQuotationResponse;
+import com.magyen.platform.commercial.presentation.quotation.response.GetQuotationResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.GetQuotationsResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.GetQuotationsResponse.QuotationResponse;
+import com.magyen.platform.commercial.presentation.quotation.response.QuotationItemResponse;
 
 import java.util.List;
 import java.util.Objects;
@@ -103,5 +107,39 @@ public class QuotationPresentationMapper {
                 .toList();
 
         return new GetQuotationsResponse(quotations);
+    }
+
+    public GetQuotationCommand toGetQuotationCommand(UUID quotationId) {
+        Objects.requireNonNull(quotationId, "Quotation id must not be null");
+
+        return new GetQuotationCommand(quotationId);
+    }
+
+    public GetQuotationResponse toResponse(GetQuotationResult result) {
+        Objects.requireNonNull(result, "GetQuotationResult must not be null");
+
+        List<QuotationItemResponse> items = result.items().stream()
+                .map(item -> new QuotationItemResponse(
+                        item.itemId(),
+                        item.productName(),
+                        item.quantity(),
+                        item.fabric(),
+                        item.color(),
+                        item.unitPrice(),
+                        item.subtotal()
+                ))
+                .toList();
+
+        return new GetQuotationResponse(
+                result.quotationId(),
+                result.customerId(),
+                result.creationDate(),
+                result.deliveryDate(),
+                result.status().name(),
+                result.salesperson(),
+                result.observations(),
+                items,
+                result.totalAmount()
+        );
     }
 }
