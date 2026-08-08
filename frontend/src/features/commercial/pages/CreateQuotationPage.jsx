@@ -33,7 +33,7 @@ function CreateQuotationPage() {
 
     try {
       await createQuotation(payload)
-      navigate('/commercial')
+      navigate('/commercial', { state: { created: true } })
     } catch {
       setFailed(true)
       setSubmitting(false)

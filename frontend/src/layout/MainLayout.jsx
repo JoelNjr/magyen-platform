@@ -20,6 +20,10 @@ const navigationItems = [
   { label: 'Intelligence', path: '/intelligence' },
 ]
 
+function isNavigationItemSelected(pathname, itemPath) {
+  return pathname === itemPath || pathname.startsWith(`${itemPath}/`)
+}
+
 function MainLayout() {
   const location = useLocation()
 
@@ -55,7 +59,7 @@ function MainLayout() {
                 key={item.path}
                 component={RouterLink}
                 to={item.path}
-                selected={location.pathname === item.path}
+                selected={isNavigationItemSelected(location.pathname, item.path)}
               >
                 <ListItemText primary={item.label} />
               </ListItemButton>
