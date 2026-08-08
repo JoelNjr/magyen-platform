@@ -8,6 +8,7 @@ import com.magyen.platform.commercial.application.usecase.GetQuotationUseCase;
 import com.magyen.platform.commercial.application.usecase.GetQuotationsUseCase;
 import com.magyen.platform.commercial.domain.OrderRepository;
 import com.magyen.platform.commercial.domain.QuotationRepository;
+import com.magyen.platform.commercial.infrastructure.persistence.mapper.CustomerPersistenceMapper;
 import com.magyen.platform.commercial.infrastructure.persistence.mapper.OrderPersistenceMapper;
 import com.magyen.platform.commercial.infrastructure.persistence.mapper.QuotationPersistenceMapper;
 import com.magyen.platform.commercial.presentation.order.mapper.OrderPresentationMapper;
@@ -34,6 +35,11 @@ public class CommercialConfiguration {
     @Bean
     public QuotationPersistenceMapper quotationPersistenceMapper() {
         return new QuotationPersistenceMapper();
+    }
+
+    @Bean
+    public CustomerPersistenceMapper customerPersistenceMapper() {
+        return new CustomerPersistenceMapper();
     }
 
     @Bean

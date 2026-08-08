@@ -1,7 +1,13 @@
 -- Magyen Platform — Commercial module schema
--- Aggregate: Quotation / QuotationItem
+-- Aggregates: Customer / Quotation / QuotationItem
 -- Compatible with PostgreSQL 17
 -- Hibernate ddl-auto remains validate; this SQL owns schema creation.
+
+CREATE TABLE customers (
+    id      uuid            NOT NULL,
+    name    varchar(255)    NOT NULL,
+    CONSTRAINT customers_pkey PRIMARY KEY (id)
+);
 
 CREATE TABLE quotations (
     id              uuid            NOT NULL,
