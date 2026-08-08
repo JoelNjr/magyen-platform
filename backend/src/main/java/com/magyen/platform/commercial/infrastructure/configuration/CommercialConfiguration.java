@@ -4,6 +4,7 @@ import com.magyen.platform.commercial.application.usecase.AddQuotationItemUseCas
 import com.magyen.platform.commercial.application.usecase.ApproveQuotationUseCase;
 import com.magyen.platform.commercial.application.usecase.CreateOrderFromQuotationUseCase;
 import com.magyen.platform.commercial.application.usecase.CreateQuotationUseCase;
+import com.magyen.platform.commercial.application.usecase.GetQuotationsUseCase;
 import com.magyen.platform.commercial.domain.OrderRepository;
 import com.magyen.platform.commercial.domain.QuotationRepository;
 import com.magyen.platform.commercial.infrastructure.persistence.mapper.OrderPersistenceMapper;
@@ -52,6 +53,11 @@ public class CommercialConfiguration {
     @Bean
     public AddQuotationItemUseCase addQuotationItemUseCase(QuotationRepository quotationRepository) {
         return new AddQuotationItemUseCase(quotationRepository);
+    }
+
+    @Bean
+    public GetQuotationsUseCase getQuotationsUseCase(QuotationRepository quotationRepository) {
+        return new GetQuotationsUseCase(quotationRepository);
     }
 
     @Bean

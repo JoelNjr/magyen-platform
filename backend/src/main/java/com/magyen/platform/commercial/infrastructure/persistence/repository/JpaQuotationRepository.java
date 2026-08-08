@@ -6,6 +6,7 @@ import com.magyen.platform.commercial.infrastructure.persistence.entity.Quotatio
 import com.magyen.platform.commercial.infrastructure.persistence.mapper.QuotationPersistenceMapper;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -50,5 +51,12 @@ public class JpaQuotationRepository implements QuotationRepository {
 
         return springDataQuotationJpaRepository.findById(id)
                 .map(quotationPersistenceMapper::toDomain);
+    }
+
+    @Override
+    public List<Quotation> findAll() {
+        return springDataQuotationJpaRepository.findAll().stream()
+                .map(quotationPersistenceMapper::toDomain)
+                .toList();
     }
 }

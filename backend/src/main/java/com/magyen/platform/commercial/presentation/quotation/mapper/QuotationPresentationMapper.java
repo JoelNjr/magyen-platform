@@ -6,12 +6,16 @@ import com.magyen.platform.commercial.application.dto.ApproveQuotationCommand;
 import com.magyen.platform.commercial.application.dto.ApproveQuotationResult;
 import com.magyen.platform.commercial.application.dto.CreateQuotationCommand;
 import com.magyen.platform.commercial.application.dto.CreateQuotationResult;
+import com.magyen.platform.commercial.application.dto.GetQuotationsResult;
 import com.magyen.platform.commercial.presentation.quotation.request.AddQuotationItemRequest;
 import com.magyen.platform.commercial.presentation.quotation.request.CreateQuotationRequest;
 import com.magyen.platform.commercial.presentation.quotation.response.AddQuotationItemResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.ApproveQuotationResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.CreateQuotationResponse;
+import com.magyen.platform.commercial.presentation.quotation.response.GetQuotationsResponse;
+import com.magyen.platform.commercial.presentation.quotation.response.GetQuotationsResponse.QuotationResponse;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -80,5 +84,24 @@ public class QuotationPresentationMapper {
                 result.itemId(),
                 result.totalAmount()
         );
+    }
+
+    public GetQuotationsResponse toResponse(GetQuotationsResult result) {
+        Objects.requireNonNull(result, "GetQuotationsResult must not be null");
+
+        List<QuotationResponse> quotations = result.quotations().stream()
+                .map(quotation -> new QuotationResponse(
+                        quotation.quotationId(),
+                        quotation.customerId(),
+                        quotation.creationDate(),
+                        quotation.deliveryDate(),
+                        quotation.status().name(),
+                        quotation.salesperson(),
+                        quotation.observations(),
+                        quotation.totalAmount()
+                ))
+                .toList();
+
+        return new GetQuotationsResponse(quotations);
     }
 }
