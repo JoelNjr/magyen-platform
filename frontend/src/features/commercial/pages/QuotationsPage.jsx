@@ -11,6 +11,7 @@ import {
   TableRow,
   Typography,
 } from '@mui/material'
+import { Link as RouterLink } from 'react-router-dom'
 import { getQuotations } from '../services/commercialService'
 
 const currencyFormatter = new Intl.NumberFormat('es-CO', {
@@ -100,7 +101,13 @@ function QuotationsPage() {
 
               return (
                 <TableRow key={quotation.quotationId}>
-                  <TableCell>{quotation.quotationId}</TableCell>
+                  <TableCell>
+                    <RouterLink
+                      to={`/commercial/quotations/${quotation.quotationId}`}
+                    >
+                      {quotation.quotationId}
+                    </RouterLink>
+                  </TableCell>
                   <TableCell>{quotation.customerId}</TableCell>
                   <TableCell>{formatDate(quotation.creationDate)}</TableCell>
                   <TableCell>{formatDate(quotation.deliveryDate)}</TableCell>
