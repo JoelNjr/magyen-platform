@@ -8,10 +8,17 @@ import {
   Grid,
   Paper,
   Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
   Typography,
 } from '@mui/material'
 import { useNavigate, useParams } from 'react-router-dom'
-import { getQuotations } from '../services/commercialService'
+import AddQuotationItemDialog from '../components/AddQuotationItemDialog'
+import { addQuotationItem, getQuotation } from '../services/commercialService'
 
 const currencyFormatter = new Intl.NumberFormat('es-CO', {
   style: 'currency',
@@ -46,6 +53,8 @@ function DetailField({ label, children }) {
   )
 }
 
+const headerCellSx = { fontWeight: 'bold' }
+
 function QuotationDetailPage() {
   const { quotationId } = useParams()
   const navigate = useNavigate()
@@ -53,6 +62,9 @@ function QuotationDetailPage() {
   const [loading, setLoading] = useState(true)
   const [failed, setFailed] = useState(false)
   const [notFound, setNotFound] = useState(false)
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [submittingItem, setSubmittingItem] = useState(false)
+  const [addItemError, setAddItemError] = useState(false)
 
   useEffect(() => {
     setLoading(true)
@@ -60,25 +72,48 @@ function QuotationDetailPage() {
     setNotFound(false)
     setQuotation(null)
 
-    getQuotations()
+    getQuotation(quotationId)
       .then((data) => {
-        const foundQuotation = data.quotations.find(
-          (item) => item.quotationId === quotationId
-        )
+        setQuotation(data)
+        setLoading(false)
+      })
+      .catch((error) => {
+        const status = error.response?.status
 
-        if (foundQuotation) {
-          setQuotation(foundQuotation)
-        } else {
+        if (status === 400 || status === 404) {
           setNotFound(true)
+        } else {
+          setFailed(true)
         }
 
         setLoading(false)
       })
-      .catch(() => {
-        setFailed(true)
-        setLoading(false)
-      })
   }, [quotationId])
+
+  async function handleAddItem(payload) {
+    setAddItemError(false)
+    setSubmittingItem(true)
+
+    try {
+      await addQuotationItem(quotation.quotationId, payload)
+      const refreshedQuotation = await getQuotation(quotation.quotationId)
+      setQuotation(refreshedQuotation)
+      setDialogOpen(false)
+    } catch {
+      setAddItemError(true)
+    } finally {
+      setSubmittingItem(false)
+    }
+  }
+
+  function handleDialogClose() {
+    if (submittingItem) {
+      return
+    }
+
+    setDialogOpen(false)
+    setAddItemError(false)
+  }
 
   return (
     <Stack spacing={3}>
@@ -151,31 +186,109 @@ function QuotationDetailPage() {
 
           <Paper sx={{ p: 3 }}>
             <Stack spacing={3}>
-              <Typography variant="h5">Productos</Typography>
-
-              <Stack spacing={1.5} alignItems="center" sx={{ py: 3 }}>
-                <Inventory2OutlinedIcon
-                  color="action"
-                  sx={{ fontSize: 48 }}
-                />
-                <Typography>No hay productos registrados.</Typography>
-                <Typography color="text.secondary" textAlign="center">
-                  Agrega productos para comenzar a construir esta cotización.
-                </Typography>
-                <Button variant="outlined" disabled startIcon={<AddIcon />}>
-                  Agregar producto
-                </Button>
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                alignItems="center"
+              >
+                <Typography variant="h5">Productos</Typography>
+                {quotation.items.length > 0 && (
+                  <Button
+                    variant="outlined"
+                    disabled={quotation.status !== 'DRAFT'}
+                    startIcon={<AddIcon />}
+                    onClick={() => {
+                      setAddItemError(false)
+                      setDialogOpen(true)
+                    }}
+                  >
+                    Agregar producto
+                  </Button>
+                )}
               </Stack>
+
+              {quotation.items.length === 0 ? (
+                <Stack spacing={1.5} alignItems="center" sx={{ py: 3 }}>
+                  <Inventory2OutlinedIcon
+                    color="action"
+                    sx={{ fontSize: 48 }}
+                  />
+                  <Typography>No hay productos registrados.</Typography>
+                  <Typography color="text.secondary" textAlign="center">
+                    Agrega productos para comenzar a construir esta cotización.
+                  </Typography>
+                  <Button
+                    variant="outlined"
+                    disabled={quotation.status !== 'DRAFT'}
+                    startIcon={<AddIcon />}
+                    onClick={() => {
+                      setAddItemError(false)
+                      setDialogOpen(true)
+                    }}
+                  >
+                    Agregar producto
+                  </Button>
+                </Stack>
+              ) : (
+                <TableContainer>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell sx={headerCellSx}>Producto</TableCell>
+                        <TableCell sx={headerCellSx}>Tela</TableCell>
+                        <TableCell sx={headerCellSx}>Color</TableCell>
+                        <TableCell align="right" sx={headerCellSx}>
+                          Cantidad
+                        </TableCell>
+                        <TableCell align="right" sx={headerCellSx}>
+                          Precio unitario
+                        </TableCell>
+                        <TableCell align="right" sx={headerCellSx}>
+                          Subtotal
+                        </TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {quotation.items.map((item) => (
+                        <TableRow key={item.itemId}>
+                          <TableCell>{item.productName}</TableCell>
+                          <TableCell>{item.fabric}</TableCell>
+                          <TableCell>{item.color}</TableCell>
+                          <TableCell align="right">{item.quantity}</TableCell>
+                          <TableCell align="right">
+                            {formatCurrency(item.unitPrice)}
+                          </TableCell>
+                          <TableCell align="right">
+                            {formatCurrency(item.subtotal)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
 
               <Divider />
 
               <Stack spacing={1}>
                 <Typography sx={{ fontWeight: 'bold' }}>Resumen</Typography>
-                <Typography>Subtotal: {formatCurrency(0)}</Typography>
-                <Typography>Total: {formatCurrency(0)}</Typography>
+                <Typography>
+                  Subtotal: {formatCurrency(quotation.totalAmount)}
+                </Typography>
+                <Typography>
+                  Total: {formatCurrency(quotation.totalAmount)}
+                </Typography>
               </Stack>
             </Stack>
           </Paper>
+
+          <AddQuotationItemDialog
+            open={dialogOpen}
+            onClose={handleDialogClose}
+            onSubmit={handleAddItem}
+            submitting={submittingItem}
+            error={addItemError}
+          />
         </>
       )}
     </Stack>
