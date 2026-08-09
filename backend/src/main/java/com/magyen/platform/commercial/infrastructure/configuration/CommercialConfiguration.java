@@ -4,13 +4,16 @@ import com.magyen.platform.commercial.application.usecase.AddQuotationItemUseCas
 import com.magyen.platform.commercial.application.usecase.ApproveQuotationUseCase;
 import com.magyen.platform.commercial.application.usecase.CreateOrderFromQuotationUseCase;
 import com.magyen.platform.commercial.application.usecase.CreateQuotationUseCase;
+import com.magyen.platform.commercial.application.usecase.GetCustomersUseCase;
 import com.magyen.platform.commercial.application.usecase.GetQuotationUseCase;
 import com.magyen.platform.commercial.application.usecase.GetQuotationsUseCase;
+import com.magyen.platform.commercial.domain.CustomerRepository;
 import com.magyen.platform.commercial.domain.OrderRepository;
 import com.magyen.platform.commercial.domain.QuotationRepository;
 import com.magyen.platform.commercial.infrastructure.persistence.mapper.CustomerPersistenceMapper;
 import com.magyen.platform.commercial.infrastructure.persistence.mapper.OrderPersistenceMapper;
 import com.magyen.platform.commercial.infrastructure.persistence.mapper.QuotationPersistenceMapper;
+import com.magyen.platform.commercial.presentation.customer.mapper.CustomerPresentationMapper;
 import com.magyen.platform.commercial.presentation.order.mapper.OrderPresentationMapper;
 import com.magyen.platform.commercial.presentation.quotation.mapper.QuotationPresentationMapper;
 import org.springframework.context.annotation.Bean;
@@ -30,6 +33,11 @@ public class CommercialConfiguration {
     @Bean
     public OrderPresentationMapper orderPresentationMapper() {
         return new OrderPresentationMapper();
+    }
+
+    @Bean
+    public CustomerPresentationMapper customerPresentationMapper() {
+        return new CustomerPresentationMapper();
     }
 
     @Bean
@@ -65,6 +73,11 @@ public class CommercialConfiguration {
     @Bean
     public GetQuotationsUseCase getQuotationsUseCase(QuotationRepository quotationRepository) {
         return new GetQuotationsUseCase(quotationRepository);
+    }
+
+    @Bean
+    public GetCustomersUseCase getCustomersUseCase(CustomerRepository customerRepository) {
+        return new GetCustomersUseCase(customerRepository);
     }
 
     @Bean

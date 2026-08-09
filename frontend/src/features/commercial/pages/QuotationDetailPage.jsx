@@ -23,7 +23,15 @@ import { useNavigate, useParams } from 'react-router-dom'
 import AddQuotationItemDialog from '../components/AddQuotationItemDialog'
 import { formatDisplayDate } from '../presentation/formatDisplayDate'
 import { formatQuotationCode } from '../presentation/formatQuotationCode'
-import { addQuotationItem, getQuotation } from '../services/commercialService'
+import {
+  buildCustomerNameMap,
+  resolveCustomerName,
+} from '../presentation/resolveCustomerName'
+import {
+  addQuotationItem,
+  getCustomers,
+  getQuotation,
+} from '../services/commercialService'
 
 const currencyFormatter = new Intl.NumberFormat('es-CO', {
   style: 'currency',
@@ -108,6 +116,7 @@ function QuotationDetailPage() {
   const { quotationId } = useParams()
   const navigate = useNavigate()
   const [quotation, setQuotation] = useState(null)
+  const [customerNameById, setCustomerNameById] = useState({})
   const [loading, setLoading] = useState(true)
   const [failed, setFailed] = useState(false)
   const [notFound, setNotFound] = useState(false)
@@ -137,6 +146,14 @@ function QuotationDetailPage() {
         }
 
         setLoading(false)
+      })
+
+    getCustomers()
+      .then((data) => {
+        setCustomerNameById(buildCustomerNameMap(data?.customers))
+      })
+      .catch(() => {
+        setCustomerNameById({})
       })
   }, [quotationId])
 
@@ -227,7 +244,12 @@ function QuotationDetailPage() {
             <Grid container spacing={3}>
               <Grid size={{ xs: 12, md: 6 }}>
                 <DetailField label="Cliente">
-                  <Typography>{quotation.customerId}</Typography>
+                  <Typography>
+                    {resolveCustomerName(
+                      quotation.customerId,
+                      customerNameById
+                    )}
+                  </Typography>
                 </DetailField>
               </Grid>
 

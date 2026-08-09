@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Alert,
   Button,
@@ -8,20 +8,49 @@ import {
   Typography,
 } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
-import { createQuotation } from '../services/commercialService'
+import CustomerSelector from '../components/CustomerSelector'
+import { createQuotation, getCustomers } from '../services/commercialService'
 
 function CreateQuotationPage() {
   const navigate = useNavigate()
+  const [customers, setCustomers] = useState([])
+  const [customersLoading, setCustomersLoading] = useState(true)
+  const [customersFailed, setCustomersFailed] = useState(false)
   const [customerId, setCustomerId] = useState('')
   const [deliveryDate, setDeliveryDate] = useState('')
   const [salesperson, setSalesperson] = useState('')
   const [observations, setObservations] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [failed, setFailed] = useState(false)
+  const [customerRequiredError, setCustomerRequiredError] = useState(false)
+
+  useEffect(() => {
+    setCustomersLoading(true)
+    setCustomersFailed(false)
+
+    getCustomers()
+      .then((data) => {
+        const nextCustomers = Array.isArray(data?.customers) ? data.customers : []
+        setCustomers(nextCustomers)
+        setCustomersLoading(false)
+      })
+      .catch(() => {
+        setCustomers([])
+        setCustomersFailed(true)
+        setCustomersLoading(false)
+      })
+  }, [])
 
   async function handleSubmit(event) {
     event.preventDefault()
     setFailed(false)
+    setCustomerRequiredError(false)
+
+    if (!customerId) {
+      setCustomerRequiredError(true)
+      return
+    }
+
     setSubmitting(true)
 
     const payload = {
@@ -56,12 +85,21 @@ function CreateQuotationPage() {
             <Alert severity="error">No fue posible crear la cotización.</Alert>
           )}
 
-          <TextField
-            label="Cliente"
+          {customerRequiredError && (
+            <Alert severity="error">Debes seleccionar un cliente.</Alert>
+          )}
+
+          <CustomerSelector
+            customers={customers}
             value={customerId}
-            onChange={(event) => setCustomerId(event.target.value)}
-            fullWidth
+            onChange={(selectedCustomerId) => {
+              setCustomerId(selectedCustomerId)
+              setCustomerRequiredError(false)
+            }}
+            loading={customersLoading}
+            error={customersFailed}
             disabled={submitting}
+            required
           />
 
           <TextField

@@ -5,6 +5,11 @@ export async function getQuotations() {
   return response.data
 }
 
+export async function getCustomers() {
+  const response = await httpClient.get('/customers')
+  return response.data
+}
+
 export function createQuotation(payload) {
   return httpClient.post('/quotations', payload).then((response) => response.data)
 }

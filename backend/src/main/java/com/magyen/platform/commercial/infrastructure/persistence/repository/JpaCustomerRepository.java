@@ -6,6 +6,7 @@ import com.magyen.platform.commercial.infrastructure.persistence.entity.Customer
 import com.magyen.platform.commercial.infrastructure.persistence.mapper.CustomerPersistenceMapper;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -50,5 +51,12 @@ public class JpaCustomerRepository implements CustomerRepository {
 
         return springDataCustomerJpaRepository.findById(id)
                 .map(customerPersistenceMapper::toDomain);
+    }
+
+    @Override
+    public List<Customer> findAll() {
+        return springDataCustomerJpaRepository.findAll().stream()
+                .map(customerPersistenceMapper::toDomain)
+                .toList();
     }
 }

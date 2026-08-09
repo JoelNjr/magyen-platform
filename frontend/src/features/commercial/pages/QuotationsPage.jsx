@@ -20,7 +20,11 @@ import {
 import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom'
 import { formatDisplayDate } from '../presentation/formatDisplayDate'
 import { formatQuotationCode } from '../presentation/formatQuotationCode'
-import { getQuotations } from '../services/commercialService'
+import {
+  buildCustomerNameMap,
+  resolveCustomerName,
+} from '../presentation/resolveCustomerName'
+import { getCustomers, getQuotations } from '../services/commercialService'
 
 const currencyFormatter = new Intl.NumberFormat('es-CO', {
   style: 'currency',
@@ -75,6 +79,7 @@ function QuotationsPage() {
   const location = useLocation()
   const navigate = useNavigate()
   const [quotations, setQuotations] = useState([])
+  const [customerNameById, setCustomerNameById] = useState({})
   const [loading, setLoading] = useState(true)
   const [failed, setFailed] = useState(false)
   const [successOpen, setSuccessOpen] = useState(false)
@@ -88,6 +93,14 @@ function QuotationsPage() {
       .catch(() => {
         setFailed(true)
         setLoading(false)
+      })
+
+    getCustomers()
+      .then((data) => {
+        setCustomerNameById(buildCustomerNameMap(data?.customers))
+      })
+      .catch(() => {
+        setCustomerNameById({})
       })
   }, [])
 
@@ -199,7 +212,12 @@ function QuotationsPage() {
                           {formatQuotationCode(quotation.quotationId)}
                         </RouterLink>
                       </TableCell>
-                      <TableCell>{quotation.customerId}</TableCell>
+                      <TableCell>
+                        {resolveCustomerName(
+                          quotation.customerId,
+                          customerNameById
+                        )}
+                      </TableCell>
                       <TableCell>
                         {formatDisplayDate(quotation.creationDate)}
                       </TableCell>
