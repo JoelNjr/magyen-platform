@@ -12,7 +12,10 @@ import java.util.UUID;
 /**
  * Aggregate Root de la instrucción de fabricación generada desde una Orden comercial.
  * <p>
- * Mantiene la consistencia de la Orden de Producción y sus operaciones.
+ * Mantiene la consistencia de la Orden de Producción, su snapshot productivo y sus operaciones.
+ * <p>
+ * Relación de negocio: una Orden comercial puede tener como máximo una Orden de Producción.
+ * La referencia técnica se conserva mediante {@code orderId}.
  */
 public class ProductionOrder {
 
@@ -24,6 +27,7 @@ public class ProductionOrder {
     private LocalDate plannedStartDate;
     private LocalDate plannedEndDate;
     private final String observations;
+    private final List<ProductionItem> items;
     private final List<ProductionOperation> operations;
 
     private ProductionOrder(
@@ -35,6 +39,7 @@ public class ProductionOrder {
             LocalDate plannedStartDate,
             LocalDate plannedEndDate,
             String observations,
+            List<ProductionItem> items,
             List<ProductionOperation> operations
     ) {
         this.id = Objects.requireNonNull(id, "Production order id must not be null");
@@ -45,13 +50,15 @@ public class ProductionOrder {
         this.plannedStartDate = plannedStartDate;
         this.plannedEndDate = plannedEndDate;
         this.observations = observations;
+        this.items = new ArrayList<>(Objects.requireNonNull(items, "Items must not be null"));
         this.operations = new ArrayList<>(Objects.requireNonNull(operations, "Operations must not be null"));
     }
 
     /**
      * Crea una Orden de Producción en estado inicial válido {@link ProductionStatus#CREATED}.
      * <p>
-     * Referencia la Orden comercial únicamente por identidad.
+     * Referencia la Orden comercial únicamente por identidad y puede incorporar
+     * un snapshot productivo independiente del estado posterior de los ítems comerciales.
      */
     public static ProductionOrder create(
             UUID orderId,
@@ -60,6 +67,29 @@ public class ProductionOrder {
             LocalDate plannedStartDate,
             LocalDate plannedEndDate,
             String observations
+    ) {
+        return create(
+                orderId,
+                creationDate,
+                priority,
+                plannedStartDate,
+                plannedEndDate,
+                observations,
+                List.of()
+        );
+    }
+
+    /**
+     * Crea una Orden de Producción con snapshot productivo.
+     */
+    public static ProductionOrder create(
+            UUID orderId,
+            LocalDate creationDate,
+            ProductionPriority priority,
+            LocalDate plannedStartDate,
+            LocalDate plannedEndDate,
+            String observations,
+            List<ProductionItem> items
     ) {
         return new ProductionOrder(
                 UUID.randomUUID(),
@@ -70,6 +100,7 @@ public class ProductionOrder {
                 plannedStartDate,
                 plannedEndDate,
                 observations,
+                items == null ? List.of() : items,
                 List.of()
         );
     }
@@ -86,6 +117,7 @@ public class ProductionOrder {
             LocalDate plannedStartDate,
             LocalDate plannedEndDate,
             String observations,
+            List<ProductionItem> items,
             List<ProductionOperation> operations
     ) {
         return new ProductionOrder(
@@ -97,6 +129,7 @@ public class ProductionOrder {
                 plannedStartDate,
                 plannedEndDate,
                 observations,
+                items == null ? List.of() : items,
                 operations
         );
     }
@@ -272,6 +305,10 @@ public class ProductionOrder {
 
     public String getObservations() {
         return observations;
+    }
+
+    public List<ProductionItem> getItems() {
+        return Collections.unmodifiableList(items);
     }
 
     public List<ProductionOperation> getOperations() {

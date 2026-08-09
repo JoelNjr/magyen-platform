@@ -4,6 +4,7 @@ import com.magyen.platform.commercial.domain.exception.OrderAlreadyExistsForQuot
 import com.magyen.platform.commercial.domain.exception.OrderDomainException;
 import com.magyen.platform.commercial.domain.exception.QuotationDomainException;
 import com.magyen.platform.production.domain.exception.ProductionDomainException;
+import com.magyen.platform.production.domain.exception.ProductionOrderAlreadyExistsException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -105,6 +106,18 @@ public class GlobalExceptionHandler {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(conflictResponse);
         }
 
+        if (normalizedDetail.contains("production_orders_order_id")
+                || normalizedDetail.contains("production_orders_order_id_key")) {
+            ErrorResponse conflictResponse = new ErrorResponse(
+                    LocalDateTime.now(),
+                    HttpStatus.CONFLICT.value(),
+                    HttpStatus.CONFLICT.getReasonPhrase(),
+                    ProductionOrderAlreadyExistsException.DEFAULT_MESSAGE,
+                    request.getRequestURI()
+            );
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(conflictResponse);
+        }
+
         ErrorResponse errorResponse = new ErrorResponse(
                 LocalDateTime.now(),
                 HttpStatus.BAD_REQUEST.value(),
@@ -114,6 +127,22 @@ public class GlobalExceptionHandler {
         );
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
+
+    @ExceptionHandler(ProductionOrderAlreadyExistsException.class)
+    public ResponseEntity<ErrorResponse> handleProductionOrderAlreadyExistsException(
+            ProductionOrderAlreadyExistsException exception,
+            HttpServletRequest request
+    ) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.CONFLICT.value(),
+                HttpStatus.CONFLICT.getReasonPhrase(),
+                exception.getMessage(),
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
     }
 
     @ExceptionHandler(ProductionDomainException.class)

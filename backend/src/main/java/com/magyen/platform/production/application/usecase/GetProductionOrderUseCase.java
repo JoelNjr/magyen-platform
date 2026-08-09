@@ -2,10 +2,16 @@ package com.magyen.platform.production.application.usecase;
 
 import com.magyen.platform.production.application.dto.GetProductionOrderCommand;
 import com.magyen.platform.production.application.dto.GetProductionOrderResult;
+import com.magyen.platform.production.application.dto.ProductionItemResult;
 import com.magyen.platform.production.application.dto.ProductionOperationResult;
+import com.magyen.platform.production.application.dto.ProductionProductSpecificationResult;
+import com.magyen.platform.production.application.dto.ProductionSizeBreakdownResult;
+import com.magyen.platform.production.domain.ProductSpecification;
+import com.magyen.platform.production.domain.ProductionItem;
 import com.magyen.platform.production.domain.ProductionOperation;
 import com.magyen.platform.production.domain.ProductionOrder;
 import com.magyen.platform.production.domain.ProductionOrderRepository;
+import com.magyen.platform.production.domain.SizeBreakdown;
 
 import java.util.List;
 import java.util.Objects;
@@ -41,6 +47,10 @@ public class GetProductionOrderUseCase {
     }
 
     private GetProductionOrderResult toResult(ProductionOrder productionOrder) {
+        List<ProductionItemResult> items = productionOrder.getItems().stream()
+                .map(this::toItemResult)
+                .toList();
+
         List<ProductionOperationResult> operations = productionOrder.getOperations().stream()
                 .map(this::toOperationResult)
                 .toList();
@@ -54,7 +64,51 @@ public class GetProductionOrderUseCase {
                 productionOrder.getPlannedStartDate(),
                 productionOrder.getPlannedEndDate(),
                 productionOrder.getObservations(),
+                items,
                 operations
+        );
+    }
+
+    private ProductionItemResult toItemResult(ProductionItem item) {
+        return new ProductionItemResult(
+                item.getId(),
+                item.getProductName(),
+                item.getQuantity(),
+                toProductSpecificationResult(item.getProductSpecification()),
+                item.getSizeBreakdowns().stream()
+                        .map(this::toSizeBreakdownResult)
+                        .toList()
+        );
+    }
+
+    private ProductionProductSpecificationResult toProductSpecificationResult(
+            ProductSpecification specification
+    ) {
+        ProductSpecification resolved = specification == null
+                ? ProductSpecification.empty()
+                : specification;
+
+        return new ProductionProductSpecificationResult(
+                resolved.getGarmentType(),
+                resolved.getCollarType(),
+                resolved.getSleeveType(),
+                resolved.getGarmentVariant(),
+                resolved.isSublimationRequired(),
+                resolved.isEmbroideryRequired(),
+                resolved.isDtfRequired(),
+                resolved.getDecorationNotes(),
+                resolved.isIncludesNames(),
+                resolved.isIncludesNumbers(),
+                resolved.isIncludesLogos(),
+                resolved.getPersonalizationNotes(),
+                resolved.getItemObservations()
+        );
+    }
+
+    private ProductionSizeBreakdownResult toSizeBreakdownResult(SizeBreakdown sizeBreakdown) {
+        return new ProductionSizeBreakdownResult(
+                sizeBreakdown.getSize(),
+                sizeBreakdown.getQuantity()
         );
     }
 

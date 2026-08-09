@@ -1,6 +1,7 @@
 package com.magyen.platform.production.infrastructure.configuration;
 
-import com.magyen.platform.commercial.domain.OrderRepository;
+import com.magyen.platform.commercial.application.usecase.GetOrderUseCase;
+import com.magyen.platform.production.application.ProductionSnapshotFactory;
 import com.magyen.platform.production.application.usecase.AddProductionOperationUseCase;
 import com.magyen.platform.production.application.usecase.AssignProductionOperationOperatorUseCase;
 import com.magyen.platform.production.application.usecase.CompleteProductionOperationUseCase;
@@ -34,11 +35,21 @@ public class ProductionConfiguration {
     }
 
     @Bean
+    public ProductionSnapshotFactory productionSnapshotFactory() {
+        return new ProductionSnapshotFactory();
+    }
+
+    @Bean
     public CreateProductionOrderFromOrderUseCase createProductionOrderFromOrderUseCase(
-            OrderRepository orderRepository,
+            GetOrderUseCase getOrderUseCase,
+            ProductionSnapshotFactory productionSnapshotFactory,
             ProductionOrderRepository productionOrderRepository
     ) {
-        return new CreateProductionOrderFromOrderUseCase(orderRepository, productionOrderRepository);
+        return new CreateProductionOrderFromOrderUseCase(
+                getOrderUseCase,
+                productionSnapshotFactory,
+                productionOrderRepository
+        );
     }
 
     @Bean

@@ -19,6 +19,7 @@ public record GetProductionOrderResult(
         LocalDate plannedStartDate,
         LocalDate plannedEndDate,
         String observations,
+        List<ProductionItemResult> items,
         List<ProductionOperationResult> operations
 ) {
 }

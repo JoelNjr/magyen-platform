@@ -162,6 +162,44 @@ CREATE TABLE production_orders (
     CONSTRAINT production_orders_order_id_key UNIQUE (order_id)
 );
 
+CREATE TABLE production_items (
+    id                      uuid            NOT NULL,
+    production_order_id     uuid            NOT NULL,
+    product_name            varchar(255)    NOT NULL,
+    quantity                integer         NOT NULL,
+    garment_type            varchar(100)    NULL,
+    collar_type             varchar(100)    NULL,
+    sleeve_type             varchar(100)    NULL,
+    garment_variant         varchar(100)    NULL,
+    sublimation_required    boolean         NOT NULL DEFAULT FALSE,
+    embroidery_required     boolean         NOT NULL DEFAULT FALSE,
+    dtf_required            boolean         NOT NULL DEFAULT FALSE,
+    decoration_notes        varchar(2000)   NULL,
+    includes_names          boolean         NOT NULL DEFAULT FALSE,
+    includes_numbers        boolean         NOT NULL DEFAULT FALSE,
+    includes_logos          boolean         NOT NULL DEFAULT FALSE,
+    personalization_notes   varchar(2000)   NULL,
+    item_observations       varchar(2000)   NULL,
+    CONSTRAINT production_items_pkey PRIMARY KEY (id),
+    CONSTRAINT fk_production_items_production_order
+        FOREIGN KEY (production_order_id)
+        REFERENCES production_orders (id)
+        ON DELETE CASCADE
+);
+
+CREATE TABLE production_item_sizes (
+    id                      uuid            NOT NULL,
+    production_item_id      uuid            NOT NULL,
+    size                    varchar(50)     NOT NULL,
+    quantity                integer         NOT NULL,
+    CONSTRAINT production_item_sizes_pkey PRIMARY KEY (id),
+    CONSTRAINT production_item_sizes_production_item_id_size_key UNIQUE (production_item_id, size),
+    CONSTRAINT fk_production_item_sizes_production_item
+        FOREIGN KEY (production_item_id)
+        REFERENCES production_items (id)
+        ON DELETE CASCADE
+);
+
 CREATE TABLE production_operations (
     id                      uuid            NOT NULL,
     production_order_id     uuid            NOT NULL,
@@ -185,6 +223,12 @@ CREATE INDEX idx_production_orders_status
 
 CREATE INDEX idx_production_orders_order_id
     ON production_orders (order_id);
+
+CREATE INDEX idx_production_items_production_order_id
+    ON production_items (production_order_id);
+
+CREATE INDEX idx_production_item_sizes_production_item_id
+    ON production_item_sizes (production_item_id);
 
 CREATE INDEX idx_production_operations_production_order_id
     ON production_operations (production_order_id);

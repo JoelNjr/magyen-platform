@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import AddIcon from '@mui/icons-material/Add'
+import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined'
 import PrecisionManufacturingOutlinedIcon from '@mui/icons-material/PrecisionManufacturingOutlined'
 import {
   Alert,
   Button,
   Chip,
+  Divider,
   Grid,
   Paper,
   Skeleton,
@@ -43,6 +45,18 @@ import {
 
 const headerCellSx = { fontWeight: 'bold' }
 
+function formatYesNo(value) {
+  return value ? 'Sí' : 'No'
+}
+
+function sumRegisteredSizes(sizes) {
+  if (!Array.isArray(sizes)) {
+    return 0
+  }
+
+  return sizes.reduce((sum, sizeEntry) => sum + Number(sizeEntry.quantity || 0), 0)
+}
+
 function DetailField({ label, children }) {
   return (
     <Stack spacing={0.5}>
@@ -50,6 +64,122 @@ function DetailField({ label, children }) {
         {label}
       </Typography>
       {children}
+    </Stack>
+  )
+}
+
+function ProductionItemSpecificationSection({ specification }) {
+  if (!specification) {
+    return (
+      <Typography color="text.secondary">
+        Sin especificación registrada.
+      </Typography>
+    )
+  }
+
+  return (
+    <Stack spacing={1.5}>
+      <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+        Especificaciones
+      </Typography>
+      <Grid container spacing={2}>
+        <Grid size={{ xs: 12, md: 6 }}>
+          <DetailField label="Tipo de prenda">
+            <Typography>{specification.garmentType || '—'}</Typography>
+          </DetailField>
+        </Grid>
+        <Grid size={{ xs: 12, md: 6 }}>
+          <DetailField label="Tipo de cuello">
+            <Typography>{specification.collarType || '—'}</Typography>
+          </DetailField>
+        </Grid>
+        <Grid size={{ xs: 12, md: 6 }}>
+          <DetailField label="Tipo de manga">
+            <Typography>{specification.sleeveType || '—'}</Typography>
+          </DetailField>
+        </Grid>
+        <Grid size={{ xs: 12, md: 6 }}>
+          <DetailField label="Variante">
+            <Typography>{specification.garmentVariant || '—'}</Typography>
+          </DetailField>
+        </Grid>
+        <Grid size={{ xs: 12, md: 4 }}>
+          <DetailField label="Sublimación">
+            <Typography>{formatYesNo(specification.sublimationRequired)}</Typography>
+          </DetailField>
+        </Grid>
+        <Grid size={{ xs: 12, md: 4 }}>
+          <DetailField label="Bordado">
+            <Typography>{formatYesNo(specification.embroideryRequired)}</Typography>
+          </DetailField>
+        </Grid>
+        <Grid size={{ xs: 12, md: 4 }}>
+          <DetailField label="DTF">
+            <Typography>{formatYesNo(specification.dtfRequired)}</Typography>
+          </DetailField>
+        </Grid>
+        <Grid size={{ xs: 12, md: 4 }}>
+          <DetailField label="Incluye nombres">
+            <Typography>{formatYesNo(specification.includesNames)}</Typography>
+          </DetailField>
+        </Grid>
+        <Grid size={{ xs: 12, md: 4 }}>
+          <DetailField label="Incluye números">
+            <Typography>{formatYesNo(specification.includesNumbers)}</Typography>
+          </DetailField>
+        </Grid>
+        <Grid size={{ xs: 12, md: 4 }}>
+          <DetailField label="Incluye logos">
+            <Typography>{formatYesNo(specification.includesLogos)}</Typography>
+          </DetailField>
+        </Grid>
+        <Grid size={{ xs: 12 }}>
+          <DetailField label="Notas de decoración">
+            <Typography>{specification.decorationNotes || '—'}</Typography>
+          </DetailField>
+        </Grid>
+        <Grid size={{ xs: 12 }}>
+          <DetailField label="Notas de personalización">
+            <Typography>{specification.personalizationNotes || '—'}</Typography>
+          </DetailField>
+        </Grid>
+        <Grid size={{ xs: 12 }}>
+          <DetailField label="Observaciones">
+            <Typography>{specification.itemObservations || '—'}</Typography>
+          </DetailField>
+        </Grid>
+      </Grid>
+    </Stack>
+  )
+}
+
+function ProductionItemSizesSection({ item }) {
+  const sizes = Array.isArray(item.sizes) ? item.sizes : []
+  const registeredQuantity = sumRegisteredSizes(sizes)
+
+  return (
+    <Stack spacing={1.5}>
+      <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+        Tallas
+      </Typography>
+
+      {sizes.length === 0 ? (
+        <Typography color="text.secondary">
+          Tallas pendientes de registrar.
+        </Typography>
+      ) : (
+        <Stack spacing={0.5}>
+          {sizes.map((sizeEntry) => (
+            <Typography key={`${item.productionItemId}-${sizeEntry.size}`}>
+              {sizeEntry.size}: {sizeEntry.quantity}
+            </Typography>
+          ))}
+        </Stack>
+      )}
+
+      <Typography variant="body2" color="text.secondary">
+        Total registrado: {registeredQuantity} / {item.quantity}
+      </Typography>
     </Stack>
   )
 }
@@ -163,6 +293,7 @@ function ProductionOrderDetailPage() {
       })
   }, [productionOrderId])
 
+  const items = productionOrder?.items ?? []
   const operations = productionOrder?.operations ?? []
   const status = productionOrder?.status
   const lifecycleBusy = planning || starting || completing
@@ -684,6 +815,64 @@ function ProductionOrderDetailPage() {
                   </DetailField>
                 </Grid>
               </Grid>
+            </Paper>
+
+            <Paper sx={{ p: 3 }}>
+              <Stack spacing={3}>
+                <Stack spacing={1}>
+                  <Typography variant="h5">Productos a fabricar</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Estos datos corresponden a la información registrada al crear
+                    la orden de producción.
+                  </Typography>
+                </Stack>
+
+                {items.length === 0 ? (
+                  <Stack spacing={1.5} alignItems="center" sx={{ py: 3 }}>
+                    <Inventory2OutlinedIcon
+                      color="action"
+                      sx={{ fontSize: 48 }}
+                    />
+                    <Typography>
+                      No hay productos registrados en el snapshot de producción.
+                    </Typography>
+                  </Stack>
+                ) : (
+                  <Stack spacing={2.5}>
+                    {items.map((item) => (
+                      <Paper
+                        key={item.productionItemId}
+                        variant="outlined"
+                        sx={{ p: 2.5 }}
+                      >
+                        <Stack spacing={2.5}>
+                          <Stack spacing={0.5}>
+                            <Typography variant="body2" color="text.secondary">
+                              Producto
+                            </Typography>
+                            <Typography variant="h6">
+                              {item.productName}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              Cantidad: {item.quantity}
+                            </Typography>
+                          </Stack>
+
+                          <Divider />
+
+                          <ProductionItemSpecificationSection
+                            specification={item.productSpecification}
+                          />
+
+                          <Divider />
+
+                          <ProductionItemSizesSection item={item} />
+                        </Stack>
+                      </Paper>
+                    ))}
+                  </Stack>
+                )}
+              </Stack>
             </Paper>
 
             <Paper sx={{ p: 3 }}>

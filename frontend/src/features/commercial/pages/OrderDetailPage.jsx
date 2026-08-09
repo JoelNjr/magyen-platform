@@ -19,6 +19,7 @@ import {
   Typography,
 } from '@mui/material'
 import { Link as RouterLink, useLocation, useNavigate, useParams } from 'react-router-dom'
+import CreateProductionOrderDialog from '../components/CreateProductionOrderDialog'
 import ManageOrderItemProductSpecificationDialog from '../components/ManageOrderItemProductSpecificationDialog'
 import ManageOrderItemSizesDialog from '../components/ManageOrderItemSizesDialog'
 import { formatDisplayDate } from '../presentation/formatDisplayDate'
@@ -28,6 +29,10 @@ import {
   resolveCustomerName,
 } from '../presentation/resolveCustomerName'
 import { getCustomers, getOrder } from '../services/commercialService'
+import {
+  createProductionOrderFromOrder,
+  getProductionOrders,
+} from '../../production/services/productionService'
 
 const currencyFormatter = new Intl.NumberFormat('es-CO', {
   style: 'currency',
@@ -46,6 +51,34 @@ function formatAcknowledgment(value) {
 
 function formatYesNo(value) {
   return value ? 'Sí' : 'No'
+}
+
+function resolveApiErrorMessage(error, fallbackMessage) {
+  return error?.response?.data?.message || fallbackMessage
+}
+
+function findLinkedProductionOrderId(productionOrdersPayload, commercialOrderId) {
+  const productionOrders = Array.isArray(productionOrdersPayload?.productionOrders)
+    ? productionOrdersPayload.productionOrders
+    : []
+
+  const linkedProductionOrder = productionOrders.find(
+    (productionOrder) => productionOrder.orderId === commercialOrderId
+  )
+
+  return linkedProductionOrder?.productionOrderId ?? null
+}
+
+function isDuplicateProductionOrderError(error) {
+  const status = error?.response?.status
+  const message = String(error?.response?.data?.message || '').toLowerCase()
+
+  return (
+    status === 409 ||
+    (status === 400 &&
+      (message.includes('already exists') ||
+        message.includes('ya existe una orden de producción')))
+  )
 }
 
 function sumRegisteredSizes(sizes) {
@@ -272,12 +305,35 @@ function OrderDetailPage() {
   const [successMessage, setSuccessMessage] = useState('')
   const [sizesDialogItem, setSizesDialogItem] = useState(null)
   const [specificationDialogItem, setSpecificationDialogItem] = useState(null)
+  const [linkedProductionOrderId, setLinkedProductionOrderId] = useState(null)
+  const [productionLookupFailed, setProductionLookupFailed] = useState(false)
+  const [createProductionDialogOpen, setCreateProductionDialogOpen] =
+    useState(false)
+  const [creatingProductionOrder, setCreatingProductionOrder] = useState(false)
+  const [createProductionError, setCreateProductionError] = useState('')
+
+  async function loadLinkedProductionOrder(commercialOrderId) {
+    try {
+      const productionOrdersPayload = await getProductionOrders()
+      setLinkedProductionOrderId(
+        findLinkedProductionOrderId(productionOrdersPayload, commercialOrderId)
+      )
+      setProductionLookupFailed(false)
+    } catch {
+      setLinkedProductionOrderId(null)
+      setProductionLookupFailed(true)
+    }
+  }
 
   useEffect(() => {
     setLoading(true)
     setFailed(false)
     setNotFound(false)
     setOrder(null)
+    setLinkedProductionOrderId(null)
+    setProductionLookupFailed(false)
+    setCreateProductionDialogOpen(false)
+    setCreateProductionError('')
 
     getOrder(orderId)
       .then((data) => {
@@ -295,6 +351,8 @@ function OrderDetailPage() {
 
         setLoading(false)
       })
+
+    loadLinkedProductionOrder(orderId)
 
     getCustomers()
       .then((data) => {
@@ -341,10 +399,79 @@ function OrderDetailPage() {
     await refreshOrderAfterSave('Especificaciones actualizadas correctamente.')
   }
 
+  function openCreateProductionDialog() {
+    if (creatingProductionOrder) {
+      return
+    }
+
+    setCreateProductionError('')
+    setCreateProductionDialogOpen(true)
+  }
+
+  function closeCreateProductionDialog() {
+    if (creatingProductionOrder) {
+      return
+    }
+
+    setCreateProductionDialogOpen(false)
+    setCreateProductionError('')
+  }
+
+  async function handleCreateProductionOrder() {
+    if (creatingProductionOrder || !order) {
+      return
+    }
+
+    setCreateProductionError('')
+    setCreatingProductionOrder(true)
+
+    try {
+      const createdProductionOrder = await createProductionOrderFromOrder(
+        order.orderId
+      )
+      const productionOrderId = createdProductionOrder?.productionOrderId
+
+      if (!productionOrderId) {
+        setCreateProductionError(
+          'La creación no devolvió el identificador de producción.'
+        )
+        return
+      }
+
+      setCreateProductionDialogOpen(false)
+      setLinkedProductionOrderId(productionOrderId)
+      navigate(`/production/orders/${productionOrderId}`)
+    } catch (error) {
+      if (isDuplicateProductionOrderError(error)) {
+        setCreateProductionError(
+          resolveApiErrorMessage(
+            error,
+            'Ya existe una orden de producción para esta orden comercial.'
+          )
+        )
+        await loadLinkedProductionOrder(order.orderId)
+      } else {
+        setCreateProductionError(
+          resolveApiErrorMessage(
+            error,
+            'No fue posible crear la orden de producción.'
+          )
+        )
+      }
+    } finally {
+      setCreatingProductionOrder(false)
+    }
+  }
+
   const statusChip = order ? getOrderStatusChipProps(order.status) : null
   const items = order?.items ?? []
   const deliveryCommitment = order?.deliveryCommitment
   const paymentSummary = order?.paymentSummary
+  const isConfirmedOrder = order?.status === 'CONFIRMED'
+  const canCreateProductionOrder =
+    isConfirmedOrder && !linkedProductionOrderId
+  const showProductionSection =
+    Boolean(order) && (isConfirmedOrder || Boolean(linkedProductionOrderId))
 
   return (
     <Stack spacing={3}>
@@ -456,6 +583,59 @@ function OrderDetailPage() {
               </Grid>
             </Grid>
           </Paper>
+
+          {showProductionSection && (
+            <Paper sx={{ p: 3 }}>
+              <Stack spacing={2}>
+                <Typography variant="h5">Producción</Typography>
+
+                {linkedProductionOrderId ? (
+                  <>
+                    <Typography>
+                      Orden de producción creada
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Esta orden comercial ya tiene una orden de producción
+                      asociada.
+                    </Typography>
+                    <Button
+                      type="button"
+                      variant="contained"
+                      onClick={() =>
+                        navigate(`/production/orders/${linkedProductionOrderId}`)
+                      }
+                      sx={{ alignSelf: 'flex-start' }}
+                    >
+                      Ver producción
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Typography variant="body2" color="text.secondary">
+                      La información de productos, especificaciones y tallas se
+                      tomará de esta orden al momento de crear producción.
+                    </Typography>
+                    {productionLookupFailed && (
+                      <Alert severity="warning">
+                        No fue posible verificar si ya existe una orden de
+                        producción asociada.
+                      </Alert>
+                    )}
+                    {canCreateProductionOrder && (
+                      <Button
+                        type="button"
+                        variant="contained"
+                        onClick={openCreateProductionDialog}
+                        sx={{ alignSelf: 'flex-start' }}
+                      >
+                        Crear orden de producción
+                      </Button>
+                    )}
+                  </>
+                )}
+              </Stack>
+            </Paper>
+          )}
 
           <Paper sx={{ p: 3 }}>
             <Stack spacing={3}>
@@ -623,6 +803,14 @@ function OrderDetailPage() {
         orderId={orderId}
         orderItem={specificationDialogItem}
         onSaved={handleSpecificationSaved}
+      />
+
+      <CreateProductionOrderDialog
+        open={createProductionDialogOpen}
+        onClose={closeCreateProductionDialog}
+        onConfirm={handleCreateProductionOrder}
+        submitting={creatingProductionOrder}
+        errorMessage={createProductionError}
       />
 
       <Snackbar

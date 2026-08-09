@@ -51,6 +51,9 @@ public class ProductionOrderEntity {
     private String observations;
 
     @OneToMany(mappedBy = "productionOrder", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProductionItemEntity> items = new ArrayList<>();
+
+    @OneToMany(mappedBy = "productionOrder", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProductionOperationEntity> operations = new ArrayList<>();
 
     public ProductionOrderEntity() {
@@ -118,6 +121,14 @@ public class ProductionOrderEntity {
 
     public void setObservations(String observations) {
         this.observations = observations;
+    }
+
+    public List<ProductionItemEntity> getItems() {
+        return items;
+    }
+
+    public void setItems(List<ProductionItemEntity> items) {
+        this.items = items;
     }
 
     public List<ProductionOperationEntity> getOperations() {

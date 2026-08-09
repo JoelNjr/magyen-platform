@@ -15,8 +15,11 @@ import com.magyen.platform.production.application.dto.GetProductionOrderResult;
 import com.magyen.platform.production.application.dto.GetProductionOrdersResult;
 import com.magyen.platform.production.application.dto.PlanProductionOrderCommand;
 import com.magyen.platform.production.application.dto.PlanProductionOrderResult;
+import com.magyen.platform.production.application.dto.ProductionItemResult;
 import com.magyen.platform.production.application.dto.ProductionOperationResult;
 import com.magyen.platform.production.application.dto.ProductionOrderResult;
+import com.magyen.platform.production.application.dto.ProductionProductSpecificationResult;
+import com.magyen.platform.production.application.dto.ProductionSizeBreakdownResult;
 import com.magyen.platform.production.application.dto.StartProductionOperationCommand;
 import com.magyen.platform.production.application.dto.StartProductionOperationResult;
 import com.magyen.platform.production.application.dto.StartProductionOrderCommand;
@@ -36,7 +39,10 @@ import com.magyen.platform.production.presentation.productionorder.response.GetP
 import com.magyen.platform.production.presentation.productionorder.response.GetProductionOrdersResponse;
 import com.magyen.platform.production.presentation.productionorder.response.GetProductionOrdersResponse.ProductionOrderResponse;
 import com.magyen.platform.production.presentation.productionorder.response.PlanProductionOrderResponse;
+import com.magyen.platform.production.presentation.productionorder.response.ProductionItemResponse;
 import com.magyen.platform.production.presentation.productionorder.response.ProductionOperationResponse;
+import com.magyen.platform.production.presentation.productionorder.response.ProductionProductSpecificationResponse;
+import com.magyen.platform.production.presentation.productionorder.response.ProductionSizeBreakdownResponse;
 import com.magyen.platform.production.presentation.productionorder.response.StartProductionOperationResponse;
 import com.magyen.platform.production.presentation.productionorder.response.StartProductionOrderResponse;
 
@@ -93,6 +99,12 @@ public class ProductionPresentationMapper {
     public GetProductionOrderResponse toResponse(GetProductionOrderResult result) {
         Objects.requireNonNull(result, "GetProductionOrderResult must not be null");
 
+        List<ProductionItemResponse> items = result.items() == null
+                ? List.of()
+                : result.items().stream()
+                        .map(this::toProductionItemResponse)
+                        .toList();
+
         List<ProductionOperationResponse> operations = result.operations().stream()
                 .map(this::toProductionOperationResponse)
                 .toList();
@@ -106,6 +118,7 @@ public class ProductionPresentationMapper {
                 result.plannedStartDate(),
                 result.plannedEndDate(),
                 result.observations(),
+                items,
                 operations
         );
     }
@@ -268,6 +281,73 @@ public class ProductionPresentationMapper {
                 result.plannedStartDate(),
                 result.plannedEndDate(),
                 result.observations()
+        );
+    }
+
+    private ProductionItemResponse toProductionItemResponse(ProductionItemResult result) {
+        Objects.requireNonNull(result, "Production item result must not be null");
+
+        List<ProductionSizeBreakdownResponse> sizes = result.sizes() == null
+                ? List.of()
+                : result.sizes().stream()
+                        .map(this::toProductionSizeBreakdownResponse)
+                        .toList();
+
+        return new ProductionItemResponse(
+                result.productionItemId(),
+                result.productName(),
+                result.quantity(),
+                toProductionProductSpecificationResponse(result.productSpecification()),
+                sizes
+        );
+    }
+
+    private ProductionProductSpecificationResponse toProductionProductSpecificationResponse(
+            ProductionProductSpecificationResult result
+    ) {
+        if (result == null) {
+            return new ProductionProductSpecificationResponse(
+                    null,
+                    null,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null,
+                    null
+            );
+        }
+
+        return new ProductionProductSpecificationResponse(
+                result.garmentType(),
+                result.collarType(),
+                result.sleeveType(),
+                result.garmentVariant(),
+                result.sublimationRequired(),
+                result.embroideryRequired(),
+                result.dtfRequired(),
+                result.decorationNotes(),
+                result.includesNames(),
+                result.includesNumbers(),
+                result.includesLogos(),
+                result.personalizationNotes(),
+                result.itemObservations()
+        );
+    }
+
+    private ProductionSizeBreakdownResponse toProductionSizeBreakdownResponse(
+            ProductionSizeBreakdownResult result
+    ) {
+        Objects.requireNonNull(result, "Production size breakdown result must not be null");
+
+        return new ProductionSizeBreakdownResponse(
+                result.size(),
+                result.quantity()
         );
     }
 

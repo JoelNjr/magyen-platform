@@ -10,6 +10,18 @@ export async function getProductionOrder(productionOrderId) {
   return response.data
 }
 
+/**
+ * Crea una Orden de Producción a partir de una Orden comercial existente.
+ * Usa el contrato REST actual: POST /api/v1/production-orders
+ */
+export async function createProductionOrderFromOrder(orderId) {
+  const response = await httpClient.post('/production-orders', {
+    orderId,
+    priority: 'NORMAL',
+  })
+  return response.data
+}
+
 export async function planProductionOrder(productionOrderId, payload) {
   const response = await httpClient.patch(
     `/production-orders/${productionOrderId}/plan`,
