@@ -9,16 +9,27 @@ CREATE TABLE customers (
     CONSTRAINT customers_pkey PRIMARY KEY (id)
 );
 
+-- Sequence for commercial quotation numbers (concurrency-safe source of next values).
+-- Application generation wiring is deferred; column remains nullable until historical backfill.
+CREATE SEQUENCE quotation_number_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
 CREATE TABLE quotations (
-    id              uuid            NOT NULL,
-    customer_id     uuid            NOT NULL,
-    creation_date   date            NOT NULL,
-    delivery_date   date            NOT NULL,
-    status          varchar(20)     NOT NULL,
-    salesperson     varchar(255)    NOT NULL,
-    observations    varchar(2000)   NULL,
-    total_amount    numeric(19, 2)  NOT NULL,
-    CONSTRAINT quotations_pkey PRIMARY KEY (id)
+    id                  uuid            NOT NULL,
+    quotation_number    bigint          NULL,
+    customer_id         uuid            NOT NULL,
+    creation_date       date            NOT NULL,
+    delivery_date       date            NOT NULL,
+    status              varchar(20)     NOT NULL,
+    salesperson         varchar(255)    NOT NULL,
+    observations        varchar(2000)   NULL,
+    total_amount        numeric(19, 2)  NOT NULL,
+    CONSTRAINT quotations_pkey PRIMARY KEY (id),
+    CONSTRAINT quotations_quotation_number_key UNIQUE (quotation_number)
 );
 
 CREATE TABLE quotation_items (

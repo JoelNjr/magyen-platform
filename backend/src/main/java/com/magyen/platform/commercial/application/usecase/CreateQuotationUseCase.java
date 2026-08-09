@@ -3,6 +3,8 @@ package com.magyen.platform.commercial.application.usecase;
 import com.magyen.platform.commercial.application.dto.CreateQuotationCommand;
 import com.magyen.platform.commercial.application.dto.CreateQuotationResult;
 import com.magyen.platform.commercial.domain.Quotation;
+import com.magyen.platform.commercial.domain.QuotationNumber;
+import com.magyen.platform.commercial.domain.QuotationNumberGenerator;
 import com.magyen.platform.commercial.domain.QuotationRepository;
 
 import java.time.LocalDate;
@@ -14,9 +16,17 @@ import java.util.Objects;
 public class CreateQuotationUseCase {
 
     private final QuotationRepository quotationRepository;
+    private final QuotationNumberGenerator quotationNumberGenerator;
 
-    public CreateQuotationUseCase(QuotationRepository quotationRepository) {
+    public CreateQuotationUseCase(
+            QuotationRepository quotationRepository,
+            QuotationNumberGenerator quotationNumberGenerator
+    ) {
         this.quotationRepository = Objects.requireNonNull(quotationRepository, "Quotation repository must not be null");
+        this.quotationNumberGenerator = Objects.requireNonNull(
+                quotationNumberGenerator,
+                "Quotation number generator must not be null"
+        );
     }
 
     public CreateQuotationResult execute(CreateQuotationCommand command) {
@@ -24,8 +34,10 @@ public class CreateQuotationUseCase {
         validateCommand(command);
 
         LocalDate creationDate = LocalDate.now();
+        QuotationNumber quotationNumber = quotationNumberGenerator.next();
 
         Quotation quotation = Quotation.create(
+                quotationNumber,
                 command.customerId(),
                 creationDate,
                 command.deliveryDate(),
@@ -37,9 +49,17 @@ public class CreateQuotationUseCase {
 
         return new CreateQuotationResult(
                 savedQuotation.getId(),
+                toQuotationNumberValue(savedQuotation.getQuotationNumber()),
                 savedQuotation.getStatus(),
                 savedQuotation.getCreationDate()
         );
+    }
+
+    private Long toQuotationNumberValue(QuotationNumber quotationNumber) {
+        if (quotationNumber == null) {
+            return null;
+        }
+        return quotationNumber.getValue();
     }
 
     private void validateCommand(CreateQuotationCommand command) {

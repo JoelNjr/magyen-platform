@@ -10,6 +10,7 @@ import java.util.UUID;
  */
 public record CreateQuotationResult(
         UUID quotationId,
+        Long quotationNumber,
         QuotationStatus status,
         LocalDate creationDate
 ) {

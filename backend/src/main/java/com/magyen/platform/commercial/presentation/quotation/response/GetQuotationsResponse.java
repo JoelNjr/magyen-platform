@@ -17,6 +17,7 @@ public record GetQuotationsResponse(
      */
     public record QuotationResponse(
             UUID quotationId,
+            Long quotationNumber,
             UUID customerId,
             LocalDate creationDate,
             LocalDate deliveryDate,

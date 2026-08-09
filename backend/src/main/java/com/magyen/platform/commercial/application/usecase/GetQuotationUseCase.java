@@ -5,6 +5,7 @@ import com.magyen.platform.commercial.application.dto.GetQuotationResult;
 import com.magyen.platform.commercial.application.dto.QuotationItemResult;
 import com.magyen.platform.commercial.domain.Quotation;
 import com.magyen.platform.commercial.domain.QuotationItem;
+import com.magyen.platform.commercial.domain.QuotationNumber;
 import com.magyen.platform.commercial.domain.QuotationRepository;
 
 import java.util.List;
@@ -44,6 +45,7 @@ public class GetQuotationUseCase {
 
         return new GetQuotationResult(
                 quotation.getId(),
+                toQuotationNumberValue(quotation.getQuotationNumber()),
                 quotation.getCustomerId(),
                 quotation.getCreationDate(),
                 quotation.getDeliveryDate(),
@@ -53,6 +55,13 @@ public class GetQuotationUseCase {
                 items,
                 quotation.getTotal().getAmount()
         );
+    }
+
+    private Long toQuotationNumberValue(QuotationNumber quotationNumber) {
+        if (quotationNumber == null) {
+            return null;
+        }
+        return quotationNumber.getValue();
     }
 
     private QuotationItemResult toItemResult(QuotationItem item) {

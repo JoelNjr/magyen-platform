@@ -11,6 +11,7 @@ import java.util.UUID;
  */
 public record QuotationResult(
         UUID quotationId,
+        Long quotationNumber,
         UUID customerId,
         LocalDate creationDate,
         LocalDate deliveryDate,

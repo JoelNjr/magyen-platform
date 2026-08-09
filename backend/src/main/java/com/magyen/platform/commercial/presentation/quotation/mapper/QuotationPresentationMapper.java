@@ -46,6 +46,7 @@ public class QuotationPresentationMapper {
 
         return new CreateQuotationResponse(
                 result.quotationId(),
+                result.quotationNumber(),
                 result.status().name(),
                 result.creationDate()
         );
@@ -96,6 +97,7 @@ public class QuotationPresentationMapper {
         List<QuotationResponse> quotations = result.quotations().stream()
                 .map(quotation -> new QuotationResponse(
                         quotation.quotationId(),
+                        quotation.quotationNumber(),
                         quotation.customerId(),
                         quotation.creationDate(),
                         quotation.deliveryDate(),
@@ -132,6 +134,7 @@ public class QuotationPresentationMapper {
 
         return new GetQuotationResponse(
                 result.quotationId(),
+                result.quotationNumber(),
                 result.customerId(),
                 result.creationDate(),
                 result.deliveryDate(),

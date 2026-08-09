@@ -10,6 +10,7 @@ import java.util.UUID;
  */
 public record GetQuotationResponse(
         UUID quotationId,
+        Long quotationNumber,
         UUID customerId,
         LocalDate creationDate,
         LocalDate deliveryDate,

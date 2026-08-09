@@ -19,6 +19,7 @@ import java.util.UUID;
 public class Quotation {
 
     private final UUID id;
+    private final QuotationNumber quotationNumber;
     private final UUID customerId;
     private final LocalDate creationDate;
     private LocalDate deliveryDate;
@@ -30,6 +31,7 @@ public class Quotation {
 
     private Quotation(
             UUID id,
+            QuotationNumber quotationNumber,
             UUID customerId,
             LocalDate creationDate,
             LocalDate deliveryDate,
@@ -39,6 +41,7 @@ public class Quotation {
             List<QuotationItem> items
     ) {
         this.id = Objects.requireNonNull(id, "Quotation id must not be null");
+        this.quotationNumber = quotationNumber;
         this.customerId = Objects.requireNonNull(customerId, "Customer id must not be null");
         this.creationDate = Objects.requireNonNull(creationDate, "Creation date must not be null");
         this.deliveryDate = Objects.requireNonNull(deliveryDate, "Delivery date must not be null");
@@ -49,17 +52,23 @@ public class Quotation {
         recalculateTotal();
     }
 
+    /**
+     * Crea una cotización con identidad técnica nueva y número comercial asignado.
+     */
     public static Quotation create(
+            QuotationNumber quotationNumber,
             UUID customerId,
             LocalDate creationDate,
             LocalDate deliveryDate,
             String salesperson,
             String observations
     ) {
+        Objects.requireNonNull(quotationNumber, "Quotation number must not be null");
         validateDeliveryDate(creationDate, deliveryDate);
 
         return new Quotation(
                 UUID.randomUUID(),
+                quotationNumber,
                 customerId,
                 creationDate,
                 deliveryDate,
@@ -70,8 +79,15 @@ public class Quotation {
         );
     }
 
+    /**
+     * Reconstruye una cotización desde persistencia. No aplica lógica de creación de negocio.
+     * <p>
+     * {@code quotationNumber} puede ser {@code null} mientras existan filas históricas
+     * sin número comercial asignado (transición previa al backfill).
+     */
     public static Quotation reconstitute(
             UUID id,
+            QuotationNumber quotationNumber,
             UUID customerId,
             LocalDate creationDate,
             LocalDate deliveryDate,
@@ -84,6 +100,7 @@ public class Quotation {
 
         return new Quotation(
                 id,
+                quotationNumber,
                 customerId,
                 creationDate,
                 deliveryDate,
@@ -181,6 +198,14 @@ public class Quotation {
 
     public UUID getId() {
         return id;
+    }
+
+    /**
+     * Número comercial consecutivo. Puede ser {@code null} durante la transición
+     * mientras existan cotizaciones históricas sin backfill.
+     */
+    public QuotationNumber getQuotationNumber() {
+        return quotationNumber;
     }
 
     public UUID getCustomerId() {

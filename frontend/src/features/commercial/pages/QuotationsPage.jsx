@@ -19,7 +19,7 @@ import {
 } from '@mui/material'
 import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom'
 import { formatDisplayDate } from '../presentation/formatDisplayDate'
-import { formatQuotationCode } from '../presentation/formatQuotationCode'
+import { formatQuotationNumber } from '../presentation/formatQuotationNumber'
 import {
   buildCustomerNameMap,
   resolveCustomerName,
@@ -220,7 +220,7 @@ function QuotationsPage() {
                         <RouterLink
                           to={`/commercial/quotations/${quotation.quotationId}`}
                         >
-                          {formatQuotationCode(quotation.quotationId)}
+                          {formatQuotationNumber(quotation.quotationNumber)}
                         </RouterLink>
                       </TableCell>
                       <TableCell>

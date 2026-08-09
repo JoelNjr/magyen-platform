@@ -2,6 +2,7 @@ package com.magyen.platform.commercial.infrastructure.persistence.mapper;
 
 import com.magyen.platform.commercial.domain.Quotation;
 import com.magyen.platform.commercial.domain.QuotationItem;
+import com.magyen.platform.commercial.domain.QuotationNumber;
 import com.magyen.platform.commercial.infrastructure.persistence.entity.QuotationEntity;
 import com.magyen.platform.commercial.infrastructure.persistence.entity.QuotationItemEntity;
 import com.magyen.platform.shared.domain.Money;
@@ -23,6 +24,7 @@ public class QuotationPersistenceMapper {
 
         QuotationEntity quotationEntity = new QuotationEntity();
         quotationEntity.setId(quotation.getId());
+        quotationEntity.setQuotationNumber(toPersistedQuotationNumber(quotation.getQuotationNumber()));
         quotationEntity.setCustomerId(quotation.getCustomerId());
         quotationEntity.setCreationDate(quotation.getCreationDate());
         quotationEntity.setDeliveryDate(quotation.getDeliveryDate());
@@ -52,6 +54,7 @@ public class QuotationPersistenceMapper {
 
         return Quotation.reconstitute(
                 quotationEntity.getId(),
+                toDomainQuotationNumber(quotationEntity.getQuotationNumber()),
                 quotationEntity.getCustomerId(),
                 quotationEntity.getCreationDate(),
                 quotationEntity.getDeliveryDate(),
@@ -60,6 +63,20 @@ public class QuotationPersistenceMapper {
                 quotationEntity.getObservations(),
                 items
         );
+    }
+
+    private Long toPersistedQuotationNumber(QuotationNumber quotationNumber) {
+        if (quotationNumber == null) {
+            return null;
+        }
+        return quotationNumber.getValue();
+    }
+
+    private QuotationNumber toDomainQuotationNumber(Long quotationNumber) {
+        if (quotationNumber == null) {
+            return null;
+        }
+        return QuotationNumber.of(quotationNumber);
     }
 
     private QuotationItemEntity toItemEntity(QuotationItem item) {

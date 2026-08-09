@@ -3,6 +3,7 @@ package com.magyen.platform.commercial.application.usecase;
 import com.magyen.platform.commercial.application.dto.GetQuotationsResult;
 import com.magyen.platform.commercial.application.dto.QuotationResult;
 import com.magyen.platform.commercial.domain.Quotation;
+import com.magyen.platform.commercial.domain.QuotationNumber;
 import com.magyen.platform.commercial.domain.QuotationRepository;
 
 import java.util.List;
@@ -30,6 +31,7 @@ public class GetQuotationsUseCase {
     private QuotationResult toQuotationResult(Quotation quotation) {
         return new QuotationResult(
                 quotation.getId(),
+                toQuotationNumberValue(quotation.getQuotationNumber()),
                 quotation.getCustomerId(),
                 quotation.getCreationDate(),
                 quotation.getDeliveryDate(),
@@ -38,5 +40,12 @@ public class GetQuotationsUseCase {
                 quotation.getObservations(),
                 quotation.getTotal().getAmount()
         );
+    }
+
+    private Long toQuotationNumberValue(QuotationNumber quotationNumber) {
+        if (quotationNumber == null) {
+            return null;
+        }
+        return quotationNumber.getValue();
     }
 }

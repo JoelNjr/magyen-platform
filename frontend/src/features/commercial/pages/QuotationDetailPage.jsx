@@ -22,7 +22,7 @@ import {
 import { useNavigate, useParams } from 'react-router-dom'
 import AddQuotationItemDialog from '../components/AddQuotationItemDialog'
 import { formatDisplayDate } from '../presentation/formatDisplayDate'
-import { formatQuotationCode } from '../presentation/formatQuotationCode'
+import { formatQuotationNumber } from '../presentation/formatQuotationNumber'
 import {
   buildCustomerNameMap,
   resolveCustomerName,
@@ -230,7 +230,7 @@ function QuotationDetailPage() {
               alignItems={{ xs: 'flex-start', sm: 'center' }}
             >
               <Typography variant="h4">
-                {formatQuotationCode(quotation.quotationId)}
+                Cotización {formatQuotationNumber(quotation.quotationNumber)}
               </Typography>
               <Chip
                 label={getStatusChipProps(quotation.status).label}

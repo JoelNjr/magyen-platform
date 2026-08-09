@@ -1,0 +1,183 @@
+1. Nombre
+
+SPR-031 — Quotation Consecutive Numbering
+
+2. Objetivo
+
+Reemplazar el código amigable derivado del UUID utilizado actualmente en la presentación de cotizaciones por un número comercial consecutivo y persistente, manteniendo el UUID como identidad técnica interna.
+
+Actualmente:
+
+UUID
+   ↓
+formatQuotationCode()
+   ↓
+C###### para presentación
+
+El objetivo es pasar a:
+
+Creación de cotización
+        ↓
+Backend genera consecutivo
+        ↓
+quotationNumber
+        ↓
+Persistencia
+        ↓
+Frontend muestra quotationNumber
+
+El UUID continuará utilizándose para:
+
+Routing
+API paths
+Identidad técnica
+Keys
+Operaciones internas
+3. Situación actual
+
+Actualmente quotationId es un UUID.
+
+El frontend utiliza formatQuotationCode.js para generar un código visual:
+
+C390740
+C051401
+C228909
+...
+
+Este código es únicamente de presentación y no representa una secuencia comercial real.
+
+El Incremento 2 del sprint anterior dejó explícitamente claro que el código amigable era:
+
+display-only
+
+Por lo tanto, este sprint debe convertir la numeración en un dato persistente de la cotización.
+
+4. Problema
+
+El código actual:
+
+No es consecutivo.
+Depende del UUID.
+No representa el número comercial real.
+No permite saber fácilmente cuál fue la cotización anterior.
+No es adecuado para documentos comerciales futuros.
+No garantiza una secuencia controlada.
+
+Ejemplo actual:
+
+C390740
+C051401
+C228909
+C927279
+
+Lo esperado:
+
+C000001
+C000002
+C000003
+C000004
+5. Principio arquitectónico
+
+Debe mantenerse la separación:
+
+Identidad técnica
+quotationId = UUID
+Identidad comercial
+quotationNumber = número consecutivo
+
+No se debe reemplazar el UUID.
+
+Una cotización tendrá conceptualmente:
+
+quotationId
+quotationNumber
+customerId
+deliveryDate
+...
+6. Alcance
+
+SPR-031 debe estudiar e implementar:
+
+Estrategia de generación del consecutivo.
+Persistencia del número.
+Generación segura ante múltiples creaciones.
+Exposición mediante API.
+DTOs correspondientes.
+Creación de cotizaciones.
+Listado.
+Detalle.
+Frontend.
+Migración/compatibilidad con cotizaciones existentes.
+Verificación end-to-end.
+7. Fuera de alcance
+
+No modificar:
+
+Customer.
+Customer CRUD.
+Order numbering.
+Production numbering.
+Inventory.
+Finance.
+Intelligence.
+Login/authentication.
+UX/UI general.
+Diseño visual general.
+Contrato customerId.
+UUID de cotización.
+Rutas existentes basadas en UUID.
+
+Tampoco se debe implementar todavía una solución hasta terminar la revisión arquitectónica del Increment 1.
+
+8. Consideraciones importantes
+
+La solución debe considerar:
+
+Concurrencia
+
+Si dos usuarios crean cotizaciones simultáneamente:
+
+Usuario A → C000123
+Usuario B → C000124
+
+No:
+
+Usuario A → C000123
+Usuario B → C000123
+Persistencia
+
+El número debe quedar almacenado.
+
+Estabilidad
+
+Una cotización no puede cambiar de número después de creada.
+
+Registros existentes
+
+Debemos determinar cómo manejar las cotizaciones que ya existen.
+
+Eliminación
+
+El sistema actualmente no contempla eliminación de cotizaciones como parte de este sprint.
+
+UUID
+
+El UUID no se elimina ni se sustituye.
+
+9. Resultado esperado
+
+Al finalizar SPR-031:
+
+Listado
+Número
+C000001
+C000002
+C000003
+Detalle
+Cotización C000003
+URL
+/commercial/quotations/{uuid}
+
+Es decir:
+
+Número comercial ≠ identidad técnica.

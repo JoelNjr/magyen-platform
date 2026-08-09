@@ -8,6 +8,7 @@ import java.util.UUID;
  */
 public record CreateQuotationResponse(
         UUID quotationId,
+        Long quotationNumber,
         String status,
         LocalDate creationDate
 ) {

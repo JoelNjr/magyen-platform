@@ -27,6 +27,12 @@ public class QuotationEntity {
     @Column(name = "id", nullable = false, updatable = false)
     private UUID id;
 
+    /**
+     * Commercial consecutive number. Nullable only during historical transition before backfill.
+     */
+    @Column(name = "quotation_number", nullable = true, updatable = false)
+    private Long quotationNumber;
+
     @Column(name = "customer_id", nullable = false, updatable = false)
     private UUID customerId;
 
@@ -61,6 +67,14 @@ public class QuotationEntity {
 
     public void setId(UUID id) {
         this.id = id;
+    }
+
+    public Long getQuotationNumber() {
+        return quotationNumber;
+    }
+
+    public void setQuotationNumber(Long quotationNumber) {
+        this.quotationNumber = quotationNumber;
     }
 
     public UUID getCustomerId() {
