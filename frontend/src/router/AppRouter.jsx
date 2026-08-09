@@ -5,6 +5,8 @@ import CustomersPage from '../features/commercial/pages/CustomersPage'
 import QuotationDetailPage from '../features/commercial/pages/QuotationDetailPage'
 import QuotationsPage from '../features/commercial/pages/QuotationsPage'
 import IntelligencePage from '../features/intelligence/pages/IntelligencePage'
+import ProductionOrderDetailPage from '../features/production/pages/ProductionOrderDetailPage'
+import ProductionOrdersPage from '../features/production/pages/ProductionOrdersPage'
 import MainLayout from '../layout/MainLayout'
 
 function AppRouter() {
@@ -21,9 +23,10 @@ function AppRouter() {
           />
           <Route path="commercial" element={<QuotationsPage />} />
           <Route
-            path="production"
-            element={<Typography>Production Page</Typography>}
+            path="production/orders/:productionOrderId"
+            element={<ProductionOrderDetailPage />}
           />
+          <Route path="production" element={<ProductionOrdersPage />} />
           <Route
             path="inventory"
             element={<Typography>Inventory Page</Typography>}

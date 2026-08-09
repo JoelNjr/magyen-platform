@@ -1,6 +1,7 @@
 package com.magyen.platform.shared.presentation;
 
 import com.magyen.platform.commercial.domain.exception.QuotationDomainException;
+import com.magyen.platform.production.domain.exception.ProductionDomainException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -34,6 +35,22 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(QuotationDomainException.class)
     public ResponseEntity<ErrorResponse> handleQuotationDomainException(
             QuotationDomainException exception,
+            HttpServletRequest request
+    ) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                exception.getMessage(),
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
+
+    @ExceptionHandler(ProductionDomainException.class)
+    public ResponseEntity<ErrorResponse> handleProductionDomainException(
+            ProductionDomainException exception,
             HttpServletRequest request
     ) {
         ErrorResponse errorResponse = new ErrorResponse(

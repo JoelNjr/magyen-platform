@@ -221,15 +221,24 @@ public class ProductionOrder {
 
     /**
      * Inicia una operación de fabricación existente.
+     * <p>
+     * Solo permitido mientras el estado de la Orden de Producción sea
+     * {@link ProductionStatus#IN_PROGRESS}, para preservar el ciclo
+     * CREATED → PLANNED → IN_PROGRESS → COMPLETED.
      */
     public void startOperation(UUID operationId) {
+        ensureExecutable();
         findOperation(operationId).start();
     }
 
     /**
      * Completa una operación de fabricación existente.
+     * <p>
+     * Solo permitido mientras el estado de la Orden de Producción sea
+     * {@link ProductionStatus#IN_PROGRESS}.
      */
     public void completeOperation(UUID operationId) {
+        ensureExecutable();
         findOperation(operationId).complete();
     }
 
@@ -290,6 +299,15 @@ public class ProductionOrder {
         if (status != ProductionStatus.CREATED) {
             throw new ProductionDomainException(
                     "Production operations can only be modified while status is CREATED. Current status: "
+                            + status
+            );
+        }
+    }
+
+    private void ensureExecutable() {
+        if (status != ProductionStatus.IN_PROGRESS) {
+            throw new ProductionDomainException(
+                    "Production operations can only be executed while status is IN_PROGRESS. Current status: "
                             + status
             );
         }

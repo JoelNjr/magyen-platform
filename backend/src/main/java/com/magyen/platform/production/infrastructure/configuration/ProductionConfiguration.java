@@ -4,8 +4,13 @@ import com.magyen.platform.commercial.domain.OrderRepository;
 import com.magyen.platform.production.application.usecase.AddProductionOperationUseCase;
 import com.magyen.platform.production.application.usecase.AssignProductionOperationOperatorUseCase;
 import com.magyen.platform.production.application.usecase.CompleteProductionOperationUseCase;
+import com.magyen.platform.production.application.usecase.CompleteProductionOrderUseCase;
 import com.magyen.platform.production.application.usecase.CreateProductionOrderFromOrderUseCase;
+import com.magyen.platform.production.application.usecase.GetProductionOrderUseCase;
+import com.magyen.platform.production.application.usecase.GetProductionOrdersUseCase;
+import com.magyen.platform.production.application.usecase.PlanProductionOrderUseCase;
 import com.magyen.platform.production.application.usecase.StartProductionOperationUseCase;
+import com.magyen.platform.production.application.usecase.StartProductionOrderUseCase;
 import com.magyen.platform.production.domain.ProductionOrderRepository;
 import com.magyen.platform.production.infrastructure.persistence.mapper.ProductionPersistenceMapper;
 import com.magyen.platform.production.presentation.productionorder.mapper.ProductionPresentationMapper;
@@ -62,5 +67,40 @@ public class ProductionConfiguration {
             ProductionOrderRepository productionOrderRepository
     ) {
         return new CompleteProductionOperationUseCase(productionOrderRepository);
+    }
+
+    @Bean
+    public PlanProductionOrderUseCase planProductionOrderUseCase(
+            ProductionOrderRepository productionOrderRepository
+    ) {
+        return new PlanProductionOrderUseCase(productionOrderRepository);
+    }
+
+    @Bean
+    public StartProductionOrderUseCase startProductionOrderUseCase(
+            ProductionOrderRepository productionOrderRepository
+    ) {
+        return new StartProductionOrderUseCase(productionOrderRepository);
+    }
+
+    @Bean
+    public CompleteProductionOrderUseCase completeProductionOrderUseCase(
+            ProductionOrderRepository productionOrderRepository
+    ) {
+        return new CompleteProductionOrderUseCase(productionOrderRepository);
+    }
+
+    @Bean
+    public GetProductionOrdersUseCase getProductionOrdersUseCase(
+            ProductionOrderRepository productionOrderRepository
+    ) {
+        return new GetProductionOrdersUseCase(productionOrderRepository);
+    }
+
+    @Bean
+    public GetProductionOrderUseCase getProductionOrderUseCase(
+            ProductionOrderRepository productionOrderRepository
+    ) {
+        return new GetProductionOrderUseCase(productionOrderRepository);
     }
 }
