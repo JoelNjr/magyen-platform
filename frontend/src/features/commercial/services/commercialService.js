@@ -10,6 +10,16 @@ export async function getCustomers() {
   return response.data
 }
 
+export async function createCustomer(payload) {
+  const response = await httpClient.post('/customers', payload)
+  return response.data
+}
+
+export async function updateCustomer(customerId, payload) {
+  const response = await httpClient.put(`/customers/${customerId}`, payload)
+  return response.data
+}
+
 export function createQuotation(payload) {
   return httpClient.post('/quotations', payload).then((response) => response.data)
 }

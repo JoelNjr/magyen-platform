@@ -2,11 +2,13 @@ package com.magyen.platform.commercial.infrastructure.configuration;
 
 import com.magyen.platform.commercial.application.usecase.AddQuotationItemUseCase;
 import com.magyen.platform.commercial.application.usecase.ApproveQuotationUseCase;
+import com.magyen.platform.commercial.application.usecase.CreateCustomerUseCase;
 import com.magyen.platform.commercial.application.usecase.CreateOrderFromQuotationUseCase;
 import com.magyen.platform.commercial.application.usecase.CreateQuotationUseCase;
 import com.magyen.platform.commercial.application.usecase.GetCustomersUseCase;
 import com.magyen.platform.commercial.application.usecase.GetQuotationUseCase;
 import com.magyen.platform.commercial.application.usecase.GetQuotationsUseCase;
+import com.magyen.platform.commercial.application.usecase.UpdateCustomerUseCase;
 import com.magyen.platform.commercial.domain.CustomerRepository;
 import com.magyen.platform.commercial.domain.OrderRepository;
 import com.magyen.platform.commercial.domain.QuotationRepository;
@@ -78,6 +80,16 @@ public class CommercialConfiguration {
     @Bean
     public GetCustomersUseCase getCustomersUseCase(CustomerRepository customerRepository) {
         return new GetCustomersUseCase(customerRepository);
+    }
+
+    @Bean
+    public CreateCustomerUseCase createCustomerUseCase(CustomerRepository customerRepository) {
+        return new CreateCustomerUseCase(customerRepository);
+    }
+
+    @Bean
+    public UpdateCustomerUseCase updateCustomerUseCase(CustomerRepository customerRepository) {
+        return new UpdateCustomerUseCase(customerRepository);
     }
 
     @Bean

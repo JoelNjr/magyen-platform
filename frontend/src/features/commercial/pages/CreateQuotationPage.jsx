@@ -3,13 +3,19 @@ import {
   Alert,
   Button,
   Paper,
+  Snackbar,
   Stack,
   TextField,
   Typography,
 } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
+import CreateCustomerDialog from '../components/CreateCustomerDialog'
 import CustomerSelector from '../components/CustomerSelector'
-import { createQuotation, getCustomers } from '../services/commercialService'
+import {
+  createCustomer,
+  createQuotation,
+  getCustomers,
+} from '../services/commercialService'
 
 function CreateQuotationPage() {
   const navigate = useNavigate()
@@ -23,6 +29,11 @@ function CreateQuotationPage() {
   const [submitting, setSubmitting] = useState(false)
   const [failed, setFailed] = useState(false)
   const [customerRequiredError, setCustomerRequiredError] = useState(false)
+  const [createDialogOpen, setCreateDialogOpen] = useState(false)
+  const [creatingCustomer, setCreatingCustomer] = useState(false)
+  const [createCustomerFailed, setCreateCustomerFailed] = useState(false)
+  const [customersRefreshFailed, setCustomersRefreshFailed] = useState(false)
+  const [customerCreatedOpen, setCustomerCreatedOpen] = useState(false)
 
   useEffect(() => {
     setCustomersLoading(true)
@@ -40,6 +51,53 @@ function CreateQuotationPage() {
         setCustomersLoading(false)
       })
   }, [])
+
+  function openCreateCustomerDialog() {
+    if (creatingCustomer || customersLoading) {
+      return
+    }
+
+    setCreateCustomerFailed(false)
+    setCustomersRefreshFailed(false)
+    setCreateDialogOpen(true)
+  }
+
+  function handleCreateCustomerDialogClose() {
+    if (creatingCustomer) {
+      return
+    }
+
+    setCreateDialogOpen(false)
+    setCreateCustomerFailed(false)
+  }
+
+  async function handleCreateCustomer(name) {
+    setCreateCustomerFailed(false)
+    setCustomersRefreshFailed(false)
+    setCreatingCustomer(true)
+
+    try {
+      const createdCustomer = await createCustomer({ name })
+
+      try {
+        const data = await getCustomers()
+        const nextCustomers = Array.isArray(data?.customers) ? data.customers : []
+        setCustomers(nextCustomers)
+        setCustomersFailed(false)
+      } catch {
+        setCustomersRefreshFailed(true)
+      }
+
+      setCustomerId(createdCustomer.customerId)
+      setCustomerRequiredError(false)
+      setCreateDialogOpen(false)
+      setCustomerCreatedOpen(true)
+    } catch {
+      setCreateCustomerFailed(true)
+    } finally {
+      setCreatingCustomer(false)
+    }
+  }
 
   async function handleSubmit(event) {
     event.preventDefault()
@@ -70,82 +128,125 @@ function CreateQuotationPage() {
   }
 
   return (
-    <Paper
-      sx={{
-        p: 4,
-        maxWidth: 640,
-        mx: 'auto',
-      }}
-    >
-      <form onSubmit={handleSubmit}>
-        <Stack spacing={3}>
-          <Typography variant="h4">Nueva Cotización</Typography>
+    <>
+      <Paper
+        sx={{
+          p: 4,
+          maxWidth: 640,
+          mx: 'auto',
+        }}
+      >
+        <form onSubmit={handleSubmit}>
+          <Stack spacing={3}>
+            <Typography variant="h4">Nueva Cotización</Typography>
 
-          {failed && (
-            <Alert severity="error">No fue posible crear la cotización.</Alert>
-          )}
+            {failed && (
+              <Alert severity="error">No fue posible crear la cotización.</Alert>
+            )}
 
-          {customerRequiredError && (
-            <Alert severity="error">Debes seleccionar un cliente.</Alert>
-          )}
+            {customerRequiredError && (
+              <Alert severity="error">Debes seleccionar un cliente.</Alert>
+            )}
 
-          <CustomerSelector
-            customers={customers}
-            value={customerId}
-            onChange={(selectedCustomerId) => {
-              setCustomerId(selectedCustomerId)
-              setCustomerRequiredError(false)
-            }}
-            loading={customersLoading}
-            error={customersFailed}
-            disabled={submitting}
-            required
-          />
+            {customersRefreshFailed && (
+              <Alert severity="warning">
+                El cliente se creó, pero no fue posible actualizar el listado.
+              </Alert>
+            )}
 
-          <TextField
-            label="Fecha de entrega"
-            type="date"
-            value={deliveryDate}
-            onChange={(event) => setDeliveryDate(event.target.value)}
-            fullWidth
-            disabled={submitting}
-            slotProps={{ inputLabel: { shrink: true } }}
-          />
+            <Stack spacing={1}>
+              <CustomerSelector
+                customers={customers}
+                value={customerId}
+                onChange={(selectedCustomerId) => {
+                  setCustomerId(selectedCustomerId)
+                  setCustomerRequiredError(false)
+                }}
+                loading={customersLoading}
+                error={customersFailed}
+                disabled={submitting || creatingCustomer}
+                required
+              />
 
-          <TextField
-            label="Vendedor"
-            value={salesperson}
-            onChange={(event) => setSalesperson(event.target.value)}
-            fullWidth
-            disabled={submitting}
-          />
+              <Button
+                type="button"
+                variant="text"
+                onClick={openCreateCustomerDialog}
+                disabled={customersLoading || submitting || creatingCustomer}
+                sx={{ alignSelf: 'flex-start' }}
+              >
+                + Nuevo cliente
+              </Button>
+            </Stack>
 
-          <TextField
-            label="Observaciones"
-            value={observations}
-            onChange={(event) => setObservations(event.target.value)}
-            fullWidth
-            multiline
-            minRows={3}
-            disabled={submitting}
-          />
-
-          <Stack direction="row" spacing={2} sx={{ justifyContent: 'flex-end' }}>
-            <Button
-              type="button"
-              variant="outlined"
+            <TextField
+              label="Fecha de entrega"
+              type="date"
+              value={deliveryDate}
+              onChange={(event) => setDeliveryDate(event.target.value)}
+              fullWidth
               disabled={submitting}
-              onClick={() => navigate('/commercial')}
-            >
-              Cancelar
-            </Button>
-            <Button type="submit" variant="contained" disabled={submitting}>
-              {submitting ? 'Guardando...' : 'Guardar'}
-            </Button>
+              slotProps={{ inputLabel: { shrink: true } }}
+            />
+
+            <TextField
+              label="Vendedor"
+              value={salesperson}
+              onChange={(event) => setSalesperson(event.target.value)}
+              fullWidth
+              disabled={submitting}
+            />
+
+            <TextField
+              label="Observaciones"
+              value={observations}
+              onChange={(event) => setObservations(event.target.value)}
+              fullWidth
+              multiline
+              minRows={3}
+              disabled={submitting}
+            />
+
+            <Stack direction="row" spacing={2} sx={{ justifyContent: 'flex-end' }}>
+              <Button
+                type="button"
+                variant="outlined"
+                disabled={submitting}
+                onClick={() => navigate('/commercial')}
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" variant="contained" disabled={submitting}>
+                {submitting ? 'Guardando...' : 'Guardar'}
+              </Button>
+            </Stack>
           </Stack>
-        </Stack>
-      </form>
-    </Paper>
+        </form>
+      </Paper>
+
+      <CreateCustomerDialog
+        open={createDialogOpen}
+        onClose={handleCreateCustomerDialogClose}
+        onCreated={handleCreateCustomer}
+        submitting={creatingCustomer}
+        error={createCustomerFailed}
+      />
+
+      <Snackbar
+        open={customerCreatedOpen}
+        autoHideDuration={4000}
+        onClose={() => setCustomerCreatedOpen(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          severity="success"
+          variant="filled"
+          onClose={() => setCustomerCreatedOpen(false)}
+        >
+          Cliente creado correctamente.
+        </Alert>
+      </Snackbar>
+    </>
   )
 }
 

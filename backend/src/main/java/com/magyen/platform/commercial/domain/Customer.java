@@ -11,7 +11,7 @@ import java.util.UUID;
 public class Customer {
 
     private final UUID id;
-    private final String name;
+    private String name;
 
     private Customer(UUID id, String name) {
         this.id = Objects.requireNonNull(id, "Customer id must not be null");
@@ -30,6 +30,13 @@ public class Customer {
      */
     public static Customer reconstitute(UUID id, String name) {
         return new Customer(id, name);
+    }
+
+    /**
+     * Actualiza el nombre del cliente preservando su identidad.
+     */
+    public void rename(String name) {
+        this.name = requireNonBlank(name, "Customer name must not be blank");
     }
 
     public UUID getId() {

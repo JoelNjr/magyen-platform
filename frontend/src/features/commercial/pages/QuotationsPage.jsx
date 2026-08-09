@@ -123,14 +123,25 @@ function QuotationsPage() {
           alignItems={{ xs: 'stretch', sm: 'center' }}
         >
           <Typography variant="h3">Cotizaciones</Typography>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => navigate('/commercial/new')}
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={1.5}
             sx={{ alignSelf: { xs: 'stretch', sm: 'center' } }}
           >
-            Nueva cotización
-          </Button>
+            <Button
+              variant="outlined"
+              onClick={() => navigate('/commercial/customers')}
+            >
+              Clientes
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => navigate('/commercial/new')}
+            >
+              Nueva cotización
+            </Button>
+          </Stack>
         </Stack>
 
         {loading && (
