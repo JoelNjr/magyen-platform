@@ -13,6 +13,7 @@ public record QuotationItemResponse(
         String fabric,
         String color,
         BigDecimal unitPrice,
-        BigDecimal subtotal
+        BigDecimal subtotal,
+        ProductSpecificationResponse productSpecification
 ) {
 }

@@ -15,5 +15,7 @@ public interface OrderRepository {
 
     Optional<Order> findById(UUID id);
 
+    Optional<Order> findByQuotationId(UUID quotationId);
+
     List<Order> findAll();
 }

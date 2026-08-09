@@ -12,6 +12,7 @@ public record AddQuotationItemCommand(
         int quantity,
         String fabric,
         String color,
-        BigDecimal unitPrice
+        BigDecimal unitPrice,
+        ProductSpecificationCommand productSpecification
 ) {
 }

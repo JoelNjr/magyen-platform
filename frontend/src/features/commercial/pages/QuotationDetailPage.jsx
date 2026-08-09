@@ -21,6 +21,8 @@ import {
 } from '@mui/material'
 import { useNavigate, useParams } from 'react-router-dom'
 import AddQuotationItemDialog from '../components/AddQuotationItemDialog'
+import ApproveQuotationDialog from '../components/ApproveQuotationDialog'
+import CreateOrderFromQuotationDialog from '../components/CreateOrderFromQuotationDialog'
 import { formatDisplayDate } from '../presentation/formatDisplayDate'
 import { formatQuotationNumber } from '../presentation/formatQuotationNumber'
 import {
@@ -29,6 +31,8 @@ import {
 } from '../presentation/resolveCustomerName'
 import {
   addQuotationItem,
+  approveQuotation,
+  createOrder,
   getCustomers,
   getQuotation,
 } from '../services/commercialService'
@@ -57,6 +61,10 @@ function getStatusChipProps(status) {
     default:
       return { label: 'Estado desconocido', color: 'default' }
   }
+}
+
+function resolveApiErrorMessage(error, fallbackMessage) {
+  return error?.response?.data?.message || fallbackMessage
 }
 
 function DetailField({ label, children }) {
@@ -120,10 +128,23 @@ function QuotationDetailPage() {
   const [loading, setLoading] = useState(true)
   const [failed, setFailed] = useState(false)
   const [notFound, setNotFound] = useState(false)
+
   const [dialogOpen, setDialogOpen] = useState(false)
   const [submittingItem, setSubmittingItem] = useState(false)
   const [addItemError, setAddItemError] = useState(false)
+
+  const [approveDialogOpen, setApproveDialogOpen] = useState(false)
+  const [approving, setApproving] = useState(false)
+  const [approveError, setApproveError] = useState('')
+
+  const [createOrderDialogOpen, setCreateOrderDialogOpen] = useState(false)
+  const [creatingOrder, setCreatingOrder] = useState(false)
+  const [createOrderError, setCreateOrderError] = useState('')
+
   const [successOpen, setSuccessOpen] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('')
+
+  const pageBusy = submittingItem || approving || creatingOrder
 
   useEffect(() => {
     setLoading(true)
@@ -157,15 +178,24 @@ function QuotationDetailPage() {
       })
   }, [quotationId])
 
+  async function refreshQuotation() {
+    const refreshedQuotation = await getQuotation(quotation.quotationId)
+    setQuotation(refreshedQuotation)
+  }
+
   async function handleAddItem(payload) {
+    if (submittingItem) {
+      return
+    }
+
     setAddItemError(false)
     setSubmittingItem(true)
 
     try {
       await addQuotationItem(quotation.quotationId, payload)
-      const refreshedQuotation = await getQuotation(quotation.quotationId)
-      setQuotation(refreshedQuotation)
+      await refreshQuotation()
       setDialogOpen(false)
+      setSuccessMessage('Producto agregado correctamente.')
       setSuccessOpen(true)
     } catch {
       setAddItemError(true)
@@ -184,12 +214,108 @@ function QuotationDetailPage() {
   }
 
   function openAddDialog() {
-    if (submittingItem) {
+    if (pageBusy) {
       return
     }
 
     setAddItemError(false)
     setDialogOpen(true)
+  }
+
+  function openApproveDialog() {
+    if (pageBusy || quotation.status !== 'DRAFT') {
+      return
+    }
+
+    setApproveError('')
+    setApproveDialogOpen(true)
+  }
+
+  function closeApproveDialog() {
+    if (approving) {
+      return
+    }
+
+    setApproveDialogOpen(false)
+    setApproveError('')
+  }
+
+  async function handleApproveConfirm() {
+    if (approving) {
+      return
+    }
+
+    setApproveError('')
+    setApproving(true)
+
+    try {
+      await approveQuotation(quotation.quotationId)
+      await refreshQuotation()
+      setApproveDialogOpen(false)
+      setSuccessMessage('Cotización aprobada correctamente.')
+      setSuccessOpen(true)
+    } catch (error) {
+      setApproveError(
+        resolveApiErrorMessage(error, 'No fue posible aprobar la cotización.')
+      )
+    } finally {
+      setApproving(false)
+    }
+  }
+
+  function openCreateOrderDialog() {
+    if (pageBusy || quotation.status !== 'APPROVED' || quotation.orderId) {
+      return
+    }
+
+    setCreateOrderError('')
+    setCreateOrderDialogOpen(true)
+  }
+
+  function closeCreateOrderDialog() {
+    if (creatingOrder) {
+      return
+    }
+
+    setCreateOrderDialogOpen(false)
+    setCreateOrderError('')
+  }
+
+  async function handleCreateOrderSubmit({ orderNumber }) {
+    if (creatingOrder) {
+      return
+    }
+
+    setCreateOrderError('')
+    setCreatingOrder(true)
+
+    try {
+      const createdOrder = await createOrder({
+        quotationId: quotation.quotationId,
+        orderNumber,
+        deliveryDate: quotation.deliveryDate,
+        salesperson: quotation.salesperson,
+        observations: quotation.observations,
+      })
+
+      setCreateOrderDialogOpen(false)
+      navigate(`/commercial/orders/${createdOrder.orderId}`, {
+        state: {
+          created: true,
+          orderNumber: createdOrder.orderNumber,
+        },
+      })
+    } catch (error) {
+      if (error?.response?.status === 409) {
+        setCreateOrderError('Esta cotización ya tiene una orden asociada.')
+      } else {
+        setCreateOrderError(
+          resolveApiErrorMessage(error, 'No fue posible crear la orden.')
+        )
+      }
+    } finally {
+      setCreatingOrder(false)
+    }
   }
 
   return (
@@ -220,23 +346,73 @@ function QuotationDetailPage() {
 
       {!loading && !failed && quotation && (
         <>
-          <Stack spacing={1}>
-            <Typography variant="body2" color="text.secondary">
-              Detalle de Cotización
-            </Typography>
+          <Stack
+            direction={{ xs: 'column', md: 'row' }}
+            spacing={1.5}
+            justifyContent="space-between"
+            alignItems={{ xs: 'stretch', md: 'flex-start' }}
+          >
+            <Stack spacing={1}>
+              <Typography variant="body2" color="text.secondary">
+                Detalle de Cotización
+              </Typography>
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                spacing={1.5}
+                alignItems={{ xs: 'flex-start', sm: 'center' }}
+              >
+                <Typography variant="h4">
+                  Cotización {formatQuotationNumber(quotation.quotationNumber)}
+                </Typography>
+                <Chip
+                  label={getStatusChipProps(quotation.status).label}
+                  color={getStatusChipProps(quotation.status).color}
+                  size="small"
+                />
+              </Stack>
+            </Stack>
+
             <Stack
               direction={{ xs: 'column', sm: 'row' }}
               spacing={1.5}
-              alignItems={{ xs: 'flex-start', sm: 'center' }}
+              alignItems={{ xs: 'stretch', sm: 'center' }}
             >
-              <Typography variant="h4">
-                Cotización {formatQuotationNumber(quotation.quotationNumber)}
-              </Typography>
-              <Chip
-                label={getStatusChipProps(quotation.status).label}
-                color={getStatusChipProps(quotation.status).color}
-                size="small"
-              />
+              {quotation.status === 'DRAFT' && (
+                <Button
+                  variant="contained"
+                  disabled={pageBusy}
+                  onClick={openApproveDialog}
+                >
+                  Aprobar cotización
+                </Button>
+              )}
+              {quotation.status === 'APPROVED' && !quotation.orderId && (
+                <Button
+                  variant="contained"
+                  disabled={pageBusy}
+                  onClick={openCreateOrderDialog}
+                >
+                  Crear orden
+                </Button>
+              )}
+              {quotation.status === 'APPROVED' && quotation.orderId && (
+                <Stack
+                  direction={{ xs: 'column', sm: 'row' }}
+                  spacing={1.5}
+                  alignItems={{ xs: 'stretch', sm: 'center' }}
+                >
+                  <Chip label="Orden creada" color="success" size="small" />
+                  <Button
+                    variant="outlined"
+                    disabled={pageBusy}
+                    onClick={() =>
+                      navigate(`/commercial/orders/${quotation.orderId}`)
+                    }
+                  >
+                    Ver orden
+                  </Button>
+                </Stack>
+              )}
             </Stack>
           </Stack>
 
@@ -295,7 +471,7 @@ function QuotationDetailPage() {
                 {quotation.items.length > 0 && (
                   <Button
                     variant="outlined"
-                    disabled={quotation.status !== 'DRAFT' || submittingItem}
+                    disabled={quotation.status !== 'DRAFT' || pageBusy}
                     startIcon={<AddIcon />}
                     onClick={openAddDialog}
                   >
@@ -316,7 +492,7 @@ function QuotationDetailPage() {
                   </Typography>
                   <Button
                     variant="outlined"
-                    disabled={quotation.status !== 'DRAFT' || submittingItem}
+                    disabled={quotation.status !== 'DRAFT' || pageBusy}
                     startIcon={<AddIcon />}
                     onClick={openAddDialog}
                   >
@@ -399,6 +575,24 @@ function QuotationDetailPage() {
             submitting={submittingItem}
             error={addItemError}
           />
+
+          <ApproveQuotationDialog
+            open={approveDialogOpen}
+            onClose={closeApproveDialog}
+            onConfirm={handleApproveConfirm}
+            submitting={approving}
+            errorMessage={approveError}
+          />
+
+          <CreateOrderFromQuotationDialog
+            open={createOrderDialogOpen}
+            onClose={closeCreateOrderDialog}
+            onSubmit={handleCreateOrderSubmit}
+            submitting={creatingOrder}
+            errorMessage={createOrderError}
+            deliveryDate={quotation.deliveryDate}
+            salesperson={quotation.salesperson}
+          />
         </>
       )}
 
@@ -413,7 +607,7 @@ function QuotationDetailPage() {
           variant="filled"
           onClose={() => setSuccessOpen(false)}
         >
-          Producto agregado correctamente.
+          {successMessage}
         </Alert>
       </Snackbar>
     </Stack>

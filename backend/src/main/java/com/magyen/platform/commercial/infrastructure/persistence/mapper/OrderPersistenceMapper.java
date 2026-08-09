@@ -5,8 +5,11 @@ import com.magyen.platform.commercial.domain.Order;
 import com.magyen.platform.commercial.domain.OrderItem;
 import com.magyen.platform.commercial.domain.OrderNumber;
 import com.magyen.platform.commercial.domain.PaymentSummary;
+import com.magyen.platform.commercial.domain.ProductSpecification;
+import com.magyen.platform.commercial.domain.SizeBreakdown;
 import com.magyen.platform.commercial.infrastructure.persistence.entity.OrderEntity;
 import com.magyen.platform.commercial.infrastructure.persistence.entity.OrderItemEntity;
+import com.magyen.platform.commercial.infrastructure.persistence.entity.OrderItemSizeEntity;
 import com.magyen.platform.shared.domain.Money;
 
 import java.math.BigDecimal;
@@ -83,11 +86,26 @@ public class OrderPersistenceMapper {
         itemEntity.setColor(item.getColor());
         itemEntity.setUnitPrice(toAmount(item.getUnitPrice()));
         itemEntity.setSubtotal(toAmount(item.getSubtotal()));
+        mapProductSpecification(itemEntity, item.getProductSpecification());
+
+        List<OrderItemSizeEntity> sizeEntities = new ArrayList<>();
+        for (SizeBreakdown sizeBreakdown : item.getSizeBreakdowns()) {
+            OrderItemSizeEntity sizeEntity = toSizeEntity(sizeBreakdown);
+            sizeEntity.setOrderItem(itemEntity);
+            sizeEntities.add(sizeEntity);
+        }
+        itemEntity.setSizeBreakdowns(sizeEntities);
+
         return itemEntity;
     }
 
     private OrderItem toItemDomain(OrderItemEntity itemEntity) {
         Objects.requireNonNull(itemEntity, "Order item entity must not be null");
+
+        List<SizeBreakdown> sizeBreakdowns = new ArrayList<>();
+        for (OrderItemSizeEntity sizeEntity : itemEntity.getSizeBreakdowns()) {
+            sizeBreakdowns.add(toSizeDomain(sizeEntity));
+        }
 
         return OrderItem.reconstitute(
                 itemEntity.getId(),
@@ -95,7 +113,68 @@ public class OrderPersistenceMapper {
                 itemEntity.getQuantity(),
                 itemEntity.getFabric(),
                 itemEntity.getColor(),
-                toMoney(itemEntity.getUnitPrice())
+                toMoney(itemEntity.getUnitPrice()),
+                toProductSpecification(itemEntity),
+                sizeBreakdowns
+        );
+    }
+
+    private OrderItemSizeEntity toSizeEntity(SizeBreakdown sizeBreakdown) {
+        Objects.requireNonNull(sizeBreakdown, "Size breakdown must not be null");
+
+        OrderItemSizeEntity sizeEntity = new OrderItemSizeEntity();
+        sizeEntity.setId(sizeBreakdown.getId());
+        sizeEntity.setSize(sizeBreakdown.getSize());
+        sizeEntity.setQuantity(sizeBreakdown.getQuantity());
+        return sizeEntity;
+    }
+
+    private SizeBreakdown toSizeDomain(OrderItemSizeEntity sizeEntity) {
+        Objects.requireNonNull(sizeEntity, "Size entity must not be null");
+
+        return SizeBreakdown.reconstitute(
+                sizeEntity.getId(),
+                sizeEntity.getSize(),
+                sizeEntity.getQuantity()
+        );
+    }
+
+    private void mapProductSpecification(OrderItemEntity itemEntity, ProductSpecification specification) {
+        Objects.requireNonNull(itemEntity, "Order item entity must not be null");
+        ProductSpecification resolved = specification == null ? ProductSpecification.empty() : specification;
+
+        itemEntity.setGarmentType(resolved.getGarmentType());
+        itemEntity.setCollarType(resolved.getCollarType());
+        itemEntity.setSleeveType(resolved.getSleeveType());
+        itemEntity.setGarmentVariant(resolved.getGarmentVariant());
+        itemEntity.setSublimationRequired(resolved.isSublimationRequired());
+        itemEntity.setEmbroideryRequired(resolved.isEmbroideryRequired());
+        itemEntity.setDtfRequired(resolved.isDtfRequired());
+        itemEntity.setDecorationNotes(resolved.getDecorationNotes());
+        itemEntity.setIncludesNames(resolved.isIncludesNames());
+        itemEntity.setIncludesNumbers(resolved.isIncludesNumbers());
+        itemEntity.setIncludesLogos(resolved.isIncludesLogos());
+        itemEntity.setPersonalizationNotes(resolved.getPersonalizationNotes());
+        itemEntity.setItemObservations(resolved.getItemObservations());
+    }
+
+    private ProductSpecification toProductSpecification(OrderItemEntity itemEntity) {
+        Objects.requireNonNull(itemEntity, "Order item entity must not be null");
+
+        return ProductSpecification.of(
+                itemEntity.getGarmentType(),
+                itemEntity.getCollarType(),
+                itemEntity.getSleeveType(),
+                itemEntity.getGarmentVariant(),
+                itemEntity.isSublimationRequired(),
+                itemEntity.isEmbroideryRequired(),
+                itemEntity.isDtfRequired(),
+                itemEntity.getDecorationNotes(),
+                itemEntity.isIncludesNames(),
+                itemEntity.isIncludesNumbers(),
+                itemEntity.isIncludesLogos(),
+                itemEntity.getPersonalizationNotes(),
+                itemEntity.getItemObservations()
         );
     }
 

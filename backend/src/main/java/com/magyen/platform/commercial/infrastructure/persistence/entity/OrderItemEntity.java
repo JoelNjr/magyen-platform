@@ -1,14 +1,18 @@
 package com.magyen.platform.commercial.infrastructure.persistence.entity;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -43,6 +47,48 @@ public class OrderItemEntity {
 
     @Column(name = "subtotal", nullable = false, precision = 19, scale = 2)
     private BigDecimal subtotal;
+
+    @Column(name = "garment_type", length = 100)
+    private String garmentType;
+
+    @Column(name = "collar_type", length = 100)
+    private String collarType;
+
+    @Column(name = "sleeve_type", length = 100)
+    private String sleeveType;
+
+    @Column(name = "garment_variant", length = 100)
+    private String garmentVariant;
+
+    @Column(name = "sublimation_required", nullable = false)
+    private boolean sublimationRequired;
+
+    @Column(name = "embroidery_required", nullable = false)
+    private boolean embroideryRequired;
+
+    @Column(name = "dtf_required", nullable = false)
+    private boolean dtfRequired;
+
+    @Column(name = "decoration_notes", length = 2000)
+    private String decorationNotes;
+
+    @Column(name = "includes_names", nullable = false)
+    private boolean includesNames;
+
+    @Column(name = "includes_numbers", nullable = false)
+    private boolean includesNumbers;
+
+    @Column(name = "includes_logos", nullable = false)
+    private boolean includesLogos;
+
+    @Column(name = "personalization_notes", length = 2000)
+    private String personalizationNotes;
+
+    @Column(name = "item_observations", length = 2000)
+    private String itemObservations;
+
+    @OneToMany(mappedBy = "orderItem", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<OrderItemSizeEntity> sizeBreakdowns = new ArrayList<>();
 
     public OrderItemEntity() {
     }
@@ -109,5 +155,117 @@ public class OrderItemEntity {
 
     public void setSubtotal(BigDecimal subtotal) {
         this.subtotal = subtotal;
+    }
+
+    public String getGarmentType() {
+        return garmentType;
+    }
+
+    public void setGarmentType(String garmentType) {
+        this.garmentType = garmentType;
+    }
+
+    public String getCollarType() {
+        return collarType;
+    }
+
+    public void setCollarType(String collarType) {
+        this.collarType = collarType;
+    }
+
+    public String getSleeveType() {
+        return sleeveType;
+    }
+
+    public void setSleeveType(String sleeveType) {
+        this.sleeveType = sleeveType;
+    }
+
+    public String getGarmentVariant() {
+        return garmentVariant;
+    }
+
+    public void setGarmentVariant(String garmentVariant) {
+        this.garmentVariant = garmentVariant;
+    }
+
+    public boolean isSublimationRequired() {
+        return sublimationRequired;
+    }
+
+    public void setSublimationRequired(boolean sublimationRequired) {
+        this.sublimationRequired = sublimationRequired;
+    }
+
+    public boolean isEmbroideryRequired() {
+        return embroideryRequired;
+    }
+
+    public void setEmbroideryRequired(boolean embroideryRequired) {
+        this.embroideryRequired = embroideryRequired;
+    }
+
+    public boolean isDtfRequired() {
+        return dtfRequired;
+    }
+
+    public void setDtfRequired(boolean dtfRequired) {
+        this.dtfRequired = dtfRequired;
+    }
+
+    public String getDecorationNotes() {
+        return decorationNotes;
+    }
+
+    public void setDecorationNotes(String decorationNotes) {
+        this.decorationNotes = decorationNotes;
+    }
+
+    public boolean isIncludesNames() {
+        return includesNames;
+    }
+
+    public void setIncludesNames(boolean includesNames) {
+        this.includesNames = includesNames;
+    }
+
+    public boolean isIncludesNumbers() {
+        return includesNumbers;
+    }
+
+    public void setIncludesNumbers(boolean includesNumbers) {
+        this.includesNumbers = includesNumbers;
+    }
+
+    public boolean isIncludesLogos() {
+        return includesLogos;
+    }
+
+    public void setIncludesLogos(boolean includesLogos) {
+        this.includesLogos = includesLogos;
+    }
+
+    public String getPersonalizationNotes() {
+        return personalizationNotes;
+    }
+
+    public void setPersonalizationNotes(String personalizationNotes) {
+        this.personalizationNotes = personalizationNotes;
+    }
+
+    public String getItemObservations() {
+        return itemObservations;
+    }
+
+    public void setItemObservations(String itemObservations) {
+        this.itemObservations = itemObservations;
+    }
+
+    public List<OrderItemSizeEntity> getSizeBreakdowns() {
+        return sizeBreakdowns;
+    }
+
+    public void setSizeBreakdowns(List<OrderItemSizeEntity> sizeBreakdowns) {
+        this.sizeBreakdowns = sizeBreakdowns;
     }
 }

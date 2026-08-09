@@ -9,14 +9,18 @@ import com.magyen.platform.commercial.application.dto.CreateQuotationResult;
 import com.magyen.platform.commercial.application.dto.GetQuotationCommand;
 import com.magyen.platform.commercial.application.dto.GetQuotationResult;
 import com.magyen.platform.commercial.application.dto.GetQuotationsResult;
+import com.magyen.platform.commercial.application.dto.ProductSpecificationCommand;
+import com.magyen.platform.commercial.application.dto.ProductSpecificationResult;
 import com.magyen.platform.commercial.presentation.quotation.request.AddQuotationItemRequest;
 import com.magyen.platform.commercial.presentation.quotation.request.CreateQuotationRequest;
+import com.magyen.platform.commercial.presentation.quotation.request.ProductSpecificationRequest;
 import com.magyen.platform.commercial.presentation.quotation.response.AddQuotationItemResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.ApproveQuotationResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.CreateQuotationResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.GetQuotationResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.GetQuotationsResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.GetQuotationsResponse.QuotationResponse;
+import com.magyen.platform.commercial.presentation.quotation.response.ProductSpecificationResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.QuotationItemResponse;
 
 import java.util.List;
@@ -77,7 +81,8 @@ public class QuotationPresentationMapper {
                 request.quantity(),
                 request.fabric(),
                 request.color(),
-                request.unitPrice()
+                request.unitPrice(),
+                toProductSpecificationCommand(request.productSpecification())
         );
     }
 
@@ -128,7 +133,8 @@ public class QuotationPresentationMapper {
                         item.fabric(),
                         item.color(),
                         item.unitPrice(),
-                        item.subtotal()
+                        item.subtotal(),
+                        toProductSpecificationResponse(item.productSpecification())
                 ))
                 .toList();
 
@@ -142,7 +148,60 @@ public class QuotationPresentationMapper {
                 result.salesperson(),
                 result.observations(),
                 items,
-                result.totalAmount()
+                result.totalAmount(),
+                result.orderId()
         );
+    }
+
+    private ProductSpecificationCommand toProductSpecificationCommand(ProductSpecificationRequest request) {
+        if (request == null) {
+            return null;
+        }
+
+        return new ProductSpecificationCommand(
+                request.garmentType(),
+                request.collarType(),
+                request.sleeveType(),
+                request.garmentVariant(),
+                booleanOrFalse(request.sublimationRequired()),
+                booleanOrFalse(request.embroideryRequired()),
+                booleanOrFalse(request.dtfRequired()),
+                request.decorationNotes(),
+                booleanOrFalse(request.includesNames()),
+                booleanOrFalse(request.includesNumbers()),
+                booleanOrFalse(request.includesLogos()),
+                request.personalizationNotes(),
+                request.itemObservations()
+        );
+    }
+
+    private ProductSpecificationResponse toProductSpecificationResponse(ProductSpecificationResult result) {
+        ProductSpecificationResult resolved = result == null
+                ? new ProductSpecificationResult(
+                        null, null, null, null,
+                        false, false, false, null,
+                        false, false, false, null, null
+                )
+                : result;
+
+        return new ProductSpecificationResponse(
+                resolved.garmentType(),
+                resolved.collarType(),
+                resolved.sleeveType(),
+                resolved.garmentVariant(),
+                resolved.sublimationRequired(),
+                resolved.embroideryRequired(),
+                resolved.dtfRequired(),
+                resolved.decorationNotes(),
+                resolved.includesNames(),
+                resolved.includesNumbers(),
+                resolved.includesLogos(),
+                resolved.personalizationNotes(),
+                resolved.itemObservations()
+        );
+    }
+
+    private boolean booleanOrFalse(Boolean value) {
+        return value != null && value;
     }
 }

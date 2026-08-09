@@ -19,6 +19,7 @@ public class QuotationItem {
     private final String color;
     private final Money unitPrice;
     private final Money subtotal;
+    private final ProductSpecification productSpecification;
 
     QuotationItem(
             UUID id,
@@ -26,7 +27,8 @@ public class QuotationItem {
             int quantity,
             String fabric,
             String color,
-            Money unitPrice
+            Money unitPrice,
+            ProductSpecification productSpecification
     ) {
         this.id = Objects.requireNonNull(id, "Item id must not be null");
         this.productName = requireNonBlank(productName, "Product name must not be blank");
@@ -35,6 +37,9 @@ public class QuotationItem {
         this.color = requireNonBlank(color, "Color must not be blank");
         this.unitPrice = Objects.requireNonNull(unitPrice, "Unit price must not be null");
         this.subtotal = unitPrice.multiply(quantity);
+        this.productSpecification = productSpecification == null
+                ? ProductSpecification.empty()
+                : productSpecification;
     }
 
     static QuotationItem create(
@@ -44,7 +49,26 @@ public class QuotationItem {
             String color,
             Money unitPrice
     ) {
-        return new QuotationItem(UUID.randomUUID(), productName, quantity, fabric, color, unitPrice);
+        return create(productName, quantity, fabric, color, unitPrice, ProductSpecification.empty());
+    }
+
+    static QuotationItem create(
+            String productName,
+            int quantity,
+            String fabric,
+            String color,
+            Money unitPrice,
+            ProductSpecification productSpecification
+    ) {
+        return new QuotationItem(
+                UUID.randomUUID(),
+                productName,
+                quantity,
+                fabric,
+                color,
+                unitPrice,
+                productSpecification
+        );
     }
 
     /**
@@ -56,9 +80,18 @@ public class QuotationItem {
             int quantity,
             String fabric,
             String color,
-            Money unitPrice
+            Money unitPrice,
+            ProductSpecification productSpecification
     ) {
-        return new QuotationItem(id, productName, quantity, fabric, color, unitPrice);
+        return new QuotationItem(
+                id,
+                productName,
+                quantity,
+                fabric,
+                color,
+                unitPrice,
+                productSpecification
+        );
     }
 
     public UUID getId() {
@@ -87,6 +120,10 @@ public class QuotationItem {
 
     public Money getSubtotal() {
         return subtotal;
+    }
+
+    public ProductSpecification getProductSpecification() {
+        return productSpecification;
     }
 
     @Override

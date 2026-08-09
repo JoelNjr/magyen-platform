@@ -6,9 +6,13 @@ import com.magyen.platform.commercial.application.usecase.CreateCustomerUseCase;
 import com.magyen.platform.commercial.application.usecase.CreateOrderFromQuotationUseCase;
 import com.magyen.platform.commercial.application.usecase.CreateQuotationUseCase;
 import com.magyen.platform.commercial.application.usecase.GetCustomersUseCase;
+import com.magyen.platform.commercial.application.usecase.GetOrderUseCase;
+import com.magyen.platform.commercial.application.usecase.GetOrdersUseCase;
 import com.magyen.platform.commercial.application.usecase.GetQuotationUseCase;
 import com.magyen.platform.commercial.application.usecase.GetQuotationsUseCase;
+import com.magyen.platform.commercial.application.usecase.ReplaceOrderItemSizesUseCase;
 import com.magyen.platform.commercial.application.usecase.UpdateCustomerUseCase;
+import com.magyen.platform.commercial.application.usecase.UpdateOrderItemProductSpecificationUseCase;
 import com.magyen.platform.commercial.domain.CustomerRepository;
 import com.magyen.platform.commercial.domain.OrderRepository;
 import com.magyen.platform.commercial.domain.QuotationNumberGenerator;
@@ -97,8 +101,11 @@ public class CommercialConfiguration {
     }
 
     @Bean
-    public GetQuotationUseCase getQuotationUseCase(QuotationRepository quotationRepository) {
-        return new GetQuotationUseCase(quotationRepository);
+    public GetQuotationUseCase getQuotationUseCase(
+            QuotationRepository quotationRepository,
+            OrderRepository orderRepository
+    ) {
+        return new GetQuotationUseCase(quotationRepository, orderRepository);
     }
 
     @Bean
@@ -107,5 +114,27 @@ public class CommercialConfiguration {
             OrderRepository orderRepository
     ) {
         return new CreateOrderFromQuotationUseCase(quotationRepository, orderRepository);
+    }
+
+    @Bean
+    public GetOrdersUseCase getOrdersUseCase(OrderRepository orderRepository) {
+        return new GetOrdersUseCase(orderRepository);
+    }
+
+    @Bean
+    public GetOrderUseCase getOrderUseCase(OrderRepository orderRepository) {
+        return new GetOrderUseCase(orderRepository);
+    }
+
+    @Bean
+    public ReplaceOrderItemSizesUseCase replaceOrderItemSizesUseCase(OrderRepository orderRepository) {
+        return new ReplaceOrderItemSizesUseCase(orderRepository);
+    }
+
+    @Bean
+    public UpdateOrderItemProductSpecificationUseCase updateOrderItemProductSpecificationUseCase(
+            OrderRepository orderRepository
+    ) {
+        return new UpdateOrderItemProductSpecificationUseCase(orderRepository);
     }
 }

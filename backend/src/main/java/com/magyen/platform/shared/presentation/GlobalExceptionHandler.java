@@ -1,8 +1,11 @@
 package com.magyen.platform.shared.presentation;
 
+import com.magyen.platform.commercial.domain.exception.OrderAlreadyExistsForQuotationException;
+import com.magyen.platform.commercial.domain.exception.OrderDomainException;
 import com.magyen.platform.commercial.domain.exception.QuotationDomainException;
 import com.magyen.platform.production.domain.exception.ProductionDomainException;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -42,6 +45,71 @@ public class GlobalExceptionHandler {
                 HttpStatus.BAD_REQUEST.value(),
                 HttpStatus.BAD_REQUEST.getReasonPhrase(),
                 exception.getMessage(),
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
+
+    @ExceptionHandler(OrderDomainException.class)
+    public ResponseEntity<ErrorResponse> handleOrderDomainException(
+            OrderDomainException exception,
+            HttpServletRequest request
+    ) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                exception.getMessage(),
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
+
+    @ExceptionHandler(OrderAlreadyExistsForQuotationException.class)
+    public ResponseEntity<ErrorResponse> handleOrderAlreadyExistsForQuotationException(
+            OrderAlreadyExistsForQuotationException exception,
+            HttpServletRequest request
+    ) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.CONFLICT.value(),
+                HttpStatus.CONFLICT.getReasonPhrase(),
+                exception.getMessage(),
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrityViolationException(
+            DataIntegrityViolationException exception,
+            HttpServletRequest request
+    ) {
+        String detail = exception.getMostSpecificCause() != null
+                ? exception.getMostSpecificCause().getMessage()
+                : exception.getMessage();
+        String normalizedDetail = detail == null ? "" : detail.toLowerCase();
+
+        if (normalizedDetail.contains("quotation_id")
+                || normalizedDetail.contains("orders_quotation_id")) {
+            ErrorResponse conflictResponse = new ErrorResponse(
+                    LocalDateTime.now(),
+                    HttpStatus.CONFLICT.value(),
+                    HttpStatus.CONFLICT.getReasonPhrase(),
+                    OrderAlreadyExistsForQuotationException.DEFAULT_MESSAGE,
+                    request.getRequestURI()
+            );
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(conflictResponse);
+        }
+
+        ErrorResponse errorResponse = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                "La operación viola una restricción de integridad de datos.",
                 request.getRequestURI()
         );
 

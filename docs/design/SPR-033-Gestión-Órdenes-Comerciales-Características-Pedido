@@ -1,0 +1,186 @@
+SPR-033 — Gestión de Órdenes Comerciales y Características del Pedido
+Objetivo del Sprint
+
+Construir la base arquitectónica y funcional de las Órdenes Comerciales, estableciendo la transición formal:
+
+Cotización aprobada → Orden → Orden de Producción
+
+La Orden representa el compromiso comercial aceptado por el cliente y debe conservar una fotografía exacta de lo que fue vendido, independientemente de los cambios posteriores que puedan ocurrir en producción, inventario o finanzas.
+
+Alcance principal
+
+Durante este sprint se trabajará progresivamente en:
+
+Modelo de dominio Order.
+Modelo OrderItem.
+Estados y ciclo de vida de la Orden.
+Relación entre Cotización y Orden.
+Preservación de las características comerciales del producto.
+Preparación de la transición de una Cotización aprobada hacia una Orden.
+Persistencia de las Órdenes.
+API REST de Órdenes.
+Base frontend para consultar y gestionar Órdenes.
+Preparación de la integración con Producción.
+Características comerciales del pedido
+
+El OrderItem deberá representar la información que el cliente realmente aceptó.
+
+Entre las características que deberán analizarse y, cuando corresponda, estructurarse se encuentran:
+
+Producto.
+Cantidad.
+Precio unitario.
+Subtotal.
+Tipo de tela.
+Color.
+Tipo de cuello.
+Sublimación.
+Bordado.
+Nombres.
+Números.
+Otras características o personalizaciones específicas del producto.
+
+No se deben inventar atributos que actualmente no estén soportados por el modelo. Primero se revisará qué información existe actualmente en QuotationItem.
+
+Responsabilidad de la Orden
+
+La Orden será responsable de la información comercial.
+
+Debe mantener referencias hacia:
+
+Cliente.
+Cotización de origen.
+
+Pero no debe absorber responsabilidades de:
+
+Producción.
+Operarios.
+Plotter.
+Consumo de papel.
+Desperdicio.
+Inventario.
+Movimientos financieros.
+Tesorería.
+Inteligencia de negocio.
+
+Estas responsabilidades permanecerán en sus respectivos módulos.
+
+Arquitectura esperada
+Cotización
+    ↓
+Cotización APROBADA
+    ↓
+Orden Comercial
+    ↓
+Orden de Producción
+    ↓
+Operaciones de Producción
+
+Y desde la Orden, posteriormente:
+
+                ┌── Inventario
+Orden ──────────┼── Plotter
+                ├── Finanzas
+                └── Intelligence / Dashboard
+
+Estas integraciones no deberán implementarse todas de manera prematura dentro del mismo agregado.
+
+Estados esperados de la Orden
+
+El ciclo comercial definido para la Orden será:
+
+CONFIRMED
+    ↓
+IN_PRODUCTION
+    ↓
+READY_FOR_DELIVERY
+    ↓
+DELIVERED
+    ↓
+CLOSED
+
+No se debe introducir un estado CANCELLED salvo que el código existente y el análisis arquitectónico justifiquen su incorporación posteriormente.
+
+Relación con Producción
+
+La Orden será el origen comercial de la producción.
+
+La información comercial deberá quedar congelada en OrderItem antes de que el pedido pase a producción.
+
+La ProductionOrder será responsable de:
+
+Etapas de producción.
+Operaciones.
+Operarios.
+Fechas de producción.
+Estados productivos.
+
+No deberá convertirse en el lugar donde se almacene toda la información comercial del pedido.
+
+Fuera de alcance inicial
+
+No se implementará todavía dentro de este sprint, salvo que un incremento posterior lo requiera explícitamente:
+
+Gestión completa de Inventario.
+Registro de trabajos del Plotter.
+Costos reales de papel.
+Consumo real de tela.
+Costos de confección.
+Utilidad/ganancia real.
+Movimientos financieros.
+Dashboard de inteligencia.
+Autenticación y autorización.
+Rediseño general del frontend.
+Funcionalidades avanzadas de búsqueda/paginación.
+Funcionalidades de V2.
+
+Estas funcionalidades se integrarán posteriormente mediante sus respectivos módulos.
+
+Estrategia incremental
+
+El sprint seguirá una construcción progresiva:
+
+Revisión arquitectónica y del estado actual.
+Diseño/implementación del dominio Order y OrderItem.
+Persistencia.
+Casos de uso.
+API REST.
+Integración Cotización → Orden.
+Frontend de Órdenes.
+Integración inicial con Producción.
+Verificación End-to-End y cierre del sprint.
+
+El orden exacto podrá ajustarse según los hallazgos del Incremento 1.
+
+Decisiones importantes
+Quotation y Order son agregados diferentes.
+Una Orden no debe depender de que la Cotización siga modificándose.
+OrderItem debe conservar un snapshot comercial.
+customerId seguirá siendo una referencia.
+quotationId seguirá siendo una referencia.
+Producción no debe duplicar innecesariamente las responsabilidades comerciales.
+No se deben crear estructuras genéricas prematuramente.
+Se mantendrá Clean Architecture / DDD y la separación por módulos existente.
+Resultado esperado del Sprint
+
+Al finalizar SPR-033 se espera contar con la base necesaria para que el sistema pueda evolucionar hacia:
+
+Cliente
+   ↓
+Cotización
+   ↓
+Aprobación
+   ↓
+Orden Comercial
+   ↓
+Producción
+   ↓
+Inventario / Plotter / Finanzas
+   ↓
+Intelligence
+
+manteniendo cada responsabilidad en su módulo correspondiente.
+
+SPR-033 — Gestión de Órdenes Comerciales y Características del Pedido
+
+Objetivo: establecer la Orden Comercial como el compromiso formal del pedido y preparar la transición desde una Cotización aprobada hacia Producción, preservando las características comerciales acordadas con el cliente.

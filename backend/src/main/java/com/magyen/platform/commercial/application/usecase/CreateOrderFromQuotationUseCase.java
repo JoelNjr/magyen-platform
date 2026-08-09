@@ -11,6 +11,7 @@ import com.magyen.platform.commercial.domain.Quotation;
 import com.magyen.platform.commercial.domain.QuotationItem;
 import com.magyen.platform.commercial.domain.QuotationRepository;
 import com.magyen.platform.commercial.domain.QuotationStatus;
+import com.magyen.platform.commercial.domain.exception.OrderAlreadyExistsForQuotationException;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -49,6 +50,10 @@ public class CreateOrderFromQuotationUseCase {
             throw new IllegalArgumentException(
                     "Quotation must be approved to create an order. Current status: " + quotation.getStatus()
             );
+        }
+
+        if (orderRepository.findByQuotationId(quotation.getId()).isPresent()) {
+            throw new OrderAlreadyExistsForQuotationException();
         }
 
         LocalDate confirmationDate = LocalDate.now();
@@ -102,7 +107,9 @@ public class CreateOrderFromQuotationUseCase {
                 quotationItem.getQuantity(),
                 quotationItem.getFabric(),
                 quotationItem.getColor(),
-                quotationItem.getUnitPrice()
+                quotationItem.getUnitPrice(),
+                quotationItem.getProductSpecification(),
+                List.of()
         );
     }
 }

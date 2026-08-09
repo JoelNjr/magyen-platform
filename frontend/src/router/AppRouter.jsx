@@ -2,6 +2,8 @@ import { Typography } from '@mui/material'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import CreateQuotationPage from '../features/commercial/pages/CreateQuotationPage'
 import CustomersPage from '../features/commercial/pages/CustomersPage'
+import OrderDetailPage from '../features/commercial/pages/OrderDetailPage'
+import OrdersPage from '../features/commercial/pages/OrdersPage'
 import QuotationDetailPage from '../features/commercial/pages/QuotationDetailPage'
 import QuotationsPage from '../features/commercial/pages/QuotationsPage'
 import IntelligencePage from '../features/intelligence/pages/IntelligencePage'
@@ -17,6 +19,11 @@ function AppRouter() {
           <Route index element={<Navigate to="/commercial" replace />} />
           <Route path="commercial/new" element={<CreateQuotationPage />} />
           <Route path="commercial/customers" element={<CustomersPage />} />
+          <Route
+            path="commercial/orders/:orderId"
+            element={<OrderDetailPage />}
+          />
+          <Route path="commercial/orders" element={<OrdersPage />} />
           <Route
             path="commercial/quotations/:quotationId"
             element={<QuotationDetailPage />}

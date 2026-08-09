@@ -130,6 +130,12 @@ function QuotationsPage() {
           >
             <Button
               variant="outlined"
+              onClick={() => navigate('/commercial/orders')}
+            >
+              Órdenes
+            </Button>
+            <Button
+              variant="outlined"
               onClick={() => navigate('/commercial/customers')}
             >
               Clientes

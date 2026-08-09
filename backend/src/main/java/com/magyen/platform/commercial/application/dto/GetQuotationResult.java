@@ -20,6 +20,7 @@ public record GetQuotationResult(
         String salesperson,
         String observations,
         List<QuotationItemResult> items,
-        BigDecimal totalAmount
+        BigDecimal totalAmount,
+        UUID orderId
 ) {
 }

@@ -2,6 +2,8 @@ package com.magyen.platform.commercial.application.usecase;
 
 import com.magyen.platform.commercial.application.dto.AddQuotationItemCommand;
 import com.magyen.platform.commercial.application.dto.AddQuotationItemResult;
+import com.magyen.platform.commercial.application.dto.ProductSpecificationCommand;
+import com.magyen.platform.commercial.domain.ProductSpecification;
 import com.magyen.platform.commercial.domain.Quotation;
 import com.magyen.platform.commercial.domain.QuotationItem;
 import com.magyen.platform.commercial.domain.QuotationRepository;
@@ -32,13 +34,15 @@ public class AddQuotationItemUseCase {
                 ));
 
         Money unitPrice = Money.of(command.unitPrice());
+        ProductSpecification productSpecification = toProductSpecification(command.productSpecification());
 
         quotation.addItem(
                 command.productName(),
                 command.quantity(),
                 command.fabric(),
                 command.color(),
-                unitPrice
+                unitPrice,
+                productSpecification
         );
 
         UUID itemId = lastCreatedItemId(quotation);
@@ -54,6 +58,28 @@ public class AddQuotationItemUseCase {
 
     private void validateCommand(AddQuotationItemCommand command) {
         Objects.requireNonNull(command.quotationId(), "Quotation id must not be null");
+    }
+
+    private ProductSpecification toProductSpecification(ProductSpecificationCommand command) {
+        if (command == null) {
+            return ProductSpecification.empty();
+        }
+
+        return ProductSpecification.of(
+                command.garmentType(),
+                command.collarType(),
+                command.sleeveType(),
+                command.garmentVariant(),
+                command.sublimationRequired(),
+                command.embroideryRequired(),
+                command.dtfRequired(),
+                command.decorationNotes(),
+                command.includesNames(),
+                command.includesNumbers(),
+                command.includesLogos(),
+                command.personalizationNotes(),
+                command.itemObservations()
+        );
     }
 
     private UUID lastCreatedItemId(Quotation quotation) {

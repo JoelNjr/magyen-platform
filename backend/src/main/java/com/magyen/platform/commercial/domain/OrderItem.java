@@ -1,8 +1,14 @@
 package com.magyen.platform.commercial.domain;
 
+import com.magyen.platform.commercial.domain.exception.OrderDomainException;
 import com.magyen.platform.shared.domain.Money;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -19,6 +25,8 @@ public class OrderItem {
     private final String color;
     private final Money unitPrice;
     private final Money subtotal;
+    private ProductSpecification productSpecification;
+    private final List<SizeBreakdown> sizeBreakdowns;
 
     OrderItem(
             UUID id,
@@ -26,7 +34,9 @@ public class OrderItem {
             int quantity,
             String fabric,
             String color,
-            Money unitPrice
+            Money unitPrice,
+            ProductSpecification productSpecification,
+            List<SizeBreakdown> sizeBreakdowns
     ) {
         this.id = Objects.requireNonNull(id, "Item id must not be null");
         this.productName = requireNonBlank(productName, "Product name must not be blank");
@@ -35,6 +45,13 @@ public class OrderItem {
         this.color = requireNonBlank(color, "Color must not be blank");
         this.unitPrice = Objects.requireNonNull(unitPrice, "Unit price must not be null");
         this.subtotal = unitPrice.multiply(quantity);
+        this.productSpecification = productSpecification == null
+                ? ProductSpecification.empty()
+                : productSpecification;
+        this.sizeBreakdowns = new ArrayList<>(
+                sizeBreakdowns == null ? List.of() : sizeBreakdowns
+        );
+        validateSizeBreakdowns(this.sizeBreakdowns);
     }
 
     static OrderItem create(
@@ -44,7 +61,55 @@ public class OrderItem {
             String color,
             Money unitPrice
     ) {
-        return new OrderItem(UUID.randomUUID(), productName, quantity, fabric, color, unitPrice);
+        return create(
+                productName,
+                quantity,
+                fabric,
+                color,
+                unitPrice,
+                ProductSpecification.empty(),
+                List.of()
+        );
+    }
+
+    static OrderItem create(
+            String productName,
+            int quantity,
+            String fabric,
+            String color,
+            Money unitPrice,
+            ProductSpecification productSpecification
+    ) {
+        return create(
+                productName,
+                quantity,
+                fabric,
+                color,
+                unitPrice,
+                productSpecification,
+                List.of()
+        );
+    }
+
+    static OrderItem create(
+            String productName,
+            int quantity,
+            String fabric,
+            String color,
+            Money unitPrice,
+            ProductSpecification productSpecification,
+            List<SizeBreakdown> sizeBreakdowns
+    ) {
+        return new OrderItem(
+                UUID.randomUUID(),
+                productName,
+                quantity,
+                fabric,
+                color,
+                unitPrice,
+                productSpecification,
+                sizeBreakdowns
+        );
     }
 
     /**
@@ -56,9 +121,42 @@ public class OrderItem {
             int quantity,
             String fabric,
             String color,
-            Money unitPrice
+            Money unitPrice,
+            ProductSpecification productSpecification,
+            List<SizeBreakdown> sizeBreakdowns
     ) {
-        return new OrderItem(id, productName, quantity, fabric, color, unitPrice);
+        return new OrderItem(
+                id,
+                productName,
+                quantity,
+                fabric,
+                color,
+                unitPrice,
+                productSpecification,
+                sizeBreakdowns
+        );
+    }
+
+    /**
+     * Asigna o reemplaza la especificación comercial del producto.
+     */
+    public void assignProductSpecification(ProductSpecification productSpecification) {
+        this.productSpecification = productSpecification == null
+                ? ProductSpecification.empty()
+                : productSpecification;
+    }
+
+    /**
+     * Reemplaza la distribución de tallas del ítem.
+     * <p>
+     * La suma de cantidades por talla no puede exceder {@link #quantity}.
+     * No modifica la cantidad comercial comprometida del ítem.
+     */
+    public void replaceSizeBreakdowns(List<SizeBreakdown> sizeBreakdowns) {
+        Objects.requireNonNull(sizeBreakdowns, "Size breakdowns must not be null");
+        validateSizeBreakdowns(sizeBreakdowns);
+        this.sizeBreakdowns.clear();
+        this.sizeBreakdowns.addAll(sizeBreakdowns);
     }
 
     public UUID getId() {
@@ -89,6 +187,20 @@ public class OrderItem {
         return subtotal;
     }
 
+    public ProductSpecification getProductSpecification() {
+        return productSpecification;
+    }
+
+    public List<SizeBreakdown> getSizeBreakdowns() {
+        return Collections.unmodifiableList(sizeBreakdowns);
+    }
+
+    public int getAssignedSizeQuantity() {
+        return sizeBreakdowns.stream()
+                .mapToInt(SizeBreakdown::getQuantity)
+                .sum();
+    }
+
     @Override
     public boolean equals(Object other) {
         if (this == other) {
@@ -104,6 +216,30 @@ public class OrderItem {
     @Override
     public int hashCode() {
         return Objects.hash(id);
+    }
+
+    private void validateSizeBreakdowns(List<SizeBreakdown> breakdowns) {
+        Set<String> sizes = new HashSet<>();
+        int totalSizeQuantity = 0;
+
+        for (SizeBreakdown breakdown : breakdowns) {
+            Objects.requireNonNull(breakdown, "Size breakdown must not be null");
+
+            if (!sizes.add(breakdown.getSize())) {
+                throw new OrderDomainException(
+                        "Duplicate size is not allowed for the same order item: " + breakdown.getSize()
+                );
+            }
+
+            totalSizeQuantity += breakdown.getQuantity();
+        }
+
+        if (totalSizeQuantity > quantity) {
+            throw new OrderDomainException(
+                    "Total size quantity must not exceed order item quantity. "
+                            + "Assigned: " + totalSizeQuantity + ", item quantity: " + quantity
+            );
+        }
     }
 
     private static String requireNonBlank(String value, String message) {

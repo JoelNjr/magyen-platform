@@ -10,6 +10,7 @@ public record AddQuotationItemRequest(
         int quantity,
         String fabric,
         String color,
-        BigDecimal unitPrice
+        BigDecimal unitPrice,
+        ProductSpecificationRequest productSpecification
 ) {
 }

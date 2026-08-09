@@ -1,5 +1,6 @@
 package com.magyen.platform.commercial.infrastructure.persistence.mapper;
 
+import com.magyen.platform.commercial.domain.ProductSpecification;
 import com.magyen.platform.commercial.domain.Quotation;
 import com.magyen.platform.commercial.domain.QuotationItem;
 import com.magyen.platform.commercial.domain.QuotationNumber;
@@ -90,6 +91,7 @@ public class QuotationPersistenceMapper {
         itemEntity.setColor(item.getColor());
         itemEntity.setUnitPrice(toAmount(item.getUnitPrice()));
         itemEntity.setSubtotal(toAmount(item.getSubtotal()));
+        mapProductSpecification(itemEntity, item.getProductSpecification());
         return itemEntity;
     }
 
@@ -102,7 +104,50 @@ public class QuotationPersistenceMapper {
                 itemEntity.getQuantity(),
                 itemEntity.getFabric(),
                 itemEntity.getColor(),
-                toMoney(itemEntity.getUnitPrice())
+                toMoney(itemEntity.getUnitPrice()),
+                toProductSpecification(itemEntity)
+        );
+    }
+
+    private void mapProductSpecification(
+            QuotationItemEntity itemEntity,
+            ProductSpecification specification
+    ) {
+        Objects.requireNonNull(itemEntity, "Quotation item entity must not be null");
+        ProductSpecification resolved = specification == null ? ProductSpecification.empty() : specification;
+
+        itemEntity.setGarmentType(resolved.getGarmentType());
+        itemEntity.setCollarType(resolved.getCollarType());
+        itemEntity.setSleeveType(resolved.getSleeveType());
+        itemEntity.setGarmentVariant(resolved.getGarmentVariant());
+        itemEntity.setSublimationRequired(resolved.isSublimationRequired());
+        itemEntity.setEmbroideryRequired(resolved.isEmbroideryRequired());
+        itemEntity.setDtfRequired(resolved.isDtfRequired());
+        itemEntity.setDecorationNotes(resolved.getDecorationNotes());
+        itemEntity.setIncludesNames(resolved.isIncludesNames());
+        itemEntity.setIncludesNumbers(resolved.isIncludesNumbers());
+        itemEntity.setIncludesLogos(resolved.isIncludesLogos());
+        itemEntity.setPersonalizationNotes(resolved.getPersonalizationNotes());
+        itemEntity.setItemObservations(resolved.getItemObservations());
+    }
+
+    private ProductSpecification toProductSpecification(QuotationItemEntity itemEntity) {
+        Objects.requireNonNull(itemEntity, "Quotation item entity must not be null");
+
+        return ProductSpecification.of(
+                itemEntity.getGarmentType(),
+                itemEntity.getCollarType(),
+                itemEntity.getSleeveType(),
+                itemEntity.getGarmentVariant(),
+                itemEntity.isSublimationRequired(),
+                itemEntity.isEmbroideryRequired(),
+                itemEntity.isDtfRequired(),
+                itemEntity.getDecorationNotes(),
+                itemEntity.isIncludesNames(),
+                itemEntity.isIncludesNumbers(),
+                itemEntity.isIncludesLogos(),
+                itemEntity.getPersonalizationNotes(),
+                itemEntity.getItemObservations()
         );
     }
 
