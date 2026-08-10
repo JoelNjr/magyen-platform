@@ -83,7 +83,8 @@ public class GetNotificationsUseCase {
 
     private List<NotificationResult> detectLowStockNotifications(LocalDateTime createdAt) {
         return inventoryItemRepository.findAll().stream()
-                .filter(item -> item.getStock().compareTo(item.getMinimumStock()) < 0)
+                .filter(item -> item.getMinimumStock() != null
+                        && item.getStock().compareTo(item.getMinimumStock()) < 0)
                 .map(item -> toLowStockNotification(item, createdAt))
                 .toList();
     }

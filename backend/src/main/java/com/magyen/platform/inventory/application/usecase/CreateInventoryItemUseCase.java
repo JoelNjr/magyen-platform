@@ -4,7 +4,10 @@ import com.magyen.platform.inventory.application.dto.CreateInventoryItemCommand;
 import com.magyen.platform.inventory.application.dto.CreateInventoryItemResult;
 import com.magyen.platform.inventory.domain.InventoryItem;
 import com.magyen.platform.inventory.domain.InventoryItemRepository;
+import com.magyen.platform.inventory.domain.InventoryMaterialType;
+import com.magyen.platform.inventory.domain.InventoryUnitOfMeasure;
 import com.magyen.platform.inventory.domain.MaterialCode;
+import com.magyen.platform.inventory.domain.PaperRollNumberGenerator;
 import com.magyen.platform.inventory.domain.exception.InventoryDomainException;
 
 import java.util.Objects;
@@ -15,11 +18,19 @@ import java.util.Objects;
 public class CreateInventoryItemUseCase {
 
     private final InventoryItemRepository inventoryItemRepository;
+    private final PaperRollNumberGenerator paperRollNumberGenerator;
 
-    public CreateInventoryItemUseCase(InventoryItemRepository inventoryItemRepository) {
+    public CreateInventoryItemUseCase(
+            InventoryItemRepository inventoryItemRepository,
+            PaperRollNumberGenerator paperRollNumberGenerator
+    ) {
         this.inventoryItemRepository = Objects.requireNonNull(
                 inventoryItemRepository,
                 "Inventory item repository must not be null"
+        );
+        this.paperRollNumberGenerator = Objects.requireNonNull(
+                paperRollNumberGenerator,
+                "Paper roll number generator must not be null"
         );
     }
 
@@ -35,13 +46,31 @@ public class CreateInventoryItemUseCase {
             );
         });
 
+        InventoryMaterialType materialType = resolveMaterialType(command.materialType());
+        String unitOfMeasure = command.unitOfMeasure();
+        String paperRollNumber = null;
+
+        if (command.plotterPaperRoll()) {
+            if (materialType != InventoryMaterialType.PAPER) {
+                throw new InventoryDomainException(
+                        "Plotter paper rolls require material type PAPER"
+                );
+            }
+            unitOfMeasure = InventoryUnitOfMeasure.METER.getCode();
+            paperRollNumber = paperRollNumberGenerator.nextPaperRollNumber();
+        }
+
         InventoryItem inventoryItem = InventoryItem.create(
                 materialCode,
                 command.name(),
                 command.category(),
-                command.unitOfMeasure(),
+                unitOfMeasure,
                 command.stock(),
-                command.minimumStock()
+                command.minimumStock(),
+                command.description(),
+                command.unitCost(),
+                materialType,
+                paperRollNumber
         );
 
         InventoryItem savedInventoryItem = inventoryItemRepository.save(inventoryItem);
@@ -55,7 +84,6 @@ public class CreateInventoryItemUseCase {
         Objects.requireNonNull(command.category(), "Category must not be null");
         Objects.requireNonNull(command.unitOfMeasure(), "Unit of measure must not be null");
         Objects.requireNonNull(command.stock(), "Stock must not be null");
-        Objects.requireNonNull(command.minimumStock(), "Minimum stock must not be null");
 
         if (command.code().isBlank()) {
             throw new IllegalArgumentException("Code must not be blank");
@@ -71,6 +99,13 @@ public class CreateInventoryItemUseCase {
         }
     }
 
+    private static InventoryMaterialType resolveMaterialType(String materialType) {
+        if (materialType == null || materialType.isBlank()) {
+            return InventoryMaterialType.OTHER;
+        }
+        return InventoryMaterialType.of(materialType);
+    }
+
     private CreateInventoryItemResult toResult(InventoryItem inventoryItem) {
         return new CreateInventoryItemResult(
                 inventoryItem.getId(),
@@ -80,7 +115,13 @@ public class CreateInventoryItemUseCase {
                 inventoryItem.getUnitOfMeasure(),
                 inventoryItem.getStock(),
                 inventoryItem.getMinimumStock(),
-                inventoryItem.getStatus()
+                inventoryItem.getStatus(),
+                inventoryItem.getDescription(),
+                inventoryItem.isLowStock(),
+                inventoryItem.getUnitCost(),
+                inventoryItem.getMaterialType(),
+                inventoryItem.getPaperRollNumber(),
+                inventoryItem.isPlotterPaperRoll()
         );
     }
 }

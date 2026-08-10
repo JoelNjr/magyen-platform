@@ -8,7 +8,7 @@ import com.magyen.platform.inventory.domain.InventoryItemRepository;
 import java.util.Objects;
 
 /**
- * Caso de uso que coordina la consulta de un material de inventario existente.
+ * Caso de uso que consulta el detalle de un material de inventario.
  */
 public class GetInventoryItemUseCase {
 
@@ -30,15 +30,6 @@ public class GetInventoryItemUseCase {
                         "Inventory item not found: " + query.inventoryItemId()
                 ));
 
-        return new GetInventoryItemResult(
-                inventoryItem.getId(),
-                inventoryItem.getMaterialCode().getValue(),
-                inventoryItem.getName(),
-                inventoryItem.getCategory(),
-                inventoryItem.getUnitOfMeasure(),
-                inventoryItem.getStock(),
-                inventoryItem.getMinimumStock(),
-                inventoryItem.getStatus()
-        );
+        return InventoryItemReadMapper.toResult(inventoryItem);
     }
 }

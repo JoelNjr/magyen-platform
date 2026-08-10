@@ -1,12 +1,13 @@
 package com.magyen.platform.inventory.application.dto;
 
 import com.magyen.platform.inventory.domain.InventoryItemStatus;
+import com.magyen.platform.inventory.domain.InventoryMaterialType;
 
 import java.math.BigDecimal;
 import java.util.UUID;
 
 /**
- * Resultado del caso de uso de consulta de un material de inventario.
+ * Read model de un material de inventario.
  */
 public record GetInventoryItemResult(
         UUID inventoryItemId,
@@ -16,6 +17,12 @@ public record GetInventoryItemResult(
         String unitOfMeasure,
         BigDecimal stock,
         BigDecimal minimumStock,
-        InventoryItemStatus status
+        InventoryItemStatus status,
+        String description,
+        boolean lowStock,
+        BigDecimal unitCost,
+        InventoryMaterialType materialType,
+        String paperRollNumber,
+        boolean plotterPaperRoll
 ) {
 }

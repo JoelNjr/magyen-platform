@@ -1,18 +1,23 @@
 package com.magyen.platform.production.infrastructure.configuration;
 
 import com.magyen.platform.commercial.application.usecase.GetOrderUseCase;
+import com.magyen.platform.inventory.application.usecase.ConsumeInventoryMaterialUseCase;
 import com.magyen.platform.production.application.ProductionSnapshotFactory;
+import com.magyen.platform.production.application.port.ProductionMaterialConsumptionInventoryPort;
 import com.magyen.platform.production.application.usecase.AddProductionOperationUseCase;
 import com.magyen.platform.production.application.usecase.AssignProductionOperationOperatorUseCase;
 import com.magyen.platform.production.application.usecase.CompleteProductionOperationUseCase;
 import com.magyen.platform.production.application.usecase.CompleteProductionOrderUseCase;
 import com.magyen.platform.production.application.usecase.CreateProductionOrderFromOrderUseCase;
+import com.magyen.platform.production.application.usecase.GetProductionMaterialConsumptionsUseCase;
 import com.magyen.platform.production.application.usecase.GetProductionOrderUseCase;
 import com.magyen.platform.production.application.usecase.GetProductionOrdersUseCase;
 import com.magyen.platform.production.application.usecase.PlanProductionOrderUseCase;
+import com.magyen.platform.production.application.usecase.RegisterProductionMaterialConsumptionUseCase;
 import com.magyen.platform.production.application.usecase.StartProductionOperationUseCase;
 import com.magyen.platform.production.application.usecase.StartProductionOrderUseCase;
 import com.magyen.platform.production.domain.ProductionOrderRepository;
+import com.magyen.platform.production.infrastructure.inventory.ProductionMaterialConsumptionInventoryAdapter;
 import com.magyen.platform.production.infrastructure.persistence.mapper.ProductionPersistenceMapper;
 import com.magyen.platform.production.presentation.productionorder.mapper.ProductionPresentationMapper;
 import org.springframework.context.annotation.Bean;
@@ -113,5 +118,30 @@ public class ProductionConfiguration {
             ProductionOrderRepository productionOrderRepository
     ) {
         return new GetProductionOrderUseCase(productionOrderRepository);
+    }
+
+    @Bean
+    public ProductionMaterialConsumptionInventoryPort productionMaterialConsumptionInventoryPort(
+            ConsumeInventoryMaterialUseCase consumeInventoryMaterialUseCase
+    ) {
+        return new ProductionMaterialConsumptionInventoryAdapter(consumeInventoryMaterialUseCase);
+    }
+
+    @Bean
+    public RegisterProductionMaterialConsumptionUseCase registerProductionMaterialConsumptionUseCase(
+            ProductionOrderRepository productionOrderRepository,
+            ProductionMaterialConsumptionInventoryPort productionMaterialConsumptionInventoryPort
+    ) {
+        return new RegisterProductionMaterialConsumptionUseCase(
+                productionOrderRepository,
+                productionMaterialConsumptionInventoryPort
+        );
+    }
+
+    @Bean
+    public GetProductionMaterialConsumptionsUseCase getProductionMaterialConsumptionsUseCase(
+            ProductionOrderRepository productionOrderRepository
+    ) {
+        return new GetProductionMaterialConsumptionsUseCase(productionOrderRepository);
     }
 }

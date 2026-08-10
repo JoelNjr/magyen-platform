@@ -11,6 +11,10 @@ public record CreateInventoryItemRequest(
         String category,
         String unitOfMeasure,
         BigDecimal stock,
-        BigDecimal minimumStock
+        BigDecimal minimumStock,
+        String description,
+        BigDecimal unitCost,
+        String materialType,
+        Boolean plotterPaperRoll
 ) {
 }

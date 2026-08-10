@@ -16,6 +16,7 @@ const navigationItems = [
   { label: 'Commercial', path: '/commercial' },
   { label: 'Production', path: '/production' },
   { label: 'Inventory', path: '/inventory' },
+  { label: 'Plotter', path: '/plotter' },
   { label: 'Finance', path: '/finance' },
   { label: 'Intelligence', path: '/intelligence' },
 ]

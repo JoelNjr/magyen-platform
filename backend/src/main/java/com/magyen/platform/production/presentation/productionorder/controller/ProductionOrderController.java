@@ -10,11 +10,15 @@ import com.magyen.platform.production.application.dto.CompleteProductionOrderCom
 import com.magyen.platform.production.application.dto.CompleteProductionOrderResult;
 import com.magyen.platform.production.application.dto.CreateProductionOrderCommand;
 import com.magyen.platform.production.application.dto.CreateProductionOrderResult;
+import com.magyen.platform.production.application.dto.GetProductionMaterialConsumptionsQuery;
+import com.magyen.platform.production.application.dto.GetProductionMaterialConsumptionsResult;
 import com.magyen.platform.production.application.dto.GetProductionOrderCommand;
 import com.magyen.platform.production.application.dto.GetProductionOrderResult;
 import com.magyen.platform.production.application.dto.GetProductionOrdersResult;
 import com.magyen.platform.production.application.dto.PlanProductionOrderCommand;
 import com.magyen.platform.production.application.dto.PlanProductionOrderResult;
+import com.magyen.platform.production.application.dto.RegisterProductionMaterialConsumptionCommand;
+import com.magyen.platform.production.application.dto.RegisterProductionMaterialConsumptionResult;
 import com.magyen.platform.production.application.dto.StartProductionOperationCommand;
 import com.magyen.platform.production.application.dto.StartProductionOperationResult;
 import com.magyen.platform.production.application.dto.StartProductionOrderCommand;
@@ -24,9 +28,11 @@ import com.magyen.platform.production.application.usecase.AssignProductionOperat
 import com.magyen.platform.production.application.usecase.CompleteProductionOperationUseCase;
 import com.magyen.platform.production.application.usecase.CompleteProductionOrderUseCase;
 import com.magyen.platform.production.application.usecase.CreateProductionOrderFromOrderUseCase;
+import com.magyen.platform.production.application.usecase.GetProductionMaterialConsumptionsUseCase;
 import com.magyen.platform.production.application.usecase.GetProductionOrderUseCase;
 import com.magyen.platform.production.application.usecase.GetProductionOrdersUseCase;
 import com.magyen.platform.production.application.usecase.PlanProductionOrderUseCase;
+import com.magyen.platform.production.application.usecase.RegisterProductionMaterialConsumptionUseCase;
 import com.magyen.platform.production.application.usecase.StartProductionOperationUseCase;
 import com.magyen.platform.production.application.usecase.StartProductionOrderUseCase;
 import com.magyen.platform.production.presentation.productionorder.mapper.ProductionPresentationMapper;
@@ -34,14 +40,17 @@ import com.magyen.platform.production.presentation.productionorder.request.AddPr
 import com.magyen.platform.production.presentation.productionorder.request.AssignProductionOperationOperatorRequest;
 import com.magyen.platform.production.presentation.productionorder.request.CreateProductionOrderRequest;
 import com.magyen.platform.production.presentation.productionorder.request.PlanProductionOrderRequest;
+import com.magyen.platform.production.presentation.productionorder.request.RegisterProductionMaterialConsumptionRequest;
 import com.magyen.platform.production.presentation.productionorder.response.AddProductionOperationResponse;
 import com.magyen.platform.production.presentation.productionorder.response.AssignProductionOperationOperatorResponse;
 import com.magyen.platform.production.presentation.productionorder.response.CompleteProductionOperationResponse;
 import com.magyen.platform.production.presentation.productionorder.response.CompleteProductionOrderResponse;
 import com.magyen.platform.production.presentation.productionorder.response.CreateProductionOrderResponse;
+import com.magyen.platform.production.presentation.productionorder.response.GetProductionMaterialConsumptionsResponse;
 import com.magyen.platform.production.presentation.productionorder.response.GetProductionOrderResponse;
 import com.magyen.platform.production.presentation.productionorder.response.GetProductionOrdersResponse;
 import com.magyen.platform.production.presentation.productionorder.response.PlanProductionOrderResponse;
+import com.magyen.platform.production.presentation.productionorder.response.RegisterProductionMaterialConsumptionResponse;
 import com.magyen.platform.production.presentation.productionorder.response.StartProductionOperationResponse;
 import com.magyen.platform.production.presentation.productionorder.response.StartProductionOrderResponse;
 import org.springframework.http.HttpStatus;
@@ -75,6 +84,8 @@ public class ProductionOrderController {
     private final AssignProductionOperationOperatorUseCase assignProductionOperationOperatorUseCase;
     private final StartProductionOperationUseCase startProductionOperationUseCase;
     private final CompleteProductionOperationUseCase completeProductionOperationUseCase;
+    private final RegisterProductionMaterialConsumptionUseCase registerProductionMaterialConsumptionUseCase;
+    private final GetProductionMaterialConsumptionsUseCase getProductionMaterialConsumptionsUseCase;
     private final ProductionPresentationMapper productionPresentationMapper;
 
     public ProductionOrderController(
@@ -88,6 +99,8 @@ public class ProductionOrderController {
             AssignProductionOperationOperatorUseCase assignProductionOperationOperatorUseCase,
             StartProductionOperationUseCase startProductionOperationUseCase,
             CompleteProductionOperationUseCase completeProductionOperationUseCase,
+            RegisterProductionMaterialConsumptionUseCase registerProductionMaterialConsumptionUseCase,
+            GetProductionMaterialConsumptionsUseCase getProductionMaterialConsumptionsUseCase,
             ProductionPresentationMapper productionPresentationMapper
     ) {
         this.createProductionOrderFromOrderUseCase = createProductionOrderFromOrderUseCase;
@@ -100,6 +113,8 @@ public class ProductionOrderController {
         this.assignProductionOperationOperatorUseCase = assignProductionOperationOperatorUseCase;
         this.startProductionOperationUseCase = startProductionOperationUseCase;
         this.completeProductionOperationUseCase = completeProductionOperationUseCase;
+        this.registerProductionMaterialConsumptionUseCase = registerProductionMaterialConsumptionUseCase;
+        this.getProductionMaterialConsumptionsUseCase = getProductionMaterialConsumptionsUseCase;
         this.productionPresentationMapper = productionPresentationMapper;
     }
 
@@ -226,6 +241,33 @@ public class ProductionOrderController {
         CompleteProductionOperationResult result = completeProductionOperationUseCase.execute(command);
         CompleteProductionOperationResponse response =
                 productionPresentationMapper.toCompleteOperationResponse(result);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{productionOrderId}/material-consumptions")
+    public ResponseEntity<RegisterProductionMaterialConsumptionResponse> registerMaterialConsumption(
+            @PathVariable UUID productionOrderId,
+            @RequestBody RegisterProductionMaterialConsumptionRequest request
+    ) {
+        RegisterProductionMaterialConsumptionCommand command =
+                productionPresentationMapper.toRegisterMaterialConsumptionCommand(productionOrderId, request);
+        RegisterProductionMaterialConsumptionResult result =
+                registerProductionMaterialConsumptionUseCase.execute(command);
+        RegisterProductionMaterialConsumptionResponse response =
+                productionPresentationMapper.toRegisterMaterialConsumptionResponse(result);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @GetMapping("/{productionOrderId}/material-consumptions")
+    public ResponseEntity<GetProductionMaterialConsumptionsResponse> getMaterialConsumptions(
+            @PathVariable UUID productionOrderId
+    ) {
+        GetProductionMaterialConsumptionsQuery query =
+                productionPresentationMapper.toMaterialConsumptionsQuery(productionOrderId);
+        GetProductionMaterialConsumptionsResult result = getProductionMaterialConsumptionsUseCase.execute(query);
+        GetProductionMaterialConsumptionsResponse response = productionPresentationMapper.toResponse(result);
 
         return ResponseEntity.ok(response);
     }

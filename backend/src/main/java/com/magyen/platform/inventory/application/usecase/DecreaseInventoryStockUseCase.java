@@ -4,11 +4,14 @@ import com.magyen.platform.inventory.application.dto.DecreaseInventoryStockComma
 import com.magyen.platform.inventory.application.dto.DecreaseInventoryStockResult;
 import com.magyen.platform.inventory.domain.InventoryItem;
 import com.magyen.platform.inventory.domain.InventoryItemRepository;
+import com.magyen.platform.inventory.domain.InventoryMovement;
 
 import java.util.Objects;
 
 /**
  * Caso de uso que coordina la disminución de stock de un material de inventario.
+ * <p>
+ * Internamente registra un movimiento {@code OUT} para conservar el historial.
  */
 public class DecreaseInventoryStockUseCase {
 
@@ -30,9 +33,8 @@ public class DecreaseInventoryStockUseCase {
                         "Inventory item not found: " + command.inventoryItemId()
                 ));
 
-        inventoryItem.decreaseStock(command.quantity());
-
-        InventoryItem savedInventoryItem = inventoryItemRepository.save(inventoryItem);
+        InventoryMovement movement = inventoryItem.decreaseStock(command.quantity());
+        InventoryItem savedInventoryItem = inventoryItemRepository.saveWithMovement(inventoryItem, movement);
 
         return new DecreaseInventoryStockResult(
                 savedInventoryItem.getId(),

@@ -50,9 +50,17 @@ public class PlanProductionOrderUseCase {
     }
 
     private void validateCommand(PlanProductionOrderCommand command) {
-        Objects.requireNonNull(command.productionOrderId(), "Production order id must not be null");
-        Objects.requireNonNull(command.plannedStartDate(), "Planned start date must not be null");
-        Objects.requireNonNull(command.plannedEndDate(), "Planned end date must not be null");
-        Objects.requireNonNull(command.priority(), "Priority must not be null");
+        if (command.productionOrderId() == null) {
+            throw new IllegalArgumentException("Production order id must not be null");
+        }
+        if (command.plannedStartDate() == null) {
+            throw new IllegalArgumentException("Planned start date must not be null");
+        }
+        if (command.plannedEndDate() == null) {
+            throw new IllegalArgumentException("Planned end date must not be null");
+        }
+        if (command.priority() == null) {
+            throw new IllegalArgumentException("Priority must not be null");
+        }
     }
 }

@@ -2,6 +2,11 @@ package com.magyen.platform.production.presentation.productionorder.mapper;
 
 import com.magyen.platform.production.application.dto.AddProductionOperationCommand;
 import com.magyen.platform.production.application.dto.AddProductionOperationResult;
+import com.magyen.platform.production.application.dto.GetProductionMaterialConsumptionResult;
+import com.magyen.platform.production.application.dto.GetProductionMaterialConsumptionsQuery;
+import com.magyen.platform.production.application.dto.GetProductionMaterialConsumptionsResult;
+import com.magyen.platform.production.application.dto.RegisterProductionMaterialConsumptionCommand;
+import com.magyen.platform.production.application.dto.RegisterProductionMaterialConsumptionResult;
 import com.magyen.platform.production.application.dto.AssignProductionOperationOperatorCommand;
 import com.magyen.platform.production.application.dto.AssignProductionOperationOperatorResult;
 import com.magyen.platform.production.application.dto.CompleteProductionOperationCommand;
@@ -30,11 +35,14 @@ import com.magyen.platform.production.presentation.productionorder.request.AddPr
 import com.magyen.platform.production.presentation.productionorder.request.AssignProductionOperationOperatorRequest;
 import com.magyen.platform.production.presentation.productionorder.request.CreateProductionOrderRequest;
 import com.magyen.platform.production.presentation.productionorder.request.PlanProductionOrderRequest;
+import com.magyen.platform.production.presentation.productionorder.request.RegisterProductionMaterialConsumptionRequest;
 import com.magyen.platform.production.presentation.productionorder.response.AddProductionOperationResponse;
 import com.magyen.platform.production.presentation.productionorder.response.AssignProductionOperationOperatorResponse;
 import com.magyen.platform.production.presentation.productionorder.response.CompleteProductionOperationResponse;
 import com.magyen.platform.production.presentation.productionorder.response.CompleteProductionOrderResponse;
 import com.magyen.platform.production.presentation.productionorder.response.CreateProductionOrderResponse;
+import com.magyen.platform.production.presentation.productionorder.response.GetProductionMaterialConsumptionResponse;
+import com.magyen.platform.production.presentation.productionorder.response.GetProductionMaterialConsumptionsResponse;
 import com.magyen.platform.production.presentation.productionorder.response.GetProductionOrderResponse;
 import com.magyen.platform.production.presentation.productionorder.response.GetProductionOrdersResponse;
 import com.magyen.platform.production.presentation.productionorder.response.GetProductionOrdersResponse.ProductionOrderResponse;
@@ -43,6 +51,7 @@ import com.magyen.platform.production.presentation.productionorder.response.Prod
 import com.magyen.platform.production.presentation.productionorder.response.ProductionOperationResponse;
 import com.magyen.platform.production.presentation.productionorder.response.ProductionProductSpecificationResponse;
 import com.magyen.platform.production.presentation.productionorder.response.ProductionSizeBreakdownResponse;
+import com.magyen.platform.production.presentation.productionorder.response.RegisterProductionMaterialConsumptionResponse;
 import com.magyen.platform.production.presentation.productionorder.response.StartProductionOperationResponse;
 import com.magyen.platform.production.presentation.productionorder.response.StartProductionOrderResponse;
 
@@ -371,5 +380,66 @@ public class ProductionPresentationMapper {
         }
 
         return ProductionPriority.valueOf(priority);
+    }
+
+    public RegisterProductionMaterialConsumptionCommand toRegisterMaterialConsumptionCommand(
+            UUID productionOrderId,
+            RegisterProductionMaterialConsumptionRequest request
+    ) {
+        Objects.requireNonNull(productionOrderId, "Production order id must not be null");
+        Objects.requireNonNull(request, "RegisterProductionMaterialConsumptionRequest must not be null");
+
+        return new RegisterProductionMaterialConsumptionCommand(
+                productionOrderId,
+                request.inventoryItemId(),
+                request.quantity(),
+                request.unitOfMeasure(),
+                request.observation()
+        );
+    }
+
+    public RegisterProductionMaterialConsumptionResponse toRegisterMaterialConsumptionResponse(
+            RegisterProductionMaterialConsumptionResult result
+    ) {
+        Objects.requireNonNull(result, "RegisterProductionMaterialConsumptionResult must not be null");
+
+        return new RegisterProductionMaterialConsumptionResponse(
+                result.consumptionId(),
+                result.productionOrderId(),
+                result.inventoryItemId(),
+                result.quantity(),
+                result.unitOfMeasure(),
+                result.consumptionDate(),
+                result.observation()
+        );
+    }
+
+    public GetProductionMaterialConsumptionsQuery toMaterialConsumptionsQuery(UUID productionOrderId) {
+        Objects.requireNonNull(productionOrderId, "Production order id must not be null");
+        return new GetProductionMaterialConsumptionsQuery(productionOrderId);
+    }
+
+    public GetProductionMaterialConsumptionsResponse toResponse(GetProductionMaterialConsumptionsResult result) {
+        Objects.requireNonNull(result, "GetProductionMaterialConsumptionsResult must not be null");
+
+        return new GetProductionMaterialConsumptionsResponse(
+                result.consumptions().stream()
+                        .map(this::toResponse)
+                        .toList()
+        );
+    }
+
+    public GetProductionMaterialConsumptionResponse toResponse(GetProductionMaterialConsumptionResult result) {
+        Objects.requireNonNull(result, "GetProductionMaterialConsumptionResult must not be null");
+
+        return new GetProductionMaterialConsumptionResponse(
+                result.consumptionId(),
+                result.productionOrderId(),
+                result.inventoryItemId(),
+                result.quantity(),
+                result.unitOfMeasure(),
+                result.consumptionDate(),
+                result.observation()
+        );
     }
 }

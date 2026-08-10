@@ -4,11 +4,14 @@ import com.magyen.platform.inventory.application.dto.IncreaseInventoryStockComma
 import com.magyen.platform.inventory.application.dto.IncreaseInventoryStockResult;
 import com.magyen.platform.inventory.domain.InventoryItem;
 import com.magyen.platform.inventory.domain.InventoryItemRepository;
+import com.magyen.platform.inventory.domain.InventoryMovement;
 
 import java.util.Objects;
 
 /**
  * Caso de uso que coordina el incremento de stock de un material de inventario.
+ * <p>
+ * Internamente registra un movimiento {@code IN} para conservar el historial.
  */
 public class IncreaseInventoryStockUseCase {
 
@@ -30,9 +33,8 @@ public class IncreaseInventoryStockUseCase {
                         "Inventory item not found: " + command.inventoryItemId()
                 ));
 
-        inventoryItem.increaseStock(command.quantity());
-
-        InventoryItem savedInventoryItem = inventoryItemRepository.save(inventoryItem);
+        InventoryMovement movement = inventoryItem.increaseStock(command.quantity());
+        InventoryItem savedInventoryItem = inventoryItemRepository.saveWithMovement(inventoryItem, movement);
 
         return new IncreaseInventoryStockResult(
                 savedInventoryItem.getId(),

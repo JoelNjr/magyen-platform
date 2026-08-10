@@ -56,6 +56,9 @@ public class ProductionOrderEntity {
     @OneToMany(mappedBy = "productionOrder", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProductionOperationEntity> operations = new ArrayList<>();
 
+    @OneToMany(mappedBy = "productionOrder", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProductionMaterialConsumptionEntity> materialConsumptions = new ArrayList<>();
+
     public ProductionOrderEntity() {
     }
 
@@ -137,5 +140,13 @@ public class ProductionOrderEntity {
 
     public void setOperations(List<ProductionOperationEntity> operations) {
         this.operations = operations;
+    }
+
+    public List<ProductionMaterialConsumptionEntity> getMaterialConsumptions() {
+        return materialConsumptions;
+    }
+
+    public void setMaterialConsumptions(List<ProductionMaterialConsumptionEntity> materialConsumptions) {
+        this.materialConsumptions = materialConsumptions;
     }
 }

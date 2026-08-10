@@ -28,7 +28,8 @@ public class GetInventoryReportUseCase {
         List<InventoryItem> inventoryItems = inventoryItemRepository.findAll();
 
         List<LowStockItem> lowStockItems = inventoryItems.stream()
-                .filter(item -> item.getStock().compareTo(item.getMinimumStock()) < 0)
+                .filter(item -> item.getMinimumStock() != null
+                        && item.getStock().compareTo(item.getMinimumStock()) < 0)
                 .map(this::toLowStockItem)
                 .toList();
 

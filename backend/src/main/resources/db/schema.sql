@@ -233,20 +233,49 @@ CREATE INDEX idx_production_item_sizes_production_item_id
 CREATE INDEX idx_production_operations_production_order_id
     ON production_operations (production_order_id);
 
+CREATE TABLE production_material_consumptions (
+    id                      uuid            NOT NULL,
+    production_order_id     uuid            NOT NULL,
+    inventory_item_id       uuid            NOT NULL,
+    quantity                numeric(19, 4)  NOT NULL,
+    unit_of_measure         varchar(50)     NOT NULL,
+    consumption_date        timestamp       NOT NULL,
+    observation             varchar(2000)   NULL,
+    CONSTRAINT production_material_consumptions_pkey PRIMARY KEY (id),
+    CONSTRAINT fk_production_material_consumptions_production_order
+        FOREIGN KEY (production_order_id)
+        REFERENCES production_orders (id)
+        ON DELETE CASCADE
+);
+
+CREATE INDEX idx_production_material_consumptions_production_order_id
+    ON production_material_consumptions (production_order_id);
+
+CREATE INDEX idx_production_material_consumptions_inventory_item_id
+    ON production_material_consumptions (inventory_item_id);
+
+CREATE INDEX idx_production_material_consumptions_consumption_date
+    ON production_material_consumptions (consumption_date);
+
 -- Inventory module
--- Aggregate: InventoryItem
+-- Aggregate: InventoryItem + InventoryMovement history
 
 CREATE TABLE inventory_items (
     id                  uuid            NOT NULL,
     material_code       varchar(100)    NOT NULL,
     name                varchar(255)    NOT NULL,
     category            varchar(255)    NOT NULL,
+    material_type       varchar(30)     NOT NULL,
+    paper_roll_number   varchar(50)     NULL,
+    description         varchar(2000)   NULL,
     unit_of_measure     varchar(50)     NOT NULL,
     stock               numeric(19, 4)  NOT NULL,
-    minimum_stock       numeric(19, 4)  NOT NULL,
+    minimum_stock       numeric(19, 4)  NULL,
+    unit_cost           numeric(19, 2)  NULL,
     status              varchar(30)     NOT NULL,
     CONSTRAINT inventory_items_pkey PRIMARY KEY (id),
-    CONSTRAINT inventory_items_material_code_key UNIQUE (material_code)
+    CONSTRAINT inventory_items_material_code_key UNIQUE (material_code),
+    CONSTRAINT inventory_items_paper_roll_number_key UNIQUE (paper_roll_number)
 );
 
 CREATE INDEX idx_inventory_items_material_code
@@ -254,6 +283,76 @@ CREATE INDEX idx_inventory_items_material_code
 
 CREATE INDEX idx_inventory_items_status
     ON inventory_items (status);
+
+CREATE INDEX idx_inventory_items_material_type
+    ON inventory_items (material_type);
+
+-- Numeración operacional de rollos de papel Plotter (RP-001, RP-002, ...).
+-- Los huecos son aceptables si una transacción falla tras reservar el valor.
+CREATE SEQUENCE paper_roll_number_seq START WITH 1 INCREMENT BY 1;
+
+CREATE TABLE inventory_movements (
+    id                  uuid            NOT NULL,
+    inventory_item_id   uuid            NOT NULL,
+    movement_type       varchar(30)     NOT NULL,
+    quantity            numeric(19, 4)  NOT NULL,
+    unit_of_measure     varchar(50)     NOT NULL,
+    movement_date       timestamp       NOT NULL,
+    observation         varchar(2000)   NULL,
+    resulting_stock     numeric(19, 4)  NOT NULL,
+    unit_cost           numeric(19, 2)  NULL,
+    total_cost          numeric(19, 2)  NULL,
+    source_type         varchar(30)     NULL,
+    source_id           uuid            NULL,
+    CONSTRAINT inventory_movements_pkey PRIMARY KEY (id),
+    CONSTRAINT fk_inventory_movements_inventory_item
+        FOREIGN KEY (inventory_item_id)
+        REFERENCES inventory_items (id)
+);
+
+CREATE INDEX idx_inventory_movements_inventory_item_id
+    ON inventory_movements (inventory_item_id);
+
+CREATE INDEX idx_inventory_movements_movement_date
+    ON inventory_movements (movement_date);
+
+CREATE INDEX idx_inventory_movements_source
+    ON inventory_movements (source_type, source_id);
+
+-- Un movimiento por origen no nulo (idempotencia Production/Plotter → Inventory).
+CREATE UNIQUE INDEX uq_inventory_movements_source
+    ON inventory_movements (source_type, source_id)
+    WHERE source_type IS NOT NULL
+      AND source_id IS NOT NULL;
+
+-- Plotter module
+-- Aggregate: PlotterJob
+-- Soft refs: customer_id (Commercial), paper_inventory_item_id (Inventory) — no FKs
+
+CREATE TABLE plotter_jobs (
+    id                          uuid            NOT NULL,
+    customer_id                 uuid            NOT NULL,
+    creation_date               date            NOT NULL,
+    paper_inventory_item_id     uuid            NOT NULL,
+    printed_meters              numeric(19, 4)  NOT NULL,
+    price_per_meter             numeric(19, 2)  NOT NULL,
+    total_amount                numeric(19, 2)  NOT NULL,
+    status                      varchar(30)     NOT NULL,
+    observations                varchar(2000)   NULL,
+    CONSTRAINT plotter_jobs_pkey PRIMARY KEY (id)
+);
+
+CREATE INDEX idx_plotter_jobs_customer_id
+    ON plotter_jobs (customer_id);
+
+CREATE INDEX idx_plotter_jobs_creation_date
+    ON plotter_jobs (creation_date);
+
+CREATE INDEX idx_plotter_jobs_status
+    ON plotter_jobs (status);
+
+CREATE INDEX idx_plotter_jobs_paper_inventory_item_id
+    ON plotter_jobs (paper_inventory_item_id);
 
 -- Finance module
 -- Aggregate: Payment

@@ -14,6 +14,12 @@ public record CreateInventoryItemResponse(
         String unitOfMeasure,
         BigDecimal stock,
         BigDecimal minimumStock,
-        String status
+        String status,
+        String description,
+        boolean lowStock,
+        BigDecimal unitCost,
+        String materialType,
+        String paperRollNumber,
+        boolean plotterPaperRoll
 ) {
 }

@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 import java.util.UUID;
 
 /**
- * Respuesta HTTP con el detalle de un material de inventario.
+ * Respuesta HTTP con el read model de un material de inventario.
  */
 public record GetInventoryItemResponse(
         UUID inventoryItemId,
@@ -14,6 +14,12 @@ public record GetInventoryItemResponse(
         String unitOfMeasure,
         BigDecimal stock,
         BigDecimal minimumStock,
-        String status
+        String status,
+        String description,
+        boolean lowStock,
+        BigDecimal unitCost,
+        String materialType,
+        String paperRollNumber,
+        boolean plotterPaperRoll
 ) {
 }

@@ -1,6 +1,7 @@
 package com.magyen.platform.inventory.infrastructure.persistence.entity;
 
 import com.magyen.platform.inventory.domain.InventoryItemStatus;
+import com.magyen.platform.inventory.domain.InventoryMaterialType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -31,14 +32,27 @@ public class InventoryItemEntity {
     @Column(name = "category", nullable = false, length = 255)
     private String category;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "material_type", nullable = false, length = 30)
+    private InventoryMaterialType materialType;
+
+    @Column(name = "paper_roll_number", unique = true, length = 50)
+    private String paperRollNumber;
+
+    @Column(name = "description", length = 2000)
+    private String description;
+
     @Column(name = "unit_of_measure", nullable = false, length = 50)
     private String unitOfMeasure;
 
     @Column(name = "stock", nullable = false, precision = 19, scale = 4)
     private BigDecimal stock;
 
-    @Column(name = "minimum_stock", nullable = false, precision = 19, scale = 4)
+    @Column(name = "minimum_stock", precision = 19, scale = 4)
     private BigDecimal minimumStock;
+
+    @Column(name = "unit_cost", precision = 19, scale = 2)
+    private BigDecimal unitCost;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 30)
@@ -79,6 +93,30 @@ public class InventoryItemEntity {
         this.category = category;
     }
 
+    public InventoryMaterialType getMaterialType() {
+        return materialType;
+    }
+
+    public void setMaterialType(InventoryMaterialType materialType) {
+        this.materialType = materialType;
+    }
+
+    public String getPaperRollNumber() {
+        return paperRollNumber;
+    }
+
+    public void setPaperRollNumber(String paperRollNumber) {
+        this.paperRollNumber = paperRollNumber;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
     public String getUnitOfMeasure() {
         return unitOfMeasure;
     }
@@ -101,6 +139,14 @@ public class InventoryItemEntity {
 
     public void setMinimumStock(BigDecimal minimumStock) {
         this.minimumStock = minimumStock;
+    }
+
+    public BigDecimal getUnitCost() {
+        return unitCost;
+    }
+
+    public void setUnitCost(BigDecimal unitCost) {
+        this.unitCost = unitCost;
     }
 
     public InventoryItemStatus getStatus() {

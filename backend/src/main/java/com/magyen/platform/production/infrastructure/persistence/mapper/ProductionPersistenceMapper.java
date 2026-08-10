@@ -2,11 +2,13 @@ package com.magyen.platform.production.infrastructure.persistence.mapper;
 
 import com.magyen.platform.production.domain.ProductSpecification;
 import com.magyen.platform.production.domain.ProductionItem;
+import com.magyen.platform.production.domain.ProductionMaterialConsumption;
 import com.magyen.platform.production.domain.ProductionOperation;
 import com.magyen.platform.production.domain.ProductionOrder;
 import com.magyen.platform.production.domain.SizeBreakdown;
 import com.magyen.platform.production.infrastructure.persistence.entity.ProductionItemEntity;
 import com.magyen.platform.production.infrastructure.persistence.entity.ProductionItemSizeEntity;
+import com.magyen.platform.production.infrastructure.persistence.entity.ProductionMaterialConsumptionEntity;
 import com.magyen.platform.production.infrastructure.persistence.entity.ProductionOperationEntity;
 import com.magyen.platform.production.infrastructure.persistence.entity.ProductionOrderEntity;
 
@@ -50,6 +52,14 @@ public class ProductionPersistenceMapper {
         }
         productionOrderEntity.setOperations(operationEntities);
 
+        List<ProductionMaterialConsumptionEntity> consumptionEntities = new ArrayList<>();
+        for (ProductionMaterialConsumption consumption : productionOrder.getMaterialConsumptions()) {
+            ProductionMaterialConsumptionEntity consumptionEntity = toConsumptionEntity(consumption);
+            consumptionEntity.setProductionOrder(productionOrderEntity);
+            consumptionEntities.add(consumptionEntity);
+        }
+        productionOrderEntity.setMaterialConsumptions(consumptionEntities);
+
         return productionOrderEntity;
     }
 
@@ -66,6 +76,15 @@ public class ProductionPersistenceMapper {
             operations.add(toOperationDomain(operationEntity));
         }
 
+        List<ProductionMaterialConsumption> materialConsumptions = new ArrayList<>();
+        List<ProductionMaterialConsumptionEntity> consumptionEntities =
+                productionOrderEntity.getMaterialConsumptions() == null
+                        ? List.of()
+                        : productionOrderEntity.getMaterialConsumptions();
+        for (ProductionMaterialConsumptionEntity consumptionEntity : consumptionEntities) {
+            materialConsumptions.add(toConsumptionDomain(consumptionEntity));
+        }
+
         return ProductionOrder.reconstitute(
                 productionOrderEntity.getId(),
                 productionOrderEntity.getOrderId(),
@@ -76,7 +95,8 @@ public class ProductionPersistenceMapper {
                 productionOrderEntity.getPlannedEndDate(),
                 productionOrderEntity.getObservations(),
                 items,
-                operations
+                operations,
+                materialConsumptions
         );
     }
 
@@ -205,6 +225,39 @@ public class ProductionPersistenceMapper {
                 operationEntity.getActualStartDate(),
                 operationEntity.getActualEndDate(),
                 operationEntity.getObservations()
+        );
+    }
+
+    private ProductionMaterialConsumptionEntity toConsumptionEntity(ProductionMaterialConsumption consumption) {
+        Objects.requireNonNull(consumption, "Material consumption must not be null");
+
+        ProductionMaterialConsumptionEntity consumptionEntity = new ProductionMaterialConsumptionEntity();
+        consumptionEntity.setId(consumption.getId());
+        consumptionEntity.setInventoryItemId(consumption.getInventoryItemId());
+        consumptionEntity.setQuantity(consumption.getQuantity());
+        consumptionEntity.setUnitOfMeasure(consumption.getUnitOfMeasure());
+        consumptionEntity.setConsumptionDate(consumption.getConsumptionDate());
+        consumptionEntity.setObservation(consumption.getObservation());
+        return consumptionEntity;
+    }
+
+    private ProductionMaterialConsumption toConsumptionDomain(
+            ProductionMaterialConsumptionEntity consumptionEntity
+    ) {
+        Objects.requireNonNull(consumptionEntity, "Material consumption entity must not be null");
+        Objects.requireNonNull(
+                consumptionEntity.getProductionOrder(),
+                "Material consumption must reference a production order"
+        );
+
+        return ProductionMaterialConsumption.reconstitute(
+                consumptionEntity.getId(),
+                consumptionEntity.getProductionOrder().getId(),
+                consumptionEntity.getInventoryItemId(),
+                consumptionEntity.getQuantity(),
+                consumptionEntity.getUnitOfMeasure(),
+                consumptionEntity.getConsumptionDate(),
+                consumptionEntity.getObservation()
         );
     }
 }

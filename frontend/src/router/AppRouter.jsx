@@ -7,6 +7,10 @@ import OrdersPage from '../features/commercial/pages/OrdersPage'
 import QuotationDetailPage from '../features/commercial/pages/QuotationDetailPage'
 import QuotationsPage from '../features/commercial/pages/QuotationsPage'
 import IntelligencePage from '../features/intelligence/pages/IntelligencePage'
+import InventoryDetailPage from '../features/inventory/pages/InventoryDetailPage'
+import InventoryPage from '../features/inventory/pages/InventoryPage'
+import PlotterJobDetailPage from '../features/plotter/pages/PlotterJobDetailPage'
+import PlotterJobsPage from '../features/plotter/pages/PlotterJobsPage'
 import ProductionOrderDetailPage from '../features/production/pages/ProductionOrderDetailPage'
 import ProductionOrdersPage from '../features/production/pages/ProductionOrdersPage'
 import MainLayout from '../layout/MainLayout'
@@ -35,9 +39,15 @@ function AppRouter() {
           />
           <Route path="production" element={<ProductionOrdersPage />} />
           <Route
-            path="inventory"
-            element={<Typography>Inventory Page</Typography>}
+            path="inventory/:inventoryItemId"
+            element={<InventoryDetailPage />}
           />
+          <Route path="inventory" element={<InventoryPage />} />
+          <Route
+            path="plotter/jobs/:plotterJobId"
+            element={<PlotterJobDetailPage />}
+          />
+          <Route path="plotter" element={<PlotterJobsPage />} />
           <Route
             path="finance"
             element={<Typography>Finance Page</Typography>}

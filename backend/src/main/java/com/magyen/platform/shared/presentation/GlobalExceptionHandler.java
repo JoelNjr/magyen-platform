@@ -3,6 +3,8 @@ package com.magyen.platform.shared.presentation;
 import com.magyen.platform.commercial.domain.exception.OrderAlreadyExistsForQuotationException;
 import com.magyen.platform.commercial.domain.exception.OrderDomainException;
 import com.magyen.platform.commercial.domain.exception.QuotationDomainException;
+import com.magyen.platform.inventory.domain.exception.InventoryDomainException;
+import com.magyen.platform.plotter.domain.exception.PlotterDomainException;
 import com.magyen.platform.production.domain.exception.ProductionDomainException;
 import com.magyen.platform.production.domain.exception.ProductionOrderAlreadyExistsException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -148,6 +150,38 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ProductionDomainException.class)
     public ResponseEntity<ErrorResponse> handleProductionDomainException(
             ProductionDomainException exception,
+            HttpServletRequest request
+    ) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                exception.getMessage(),
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
+
+    @ExceptionHandler(InventoryDomainException.class)
+    public ResponseEntity<ErrorResponse> handleInventoryDomainException(
+            InventoryDomainException exception,
+            HttpServletRequest request
+    ) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                exception.getMessage(),
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
+
+    @ExceptionHandler(PlotterDomainException.class)
+    public ResponseEntity<ErrorResponse> handlePlotterDomainException(
+            PlotterDomainException exception,
             HttpServletRequest request
     ) {
         ErrorResponse errorResponse = new ErrorResponse(

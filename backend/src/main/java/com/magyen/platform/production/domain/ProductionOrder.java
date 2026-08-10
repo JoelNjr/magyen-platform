@@ -2,6 +2,7 @@ package com.magyen.platform.production.domain;
 
 import com.magyen.platform.production.domain.exception.ProductionDomainException;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -12,7 +13,8 @@ import java.util.UUID;
 /**
  * Aggregate Root de la instrucción de fabricación generada desde una Orden comercial.
  * <p>
- * Mantiene la consistencia de la Orden de Producción, su snapshot productivo y sus operaciones.
+ * Mantiene la consistencia de la Orden de Producción, su snapshot productivo,
+ * sus operaciones y los consumos reales de material.
  * <p>
  * Relación de negocio: una Orden comercial puede tener como máximo una Orden de Producción.
  * La referencia técnica se conserva mediante {@code orderId}.
@@ -29,6 +31,7 @@ public class ProductionOrder {
     private final String observations;
     private final List<ProductionItem> items;
     private final List<ProductionOperation> operations;
+    private final List<ProductionMaterialConsumption> materialConsumptions;
 
     private ProductionOrder(
             UUID id,
@@ -40,7 +43,8 @@ public class ProductionOrder {
             LocalDate plannedEndDate,
             String observations,
             List<ProductionItem> items,
-            List<ProductionOperation> operations
+            List<ProductionOperation> operations,
+            List<ProductionMaterialConsumption> materialConsumptions
     ) {
         this.id = Objects.requireNonNull(id, "Production order id must not be null");
         this.orderId = Objects.requireNonNull(orderId, "Order id must not be null");
@@ -52,6 +56,9 @@ public class ProductionOrder {
         this.observations = observations;
         this.items = new ArrayList<>(Objects.requireNonNull(items, "Items must not be null"));
         this.operations = new ArrayList<>(Objects.requireNonNull(operations, "Operations must not be null"));
+        this.materialConsumptions = new ArrayList<>(
+                Objects.requireNonNull(materialConsumptions, "Material consumptions must not be null")
+        );
     }
 
     /**
@@ -101,6 +108,7 @@ public class ProductionOrder {
                 plannedEndDate,
                 observations,
                 items == null ? List.of() : items,
+                List.of(),
                 List.of()
         );
     }
@@ -120,6 +128,37 @@ public class ProductionOrder {
             List<ProductionItem> items,
             List<ProductionOperation> operations
     ) {
+        return reconstitute(
+                id,
+                orderId,
+                creationDate,
+                status,
+                priority,
+                plannedStartDate,
+                plannedEndDate,
+                observations,
+                items,
+                operations,
+                List.of()
+        );
+    }
+
+    /**
+     * Reconstruye una Orden de Producción incluyendo consumos de material.
+     */
+    public static ProductionOrder reconstitute(
+            UUID id,
+            UUID orderId,
+            LocalDate creationDate,
+            ProductionStatus status,
+            ProductionPriority priority,
+            LocalDate plannedStartDate,
+            LocalDate plannedEndDate,
+            String observations,
+            List<ProductionItem> items,
+            List<ProductionOperation> operations,
+            List<ProductionMaterialConsumption> materialConsumptions
+    ) {
         return new ProductionOrder(
                 id,
                 orderId,
@@ -130,7 +169,8 @@ public class ProductionOrder {
                 plannedEndDate,
                 observations,
                 items == null ? List.of() : items,
-                operations
+                operations == null ? List.of() : operations,
+                materialConsumptions == null ? List.of() : materialConsumptions
         );
     }
 
@@ -275,6 +315,34 @@ public class ProductionOrder {
         findOperation(operationId).complete();
     }
 
+    /**
+     * Registra un consumo real de material durante la fabricación.
+     * <p>
+     * Solo permitido mientras el estado sea {@link ProductionStatus#IN_PROGRESS}.
+     * {@link ProductionStatus#COMPLETED} se rechaza en V1 para evitar correcciones silenciosas
+     * post-producción. No modifica Inventory ni genera movimientos de stock.
+     */
+    public ProductionMaterialConsumption registerMaterialConsumption(
+            UUID inventoryItemId,
+            BigDecimal quantity,
+            ProductionMaterialUnitOfMeasure unitOfMeasure,
+            String observation
+    ) {
+        ensureMaterialConsumptionAllowed();
+        Objects.requireNonNull(inventoryItemId, "Inventory item id must not be null");
+        Objects.requireNonNull(unitOfMeasure, "Unit of measure must not be null");
+
+        ProductionMaterialConsumption consumption = ProductionMaterialConsumption.create(
+                this.id,
+                inventoryItemId,
+                quantity,
+                unitOfMeasure,
+                observation
+        );
+        materialConsumptions.add(consumption);
+        return consumption;
+    }
+
     public UUID getId() {
         return id;
     }
@@ -315,6 +383,10 @@ public class ProductionOrder {
         return Collections.unmodifiableList(operations);
     }
 
+    public List<ProductionMaterialConsumption> getMaterialConsumptions() {
+        return Collections.unmodifiableList(materialConsumptions);
+    }
+
     @Override
     public boolean equals(Object other) {
         if (this == other) {
@@ -345,6 +417,15 @@ public class ProductionOrder {
         if (status != ProductionStatus.IN_PROGRESS) {
             throw new ProductionDomainException(
                     "Production operations can only be executed while status is IN_PROGRESS. Current status: "
+                            + status
+            );
+        }
+    }
+
+    private void ensureMaterialConsumptionAllowed() {
+        if (status != ProductionStatus.IN_PROGRESS) {
+            throw new ProductionDomainException(
+                    "Material consumption can only be registered while status is IN_PROGRESS. Current status: "
                             + status
             );
         }
