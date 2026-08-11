@@ -4,6 +4,8 @@ import com.magyen.platform.plotter.application.dto.CreatePlotterJobResult;
 import com.magyen.platform.plotter.application.dto.GetPlotterJobResult;
 import com.magyen.platform.plotter.domain.PlotterJob;
 
+import java.math.BigDecimal;
+
 /**
  * Mapeo compartido de {@link PlotterJob} a resultados de aplicación.
  */
@@ -26,7 +28,11 @@ final class PlotterJobReadMapper {
         );
     }
 
-    static GetPlotterJobResult toGetResult(PlotterJob plotterJob) {
+    static GetPlotterJobResult toGetResult(
+            PlotterJob plotterJob,
+            BigDecimal paidAmount,
+            BigDecimal outstandingAmount
+    ) {
         return new GetPlotterJobResult(
                 plotterJob.getId(),
                 plotterJob.getCustomerId(),
@@ -35,6 +41,8 @@ final class PlotterJobReadMapper {
                 plotterJob.getPrintedMeters(),
                 plotterJob.getPricePerMeter(),
                 plotterJob.getTotalAmount(),
+                paidAmount,
+                outstandingAmount,
                 plotterJob.getStatus(),
                 plotterJob.getObservations()
         );

@@ -6,6 +6,9 @@ import java.util.UUID;
 
 /**
  * Read model de un consumo de material de producción.
+ * <p>
+ * {@code unitCost} y {@code totalCost} provienen del snapshot histórico del OUT
+ * de Inventory. Son null cuando el consumo no tiene valoración conocida.
  */
 public record GetProductionMaterialConsumptionResult(
         UUID consumptionId,
@@ -14,6 +17,8 @@ public record GetProductionMaterialConsumptionResult(
         BigDecimal quantity,
         String unitOfMeasure,
         LocalDateTime consumptionDate,
-        String observation
+        String observation,
+        BigDecimal unitCost,
+        BigDecimal totalCost
 ) {
 }

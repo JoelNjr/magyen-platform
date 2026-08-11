@@ -32,6 +32,7 @@ public class ProductionOrder {
     private final List<ProductionItem> items;
     private final List<ProductionOperation> operations;
     private final List<ProductionMaterialConsumption> materialConsumptions;
+    private final List<ProductionLaborWork> laborWorks;
 
     private ProductionOrder(
             UUID id,
@@ -44,7 +45,8 @@ public class ProductionOrder {
             String observations,
             List<ProductionItem> items,
             List<ProductionOperation> operations,
-            List<ProductionMaterialConsumption> materialConsumptions
+            List<ProductionMaterialConsumption> materialConsumptions,
+            List<ProductionLaborWork> laborWorks
     ) {
         this.id = Objects.requireNonNull(id, "Production order id must not be null");
         this.orderId = Objects.requireNonNull(orderId, "Order id must not be null");
@@ -58,6 +60,9 @@ public class ProductionOrder {
         this.operations = new ArrayList<>(Objects.requireNonNull(operations, "Operations must not be null"));
         this.materialConsumptions = new ArrayList<>(
                 Objects.requireNonNull(materialConsumptions, "Material consumptions must not be null")
+        );
+        this.laborWorks = new ArrayList<>(
+                Objects.requireNonNull(laborWorks, "Labor works must not be null")
         );
     }
 
@@ -109,6 +114,7 @@ public class ProductionOrder {
                 observations,
                 items == null ? List.of() : items,
                 List.of(),
+                List.of(),
                 List.of()
         );
     }
@@ -159,6 +165,39 @@ public class ProductionOrder {
             List<ProductionOperation> operations,
             List<ProductionMaterialConsumption> materialConsumptions
     ) {
+        return reconstitute(
+                id,
+                orderId,
+                creationDate,
+                status,
+                priority,
+                plannedStartDate,
+                plannedEndDate,
+                observations,
+                items,
+                operations,
+                materialConsumptions,
+                List.of()
+        );
+    }
+
+    /**
+     * Reconstruye una Orden de Producción incluyendo consumos y mano de obra.
+     */
+    public static ProductionOrder reconstitute(
+            UUID id,
+            UUID orderId,
+            LocalDate creationDate,
+            ProductionStatus status,
+            ProductionPriority priority,
+            LocalDate plannedStartDate,
+            LocalDate plannedEndDate,
+            String observations,
+            List<ProductionItem> items,
+            List<ProductionOperation> operations,
+            List<ProductionMaterialConsumption> materialConsumptions,
+            List<ProductionLaborWork> laborWorks
+    ) {
         return new ProductionOrder(
                 id,
                 orderId,
@@ -170,7 +209,8 @@ public class ProductionOrder {
                 observations,
                 items == null ? List.of() : items,
                 operations == null ? List.of() : operations,
-                materialConsumptions == null ? List.of() : materialConsumptions
+                materialConsumptions == null ? List.of() : materialConsumptions,
+                laborWorks == null ? List.of() : laborWorks
         );
     }
 
@@ -343,6 +383,50 @@ public class ProductionOrder {
         return consumption;
     }
 
+    /**
+     * Registra trabajo de mano de obra por producción.
+     * <p>
+     * Solo permitido mientras el estado sea {@link ProductionStatus#IN_PROGRESS}.
+     * No crea movimientos financieros; el pago es un flujo explícito posterior.
+     */
+    public ProductionLaborWork registerLaborWork(
+            UUID operatorEmployeeId,
+            LocalDate workDate,
+            String operation,
+            BigDecimal quantity,
+            String unitOfMeasure,
+            BigDecimal unitRate,
+            String observation
+    ) {
+        ensureLaborWorkAllowed();
+        Objects.requireNonNull(operatorEmployeeId, "Operator employee id must not be null");
+        Objects.requireNonNull(workDate, "Work date must not be null");
+
+        ProductionLaborWork laborWork = ProductionLaborWork.create(
+                this.id,
+                operatorEmployeeId,
+                workDate,
+                operation,
+                quantity,
+                unitOfMeasure,
+                unitRate,
+                observation
+        );
+        laborWorks.add(laborWork);
+        return laborWork;
+    }
+
+    public ProductionLaborWork requireLaborWork(UUID laborWorkId) {
+        Objects.requireNonNull(laborWorkId, "Labor work id must not be null");
+
+        return laborWorks.stream()
+                .filter(laborWork -> laborWork.getId().equals(laborWorkId))
+                .findFirst()
+                .orElseThrow(() -> new ProductionDomainException(
+                        "Production labor work not found: " + laborWorkId
+                ));
+    }
+
     public UUID getId() {
         return id;
     }
@@ -387,6 +471,10 @@ public class ProductionOrder {
         return Collections.unmodifiableList(materialConsumptions);
     }
 
+    public List<ProductionLaborWork> getLaborWorks() {
+        return Collections.unmodifiableList(laborWorks);
+    }
+
     @Override
     public boolean equals(Object other) {
         if (this == other) {
@@ -423,9 +511,17 @@ public class ProductionOrder {
     }
 
     private void ensureMaterialConsumptionAllowed() {
+        ensureInProgressForProductionFacts("Material consumption");
+    }
+
+    private void ensureLaborWorkAllowed() {
+        ensureInProgressForProductionFacts("Labor work");
+    }
+
+    private void ensureInProgressForProductionFacts(String factLabel) {
         if (status != ProductionStatus.IN_PROGRESS) {
             throw new ProductionDomainException(
-                    "Material consumption can only be registered while status is IN_PROGRESS. Current status: "
+                    factLabel + " can only be registered while status is IN_PROGRESS. Current status: "
                             + status
             );
         }

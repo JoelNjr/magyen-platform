@@ -25,6 +25,7 @@ import AddProductionOperationDialog from '../components/AddProductionOperationDi
 import AssignProductionOperatorDialog from '../components/AssignProductionOperatorDialog'
 import ConfirmProductionLifecycleDialog from '../components/ConfirmProductionLifecycleDialog'
 import PlanProductionOrderDialog from '../components/PlanProductionOrderDialog'
+import RegisterProductionLaborDialog from '../components/RegisterProductionLaborDialog'
 import { formatDisplayDate } from '../presentation/formatDisplayDate'
 import {
   formatProductionOperationType,
@@ -33,15 +34,39 @@ import {
   getProductionPriorityChipProps,
 } from '../presentation/productionStatusPresentation'
 import {
+  formatProductionMaterialCost,
+  formatProductionMaterialCostOrUnvalued,
+} from '../presentation/productionCostPresentation'
+import {
   addProductionOperation,
   assignProductionOperationOperator,
+  cancelProductionLaborWork,
   completeProductionOperation,
   completeProductionOrder,
+  getEligibleProductionLaborOperators,
+  getProductionLaborWorks,
+  getProductionMaterialConsumptions,
   getProductionOrder,
+  payProductionLaborWork,
   planProductionOrder,
+  registerProductionLaborWork,
   startProductionOperation,
   startProductionOrder,
 } from '../services/productionService'
+
+function getLaborStatusLabel(status) {
+  if (status === 'PENDING') return 'Pendiente'
+  if (status === 'PAID') return 'Pagado'
+  if (status === 'CANCELLED') return 'Cancelado'
+  return status || '—'
+}
+
+function getLaborStatusColor(status) {
+  if (status === 'PENDING') return 'warning'
+  if (status === 'PAID') return 'success'
+  if (status === 'CANCELLED') return 'default'
+  return 'default'
+}
 
 const headerCellSx = { fontWeight: 'bold' }
 
@@ -226,6 +251,12 @@ function ProductionOrderDetailPage() {
   const { productionOrderId } = useParams()
   const navigate = useNavigate()
   const [productionOrder, setProductionOrder] = useState(null)
+  const [materialConsumptions, setMaterialConsumptions] = useState([])
+  const [materialCostSummary, setMaterialCostSummary] = useState(null)
+  const [laborWorks, setLaborWorks] = useState([])
+  const [laborCostSummary, setLaborCostSummary] = useState(null)
+  const [laborOperators, setLaborOperators] = useState([])
+  const [laborOperatorsLoading, setLaborOperatorsLoading] = useState(false)
   const [loading, setLoading] = useState(true)
   const [failed, setFailed] = useState(false)
   const [notFound, setNotFound] = useState(false)
@@ -263,9 +294,35 @@ function ProductionOrderDetailPage() {
   const [successOpen, setSuccessOpen] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
 
+  const [registerLaborOpen, setRegisterLaborOpen] = useState(false)
+  const [registeringLabor, setRegisteringLabor] = useState(false)
+  const [registerLaborError, setRegisterLaborError] = useState('')
+
+  const [payLaborTarget, setPayLaborTarget] = useState(null)
+  const [payingLabor, setPayingLabor] = useState(false)
+  const [payLaborError, setPayLaborError] = useState('')
+
+  const [cancelLaborTarget, setCancelLaborTarget] = useState(null)
+  const [cancellingLabor, setCancellingLabor] = useState(false)
+  const [cancelLaborError, setCancelLaborError] = useState('')
+
+  async function loadMaterialCostAttribution() {
+    const consumptionsResponse =
+      await getProductionMaterialConsumptions(productionOrderId)
+    setMaterialConsumptions(consumptionsResponse.consumptions ?? [])
+    setMaterialCostSummary(consumptionsResponse.materialCostSummary ?? null)
+  }
+
+  async function loadLaborAttribution() {
+    const laborResponse = await getProductionLaborWorks(productionOrderId)
+    setLaborWorks(laborResponse.laborWorks ?? [])
+    setLaborCostSummary(laborResponse.laborCostSummary ?? null)
+  }
+
   async function refreshProductionOrder() {
     const data = await getProductionOrder(productionOrderId)
     setProductionOrder(data)
+    await Promise.all([loadMaterialCostAttribution(), loadLaborAttribution()])
     return data
   }
 
@@ -274,10 +331,28 @@ function ProductionOrderDetailPage() {
     setFailed(false)
     setNotFound(false)
     setProductionOrder(null)
+    setMaterialConsumptions([])
+    setMaterialCostSummary(null)
+    setLaborWorks([])
+    setLaborCostSummary(null)
 
-    getProductionOrder(productionOrderId)
-      .then((data) => {
-        setProductionOrder(data)
+    Promise.all([
+      getProductionOrder(productionOrderId),
+      getProductionMaterialConsumptions(productionOrderId),
+      getProductionLaborWorks(productionOrderId),
+    ])
+      .then(([orderData, consumptionsResponse, laborResponse]) => {
+        setProductionOrder(orderData)
+        setMaterialConsumptions(consumptionsResponse.consumptions ?? [])
+        setMaterialCostSummary(
+          consumptionsResponse.materialCostSummary ??
+            orderData.materialCostSummary ??
+            null
+        )
+        setLaborWorks(laborResponse.laborWorks ?? [])
+        setLaborCostSummary(
+          laborResponse.laborCostSummary ?? orderData.laborCostSummary ?? null
+        )
         setLoading(false)
       })
       .catch((error) => {
@@ -302,9 +377,11 @@ function ProductionOrderDetailPage() {
     assigningOperator ||
     startingOperation ||
     completingOperation
-  const pageBusy = lifecycleBusy || operationBusy
+  const laborBusy = registeringLabor || payingLabor || cancellingLabor
+  const pageBusy = lifecycleBusy || operationBusy || laborBusy
   const canAddOperation = status === 'CREATED'
   const orderAllowsOperationExecution = status === 'IN_PROGRESS'
+  const canRegisterLabor = status === 'IN_PROGRESS'
   const usedOperationTypes = operations.map((operation) => operation.type)
 
   function openPlanDialog() {
@@ -514,6 +591,106 @@ function ProductionOrderDetailPage() {
       )
     } finally {
       setCompleting(false)
+    }
+  }
+
+  async function openRegisterLaborDialog() {
+    if (pageBusy || !canRegisterLabor) {
+      return
+    }
+
+    setRegisterLaborError('')
+    setRegisterLaborOpen(true)
+    setLaborOperatorsLoading(true)
+    try {
+      const data = await getEligibleProductionLaborOperators()
+      setLaborOperators(Array.isArray(data?.operators) ? data.operators : [])
+    } catch {
+      setLaborOperators([])
+      setRegisterLaborError('No fue posible cargar los operarios disponibles.')
+    } finally {
+      setLaborOperatorsLoading(false)
+    }
+  }
+
+  async function handleRegisterLaborSubmit(payload) {
+    if (registeringLabor) {
+      return
+    }
+
+    setRegisteringLabor(true)
+    setRegisterLaborError('')
+    try {
+      await registerProductionLaborWork(productionOrder.productionOrderId, payload)
+      await refreshProductionOrder()
+      setRegisterLaborOpen(false)
+      setSuccessMessage('Trabajo de producción registrado correctamente.')
+      setSuccessOpen(true)
+    } catch (error) {
+      setRegisterLaborError(
+        resolveApiErrorMessage(
+          error,
+          'No fue posible registrar el trabajo de producción.'
+        )
+      )
+    } finally {
+      setRegisteringLabor(false)
+    }
+  }
+
+  async function handlePayLaborConfirm() {
+    if (!payLaborTarget || payingLabor) {
+      return
+    }
+
+    setPayingLabor(true)
+    setPayLaborError('')
+    try {
+      await payProductionLaborWork(
+        productionOrder.productionOrderId,
+        payLaborTarget.laborWorkId
+      )
+      setPayLaborTarget(null)
+      await refreshProductionOrder()
+      setSuccessMessage('Pago de mano de obra registrado correctamente.')
+      setSuccessOpen(true)
+    } catch (error) {
+      setPayLaborError(
+        resolveApiErrorMessage(
+          error,
+          'No fue posible pagar el trabajo de producción.'
+        )
+      )
+    } finally {
+      setPayingLabor(false)
+    }
+  }
+
+  async function handleCancelLaborConfirm() {
+    if (!cancelLaborTarget || cancellingLabor) {
+      return
+    }
+
+    setCancellingLabor(true)
+    setCancelLaborError('')
+    try {
+      await cancelProductionLaborWork(
+        productionOrder.productionOrderId,
+        cancelLaborTarget.laborWorkId
+      )
+      setCancelLaborTarget(null)
+      await refreshProductionOrder()
+      setSuccessMessage('Trabajo de producción cancelado.')
+      setSuccessOpen(true)
+    } catch (error) {
+      setCancelLaborError(
+        resolveApiErrorMessage(
+          error,
+          'No fue posible cancelar el trabajo de producción.'
+        )
+      )
+    } finally {
+      setCancellingLabor(false)
     }
   }
 
@@ -877,6 +1054,242 @@ function ProductionOrderDetailPage() {
 
             <Paper sx={{ p: 3 }}>
               <Stack spacing={3}>
+                <Stack spacing={1}>
+                  <Typography variant="h5">Costos de materiales</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    El costo se calcula con el costo histórico registrado al
+                    momento del consumo de inventario.
+                  </Typography>
+                </Stack>
+
+                <Grid container spacing={2}>
+                  <Grid size={{ xs: 12, sm: 4 }}>
+                    <DetailField label="Costo de materiales">
+                      <Typography variant="h5">
+                        {formatProductionMaterialCost(
+                          materialCostSummary?.totalMaterialCost
+                        ) ?? 'Sin costo configurado'}
+                      </Typography>
+                    </DetailField>
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 4 }}>
+                    <DetailField label="Consumos registrados">
+                      <Typography>
+                        {materialCostSummary?.consumptionCount ??
+                          materialConsumptions.length}{' '}
+                        consumos
+                      </Typography>
+                    </DetailField>
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 4 }}>
+                    <DetailField label="Valorización">
+                      <Typography>
+                        {materialCostSummary?.valuedConsumptionCount ?? 0}{' '}
+                        valorizados
+                      </Typography>
+                      <Typography color="text.secondary">
+                        {materialCostSummary?.unvaluedConsumptionCount ?? 0}{' '}
+                        sin costo
+                      </Typography>
+                    </DetailField>
+                  </Grid>
+                </Grid>
+
+                {materialConsumptions.length === 0 ? (
+                  <Typography color="text.secondary">
+                    No hay consumos de material registrados.
+                  </Typography>
+                ) : (
+                  <TableContainer>
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell sx={headerCellSx}>Cantidad</TableCell>
+                          <TableCell sx={headerCellSx}>Unidad</TableCell>
+                          <TableCell sx={headerCellSx}>Costo unitario</TableCell>
+                          <TableCell sx={headerCellSx}>Costo total</TableCell>
+                          <TableCell sx={headerCellSx}>Observación</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {materialConsumptions.map((consumption) => (
+                          <TableRow key={consumption.consumptionId}>
+                            <TableCell>{consumption.quantity}</TableCell>
+                            <TableCell>{consumption.unitOfMeasure}</TableCell>
+                            <TableCell>
+                              {formatProductionMaterialCostOrUnvalued(
+                                consumption.unitCost
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {formatProductionMaterialCostOrUnvalued(
+                                consumption.totalCost
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {consumption.observation || '—'}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                )}
+
+                <Divider />
+
+                <Stack spacing={1}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                    Costos
+                  </Typography>
+                  <Typography>
+                    Materiales:{' '}
+                    {formatProductionMaterialCost(
+                      materialCostSummary?.totalMaterialCost ??
+                        productionOrder?.materialCostSummary?.totalMaterialCost
+                    ) ?? 'Sin costo configurado'}
+                  </Typography>
+                  <Typography>
+                    Mano de obra:{' '}
+                    {formatProductionMaterialCost(
+                      laborCostSummary?.totalLaborCost ??
+                        productionOrder?.laborCostSummary?.totalLaborCost
+                    ) ?? 'No hay mano de obra registrada'}
+                  </Typography>
+                  <Typography variant="h6">
+                    Total costo productivo:{' '}
+                    {formatProductionMaterialCost(
+                      productionOrder?.totalProductionCost
+                    ) ?? '—'}
+                  </Typography>
+                </Stack>
+              </Stack>
+            </Paper>
+
+            <Paper sx={{ p: 3 }}>
+              <Stack spacing={3}>
+                <Stack
+                  direction={{ xs: 'column', sm: 'row' }}
+                  spacing={1.5}
+                  justifyContent="space-between"
+                  alignItems={{ xs: 'stretch', sm: 'center' }}
+                >
+                  <Stack spacing={1}>
+                    <Typography variant="h5">Mano de obra</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Costo de mano de obra:{' '}
+                      {formatProductionMaterialCost(
+                        laborCostSummary?.totalLaborCost
+                      ) ?? 'No hay mano de obra registrada'}
+                    </Typography>
+                  </Stack>
+                  {canRegisterLabor ? (
+                    <Button
+                      variant="outlined"
+                      startIcon={<AddIcon />}
+                      onClick={openRegisterLaborDialog}
+                      disabled={pageBusy}
+                    >
+                      Registrar trabajo
+                    </Button>
+                  ) : null}
+                </Stack>
+
+                {laborWorks.length === 0 ? (
+                  <Typography color="text.secondary">
+                    No hay mano de obra registrada.
+                  </Typography>
+                ) : (
+                  <TableContainer>
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell sx={headerCellSx}>Operario</TableCell>
+                          <TableCell sx={headerCellSx}>Fecha</TableCell>
+                          <TableCell sx={headerCellSx}>Operación</TableCell>
+                          <TableCell sx={headerCellSx}>Cantidad</TableCell>
+                          <TableCell sx={headerCellSx}>Tarifa</TableCell>
+                          <TableCell sx={headerCellSx}>Total</TableCell>
+                          <TableCell sx={headerCellSx}>Estado</TableCell>
+                          <TableCell align="right" sx={headerCellSx}>
+                            Acciones
+                          </TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {laborWorks.map((labor) => (
+                          <TableRow key={labor.laborWorkId}>
+                            <TableCell>
+                              {labor.operatorDisplayName || '—'}
+                            </TableCell>
+                            <TableCell>
+                              {formatDisplayDate(labor.workDate)}
+                            </TableCell>
+                            <TableCell>{labor.operation}</TableCell>
+                            <TableCell>
+                              {labor.quantity} {labor.unitOfMeasure}
+                            </TableCell>
+                            <TableCell>
+                              {formatProductionMaterialCost(labor.unitRate) ??
+                                '—'}
+                            </TableCell>
+                            <TableCell>
+                              {formatProductionMaterialCost(
+                                labor.calculatedAmount
+                              ) ?? '—'}
+                            </TableCell>
+                            <TableCell>
+                              <Chip
+                                size="small"
+                                color={getLaborStatusColor(labor.status)}
+                                label={getLaborStatusLabel(labor.status)}
+                              />
+                            </TableCell>
+                            <TableCell align="right">
+                              {labor.status === 'PENDING' ? (
+                                <Stack
+                                  direction="row"
+                                  spacing={1}
+                                  justifyContent="flex-end"
+                                >
+                                  <Button
+                                    size="small"
+                                    variant="contained"
+                                    disabled={pageBusy}
+                                    onClick={() => {
+                                      setPayLaborError('')
+                                      setPayLaborTarget(labor)
+                                    }}
+                                  >
+                                    Pagar
+                                  </Button>
+                                  <Button
+                                    size="small"
+                                    color="warning"
+                                    disabled={pageBusy}
+                                    onClick={() => {
+                                      setCancelLaborError('')
+                                      setCancelLaborTarget(labor)
+                                    }}
+                                  >
+                                    Cancelar
+                                  </Button>
+                                </Stack>
+                              ) : (
+                                '—'
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                )}
+              </Stack>
+            </Paper>
+
+            <Paper sx={{ p: 3 }}>
+              <Stack spacing={3}>
                 <Stack
                   direction={{ xs: 'column', sm: 'row' }}
                   spacing={1.5}
@@ -1046,6 +1459,62 @@ function ProductionOrderDetailPage() {
                 )}
               </Stack>
             </Paper>
+
+            <RegisterProductionLaborDialog
+              open={registerLaborOpen}
+              operators={laborOperators}
+              operatorsLoading={laborOperatorsLoading}
+              onClose={() => {
+                if (!registeringLabor) {
+                  setRegisterLaborOpen(false)
+                }
+              }}
+              onSubmit={handleRegisterLaborSubmit}
+              submitting={registeringLabor}
+              errorMessage={registerLaborError}
+            />
+
+            <ConfirmProductionLifecycleDialog
+              open={Boolean(payLaborTarget)}
+              title="Pagar mano de obra"
+              description={
+                payLaborTarget
+                  ? `¿Deseas pagar este trabajo de producción? Operario: ${payLaborTarget.operatorDisplayName}. Operación: ${payLaborTarget.operation}. Cantidad: ${payLaborTarget.quantity}. Tarifa: ${formatProductionMaterialCost(payLaborTarget.unitRate) ?? '—'}. Total: ${formatProductionMaterialCost(payLaborTarget.calculatedAmount) ?? '—'}.`
+                  : ''
+              }
+              confirmLabel="Pagar"
+              submittingLabel="Pagando..."
+              onClose={() => {
+                if (!payingLabor) {
+                  setPayLaborTarget(null)
+                  setPayLaborError('')
+                }
+              }}
+              onConfirm={handlePayLaborConfirm}
+              submitting={payingLabor}
+              errorMessage={payLaborError}
+            />
+
+            <ConfirmProductionLifecycleDialog
+              open={Boolean(cancelLaborTarget)}
+              title="Cancelar trabajo de producción"
+              description={
+                cancelLaborTarget
+                  ? `¿Cancelar el trabajo pendiente de ${cancelLaborTarget.operatorDisplayName} (${cancelLaborTarget.operation})?`
+                  : ''
+              }
+              confirmLabel="Cancelar trabajo"
+              submittingLabel="Cancelando..."
+              onClose={() => {
+                if (!cancellingLabor) {
+                  setCancelLaborTarget(null)
+                  setCancelLaborError('')
+                }
+              }}
+              onConfirm={handleCancelLaborConfirm}
+              submitting={cancellingLabor}
+              errorMessage={cancelLaborError}
+            />
 
             <PlanProductionOrderDialog
               open={planDialogOpen}

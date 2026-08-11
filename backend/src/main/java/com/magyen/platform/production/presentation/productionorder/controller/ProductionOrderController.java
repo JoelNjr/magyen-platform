@@ -10,13 +10,23 @@ import com.magyen.platform.production.application.dto.CompleteProductionOrderCom
 import com.magyen.platform.production.application.dto.CompleteProductionOrderResult;
 import com.magyen.platform.production.application.dto.CreateProductionOrderCommand;
 import com.magyen.platform.production.application.dto.CreateProductionOrderResult;
+import com.magyen.platform.production.application.dto.CancelProductionLaborWorkCommand;
+import com.magyen.platform.production.application.dto.CancelProductionLaborWorkResult;
+import com.magyen.platform.production.application.dto.GetProductionLaborWorkQuery;
+import com.magyen.platform.production.application.dto.GetProductionLaborWorkResult;
+import com.magyen.platform.production.application.dto.GetProductionLaborWorksQuery;
+import com.magyen.platform.production.application.dto.GetProductionLaborWorksResult;
 import com.magyen.platform.production.application.dto.GetProductionMaterialConsumptionsQuery;
 import com.magyen.platform.production.application.dto.GetProductionMaterialConsumptionsResult;
 import com.magyen.platform.production.application.dto.GetProductionOrderCommand;
 import com.magyen.platform.production.application.dto.GetProductionOrderResult;
 import com.magyen.platform.production.application.dto.GetProductionOrdersResult;
+import com.magyen.platform.production.application.dto.PayProductionLaborWorkCommand;
+import com.magyen.platform.production.application.dto.PayProductionLaborWorkResult;
 import com.magyen.platform.production.application.dto.PlanProductionOrderCommand;
 import com.magyen.platform.production.application.dto.PlanProductionOrderResult;
+import com.magyen.platform.production.application.dto.RegisterProductionLaborWorkCommand;
+import com.magyen.platform.production.application.dto.RegisterProductionLaborWorkResult;
 import com.magyen.platform.production.application.dto.RegisterProductionMaterialConsumptionCommand;
 import com.magyen.platform.production.application.dto.RegisterProductionMaterialConsumptionResult;
 import com.magyen.platform.production.application.dto.StartProductionOperationCommand;
@@ -25,13 +35,18 @@ import com.magyen.platform.production.application.dto.StartProductionOrderComman
 import com.magyen.platform.production.application.dto.StartProductionOrderResult;
 import com.magyen.platform.production.application.usecase.AddProductionOperationUseCase;
 import com.magyen.platform.production.application.usecase.AssignProductionOperationOperatorUseCase;
+import com.magyen.platform.production.application.usecase.CancelProductionLaborWorkUseCase;
 import com.magyen.platform.production.application.usecase.CompleteProductionOperationUseCase;
 import com.magyen.platform.production.application.usecase.CompleteProductionOrderUseCase;
 import com.magyen.platform.production.application.usecase.CreateProductionOrderFromOrderUseCase;
+import com.magyen.platform.production.application.usecase.GetProductionLaborWorkUseCase;
+import com.magyen.platform.production.application.usecase.GetProductionLaborWorksUseCase;
 import com.magyen.platform.production.application.usecase.GetProductionMaterialConsumptionsUseCase;
 import com.magyen.platform.production.application.usecase.GetProductionOrderUseCase;
 import com.magyen.platform.production.application.usecase.GetProductionOrdersUseCase;
+import com.magyen.platform.production.application.usecase.PayProductionLaborWorkUseCase;
 import com.magyen.platform.production.application.usecase.PlanProductionOrderUseCase;
+import com.magyen.platform.production.application.usecase.RegisterProductionLaborWorkUseCase;
 import com.magyen.platform.production.application.usecase.RegisterProductionMaterialConsumptionUseCase;
 import com.magyen.platform.production.application.usecase.StartProductionOperationUseCase;
 import com.magyen.platform.production.application.usecase.StartProductionOrderUseCase;
@@ -39,17 +54,24 @@ import com.magyen.platform.production.presentation.productionorder.mapper.Produc
 import com.magyen.platform.production.presentation.productionorder.request.AddProductionOperationRequest;
 import com.magyen.platform.production.presentation.productionorder.request.AssignProductionOperationOperatorRequest;
 import com.magyen.platform.production.presentation.productionorder.request.CreateProductionOrderRequest;
+import com.magyen.platform.production.presentation.productionorder.request.PayProductionLaborWorkRequest;
 import com.magyen.platform.production.presentation.productionorder.request.PlanProductionOrderRequest;
+import com.magyen.platform.production.presentation.productionorder.request.RegisterProductionLaborWorkRequest;
 import com.magyen.platform.production.presentation.productionorder.request.RegisterProductionMaterialConsumptionRequest;
 import com.magyen.platform.production.presentation.productionorder.response.AddProductionOperationResponse;
 import com.magyen.platform.production.presentation.productionorder.response.AssignProductionOperationOperatorResponse;
+import com.magyen.platform.production.presentation.productionorder.response.CancelProductionLaborWorkResponse;
 import com.magyen.platform.production.presentation.productionorder.response.CompleteProductionOperationResponse;
 import com.magyen.platform.production.presentation.productionorder.response.CompleteProductionOrderResponse;
 import com.magyen.platform.production.presentation.productionorder.response.CreateProductionOrderResponse;
+import com.magyen.platform.production.presentation.productionorder.response.GetProductionLaborWorkResponse;
+import com.magyen.platform.production.presentation.productionorder.response.GetProductionLaborWorksResponse;
 import com.magyen.platform.production.presentation.productionorder.response.GetProductionMaterialConsumptionsResponse;
 import com.magyen.platform.production.presentation.productionorder.response.GetProductionOrderResponse;
 import com.magyen.platform.production.presentation.productionorder.response.GetProductionOrdersResponse;
+import com.magyen.platform.production.presentation.productionorder.response.PayProductionLaborWorkResponse;
 import com.magyen.platform.production.presentation.productionorder.response.PlanProductionOrderResponse;
+import com.magyen.platform.production.presentation.productionorder.response.RegisterProductionLaborWorkResponse;
 import com.magyen.platform.production.presentation.productionorder.response.RegisterProductionMaterialConsumptionResponse;
 import com.magyen.platform.production.presentation.productionorder.response.StartProductionOperationResponse;
 import com.magyen.platform.production.presentation.productionorder.response.StartProductionOrderResponse;
@@ -86,6 +108,11 @@ public class ProductionOrderController {
     private final CompleteProductionOperationUseCase completeProductionOperationUseCase;
     private final RegisterProductionMaterialConsumptionUseCase registerProductionMaterialConsumptionUseCase;
     private final GetProductionMaterialConsumptionsUseCase getProductionMaterialConsumptionsUseCase;
+    private final RegisterProductionLaborWorkUseCase registerProductionLaborWorkUseCase;
+    private final GetProductionLaborWorksUseCase getProductionLaborWorksUseCase;
+    private final GetProductionLaborWorkUseCase getProductionLaborWorkUseCase;
+    private final PayProductionLaborWorkUseCase payProductionLaborWorkUseCase;
+    private final CancelProductionLaborWorkUseCase cancelProductionLaborWorkUseCase;
     private final ProductionPresentationMapper productionPresentationMapper;
 
     public ProductionOrderController(
@@ -101,6 +128,11 @@ public class ProductionOrderController {
             CompleteProductionOperationUseCase completeProductionOperationUseCase,
             RegisterProductionMaterialConsumptionUseCase registerProductionMaterialConsumptionUseCase,
             GetProductionMaterialConsumptionsUseCase getProductionMaterialConsumptionsUseCase,
+            RegisterProductionLaborWorkUseCase registerProductionLaborWorkUseCase,
+            GetProductionLaborWorksUseCase getProductionLaborWorksUseCase,
+            GetProductionLaborWorkUseCase getProductionLaborWorkUseCase,
+            PayProductionLaborWorkUseCase payProductionLaborWorkUseCase,
+            CancelProductionLaborWorkUseCase cancelProductionLaborWorkUseCase,
             ProductionPresentationMapper productionPresentationMapper
     ) {
         this.createProductionOrderFromOrderUseCase = createProductionOrderFromOrderUseCase;
@@ -115,6 +147,11 @@ public class ProductionOrderController {
         this.completeProductionOperationUseCase = completeProductionOperationUseCase;
         this.registerProductionMaterialConsumptionUseCase = registerProductionMaterialConsumptionUseCase;
         this.getProductionMaterialConsumptionsUseCase = getProductionMaterialConsumptionsUseCase;
+        this.registerProductionLaborWorkUseCase = registerProductionLaborWorkUseCase;
+        this.getProductionLaborWorksUseCase = getProductionLaborWorksUseCase;
+        this.getProductionLaborWorkUseCase = getProductionLaborWorkUseCase;
+        this.payProductionLaborWorkUseCase = payProductionLaborWorkUseCase;
+        this.cancelProductionLaborWorkUseCase = cancelProductionLaborWorkUseCase;
         this.productionPresentationMapper = productionPresentationMapper;
     }
 
@@ -268,6 +305,75 @@ public class ProductionOrderController {
                 productionPresentationMapper.toMaterialConsumptionsQuery(productionOrderId);
         GetProductionMaterialConsumptionsResult result = getProductionMaterialConsumptionsUseCase.execute(query);
         GetProductionMaterialConsumptionsResponse response = productionPresentationMapper.toResponse(result);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{productionOrderId}/labor")
+    public ResponseEntity<RegisterProductionLaborWorkResponse> registerLaborWork(
+            @PathVariable UUID productionOrderId,
+            @RequestBody RegisterProductionLaborWorkRequest request
+    ) {
+        RegisterProductionLaborWorkCommand command =
+                productionPresentationMapper.toRegisterLaborWorkCommand(productionOrderId, request);
+        RegisterProductionLaborWorkResult result = registerProductionLaborWorkUseCase.execute(command);
+        RegisterProductionLaborWorkResponse response =
+                productionPresentationMapper.toRegisterLaborWorkResponse(result);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @GetMapping("/{productionOrderId}/labor")
+    public ResponseEntity<GetProductionLaborWorksResponse> getLaborWorks(
+            @PathVariable UUID productionOrderId
+    ) {
+        GetProductionLaborWorksQuery query = productionPresentationMapper.toLaborWorksQuery(productionOrderId);
+        GetProductionLaborWorksResult result = getProductionLaborWorksUseCase.execute(query);
+        GetProductionLaborWorksResponse response = productionPresentationMapper.toLaborWorksResponse(result);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{productionOrderId}/labor/{laborWorkId}")
+    public ResponseEntity<GetProductionLaborWorkResponse> getLaborWork(
+            @PathVariable UUID productionOrderId,
+            @PathVariable UUID laborWorkId
+    ) {
+        GetProductionLaborWorkQuery query =
+                productionPresentationMapper.toLaborWorkQuery(productionOrderId, laborWorkId);
+        GetProductionLaborWorkResult result = getProductionLaborWorkUseCase.execute(query);
+        GetProductionLaborWorkResponse response = productionPresentationMapper.toLaborWorkResponse(result);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/{productionOrderId}/labor/{laborWorkId}/pay")
+    public ResponseEntity<PayProductionLaborWorkResponse> payLaborWork(
+            @PathVariable UUID productionOrderId,
+            @PathVariable UUID laborWorkId,
+            @RequestBody(required = false) PayProductionLaborWorkRequest request
+    ) {
+        PayProductionLaborWorkCommand command = productionPresentationMapper.toPayLaborWorkCommand(
+                productionOrderId,
+                laborWorkId,
+                request
+        );
+        PayProductionLaborWorkResult result = payProductionLaborWorkUseCase.execute(command);
+        PayProductionLaborWorkResponse response = productionPresentationMapper.toPayLaborWorkResponse(result);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/{productionOrderId}/labor/{laborWorkId}/cancel")
+    public ResponseEntity<CancelProductionLaborWorkResponse> cancelLaborWork(
+            @PathVariable UUID productionOrderId,
+            @PathVariable UUID laborWorkId
+    ) {
+        CancelProductionLaborWorkCommand command =
+                productionPresentationMapper.toCancelLaborWorkCommand(productionOrderId, laborWorkId);
+        CancelProductionLaborWorkResult result = cancelProductionLaborWorkUseCase.execute(command);
+        CancelProductionLaborWorkResponse response =
+                productionPresentationMapper.toCancelLaborWorkResponse(result);
 
         return ResponseEntity.ok(response);
     }

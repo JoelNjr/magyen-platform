@@ -138,8 +138,21 @@ class ProductionMaterialConsumptionApiContractTest {
         mockMvc.perform(get("/api/v1/production-orders/{productionOrderId}/material-consumptions", productionOrderId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.consumptions", hasSize(2)))
+                .andExpect(jsonPath("$.consumptions[?(@.observation == 'first')].unitCost").value(18000.0))
+                .andExpect(jsonPath("$.consumptions[?(@.observation == 'first')].totalCost").value(336600.0))
+                .andExpect(jsonPath("$.materialCostSummary.totalMaterialCost").value(336600.0))
+                .andExpect(jsonPath("$.materialCostSummary.consumptionCount").value(2))
+                .andExpect(jsonPath("$.materialCostSummary.valuedConsumptionCount").value(1))
+                .andExpect(jsonPath("$.materialCostSummary.unvaluedConsumptionCount").value(1))
                 .andExpect(jsonPath("$.consumptions[?(@.observation == 'first')]").exists())
                 .andExpect(jsonPath("$.consumptions[?(@.observation == 'second')]").exists());
+
+        mockMvc.perform(get("/api/v1/production-orders/{productionOrderId}", productionOrderId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.materialCostSummary.totalMaterialCost").value(336600.0))
+                .andExpect(jsonPath("$.materialCostSummary.consumptionCount").value(2))
+                .andExpect(jsonPath("$.materialCostSummary.valuedConsumptionCount").value(1))
+                .andExpect(jsonPath("$.materialCostSummary.unvaluedConsumptionCount").value(1));
 
         assertEquals(new BigDecimal("81.3000"), inventoryItemRepository.findById(fabric.getId()).orElseThrow().getStock());
         assertEquals(

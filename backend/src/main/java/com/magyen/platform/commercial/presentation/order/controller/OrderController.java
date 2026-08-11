@@ -3,6 +3,8 @@ package com.magyen.platform.commercial.presentation.order.controller;
 import com.magyen.platform.commercial.application.dto.CreateOrderFromQuotationCommand;
 import com.magyen.platform.commercial.application.dto.CreateOrderFromQuotationResult;
 import com.magyen.platform.commercial.application.dto.GetOrderCommand;
+import com.magyen.platform.commercial.application.dto.GetOrderProfitabilityQuery;
+import com.magyen.platform.commercial.application.dto.GetOrderProfitabilityResult;
 import com.magyen.platform.commercial.application.dto.GetOrderResult;
 import com.magyen.platform.commercial.application.dto.GetOrdersResult;
 import com.magyen.platform.commercial.application.dto.ReplaceOrderItemSizesCommand;
@@ -10,6 +12,7 @@ import com.magyen.platform.commercial.application.dto.ReplaceOrderItemSizesResul
 import com.magyen.platform.commercial.application.dto.UpdateOrderItemProductSpecificationCommand;
 import com.magyen.platform.commercial.application.dto.UpdateOrderItemProductSpecificationResult;
 import com.magyen.platform.commercial.application.usecase.CreateOrderFromQuotationUseCase;
+import com.magyen.platform.commercial.application.usecase.GetOrderProfitabilityUseCase;
 import com.magyen.platform.commercial.application.usecase.GetOrderUseCase;
 import com.magyen.platform.commercial.application.usecase.GetOrdersUseCase;
 import com.magyen.platform.commercial.application.usecase.ReplaceOrderItemSizesUseCase;
@@ -19,6 +22,7 @@ import com.magyen.platform.commercial.presentation.order.request.CreateOrderRequ
 import com.magyen.platform.commercial.presentation.order.request.ReplaceOrderItemSizesRequest;
 import com.magyen.platform.commercial.presentation.order.request.UpdateOrderItemProductSpecificationRequest;
 import com.magyen.platform.commercial.presentation.order.response.CreateOrderResponse;
+import com.magyen.platform.commercial.presentation.order.response.GetOrderProfitabilityResponse;
 import com.magyen.platform.commercial.presentation.order.response.GetOrderResponse;
 import com.magyen.platform.commercial.presentation.order.response.GetOrdersResponse;
 import com.magyen.platform.commercial.presentation.order.response.ReplaceOrderItemSizesResponse;
@@ -47,6 +51,7 @@ public class OrderController {
     private final CreateOrderFromQuotationUseCase createOrderFromQuotationUseCase;
     private final GetOrdersUseCase getOrdersUseCase;
     private final GetOrderUseCase getOrderUseCase;
+    private final GetOrderProfitabilityUseCase getOrderProfitabilityUseCase;
     private final ReplaceOrderItemSizesUseCase replaceOrderItemSizesUseCase;
     private final UpdateOrderItemProductSpecificationUseCase updateOrderItemProductSpecificationUseCase;
     private final OrderPresentationMapper orderPresentationMapper;
@@ -55,6 +60,7 @@ public class OrderController {
             CreateOrderFromQuotationUseCase createOrderFromQuotationUseCase,
             GetOrdersUseCase getOrdersUseCase,
             GetOrderUseCase getOrderUseCase,
+            GetOrderProfitabilityUseCase getOrderProfitabilityUseCase,
             ReplaceOrderItemSizesUseCase replaceOrderItemSizesUseCase,
             UpdateOrderItemProductSpecificationUseCase updateOrderItemProductSpecificationUseCase,
             OrderPresentationMapper orderPresentationMapper
@@ -62,6 +68,7 @@ public class OrderController {
         this.createOrderFromQuotationUseCase = createOrderFromQuotationUseCase;
         this.getOrdersUseCase = getOrdersUseCase;
         this.getOrderUseCase = getOrderUseCase;
+        this.getOrderProfitabilityUseCase = getOrderProfitabilityUseCase;
         this.replaceOrderItemSizesUseCase = replaceOrderItemSizesUseCase;
         this.updateOrderItemProductSpecificationUseCase = updateOrderItemProductSpecificationUseCase;
         this.orderPresentationMapper = orderPresentationMapper;
@@ -81,6 +88,17 @@ public class OrderController {
         GetOrderCommand command = orderPresentationMapper.toGetOrderCommand(orderId);
         GetOrderResult result = getOrderUseCase.execute(command);
         GetOrderResponse response = orderPresentationMapper.toResponse(result);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{orderId}/profitability")
+    public ResponseEntity<GetOrderProfitabilityResponse> getOrderProfitability(
+            @PathVariable UUID orderId
+    ) {
+        GetOrderProfitabilityQuery query = orderPresentationMapper.toGetOrderProfitabilityQuery(orderId);
+        GetOrderProfitabilityResult result = getOrderProfitabilityUseCase.execute(query);
+        GetOrderProfitabilityResponse response = orderPresentationMapper.toResponse(result);
 
         return ResponseEntity.ok(response);
     }

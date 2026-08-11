@@ -15,6 +15,8 @@ public record GetPlotterJobResponse(
         BigDecimal printedMeters,
         BigDecimal pricePerMeter,
         BigDecimal totalAmount,
+        BigDecimal paidAmount,
+        BigDecimal outstandingAmount,
         String status,
         String observations
 ) {

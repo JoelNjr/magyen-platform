@@ -1,11 +1,14 @@
 package com.magyen.platform.commercial.infrastructure.configuration;
 
+import com.magyen.platform.commercial.application.port.OrderPaymentCollectionPort;
+import com.magyen.platform.commercial.application.port.ProductionOrderCostPort;
 import com.magyen.platform.commercial.application.usecase.AddQuotationItemUseCase;
 import com.magyen.platform.commercial.application.usecase.ApproveQuotationUseCase;
 import com.magyen.platform.commercial.application.usecase.CreateCustomerUseCase;
 import com.magyen.platform.commercial.application.usecase.CreateOrderFromQuotationUseCase;
 import com.magyen.platform.commercial.application.usecase.CreateQuotationUseCase;
 import com.magyen.platform.commercial.application.usecase.GetCustomersUseCase;
+import com.magyen.platform.commercial.application.usecase.GetOrderProfitabilityUseCase;
 import com.magyen.platform.commercial.application.usecase.GetOrderUseCase;
 import com.magyen.platform.commercial.application.usecase.GetOrdersUseCase;
 import com.magyen.platform.commercial.application.usecase.GetQuotationUseCase;
@@ -17,12 +20,16 @@ import com.magyen.platform.commercial.domain.CustomerRepository;
 import com.magyen.platform.commercial.domain.OrderRepository;
 import com.magyen.platform.commercial.domain.QuotationNumberGenerator;
 import com.magyen.platform.commercial.domain.QuotationRepository;
+import com.magyen.platform.commercial.infrastructure.finance.OrderPaymentCollectionAdapter;
 import com.magyen.platform.commercial.infrastructure.persistence.mapper.CustomerPersistenceMapper;
 import com.magyen.platform.commercial.infrastructure.persistence.mapper.OrderPersistenceMapper;
 import com.magyen.platform.commercial.infrastructure.persistence.mapper.QuotationPersistenceMapper;
+import com.magyen.platform.commercial.infrastructure.production.ProductionOrderCostAdapter;
 import com.magyen.platform.commercial.presentation.customer.mapper.CustomerPresentationMapper;
 import com.magyen.platform.commercial.presentation.order.mapper.OrderPresentationMapper;
 import com.magyen.platform.commercial.presentation.quotation.mapper.QuotationPresentationMapper;
+import com.magyen.platform.finance.application.usecase.GetPaymentsByOrderUseCase;
+import com.magyen.platform.production.application.usecase.GetProductionCostsByCommercialOrderUseCase;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -124,6 +131,33 @@ public class CommercialConfiguration {
     @Bean
     public GetOrderUseCase getOrderUseCase(OrderRepository orderRepository) {
         return new GetOrderUseCase(orderRepository);
+    }
+
+    @Bean
+    public OrderPaymentCollectionPort orderPaymentCollectionPort(
+            GetPaymentsByOrderUseCase getPaymentsByOrderUseCase
+    ) {
+        return new OrderPaymentCollectionAdapter(getPaymentsByOrderUseCase);
+    }
+
+    @Bean
+    public ProductionOrderCostPort productionOrderCostPort(
+            GetProductionCostsByCommercialOrderUseCase getProductionCostsByCommercialOrderUseCase
+    ) {
+        return new ProductionOrderCostAdapter(getProductionCostsByCommercialOrderUseCase);
+    }
+
+    @Bean
+    public GetOrderProfitabilityUseCase getOrderProfitabilityUseCase(
+            OrderRepository orderRepository,
+            OrderPaymentCollectionPort orderPaymentCollectionPort,
+            ProductionOrderCostPort productionOrderCostPort
+    ) {
+        return new GetOrderProfitabilityUseCase(
+                orderRepository,
+                orderPaymentCollectionPort,
+                productionOrderCostPort
+        );
     }
 
     @Bean

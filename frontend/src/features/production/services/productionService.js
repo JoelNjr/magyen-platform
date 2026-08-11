@@ -10,6 +10,48 @@ export async function getProductionOrder(productionOrderId) {
   return response.data
 }
 
+export async function getProductionMaterialConsumptions(productionOrderId) {
+  const response = await httpClient.get(
+    `/production-orders/${productionOrderId}/material-consumptions`
+  )
+  return response.data
+}
+
+export async function getEligibleProductionLaborOperators() {
+  const response = await httpClient.get('/production/labor-operators')
+  return response.data
+}
+
+export async function getProductionLaborWorks(productionOrderId) {
+  const response = await httpClient.get(
+    `/production-orders/${productionOrderId}/labor`
+  )
+  return response.data
+}
+
+export async function registerProductionLaborWork(productionOrderId, payload) {
+  const response = await httpClient.post(
+    `/production-orders/${productionOrderId}/labor`,
+    payload
+  )
+  return response.data
+}
+
+export async function payProductionLaborWork(productionOrderId, laborWorkId) {
+  const response = await httpClient.patch(
+    `/production-orders/${productionOrderId}/labor/${laborWorkId}/pay`,
+    {}
+  )
+  return response.data
+}
+
+export async function cancelProductionLaborWork(productionOrderId, laborWorkId) {
+  const response = await httpClient.patch(
+    `/production-orders/${productionOrderId}/labor/${laborWorkId}/cancel`
+  )
+  return response.data
+}
+
 /**
  * Crea una Orden de Producción a partir de una Orden comercial existente.
  * Usa el contrato REST actual: POST /api/v1/production-orders

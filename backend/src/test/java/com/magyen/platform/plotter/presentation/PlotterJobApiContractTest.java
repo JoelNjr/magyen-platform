@@ -95,7 +95,43 @@ class PlotterJobApiContractTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.plotterJobId").value(plotterJobId))
                 .andExpect(jsonPath("$.totalAmount").value(84000.0))
+                .andExpect(jsonPath("$.paidAmount").value(0.0))
+                .andExpect(jsonPath("$.outstandingAmount").value(84000.0))
                 .andExpect(jsonPath("$.status").value("REGISTERED"));
+
+        mockMvc.perform(
+                        post("/api/v1/plotter/jobs/{plotterJobId}/payments", plotterJobId)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                          "amount": 24000,
+                                          "paymentDate": "2026-08-10",
+                                          "observations": "Abono"
+                                        }
+                                        """)
+                )
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.amount").value(24000.0))
+                .andExpect(jsonPath("$.paidAmount").value(24000.0))
+                .andExpect(jsonPath("$.outstandingAmount").value(60000.0));
+
+        mockMvc.perform(get("/api/v1/plotter/jobs/{plotterJobId}/payments", plotterJobId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.payments.length()").value(1))
+                .andExpect(jsonPath("$.paidAmount").value(24000.0))
+                .andExpect(jsonPath("$.outstandingAmount").value(60000.0));
+
+        mockMvc.perform(
+                        post("/api/v1/plotter/jobs/{plotterJobId}/payments", plotterJobId)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                          "amount": 100000,
+                                          "paymentDate": "2026-08-11"
+                                        }
+                                        """)
+                )
+                .andExpect(status().isBadRequest());
     }
 
     @Test

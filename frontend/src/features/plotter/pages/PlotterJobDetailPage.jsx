@@ -1,4 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import AddIcon from '@mui/icons-material/Add'
+import PaymentsOutlinedIcon from '@mui/icons-material/PaymentsOutlined'
 import PrintOutlinedIcon from '@mui/icons-material/PrintOutlined'
 import {
   Alert,
@@ -8,7 +10,14 @@ import {
   Link,
   Paper,
   Skeleton,
+  Snackbar,
   Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
   Typography,
 } from '@mui/material'
 import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom'
@@ -17,13 +26,18 @@ import {
   getInventoryItem,
   getInventoryMovements,
 } from '../../inventory/services/inventoryService'
+import RegisterPlotterPaymentDialog from '../components/RegisterPlotterPaymentDialog'
 import {
   formatPlotterDate,
   formatPlotterMoney,
   formatPlotterNumber,
   getPlotterStatusChipProps,
 } from '../presentation/plotterJobPresentation'
-import { getPlotterJob } from '../services/plotterService'
+import {
+  getPlotterJob,
+  getPlotterPayments,
+  registerPlotterPayment,
+} from '../services/plotterService'
 
 function DetailField({ label, children }) {
   return (
@@ -36,11 +50,16 @@ function DetailField({ label, children }) {
   )
 }
 
+function resolveApiErrorMessage(error, fallbackMessage) {
+  return error?.response?.data?.message || fallbackMessage
+}
+
 function PlotterJobDetailPage() {
   const { plotterJobId } = useParams()
   const navigate = useNavigate()
 
   const [job, setJob] = useState(null)
+  const [payments, setPayments] = useState([])
   const [customerName, setCustomerName] = useState('')
   const [paperLabel, setPaperLabel] = useState('')
   const [legacyPaper, setLegacyPaper] = useState(false)
@@ -49,97 +68,119 @@ function PlotterJobDetailPage() {
   const [loading, setLoading] = useState(true)
   const [failed, setFailed] = useState(false)
   const [notFound, setNotFound] = useState(false)
+  const [paymentsFailed, setPaymentsFailed] = useState(false)
 
-  useEffect(() => {
-    let cancelled = false
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false)
+  const [registeringPayment, setRegisteringPayment] = useState(false)
+  const [paymentError, setPaymentError] = useState('')
+  const [successOpen, setSuccessOpen] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('')
 
-    async function loadDetail() {
-      setLoading(true)
-      setFailed(false)
-      setNotFound(false)
-      setLegacyPaper(false)
-      setMaterialCost(null)
-      setConsumedMeters(null)
+  const loadDetail = useCallback(async () => {
+    setLoading(true)
+    setFailed(false)
+    setNotFound(false)
+    setPaymentsFailed(false)
+    setLegacyPaper(false)
+    setMaterialCost(null)
+    setConsumedMeters(null)
+
+    try {
+      const [plotterJob, customersData, paymentsData] = await Promise.all([
+        getPlotterJob(plotterJobId),
+        getCustomers().catch(() => ({ customers: [] })),
+        getPlotterPayments(plotterJobId).catch(() => null),
+      ])
+
+      setJob(plotterJob)
+
+      if (paymentsData) {
+        setPayments(Array.isArray(paymentsData.payments) ? paymentsData.payments : [])
+      } else {
+        setPayments([])
+        setPaymentsFailed(true)
+      }
+
+      const customers = Array.isArray(customersData?.customers)
+        ? customersData.customers
+        : []
+      const matchedCustomer = customers.find(
+        (customer) => customer.customerId === plotterJob.customerId
+      )
+      setCustomerName(matchedCustomer?.name || plotterJob.customerId)
 
       try {
-        const [plotterJob, customersData] = await Promise.all([
-          getPlotterJob(plotterJobId),
-          getCustomers().catch(() => ({ customers: [] })),
-        ])
-
-        if (cancelled) {
-          return
-        }
-
-        setJob(plotterJob)
-
-        const customers = Array.isArray(customersData?.customers)
-          ? customersData.customers
-          : []
-        const matchedCustomer = customers.find(
-          (customer) => customer.customerId === plotterJob.customerId
-        )
-        setCustomerName(matchedCustomer?.name || plotterJob.customerId)
-
-        try {
-          const inventoryItem = await getInventoryItem(
-            plotterJob.paperInventoryItemId
+        const inventoryItem = await getInventoryItem(plotterJob.paperInventoryItemId)
+        if (inventoryItem?.plotterPaperRoll && inventoryItem?.paperRollNumber) {
+          setPaperLabel(inventoryItem.paperRollNumber)
+          setLegacyPaper(false)
+        } else {
+          setPaperLabel(
+            inventoryItem?.name ||
+              inventoryItem?.materialCode ||
+              plotterJob.paperInventoryItemId
           )
-          if (inventoryItem?.plotterPaperRoll && inventoryItem?.paperRollNumber) {
-            setPaperLabel(inventoryItem.paperRollNumber)
-            setLegacyPaper(false)
-          } else {
-            setPaperLabel(
-              inventoryItem?.name ||
-                inventoryItem?.materialCode ||
-                plotterJob.paperInventoryItemId
-            )
-            setLegacyPaper(true)
-          }
-
-          const movementsData = await getInventoryMovements(
-            plotterJob.paperInventoryItemId
-          )
-          const movements = Array.isArray(movementsData?.movements)
-            ? movementsData.movements
-            : []
-          const matchingMovement = movements.find(
-            (movement) =>
-              movement.sourceType === 'PLOTTER' &&
-              movement.sourceId === plotterJob.plotterJobId
-          )
-
-          if (matchingMovement) {
-            setConsumedMeters(matchingMovement.quantity)
-            setMaterialCost(matchingMovement.totalCost)
-          }
-        } catch {
-          setPaperLabel(plotterJob.paperInventoryItemId)
           setLegacyPaper(true)
         }
 
-        setLoading(false)
-      } catch (error) {
-        if (cancelled) {
-          return
-        }
+        const movementsData = await getInventoryMovements(
+          plotterJob.paperInventoryItemId
+        )
+        const movements = Array.isArray(movementsData?.movements)
+          ? movementsData.movements
+          : []
+        const matchingMovement = movements.find(
+          (movement) =>
+            movement.sourceType === 'PLOTTER' &&
+            movement.sourceId === plotterJob.plotterJobId
+        )
 
-        if (error?.response?.status === 400 || error?.response?.status === 404) {
-          setNotFound(true)
-        } else {
-          setFailed(true)
+        if (matchingMovement) {
+          setConsumedMeters(matchingMovement.quantity)
+          setMaterialCost(matchingMovement.totalCost)
         }
-        setJob(null)
-        setLoading(false)
+      } catch {
+        setPaperLabel(plotterJob.paperInventoryItemId)
+        setLegacyPaper(true)
       }
-    }
 
-    loadDetail()
-
-    return () => {
-      cancelled = true
+      setLoading(false)
+    } catch (error) {
+      if (error?.response?.status === 400 || error?.response?.status === 404) {
+        setNotFound(true)
+      } else {
+        setFailed(true)
+      }
+      setJob(null)
+      setLoading(false)
     }
   }, [plotterJobId])
+
+  useEffect(() => {
+    loadDetail()
+  }, [loadDetail])
+
+  async function handleRegisterPayment(payload) {
+    if (registeringPayment) {
+      return
+    }
+
+    setRegisteringPayment(true)
+    setPaymentError('')
+    try {
+      await registerPlotterPayment(plotterJobId, payload)
+      setPaymentDialogOpen(false)
+      await loadDetail()
+      setSuccessMessage('Pago registrado correctamente.')
+      setSuccessOpen(true)
+    } catch (error) {
+      setPaymentError(
+        resolveApiErrorMessage(error, 'No fue posible registrar el pago.')
+      )
+    } finally {
+      setRegisteringPayment(false)
+    }
+  }
 
   if (loading) {
     return (
@@ -173,125 +214,248 @@ function PlotterJobDetailPage() {
   }
 
   const statusChip = getPlotterStatusChipProps(job.status)
+  const outstanding = Number(job.outstandingAmount ?? 0)
+  const canRegisterPayment = outstanding > 0
 
   return (
-    <Stack spacing={3}>
-      <Stack
-        direction={{ xs: 'column', sm: 'row' }}
-        spacing={2}
-        justifyContent="space-between"
-        alignItems={{ xs: 'stretch', sm: 'center' }}
-      >
-        <Stack spacing={0.5}>
-          <Typography variant="h3">Trabajo de Plotter</Typography>
-          <Typography variant="body2" color="text.secondary">
-            {plotterJobId}
-          </Typography>
-        </Stack>
-        <Button onClick={() => navigate('/plotter')}>Volver</Button>
-      </Stack>
-
-      <Paper sx={{ p: 3 }}>
-        <Grid container spacing={3}>
-          <Grid item xs={12} sm={6} md={4}>
-            <DetailField label="Cliente">
-              <Typography>{customerName}</Typography>
-            </DetailField>
-          </Grid>
-          <Grid item xs={12} sm={6} md={4}>
-            <DetailField label="Fecha">
-              <Typography>{formatPlotterDate(job.creationDate)}</Typography>
-            </DetailField>
-          </Grid>
-          <Grid item xs={12} sm={6} md={4}>
-            <DetailField label="Estado">
-              <Chip size="small" {...statusChip} />
-            </DetailField>
-          </Grid>
-          <Grid item xs={12} sm={6} md={4}>
-            <DetailField label="Rollo utilizado">
-              <Typography>
-                {paperLabel}
-                {legacyPaper ? ' (histórico / legado)' : ''}
-              </Typography>
-              {!legacyPaper && (
-                <Link
-                  component={RouterLink}
-                  to={`/inventory/${job.paperInventoryItemId}`}
-                  underline="hover"
-                >
-                  Ver inventario
-                </Link>
-              )}
-            </DetailField>
-          </Grid>
-          <Grid item xs={12} sm={6} md={4}>
-            <DetailField label="Metros impresos">
-              <Typography>{formatPlotterNumber(job.printedMeters)} m</Typography>
-            </DetailField>
-          </Grid>
-          <Grid item xs={12} sm={6} md={4}>
-            <DetailField label="Precio por metro">
-              <Typography>{formatPlotterMoney(job.pricePerMeter)}</Typography>
-            </DetailField>
-          </Grid>
-          <Grid item xs={12} sm={6} md={4}>
-            <DetailField label="Total cobrado">
-              <Typography variant="h6">
-                {formatPlotterMoney(job.totalAmount)}
-              </Typography>
-            </DetailField>
-          </Grid>
-          <Grid item xs={12}>
-            <DetailField label="Observaciones">
-              <Typography>{job.observations || '—'}</Typography>
-            </DetailField>
-          </Grid>
-        </Grid>
-      </Paper>
-
-      <Paper sx={{ p: 3 }}>
-        <Stack spacing={1.5}>
-          <Stack direction="row" spacing={1} alignItems="center">
-            <PrintOutlinedIcon color="action" />
-            <Typography variant="h6">Consumo de material</Typography>
+    <>
+      <Stack spacing={3}>
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          spacing={2}
+          justifyContent="space-between"
+          alignItems={{ xs: 'stretch', sm: 'center' }}
+        >
+          <Stack spacing={0.5}>
+            <Typography variant="h3">Trabajo de Plotter</Typography>
+            <Typography variant="body2" color="text.secondary">
+              {plotterJobId}
+            </Typography>
           </Stack>
-          {legacyPaper && !materialCost && consumedMeters === null ? (
-            <Alert severity="info">
-              Este trabajo histórico no tiene consumo de inventario asociado. Los
-              trabajos nuevos consumen el rollo de papel seleccionado.
-            </Alert>
-          ) : (
+          <Button onClick={() => navigate('/plotter')}>Volver</Button>
+        </Stack>
+
+        <Paper sx={{ p: 3 }}>
+          <Grid container spacing={3}>
+            <Grid item xs={12} sm={6} md={4}>
+              <DetailField label="Cliente">
+                <Typography>{customerName}</Typography>
+              </DetailField>
+            </Grid>
+            <Grid item xs={12} sm={6} md={4}>
+              <DetailField label="Fecha">
+                <Typography>{formatPlotterDate(job.creationDate)}</Typography>
+              </DetailField>
+            </Grid>
+            <Grid item xs={12} sm={6} md={4}>
+              <DetailField label="Estado">
+                <Chip size="small" {...statusChip} />
+              </DetailField>
+            </Grid>
+            <Grid item xs={12} sm={6} md={4}>
+              <DetailField label="Rollo utilizado">
+                <Typography>
+                  {paperLabel}
+                  {legacyPaper ? ' (histórico / legado)' : ''}
+                </Typography>
+                {!legacyPaper && (
+                  <Link
+                    component={RouterLink}
+                    to={`/inventory/${job.paperInventoryItemId}`}
+                    underline="hover"
+                  >
+                    Ver inventario
+                  </Link>
+                )}
+              </DetailField>
+            </Grid>
+            <Grid item xs={12} sm={6} md={4}>
+              <DetailField label="Metros impresos">
+                <Typography>{formatPlotterNumber(job.printedMeters)} m</Typography>
+              </DetailField>
+            </Grid>
+            <Grid item xs={12} sm={6} md={4}>
+              <DetailField label="Precio por metro">
+                <Typography>{formatPlotterMoney(job.pricePerMeter)}</Typography>
+              </DetailField>
+            </Grid>
+            <Grid item xs={12} sm={6} md={4}>
+              <DetailField label="Total cobrado">
+                <Typography variant="h6">
+                  {formatPlotterMoney(job.totalAmount)}
+                </Typography>
+              </DetailField>
+            </Grid>
+            <Grid item xs={12}>
+              <DetailField label="Observaciones">
+                <Typography>{job.observations || '—'}</Typography>
+              </DetailField>
+            </Grid>
+          </Grid>
+        </Paper>
+
+        <Paper sx={{ p: 3 }}>
+          <Stack spacing={2}>
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              spacing={2}
+              justifyContent="space-between"
+              alignItems={{ xs: 'stretch', sm: 'center' }}
+            >
+              <Stack direction="row" spacing={1} alignItems="center">
+                <PaymentsOutlinedIcon color="action" />
+                <Typography variant="h6">Resumen de pago</Typography>
+              </Stack>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                disabled={!canRegisterPayment || registeringPayment}
+                onClick={() => {
+                  setPaymentError('')
+                  setPaymentDialogOpen(true)
+                }}
+              >
+                Registrar pago
+              </Button>
+            </Stack>
+
             <Grid container spacing={2}>
               <Grid item xs={12} sm={4}>
-                <DetailField label="Rollo">
-                  <Typography>{paperLabel}</Typography>
-                </DetailField>
-              </Grid>
-              <Grid item xs={12} sm={4}>
-                <DetailField label="Consumido">
-                  <Typography>
-                    {formatPlotterNumber(
-                      consumedMeters ?? job.printedMeters
-                    )}{' '}
-                    m
+                <DetailField label="Valor del trabajo">
+                  <Typography variant="h6">
+                    {formatPlotterMoney(job.totalAmount)}
                   </Typography>
                 </DetailField>
               </Grid>
               <Grid item xs={12} sm={4}>
-                <DetailField label="Costo material">
-                  <Typography>
-                    {materialCost === null || materialCost === undefined
-                      ? 'Sin valoración histórica'
-                      : formatPlotterMoney(materialCost)}
+                <DetailField label="Pagado">
+                  <Typography variant="h6" color="success.main">
+                    {formatPlotterMoney(job.paidAmount)}
+                  </Typography>
+                </DetailField>
+              </Grid>
+              <Grid item xs={12} sm={4}>
+                <DetailField label="Saldo pendiente">
+                  <Typography
+                    variant="h6"
+                    color={outstanding > 0 ? 'warning.main' : 'text.primary'}
+                  >
+                    {formatPlotterMoney(job.outstandingAmount)}
                   </Typography>
                 </DetailField>
               </Grid>
             </Grid>
-          )}
-        </Stack>
-      </Paper>
-    </Stack>
+
+            {paymentsFailed ? (
+              <Alert severity="error">No fue posible cargar el historial de pagos.</Alert>
+            ) : (
+              <TableContainer>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell sx={{ fontWeight: 'bold' }}>Fecha</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold' }}>Monto</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold' }}>Observación</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {payments.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={3}>
+                          <Typography color="text.secondary" sx={{ py: 2 }}>
+                            No hay pagos registrados.
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      payments.map((payment) => (
+                        <TableRow key={payment.paymentId}>
+                          <TableCell>
+                            {formatPlotterDate(payment.paymentDate)}
+                          </TableCell>
+                          <TableCell>
+                            {formatPlotterMoney(payment.amount)}
+                          </TableCell>
+                          <TableCell>{payment.observations || '—'}</TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
+          </Stack>
+        </Paper>
+
+        <Paper sx={{ p: 3 }}>
+          <Stack spacing={1.5}>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <PrintOutlinedIcon color="action" />
+              <Typography variant="h6">Consumo de material</Typography>
+            </Stack>
+            {legacyPaper && !materialCost && consumedMeters === null ? (
+              <Alert severity="info">
+                Este trabajo histórico no tiene consumo de inventario asociado. Los
+                trabajos nuevos consumen el rollo de papel seleccionado.
+              </Alert>
+            ) : (
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={4}>
+                  <DetailField label="Rollo">
+                    <Typography>{paperLabel}</Typography>
+                  </DetailField>
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <DetailField label="Consumido">
+                    <Typography>
+                      {formatPlotterNumber(consumedMeters ?? job.printedMeters)} m
+                    </Typography>
+                  </DetailField>
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <DetailField label="Costo material">
+                    <Typography>
+                      {materialCost === null || materialCost === undefined
+                        ? 'Sin valoración histórica'
+                        : formatPlotterMoney(materialCost)}
+                    </Typography>
+                  </DetailField>
+                </Grid>
+              </Grid>
+            )}
+          </Stack>
+        </Paper>
+      </Stack>
+
+      <RegisterPlotterPaymentDialog
+        open={paymentDialogOpen}
+        outstandingAmount={job.outstandingAmount}
+        onClose={() => {
+          if (!registeringPayment) {
+            setPaymentDialogOpen(false)
+          }
+        }}
+        onSubmit={handleRegisterPayment}
+        submitting={registeringPayment}
+        errorMessage={paymentError}
+      />
+
+      <Snackbar
+        open={successOpen}
+        autoHideDuration={4000}
+        onClose={() => setSuccessOpen(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setSuccessOpen(false)}
+          severity="success"
+          variant="filled"
+          sx={{ width: '100%' }}
+        >
+          {successMessage}
+        </Alert>
+      </Snackbar>
+    </>
   )
 }
 

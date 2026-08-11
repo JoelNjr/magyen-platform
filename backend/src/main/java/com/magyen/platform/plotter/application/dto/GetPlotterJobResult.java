@@ -17,6 +17,8 @@ public record GetPlotterJobResult(
         BigDecimal printedMeters,
         BigDecimal pricePerMeter,
         BigDecimal totalAmount,
+        BigDecimal paidAmount,
+        BigDecimal outstandingAmount,
         PlotterJobStatus status,
         String observations
 ) {

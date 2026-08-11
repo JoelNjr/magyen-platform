@@ -54,6 +54,11 @@ export async function getOrder(orderId) {
   return response.data
 }
 
+export async function getOrderProfitability(orderId) {
+  const response = await httpClient.get(`/orders/${orderId}/profitability`)
+  return response.data
+}
+
 export async function replaceOrderItemSizes(orderId, orderItemId, sizes) {
   const response = await httpClient.put(
     `/orders/${orderId}/items/${orderItemId}/sizes`,

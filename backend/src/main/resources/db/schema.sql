@@ -257,6 +257,31 @@ CREATE INDEX idx_production_material_consumptions_inventory_item_id
 CREATE INDEX idx_production_material_consumptions_consumption_date
     ON production_material_consumptions (consumption_date);
 
+CREATE TABLE production_labor_work (
+    id                          uuid            NOT NULL,
+    production_order_id         uuid            NOT NULL,
+    operator_employee_id        uuid            NOT NULL,
+    work_date                   date            NOT NULL,
+    operation                   varchar(255)    NOT NULL,
+    quantity                    numeric(19, 4)  NOT NULL,
+    unit_of_measure             varchar(50)     NOT NULL,
+    unit_rate                   numeric(19, 2)  NOT NULL,
+    calculated_amount           numeric(19, 2)  NOT NULL,
+    status                      varchar(30)     NOT NULL,
+    observation                 varchar(2000)   NULL,
+    paid_at                     timestamp       NULL,
+    financial_transaction_id    uuid            NULL,
+    CONSTRAINT production_labor_work_pkey PRIMARY KEY (id),
+    CONSTRAINT fk_production_labor_work_production_order
+        FOREIGN KEY (production_order_id)
+        REFERENCES production_orders (id)
+        ON DELETE CASCADE
+);
+
+CREATE INDEX idx_production_labor_work_production_order_id ON production_labor_work (production_order_id);
+CREATE INDEX idx_production_labor_work_operator_employee_id ON production_labor_work (operator_employee_id);
+CREATE INDEX idx_production_labor_work_status ON production_labor_work (status);
+
 -- Inventory module
 -- Aggregate: InventoryItem + InventoryMovement history
 
@@ -354,8 +379,27 @@ CREATE INDEX idx_plotter_jobs_status
 CREATE INDEX idx_plotter_jobs_paper_inventory_item_id
     ON plotter_jobs (paper_inventory_item_id);
 
+-- Aggregate: PlotterPayment (pagos de cliente sobre trabajo de Plotter — SPR-036 Inc. 8)
+-- Soft ref: plotter_job_id — no FK JPA
+-- No se generan automáticamente al crear el PlotterJob
+
+CREATE TABLE plotter_payments (
+    id                  uuid            NOT NULL,
+    plotter_job_id      uuid            NOT NULL,
+    amount              numeric(19, 2)  NOT NULL,
+    payment_date        date            NOT NULL,
+    observations        varchar(2000)   NULL,
+    CONSTRAINT plotter_payments_pkey PRIMARY KEY (id)
+);
+
+CREATE INDEX idx_plotter_payments_plotter_job_id
+    ON plotter_payments (plotter_job_id);
+
+CREATE INDEX idx_plotter_payments_payment_date
+    ON plotter_payments (payment_date);
+
 -- Finance module
--- Aggregate: Payment
+-- Aggregate: Payment (pagos de cliente sobre Orden comercial — SPR-019)
 
 CREATE TABLE payments (
     id                  uuid            NOT NULL,
@@ -368,3 +412,138 @@ CREATE TABLE payments (
 
 CREATE INDEX idx_payments_order_id
     ON payments (order_id);
+
+-- Aggregate: FinancialTransaction (ledger financiero — SPR-036)
+-- Soft refs: source_id (Commercial/Plotter/Production/etc.) — no FKs
+
+CREATE TABLE financial_transactions (
+    id                  uuid            NOT NULL,
+    transaction_type    varchar(30)     NOT NULL,
+    amount              numeric(19, 2)  NOT NULL,
+    transaction_date    date            NOT NULL,
+    category            varchar(2000)   NOT NULL,
+    description         varchar(2000)   NULL,
+    observation         varchar(2000)   NULL,
+    source_type         varchar(30)     NULL,
+    source_id           uuid            NULL,
+    CONSTRAINT financial_transactions_pkey PRIMARY KEY (id)
+);
+
+CREATE INDEX idx_financial_transactions_transaction_date
+    ON financial_transactions (transaction_date);
+
+CREATE INDEX idx_financial_transactions_source
+    ON financial_transactions (source_type, source_id);
+
+-- Aggregate: RecurringFinancialObligation (obligaciones fijas/recurrentes — SPR-036 Inc. 2)
+-- No genera financial_transactions automáticamente.
+
+CREATE TABLE recurring_financial_obligations (
+    id                  uuid            NOT NULL,
+    name                varchar(255)    NOT NULL,
+    obligation_type     varchar(30)     NOT NULL,
+    expected_amount     numeric(19, 2)  NOT NULL,
+    frequency           varchar(30)     NOT NULL,
+    due_day             integer         NULL,
+    start_date          date            NOT NULL,
+    end_date            date            NULL,
+    active              boolean         NOT NULL,
+    description         varchar(2000)   NULL,
+    observation         varchar(2000)   NULL,
+    CONSTRAINT recurring_financial_obligations_pkey PRIMARY KEY (id)
+);
+
+CREATE INDEX idx_recurring_financial_obligations_active
+    ON recurring_financial_obligations (active);
+
+CREATE INDEX idx_recurring_financial_obligations_name
+    ON recurring_financial_obligations (name);
+
+-- Aggregate: RecurringFinancialObligationOccurrence (ocurrencias concretas — SPR-036 Inc. 3)
+-- Soft ref: recurring_obligation_id — no FK JPA
+-- financial_transaction_id se asigna solo al pagar (PAID)
+
+CREATE TABLE recurring_financial_obligation_occurrences (
+    id                          uuid            NOT NULL,
+    recurring_obligation_id     uuid            NOT NULL,
+    due_date                    date            NOT NULL,
+    expected_amount             numeric(19, 2)  NOT NULL,
+    status                      varchar(30)     NOT NULL,
+    paid_date                   timestamp       NULL,
+    financial_transaction_id    uuid            NULL,
+    observation                 varchar(2000)   NULL,
+    CONSTRAINT recurring_financial_obligation_occurrences_pkey PRIMARY KEY (id)
+);
+
+CREATE UNIQUE INDEX uq_recurring_financial_obligation_occurrences_obligation_due
+    ON recurring_financial_obligation_occurrences (recurring_obligation_id, due_date);
+
+CREATE INDEX idx_recurring_financial_obligation_occurrences_obligation_id
+    ON recurring_financial_obligation_occurrences (recurring_obligation_id);
+
+CREATE INDEX idx_recurring_financial_obligation_occurrences_due_date
+    ON recurring_financial_obligation_occurrences (due_date);
+
+CREATE INDEX idx_recurring_financial_obligation_occurrences_status
+    ON recurring_financial_obligation_occurrences (status);
+
+-- Un pago de ocurrencia no puede generar dos movimientos del ledger.
+CREATE UNIQUE INDEX uq_financial_transactions_recurring_obligation_source
+    ON financial_transactions (source_type, source_id)
+    WHERE source_type = 'RECURRING_OBLIGATION'
+      AND source_id IS NOT NULL;
+
+-- Un Payment comercial no puede generar dos ingresos del ledger.
+CREATE UNIQUE INDEX uq_financial_transactions_commercial_order_source
+    ON financial_transactions (source_type, source_id)
+    WHERE source_type = 'COMMERCIAL_ORDER'
+      AND source_id IS NOT NULL;
+
+-- Un pago de Plotter no puede generar dos ingresos del ledger.
+CREATE UNIQUE INDEX uq_financial_transactions_plotter_source
+    ON financial_transactions (source_type, source_id)
+    WHERE source_type = 'PLOTTER'
+      AND source_id IS NOT NULL;
+
+-- Aggregate: PayrollEmployee (nómina fija — SPR-036 Inc. 10)
+CREATE TABLE payroll_employees (
+    id                  uuid            NOT NULL,
+    display_name        varchar(255)    NOT NULL,
+    active              boolean         NOT NULL,
+    compensation_type   varchar(30)     NOT NULL,
+    fixed_amount        numeric(19, 2)  NULL,
+    frequency           varchar(30)     NULL,
+    effective_from      date            NULL,
+    effective_to        date            NULL,
+    CONSTRAINT payroll_employees_pkey PRIMARY KEY (id)
+);
+
+CREATE INDEX idx_payroll_employees_active ON payroll_employees (active);
+CREATE INDEX idx_payroll_employees_compensation_type ON payroll_employees (compensation_type);
+
+-- Aggregate: PayrollPeriod (período/pago — soft ref employee_id, no FK)
+CREATE TABLE payroll_periods (
+    id                          uuid            NOT NULL,
+    employee_id                 uuid            NOT NULL,
+    period_start                date            NOT NULL,
+    period_end                  date            NOT NULL,
+    expected_payment_date       date            NOT NULL,
+    amount_snapshot             numeric(19, 2)  NOT NULL,
+    status                      varchar(30)     NOT NULL,
+    actual_payment_date         date            NULL,
+    paid_at                     timestamp       NULL,
+    financial_transaction_id    uuid            NULL,
+    CONSTRAINT payroll_periods_pkey PRIMARY KEY (id)
+);
+
+CREATE UNIQUE INDEX uq_payroll_periods_employee_period_start
+    ON payroll_periods (employee_id, period_start);
+
+CREATE INDEX idx_payroll_periods_employee_id ON payroll_periods (employee_id);
+CREATE INDEX idx_payroll_periods_expected_payment_date ON payroll_periods (expected_payment_date);
+CREATE INDEX idx_payroll_periods_status ON payroll_periods (status);
+
+CREATE UNIQUE INDEX uq_financial_transactions_payroll_source
+    ON financial_transactions (source_type, source_id)
+    WHERE source_type = 'PAYROLL'
+      AND source_id IS NOT NULL;

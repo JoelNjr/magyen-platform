@@ -5,6 +5,7 @@ import com.magyen.platform.inventory.application.usecase.CreateInventoryItemUseC
 import com.magyen.platform.inventory.application.usecase.DecreaseInventoryStockUseCase;
 import com.magyen.platform.inventory.application.usecase.GetInventoryItemUseCase;
 import com.magyen.platform.inventory.application.usecase.GetInventoryItemsUseCase;
+import com.magyen.platform.inventory.application.usecase.GetInventoryMovementBySourceUseCase;
 import com.magyen.platform.inventory.application.usecase.GetInventoryMovementsUseCase;
 import com.magyen.platform.inventory.application.usecase.IncreaseInventoryStockUseCase;
 import com.magyen.platform.inventory.application.usecase.RegisterInventoryMovementUseCase;
@@ -58,6 +59,13 @@ public class InventoryConfiguration {
             InventoryMovementRepository inventoryMovementRepository
     ) {
         return new GetInventoryMovementsUseCase(inventoryItemRepository, inventoryMovementRepository);
+    }
+
+    @Bean
+    public GetInventoryMovementBySourceUseCase getInventoryMovementBySourceUseCase(
+            InventoryMovementRepository inventoryMovementRepository
+    ) {
+        return new GetInventoryMovementBySourceUseCase(inventoryMovementRepository);
     }
 
     @Bean

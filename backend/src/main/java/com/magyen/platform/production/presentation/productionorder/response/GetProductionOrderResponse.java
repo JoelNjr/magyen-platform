@@ -1,5 +1,6 @@
 package com.magyen.platform.production.presentation.productionorder.response;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -17,6 +18,9 @@ public record GetProductionOrderResponse(
         LocalDate plannedEndDate,
         String observations,
         List<ProductionItemResponse> items,
-        List<ProductionOperationResponse> operations
+        List<ProductionOperationResponse> operations,
+        ProductionMaterialCostSummaryResponse materialCostSummary,
+        ProductionLaborCostSummaryResponse laborCostSummary,
+        BigDecimal totalProductionCost
 ) {
 }

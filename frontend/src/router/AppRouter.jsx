@@ -1,4 +1,3 @@
-import { Typography } from '@mui/material'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import CreateQuotationPage from '../features/commercial/pages/CreateQuotationPage'
 import CustomersPage from '../features/commercial/pages/CustomersPage'
@@ -6,6 +5,7 @@ import OrderDetailPage from '../features/commercial/pages/OrderDetailPage'
 import OrdersPage from '../features/commercial/pages/OrdersPage'
 import QuotationDetailPage from '../features/commercial/pages/QuotationDetailPage'
 import QuotationsPage from '../features/commercial/pages/QuotationsPage'
+import FinancePage from '../features/finance/pages/FinancePage'
 import IntelligencePage from '../features/intelligence/pages/IntelligencePage'
 import InventoryDetailPage from '../features/inventory/pages/InventoryDetailPage'
 import InventoryPage from '../features/inventory/pages/InventoryPage'
@@ -48,10 +48,7 @@ function AppRouter() {
             element={<PlotterJobDetailPage />}
           />
           <Route path="plotter" element={<PlotterJobsPage />} />
-          <Route
-            path="finance"
-            element={<Typography>Finance Page</Typography>}
-          />
+          <Route path="finance" element={<FinancePage />} />
           <Route path="intelligence" element={<IntelligencePage />} />
         </Route>
       </Routes>

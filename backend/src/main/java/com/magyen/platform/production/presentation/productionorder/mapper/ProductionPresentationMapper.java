@@ -2,9 +2,20 @@ package com.magyen.platform.production.presentation.productionorder.mapper;
 
 import com.magyen.platform.production.application.dto.AddProductionOperationCommand;
 import com.magyen.platform.production.application.dto.AddProductionOperationResult;
+import com.magyen.platform.production.application.dto.CancelProductionLaborWorkCommand;
+import com.magyen.platform.production.application.dto.CancelProductionLaborWorkResult;
+import com.magyen.platform.production.application.dto.GetProductionLaborWorkQuery;
+import com.magyen.platform.production.application.dto.GetProductionLaborWorkResult;
+import com.magyen.platform.production.application.dto.GetProductionLaborWorksQuery;
+import com.magyen.platform.production.application.dto.GetProductionLaborWorksResult;
 import com.magyen.platform.production.application.dto.GetProductionMaterialConsumptionResult;
 import com.magyen.platform.production.application.dto.GetProductionMaterialConsumptionsQuery;
 import com.magyen.platform.production.application.dto.GetProductionMaterialConsumptionsResult;
+import com.magyen.platform.production.application.dto.PayProductionLaborWorkCommand;
+import com.magyen.platform.production.application.dto.PayProductionLaborWorkResult;
+import com.magyen.platform.production.application.dto.ProductionLaborCostSummary;
+import com.magyen.platform.production.application.dto.RegisterProductionLaborWorkCommand;
+import com.magyen.platform.production.application.dto.RegisterProductionLaborWorkResult;
 import com.magyen.platform.production.application.dto.RegisterProductionMaterialConsumptionCommand;
 import com.magyen.platform.production.application.dto.RegisterProductionMaterialConsumptionResult;
 import com.magyen.platform.production.application.dto.AssignProductionOperationOperatorCommand;
@@ -21,6 +32,7 @@ import com.magyen.platform.production.application.dto.GetProductionOrdersResult;
 import com.magyen.platform.production.application.dto.PlanProductionOrderCommand;
 import com.magyen.platform.production.application.dto.PlanProductionOrderResult;
 import com.magyen.platform.production.application.dto.ProductionItemResult;
+import com.magyen.platform.production.application.dto.ProductionMaterialCostSummary;
 import com.magyen.platform.production.application.dto.ProductionOperationResult;
 import com.magyen.platform.production.application.dto.ProductionOrderResult;
 import com.magyen.platform.production.application.dto.ProductionProductSpecificationResult;
@@ -34,23 +46,32 @@ import com.magyen.platform.production.domain.ProductionPriority;
 import com.magyen.platform.production.presentation.productionorder.request.AddProductionOperationRequest;
 import com.magyen.platform.production.presentation.productionorder.request.AssignProductionOperationOperatorRequest;
 import com.magyen.platform.production.presentation.productionorder.request.CreateProductionOrderRequest;
+import com.magyen.platform.production.presentation.productionorder.request.PayProductionLaborWorkRequest;
 import com.magyen.platform.production.presentation.productionorder.request.PlanProductionOrderRequest;
+import com.magyen.platform.production.presentation.productionorder.request.RegisterProductionLaborWorkRequest;
 import com.magyen.platform.production.presentation.productionorder.request.RegisterProductionMaterialConsumptionRequest;
 import com.magyen.platform.production.presentation.productionorder.response.AddProductionOperationResponse;
 import com.magyen.platform.production.presentation.productionorder.response.AssignProductionOperationOperatorResponse;
+import com.magyen.platform.production.presentation.productionorder.response.CancelProductionLaborWorkResponse;
 import com.magyen.platform.production.presentation.productionorder.response.CompleteProductionOperationResponse;
 import com.magyen.platform.production.presentation.productionorder.response.CompleteProductionOrderResponse;
 import com.magyen.platform.production.presentation.productionorder.response.CreateProductionOrderResponse;
+import com.magyen.platform.production.presentation.productionorder.response.GetProductionLaborWorkResponse;
+import com.magyen.platform.production.presentation.productionorder.response.GetProductionLaborWorksResponse;
 import com.magyen.platform.production.presentation.productionorder.response.GetProductionMaterialConsumptionResponse;
 import com.magyen.platform.production.presentation.productionorder.response.GetProductionMaterialConsumptionsResponse;
 import com.magyen.platform.production.presentation.productionorder.response.GetProductionOrderResponse;
 import com.magyen.platform.production.presentation.productionorder.response.GetProductionOrdersResponse;
 import com.magyen.platform.production.presentation.productionorder.response.GetProductionOrdersResponse.ProductionOrderResponse;
+import com.magyen.platform.production.presentation.productionorder.response.PayProductionLaborWorkResponse;
 import com.magyen.platform.production.presentation.productionorder.response.PlanProductionOrderResponse;
 import com.magyen.platform.production.presentation.productionorder.response.ProductionItemResponse;
+import com.magyen.platform.production.presentation.productionorder.response.ProductionLaborCostSummaryResponse;
+import com.magyen.platform.production.presentation.productionorder.response.ProductionMaterialCostSummaryResponse;
 import com.magyen.platform.production.presentation.productionorder.response.ProductionOperationResponse;
 import com.magyen.platform.production.presentation.productionorder.response.ProductionProductSpecificationResponse;
 import com.magyen.platform.production.presentation.productionorder.response.ProductionSizeBreakdownResponse;
+import com.magyen.platform.production.presentation.productionorder.response.RegisterProductionLaborWorkResponse;
 import com.magyen.platform.production.presentation.productionorder.response.RegisterProductionMaterialConsumptionResponse;
 import com.magyen.platform.production.presentation.productionorder.response.StartProductionOperationResponse;
 import com.magyen.platform.production.presentation.productionorder.response.StartProductionOrderResponse;
@@ -128,7 +149,10 @@ public class ProductionPresentationMapper {
                 result.plannedEndDate(),
                 result.observations(),
                 items,
-                operations
+                operations,
+                toMaterialCostSummaryResponse(result.materialCostSummary()),
+                toLaborCostSummaryResponse(result.laborCostSummary()),
+                result.totalProductionCost()
         );
     }
 
@@ -425,7 +449,8 @@ public class ProductionPresentationMapper {
         return new GetProductionMaterialConsumptionsResponse(
                 result.consumptions().stream()
                         .map(this::toResponse)
-                        .toList()
+                        .toList(),
+                toMaterialCostSummaryResponse(result.materialCostSummary())
         );
     }
 
@@ -439,7 +464,163 @@ public class ProductionPresentationMapper {
                 result.quantity(),
                 result.unitOfMeasure(),
                 result.consumptionDate(),
-                result.observation()
+                result.observation(),
+                result.unitCost(),
+                result.totalCost()
+        );
+    }
+
+    private ProductionMaterialCostSummaryResponse toMaterialCostSummaryResponse(
+            ProductionMaterialCostSummary summary
+    ) {
+        Objects.requireNonNull(summary, "Production material cost summary must not be null");
+        return new ProductionMaterialCostSummaryResponse(
+                summary.totalMaterialCost(),
+                summary.consumptionCount(),
+                summary.valuedConsumptionCount(),
+                summary.unvaluedConsumptionCount()
+        );
+    }
+
+    public RegisterProductionLaborWorkCommand toRegisterLaborWorkCommand(
+            UUID productionOrderId,
+            RegisterProductionLaborWorkRequest request
+    ) {
+        Objects.requireNonNull(productionOrderId, "Production order id must not be null");
+        Objects.requireNonNull(request, "RegisterProductionLaborWorkRequest must not be null");
+
+        return new RegisterProductionLaborWorkCommand(
+                productionOrderId,
+                request.operatorEmployeeId(),
+                request.workDate(),
+                request.operation(),
+                request.quantity(),
+                request.unitOfMeasure(),
+                request.unitRate(),
+                request.observation()
+        );
+    }
+
+    public RegisterProductionLaborWorkResponse toRegisterLaborWorkResponse(
+            RegisterProductionLaborWorkResult result
+    ) {
+        Objects.requireNonNull(result, "RegisterProductionLaborWorkResult must not be null");
+
+        return new RegisterProductionLaborWorkResponse(
+                result.laborWorkId(),
+                result.productionOrderId(),
+                result.operatorEmployeeId(),
+                result.operatorDisplayName(),
+                result.workDate(),
+                result.operation(),
+                result.quantity(),
+                result.unitOfMeasure(),
+                result.unitRate(),
+                result.calculatedAmount(),
+                result.observation(),
+                result.status().name()
+        );
+    }
+
+    public GetProductionLaborWorksQuery toLaborWorksQuery(UUID productionOrderId) {
+        Objects.requireNonNull(productionOrderId, "Production order id must not be null");
+        return new GetProductionLaborWorksQuery(productionOrderId);
+    }
+
+    public GetProductionLaborWorkQuery toLaborWorkQuery(UUID productionOrderId, UUID laborWorkId) {
+        Objects.requireNonNull(productionOrderId, "Production order id must not be null");
+        Objects.requireNonNull(laborWorkId, "Labor work id must not be null");
+        return new GetProductionLaborWorkQuery(productionOrderId, laborWorkId);
+    }
+
+    public GetProductionLaborWorksResponse toLaborWorksResponse(GetProductionLaborWorksResult result) {
+        Objects.requireNonNull(result, "GetProductionLaborWorksResult must not be null");
+
+        return new GetProductionLaborWorksResponse(
+                result.laborWorks().stream()
+                        .map(this::toLaborWorkResponse)
+                        .toList(),
+                toLaborCostSummaryResponse(result.laborCostSummary())
+        );
+    }
+
+    public GetProductionLaborWorkResponse toLaborWorkResponse(GetProductionLaborWorkResult result) {
+        Objects.requireNonNull(result, "GetProductionLaborWorkResult must not be null");
+
+        return new GetProductionLaborWorkResponse(
+                result.laborWorkId(),
+                result.productionOrderId(),
+                result.operatorEmployeeId(),
+                result.operatorDisplayName(),
+                result.workDate(),
+                result.operation(),
+                result.quantity(),
+                result.unitOfMeasure(),
+                result.unitRate(),
+                result.calculatedAmount(),
+                result.observation(),
+                result.status().name(),
+                result.paidAt(),
+                result.financialTransactionId()
+        );
+    }
+
+    public PayProductionLaborWorkCommand toPayLaborWorkCommand(
+            UUID productionOrderId,
+            UUID laborWorkId,
+            PayProductionLaborWorkRequest request
+    ) {
+        Objects.requireNonNull(productionOrderId, "Production order id must not be null");
+        Objects.requireNonNull(laborWorkId, "Labor work id must not be null");
+
+        return new PayProductionLaborWorkCommand(
+                productionOrderId,
+                laborWorkId,
+                request == null ? null : request.paymentDate(),
+                request == null ? null : request.observation()
+        );
+    }
+
+    public PayProductionLaborWorkResponse toPayLaborWorkResponse(PayProductionLaborWorkResult result) {
+        Objects.requireNonNull(result, "PayProductionLaborWorkResult must not be null");
+
+        return new PayProductionLaborWorkResponse(
+                result.laborWorkId(),
+                result.productionOrderId(),
+                result.status().name(),
+                result.calculatedAmount(),
+                result.paidAt(),
+                result.financialTransactionId()
+        );
+    }
+
+    public CancelProductionLaborWorkCommand toCancelLaborWorkCommand(
+            UUID productionOrderId,
+            UUID laborWorkId
+    ) {
+        Objects.requireNonNull(productionOrderId, "Production order id must not be null");
+        Objects.requireNonNull(laborWorkId, "Labor work id must not be null");
+        return new CancelProductionLaborWorkCommand(productionOrderId, laborWorkId);
+    }
+
+    public CancelProductionLaborWorkResponse toCancelLaborWorkResponse(CancelProductionLaborWorkResult result) {
+        Objects.requireNonNull(result, "CancelProductionLaborWorkResult must not be null");
+
+        return new CancelProductionLaborWorkResponse(
+                result.laborWorkId(),
+                result.productionOrderId(),
+                result.status().name()
+        );
+    }
+
+    private ProductionLaborCostSummaryResponse toLaborCostSummaryResponse(ProductionLaborCostSummary summary) {
+        Objects.requireNonNull(summary, "Production labor cost summary must not be null");
+        return new ProductionLaborCostSummaryResponse(
+                summary.totalLaborCost(),
+                summary.laborWorkCount(),
+                summary.pendingCount(),
+                summary.paidCount()
         );
     }
 }
+

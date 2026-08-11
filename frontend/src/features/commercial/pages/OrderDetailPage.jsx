@@ -28,7 +28,11 @@ import {
   buildCustomerNameMap,
   resolveCustomerName,
 } from '../presentation/resolveCustomerName'
-import { getCustomers, getOrder } from '../services/commercialService'
+import {
+  getCustomers,
+  getOrder,
+  getOrderProfitability,
+} from '../services/commercialService'
 import {
   createProductionOrderFromOrder,
   getProductionOrders,
@@ -42,7 +46,40 @@ const currencyFormatter = new Intl.NumberFormat('es-CO', {
 })
 
 function formatCurrency(amount) {
+  if (amount === null || amount === undefined || Number.isNaN(Number(amount))) {
+    return '—'
+  }
   return currencyFormatter.format(amount)
+}
+
+function formatMarginPercentage(value) {
+  if (value === null || value === undefined || value === '') {
+    return '—'
+  }
+  const amount = Number(value)
+  if (Number.isNaN(amount)) {
+    return '—'
+  }
+  return `${amount.toLocaleString('es-CO', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  })} %`
+}
+
+function getProfitabilityStatusLabel(status) {
+  if (status === 'COMPLETE') return 'Costos directos completos'
+  if (status === 'PARTIALLY_UNVALUED') {
+    return 'Hay consumos de materiales sin costo configurado'
+  }
+  if (status === 'NO_COST_DATA') return 'Sin costos registrados'
+  return status || '—'
+}
+
+function getProfitabilityStatusSeverity(status) {
+  if (status === 'COMPLETE') return 'success'
+  if (status === 'PARTIALLY_UNVALUED') return 'warning'
+  if (status === 'NO_COST_DATA') return 'info'
+  return 'info'
 }
 
 function formatAcknowledgment(value) {
@@ -312,6 +349,32 @@ function OrderDetailPage() {
   const [creatingProductionOrder, setCreatingProductionOrder] = useState(false)
   const [createProductionError, setCreateProductionError] = useState('')
 
+  const [profitability, setProfitability] = useState(null)
+  const [profitabilityLoading, setProfitabilityLoading] = useState(true)
+  const [profitabilityFailed, setProfitabilityFailed] = useState(false)
+  const [profitabilityError, setProfitabilityError] = useState('')
+
+  async function loadProfitability(commercialOrderId) {
+    setProfitabilityLoading(true)
+    setProfitabilityFailed(false)
+    setProfitabilityError('')
+    try {
+      const data = await getOrderProfitability(commercialOrderId)
+      setProfitability(data)
+    } catch (error) {
+      setProfitability(null)
+      setProfitabilityFailed(true)
+      setProfitabilityError(
+        resolveApiErrorMessage(
+          error,
+          'No fue posible calcular la rentabilidad directa.'
+        )
+      )
+    } finally {
+      setProfitabilityLoading(false)
+    }
+  }
+
   async function loadLinkedProductionOrder(commercialOrderId) {
     try {
       const productionOrdersPayload = await getProductionOrders()
@@ -334,6 +397,10 @@ function OrderDetailPage() {
     setProductionLookupFailed(false)
     setCreateProductionDialogOpen(false)
     setCreateProductionError('')
+    setProfitability(null)
+    setProfitabilityFailed(false)
+    setProfitabilityError('')
+    setProfitabilityLoading(true)
 
     getOrder(orderId)
       .then((data) => {
@@ -353,6 +420,7 @@ function OrderDetailPage() {
       })
 
     loadLinkedProductionOrder(orderId)
+    loadProfitability(orderId)
 
     getCustomers()
       .then((data) => {
@@ -382,6 +450,7 @@ function OrderDetailPage() {
     try {
       const refreshedOrder = await getOrder(orderId)
       setOrder(refreshedOrder)
+      await loadProfitability(orderId)
       setSuccessMessage(successMessageText)
       setSuccessOpen(true)
     } catch {
@@ -674,6 +743,124 @@ function OrderDetailPage() {
                   </DetailField>
                 </Grid>
               </Grid>
+            </Stack>
+          </Paper>
+
+          <Paper sx={{ p: 3 }}>
+            <Stack spacing={3}>
+              <Stack spacing={1}>
+                <Typography variant="h5">Rentabilidad</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Este cálculo considera únicamente ingresos del pedido y costos
+                  directos actualmente registrados. No incluye gastos generales,
+                  servicios, créditos, impuestos ni otros costos indirectos.
+                </Typography>
+              </Stack>
+
+              {profitabilityLoading ? (
+                <Stack spacing={1}>
+                  <Skeleton variant="text" width="40%" />
+                  <Skeleton variant="text" width="60%" />
+                  <Skeleton variant="rectangular" height={80} />
+                </Stack>
+              ) : null}
+
+              {profitabilityFailed ? (
+                <Alert severity="warning">
+                  No se puede calcular todavía.{' '}
+                  {profitabilityError ||
+                    'Intente recargar la página más tarde.'}
+                </Alert>
+              ) : null}
+
+              {!profitabilityLoading && !profitabilityFailed && profitability ? (
+                <>
+                  <Alert
+                    severity={getProfitabilityStatusSeverity(
+                      profitability.profitabilityStatus
+                    )}
+                  >
+                    {getProfitabilityStatusLabel(
+                      profitability.profitabilityStatus
+                    )}
+                  </Alert>
+
+                  <Grid container spacing={3}>
+                    <Grid size={{ xs: 12, md: 4 }}>
+                      <DetailField label="Valor del pedido">
+                        <Typography variant="h5">
+                          {formatCurrency(profitability.orderValue)}
+                        </Typography>
+                      </DetailField>
+                    </Grid>
+                    <Grid size={{ xs: 12, md: 4 }}>
+                      <DetailField label="Dinero recibido">
+                        <Typography variant="h6">
+                          {formatCurrency(profitability.collectedAmount)}
+                        </Typography>
+                      </DetailField>
+                    </Grid>
+                    <Grid size={{ xs: 12, md: 4 }}>
+                      <DetailField label="Pendiente por cobrar">
+                        <Typography variant="h6">
+                          {formatCurrency(profitability.outstandingAmount)}
+                        </Typography>
+                      </DetailField>
+                    </Grid>
+                  </Grid>
+
+                  <Divider />
+
+                  <Stack spacing={1.5}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                      Costos directos
+                    </Typography>
+                    <Typography>
+                      Materiales: {formatCurrency(profitability.materialCost)}
+                    </Typography>
+                    <Typography>
+                      Mano de obra: {formatCurrency(profitability.laborCost)}
+                    </Typography>
+                    <Typography>
+                      Plotter:{' '}
+                      {profitability.plotterCostAttributable
+                        ? formatCurrency(profitability.plotterMaterialCost)
+                        : 'No atribuible'}
+                    </Typography>
+                    <Typography sx={{ fontWeight: 600 }}>
+                      Total costos directos:{' '}
+                      {formatCurrency(profitability.totalDirectCost)}
+                    </Typography>
+                    {profitability.unvaluedMaterialConsumptionCount > 0 ? (
+                      <Typography variant="body2" color="warning.main">
+                        Consumos sin costo configurado:{' '}
+                        {profitability.unvaluedMaterialConsumptionCount}
+                      </Typography>
+                    ) : null}
+                  </Stack>
+
+                  <Divider />
+
+                  <Grid container spacing={3}>
+                    <Grid size={{ xs: 12, md: 6 }}>
+                      <DetailField label="Resultado directo">
+                        <Typography variant="h5">
+                          {formatCurrency(profitability.directProfit)}
+                        </Typography>
+                      </DetailField>
+                    </Grid>
+                    <Grid size={{ xs: 12, md: 6 }}>
+                      <DetailField label="Margen directo">
+                        <Typography variant="h5">
+                          {formatMarginPercentage(
+                            profitability.directMarginPercentage
+                          )}
+                        </Typography>
+                      </DetailField>
+                    </Grid>
+                  </Grid>
+                </>
+              ) : null}
             </Stack>
           </Paper>
 

@@ -3,6 +3,7 @@ package com.magyen.platform.production.application.dto;
 import com.magyen.platform.production.domain.ProductionPriority;
 import com.magyen.platform.production.domain.ProductionStatus;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -20,6 +21,9 @@ public record GetProductionOrderResult(
         LocalDate plannedEndDate,
         String observations,
         List<ProductionItemResult> items,
-        List<ProductionOperationResult> operations
+        List<ProductionOperationResult> operations,
+        ProductionMaterialCostSummary materialCostSummary,
+        ProductionLaborCostSummary laborCostSummary,
+        BigDecimal totalProductionCost
 ) {
 }

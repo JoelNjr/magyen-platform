@@ -1,32 +1,49 @@
 package com.magyen.platform.production.application.usecase;
 
+import com.magyen.platform.production.application.dto.GetProductionMaterialConsumptionResult;
 import com.magyen.platform.production.application.dto.GetProductionOrderCommand;
 import com.magyen.platform.production.application.dto.GetProductionOrderResult;
 import com.magyen.platform.production.application.dto.ProductionItemResult;
+import com.magyen.platform.production.application.dto.ProductionLaborCostSummary;
+import com.magyen.platform.production.application.dto.ProductionMaterialCostSummary;
 import com.magyen.platform.production.application.dto.ProductionOperationResult;
 import com.magyen.platform.production.application.dto.ProductionProductSpecificationResult;
 import com.magyen.platform.production.application.dto.ProductionSizeBreakdownResult;
+import com.magyen.platform.production.application.port.ProductionMaterialCostInventoryPort;
+import com.magyen.platform.production.application.port.ProductionMaterialHistoricalCost;
 import com.magyen.platform.production.domain.ProductSpecification;
 import com.magyen.platform.production.domain.ProductionItem;
+import com.magyen.platform.production.domain.ProductionMaterialConsumption;
 import com.magyen.platform.production.domain.ProductionOperation;
 import com.magyen.platform.production.domain.ProductionOrder;
 import com.magyen.platform.production.domain.ProductionOrderRepository;
 import com.magyen.platform.production.domain.SizeBreakdown;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
- * Caso de uso que consulta una Orden de Producción completa por identificador.
+ * Caso de uso que consulta una Orden de Producción completa por identificador,
+ * incluyendo el resumen de atribución de costo histórico de materiales.
  */
 public class GetProductionOrderUseCase {
 
     private final ProductionOrderRepository productionOrderRepository;
+    private final ProductionMaterialCostInventoryPort productionMaterialCostInventoryPort;
 
-    public GetProductionOrderUseCase(ProductionOrderRepository productionOrderRepository) {
+    public GetProductionOrderUseCase(
+            ProductionOrderRepository productionOrderRepository,
+            ProductionMaterialCostInventoryPort productionMaterialCostInventoryPort
+    ) {
         this.productionOrderRepository = Objects.requireNonNull(
                 productionOrderRepository,
                 "Production order repository must not be null"
+        );
+        this.productionMaterialCostInventoryPort = Objects.requireNonNull(
+                productionMaterialCostInventoryPort,
+                "Production material cost inventory port must not be null"
         );
     }
 
@@ -55,6 +72,16 @@ public class GetProductionOrderUseCase {
                 .map(this::toOperationResult)
                 .toList();
 
+        ProductionMaterialCostSummary materialCostSummary = ProductionMaterialCostSummaryCalculator.from(
+                productionOrder.getMaterialConsumptions().stream()
+                        .map(this::toConsumptionCostResult)
+                        .toList()
+        );
+
+        ProductionLaborCostSummary laborCostSummary = ProductionLaborCostSummaryCalculator.from(
+                productionOrder.getLaborWorks()
+        );
+
         return new GetProductionOrderResult(
                 productionOrder.getId(),
                 productionOrder.getOrderId(),
@@ -65,7 +92,48 @@ public class GetProductionOrderUseCase {
                 productionOrder.getPlannedEndDate(),
                 productionOrder.getObservations(),
                 items,
-                operations
+                operations,
+                materialCostSummary,
+                laborCostSummary,
+                resolveTotalProductionCost(materialCostSummary, laborCostSummary)
+        );
+    }
+
+    private BigDecimal resolveTotalProductionCost(
+            ProductionMaterialCostSummary materialCostSummary,
+            ProductionLaborCostSummary laborCostSummary
+    ) {
+        int materialCount = materialCostSummary == null ? 0 : materialCostSummary.consumptionCount();
+        int laborCount = laborCostSummary == null ? 0 : laborCostSummary.laborWorkCount();
+        if (materialCount + laborCount == 0) {
+            return null;
+        }
+
+        BigDecimal material = materialCostSummary == null || materialCostSummary.totalMaterialCost() == null
+                ? BigDecimal.ZERO
+                : materialCostSummary.totalMaterialCost();
+        BigDecimal labor = laborCostSummary == null || laborCostSummary.totalLaborCost() == null
+                ? BigDecimal.ZERO
+                : laborCostSummary.totalLaborCost();
+        return material.add(labor);
+    }
+
+    private GetProductionMaterialConsumptionResult toConsumptionCostResult(
+            ProductionMaterialConsumption consumption
+    ) {
+        Optional<ProductionMaterialHistoricalCost> historicalCost =
+                productionMaterialCostInventoryPort.findHistoricalCost(consumption.getId());
+
+        return new GetProductionMaterialConsumptionResult(
+                consumption.getId(),
+                consumption.getProductionOrderId(),
+                consumption.getInventoryItemId(),
+                consumption.getQuantity(),
+                consumption.getUnitOfMeasure().name(),
+                consumption.getConsumptionDate(),
+                consumption.getObservation(),
+                historicalCost.map(ProductionMaterialHistoricalCost::unitCost).orElse(null),
+                historicalCost.map(ProductionMaterialHistoricalCost::totalCost).orElse(null)
         );
     }
 

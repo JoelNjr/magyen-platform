@@ -2,12 +2,14 @@ package com.magyen.platform.production.infrastructure.persistence.mapper;
 
 import com.magyen.platform.production.domain.ProductSpecification;
 import com.magyen.platform.production.domain.ProductionItem;
+import com.magyen.platform.production.domain.ProductionLaborWork;
 import com.magyen.platform.production.domain.ProductionMaterialConsumption;
 import com.magyen.platform.production.domain.ProductionOperation;
 import com.magyen.platform.production.domain.ProductionOrder;
 import com.magyen.platform.production.domain.SizeBreakdown;
 import com.magyen.platform.production.infrastructure.persistence.entity.ProductionItemEntity;
 import com.magyen.platform.production.infrastructure.persistence.entity.ProductionItemSizeEntity;
+import com.magyen.platform.production.infrastructure.persistence.entity.ProductionLaborWorkEntity;
 import com.magyen.platform.production.infrastructure.persistence.entity.ProductionMaterialConsumptionEntity;
 import com.magyen.platform.production.infrastructure.persistence.entity.ProductionOperationEntity;
 import com.magyen.platform.production.infrastructure.persistence.entity.ProductionOrderEntity;
@@ -60,6 +62,14 @@ public class ProductionPersistenceMapper {
         }
         productionOrderEntity.setMaterialConsumptions(consumptionEntities);
 
+        List<ProductionLaborWorkEntity> laborWorkEntities = new ArrayList<>();
+        for (ProductionLaborWork laborWork : productionOrder.getLaborWorks()) {
+            ProductionLaborWorkEntity laborWorkEntity = toLaborWorkEntity(laborWork);
+            laborWorkEntity.setProductionOrder(productionOrderEntity);
+            laborWorkEntities.add(laborWorkEntity);
+        }
+        productionOrderEntity.setLaborWorks(laborWorkEntities);
+
         return productionOrderEntity;
     }
 
@@ -85,6 +95,15 @@ public class ProductionPersistenceMapper {
             materialConsumptions.add(toConsumptionDomain(consumptionEntity));
         }
 
+        List<ProductionLaborWork> laborWorks = new ArrayList<>();
+        List<ProductionLaborWorkEntity> laborWorkEntities =
+                productionOrderEntity.getLaborWorks() == null
+                        ? List.of()
+                        : productionOrderEntity.getLaborWorks();
+        for (ProductionLaborWorkEntity laborWorkEntity : laborWorkEntities) {
+            laborWorks.add(toLaborWorkDomain(laborWorkEntity));
+        }
+
         return ProductionOrder.reconstitute(
                 productionOrderEntity.getId(),
                 productionOrderEntity.getOrderId(),
@@ -96,7 +115,8 @@ public class ProductionPersistenceMapper {
                 productionOrderEntity.getObservations(),
                 items,
                 operations,
-                materialConsumptions
+                materialConsumptions,
+                laborWorks
         );
     }
 
@@ -258,6 +278,49 @@ public class ProductionPersistenceMapper {
                 consumptionEntity.getUnitOfMeasure(),
                 consumptionEntity.getConsumptionDate(),
                 consumptionEntity.getObservation()
+        );
+    }
+
+    private ProductionLaborWorkEntity toLaborWorkEntity(ProductionLaborWork laborWork) {
+        Objects.requireNonNull(laborWork, "Labor work must not be null");
+
+        ProductionLaborWorkEntity laborWorkEntity = new ProductionLaborWorkEntity();
+        laborWorkEntity.setId(laborWork.getId());
+        laborWorkEntity.setOperatorEmployeeId(laborWork.getOperatorEmployeeId());
+        laborWorkEntity.setWorkDate(laborWork.getWorkDate());
+        laborWorkEntity.setOperation(laborWork.getOperation());
+        laborWorkEntity.setQuantity(laborWork.getQuantity());
+        laborWorkEntity.setUnitOfMeasure(laborWork.getUnitOfMeasure());
+        laborWorkEntity.setUnitRate(laborWork.getUnitRate());
+        laborWorkEntity.setCalculatedAmount(laborWork.getCalculatedAmount());
+        laborWorkEntity.setStatus(laborWork.getStatus());
+        laborWorkEntity.setObservation(laborWork.getObservation());
+        laborWorkEntity.setPaidAt(laborWork.getPaidAt());
+        laborWorkEntity.setFinancialTransactionId(laborWork.getFinancialTransactionId());
+        return laborWorkEntity;
+    }
+
+    private ProductionLaborWork toLaborWorkDomain(ProductionLaborWorkEntity laborWorkEntity) {
+        Objects.requireNonNull(laborWorkEntity, "Labor work entity must not be null");
+        Objects.requireNonNull(
+                laborWorkEntity.getProductionOrder(),
+                "Labor work must reference a production order"
+        );
+
+        return ProductionLaborWork.reconstitute(
+                laborWorkEntity.getId(),
+                laborWorkEntity.getProductionOrder().getId(),
+                laborWorkEntity.getOperatorEmployeeId(),
+                laborWorkEntity.getWorkDate(),
+                laborWorkEntity.getOperation(),
+                laborWorkEntity.getQuantity(),
+                laborWorkEntity.getUnitOfMeasure(),
+                laborWorkEntity.getUnitRate(),
+                laborWorkEntity.getCalculatedAmount(),
+                laborWorkEntity.getObservation(),
+                laborWorkEntity.getStatus(),
+                laborWorkEntity.getPaidAt(),
+                laborWorkEntity.getFinancialTransactionId()
         );
     }
 }
