@@ -8,6 +8,7 @@ import com.magyen.platform.finance.domain.exception.PayrollPeriodAlreadyExistsEx
 import com.magyen.platform.finance.domain.exception.PayrollPeriodAlreadyPaidException;
 import com.magyen.platform.finance.domain.exception.RecurringObligationOccurrenceAlreadyExistsException;
 import com.magyen.platform.finance.domain.exception.RecurringObligationOccurrenceAlreadyPaidException;
+import com.magyen.platform.home.domain.exception.HomeDomainException;
 import com.magyen.platform.inventory.domain.exception.InventoryDomainException;
 import com.magyen.platform.plotter.domain.exception.PlotterDomainException;
 import com.magyen.platform.production.domain.exception.ProductionDomainException;
@@ -278,6 +279,22 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(FinanceDomainException.class)
     public ResponseEntity<ErrorResponse> handleFinanceDomainException(
             FinanceDomainException exception,
+            HttpServletRequest request
+    ) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                exception.getMessage(),
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
+
+    @ExceptionHandler(HomeDomainException.class)
+    public ResponseEntity<ErrorResponse> handleHomeDomainException(
+            HomeDomainException exception,
             HttpServletRequest request
     ) {
         ErrorResponse errorResponse = new ErrorResponse(

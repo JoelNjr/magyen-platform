@@ -6,6 +6,7 @@ import OrdersPage from '../features/commercial/pages/OrdersPage'
 import QuotationDetailPage from '../features/commercial/pages/QuotationDetailPage'
 import QuotationsPage from '../features/commercial/pages/QuotationsPage'
 import FinancePage from '../features/finance/pages/FinancePage'
+import HomePage from '../features/home/pages/HomePage'
 import IntelligencePage from '../features/intelligence/pages/IntelligencePage'
 import InventoryDetailPage from '../features/inventory/pages/InventoryDetailPage'
 import InventoryPage from '../features/inventory/pages/InventoryPage'
@@ -20,7 +21,8 @@ function AppRouter() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<MainLayout />}>
-          <Route index element={<Navigate to="/commercial" replace />} />
+          <Route index element={<Navigate to="/home" replace />} />
+          <Route path="home" element={<HomePage />} />
           <Route path="commercial/new" element={<CreateQuotationPage />} />
           <Route path="commercial/customers" element={<CustomersPage />} />
           <Route

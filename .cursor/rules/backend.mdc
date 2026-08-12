@@ -56,11 +56,15 @@ administration
 
 intelligence
 
+home
+
 shared
 
 config
 
-Do not create additional top-level business modules.
+`home` is a read/orchestration module (SPR-037). It must not own data belonging to other modules and must not use cross-module JPA repositories or entities.
+
+Do not create additional top-level business modules beyond this list.
 
 ---
 

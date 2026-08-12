@@ -13,12 +13,12 @@ import { Link as RouterLink, Outlet, useLocation } from 'react-router-dom'
 const DRAWER_WIDTH = 240
 
 const navigationItems = [
-  { label: 'Commercial', path: '/commercial' },
-  { label: 'Production', path: '/production' },
-  { label: 'Inventory', path: '/inventory' },
+  { label: 'Inicio', path: '/home' },
+  { label: 'Comercial', path: '/commercial' },
+  { label: 'Producción', path: '/production' },
+  { label: 'Inventario', path: '/inventory' },
   { label: 'Plotter', path: '/plotter' },
-  { label: 'Finance', path: '/finance' },
-  { label: 'Intelligence', path: '/intelligence' },
+  { label: 'Finanzas', path: '/finance' },
 ]
 
 function isNavigationItemSelected(pathname, itemPath) {

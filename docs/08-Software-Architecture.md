@@ -160,10 +160,12 @@ com.magyen.platform
 ├── finance
 ├── administration
 ├── intelligence
+├── home
 ├── shared
 └── config
 ```
 
+`home` es un módulo de read model / orquestación (SPR-037). No es dueño de datos operativos de otros módulos y se comunica únicamente mediante ports de aplicación.
 ---
 
 ## 6.2 Responsabilidad de cada módulo
@@ -263,6 +265,22 @@ Responsabilidades:
 Este módulo nunca modificará directamente el estado del negocio.
 
 Su función será generar conocimiento para apoyar la toma de decisiones.
+
+---
+
+### Home
+
+Módulo de read model / orquestación operativa (SPR-037).
+
+Responsabilidades:
+
+- Consolidar lecturas de otros módulos para el Dashboard
+- Exponer un contrato REST de solo lectura
+- Orquestar ports de aplicación hacia Finance, Commercial, Inventory, Production y Plotter
+
+Home no es dueño de Orders, FinancialTransactions, InventoryItems, ProductionOrders ni PlotterJobs.
+
+No accede a repositorios JPA ni entidades de otros módulos.
 
 ---
 
