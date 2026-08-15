@@ -12,6 +12,9 @@ import java.util.UUID;
 public record ProductionOrderResult(
         UUID productionOrderId,
         UUID orderId,
+        String orderNumber,
+        UUID customerId,
+        String customerName,
         LocalDate creationDate,
         ProductionStatus status,
         ProductionPriority priority,

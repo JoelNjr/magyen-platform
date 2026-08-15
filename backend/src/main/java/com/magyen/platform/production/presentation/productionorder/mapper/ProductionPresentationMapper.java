@@ -142,6 +142,9 @@ public class ProductionPresentationMapper {
         return new GetProductionOrderResponse(
                 result.productionOrderId(),
                 result.orderId(),
+                result.orderNumber(),
+                result.customerId(),
+                result.customerName(),
                 result.creationDate(),
                 result.status().name(),
                 result.priority().name(),
@@ -308,6 +311,9 @@ public class ProductionPresentationMapper {
         return new ProductionOrderResponse(
                 result.productionOrderId(),
                 result.orderId(),
+                result.orderNumber(),
+                result.customerId(),
+                result.customerName(),
                 result.creationDate(),
                 result.status().name(),
                 result.priority().name(),

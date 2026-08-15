@@ -179,6 +179,8 @@ No se debe introducir en este sprint un número comercial de Producción como `O
 
 El tema de numeración de Producción permanece diferido.
 
+La UI de Producción y Home no debe mostrar UUID como identidad primaria. Presenta `orderNumber` y `customerName` cuando Commercial los resuelve. Los UUID siguen siendo la referencia técnica interna. Esta corrección de presentación no introduce un número persistente de producción ni cambia el esquema.
+
 ---
 
 ## 9. Creación de Orden de Producción

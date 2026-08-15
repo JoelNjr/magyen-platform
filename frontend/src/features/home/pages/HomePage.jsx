@@ -41,6 +41,7 @@ import {
   getPreviousCalendarMonthRange,
   getProductionPriorityChipProps,
   resolveApiErrorMessage,
+  resolveProductionBusinessLabel,
 } from '../presentation/homePresentation'
 
 const headerCellSx = { fontWeight: 'bold', whiteSpace: 'nowrap' }
@@ -255,7 +256,7 @@ function HomePage() {
             <TableContainer component={Paper} variant="outlined">
               <Table size="small">
                 <TableBody>
-                  <LoadingRows columns={5} />
+                  <LoadingRows columns={6} />
                 </TableBody>
               </Table>
             </TableContainer>
@@ -271,6 +272,7 @@ function HomePage() {
                   <TableRow>
                     <TableCell sx={headerCellSx}>Producción</TableCell>
                     <TableCell sx={headerCellSx}>Orden comercial</TableCell>
+                    <TableCell sx={headerCellSx}>Cliente</TableCell>
                     <TableCell sx={headerCellSx}>Estado</TableCell>
                     <TableCell sx={headerCellSx}>Prioridad</TableCell>
                     <TableCell sx={headerCellSx}>Creación</TableCell>
@@ -303,7 +305,7 @@ function HomePage() {
                             underline="hover"
                             fontWeight={inProgress ? 700 : 400}
                           >
-                            {String(item.productionOrderId).slice(0, 8)}…
+                            {resolveProductionBusinessLabel(item.orderNumber)}
                           </Link>
                         </TableCell>
                         <TableCell>
@@ -313,11 +315,14 @@ function HomePage() {
                               to={`/commercial/orders/${item.orderId}`}
                               underline="hover"
                             >
-                              {String(item.orderId).slice(0, 8)}…
+                              {resolveProductionBusinessLabel(item.orderNumber)}
                             </Link>
                           ) : (
                             '—'
                           )}
+                        </TableCell>
+                        <TableCell>
+                          {resolveProductionBusinessLabel(item.customerName)}
                         </TableCell>
                         <TableCell>
                           <Chip

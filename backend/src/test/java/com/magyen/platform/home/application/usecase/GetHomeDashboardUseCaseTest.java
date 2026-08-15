@@ -1,5 +1,7 @@
 package com.magyen.platform.home.application.usecase;
 
+import com.magyen.platform.commercial.domain.Customer;
+import com.magyen.platform.commercial.domain.CustomerRepository;
 import com.magyen.platform.commercial.domain.DeliveryCommitment;
 import com.magyen.platform.commercial.domain.Order;
 import com.magyen.platform.commercial.domain.OrderItem;
@@ -92,6 +94,9 @@ class GetHomeDashboardUseCaseTest {
 
     @Autowired
     private OrderRepository orderRepository;
+
+    @Autowired
+    private CustomerRepository customerRepository;
 
     @Autowired
     private FinancialTransactionRepository financialTransactionRepository;
@@ -912,10 +917,15 @@ class GetHomeDashboardUseCaseTest {
 
     @Test
     void productionLifecycleCountsAndActiveItemsOrdering() {
-        Order createdCommercial = createOrderWithTotal("ORD-HOME-PC1-", "100000.00");
-        Order plannedCommercial = createOrderWithTotal("ORD-HOME-PC2-", "110000.00");
-        Order inProgressCommercial = createOrderWithTotal("ORD-HOME-PC3-", "120000.00");
-        Order completedCommercial = createOrderWithTotal("ORD-HOME-PC4-", "130000.00");
+        Customer createdCustomer = customerRepository.save(Customer.create("Colegio Home Creada"));
+        Customer plannedCustomer = customerRepository.save(Customer.create("Colegio Home Planificada"));
+        Customer inProgressCustomer = customerRepository.save(Customer.create("Colegio Home En Proceso"));
+        Customer completedCustomer = customerRepository.save(Customer.create("Colegio Home Completada"));
+
+        Order createdCommercial = createOrderForCustomer(createdCustomer.getId(), "ORD-HOME-PC1-", "100000.00");
+        Order plannedCommercial = createOrderForCustomer(plannedCustomer.getId(), "ORD-HOME-PC2-", "110000.00");
+        Order inProgressCommercial = createOrderForCustomer(inProgressCustomer.getId(), "ORD-HOME-PC3-", "120000.00");
+        Order completedCommercial = createOrderForCustomer(completedCustomer.getId(), "ORD-HOME-PC4-", "130000.00");
 
         ProductionOrder created = productionOrderRepository.save(ProductionOrder.create(
                 createdCommercial.getId(),
@@ -992,6 +1002,16 @@ class GetHomeDashboardUseCaseTest {
         assertTrue(inProgressIndex < plannedIndex);
         assertTrue(plannedIndex < createdIndex);
         assertTrue(activeIds.stream().noneMatch(id -> id.equals(completed.getId())));
+
+        HomeProductionItem inProgressItem = result.productionSummary().items().get(inProgressIndex);
+        assertEquals(inProgress.getId(), inProgressItem.productionOrderId());
+        assertEquals(inProgressCommercial.getId(), inProgressItem.orderId());
+        assertEquals(inProgressCommercial.getOrderNumber().getValue(), inProgressItem.orderNumber());
+        assertEquals(inProgressCustomer.getId(), inProgressItem.customerId());
+        assertEquals("Colegio Home En Proceso", inProgressItem.customerName());
+        assertEquals("IN_PROGRESS", inProgressItem.status());
+        assertEquals("LOW", inProgressItem.priority());
+        assertEquals(LocalDate.of(2026, 8, 3), inProgressItem.creationDate());
     }
 
     @Test
@@ -1220,7 +1240,15 @@ class GetHomeDashboardUseCaseTest {
         return createOrderWithNumberAndTotal(numberPrefix + suffix(), unitPrice);
     }
 
+    private Order createOrderForCustomer(UUID customerId, String numberPrefix, String unitPrice) {
+        return createOrderWithNumberCustomerAndTotal(numberPrefix + suffix(), customerId, unitPrice);
+    }
+
     private Order createOrderWithNumberAndTotal(String orderNumber, String unitPrice) {
+        return createOrderWithNumberCustomerAndTotal(orderNumber, UUID.randomUUID(), unitPrice);
+    }
+
+    private Order createOrderWithNumberCustomerAndTotal(String orderNumber, UUID customerId, String unitPrice) {
         LocalDate confirmationDate = LocalDate.of(2026, 8, 1);
         OrderItem item = OrderItem.reconstitute(
                 UUID.randomUUID(),
@@ -1235,7 +1263,7 @@ class GetHomeDashboardUseCaseTest {
 
         Order order = Order.create(
                 OrderNumber.of(orderNumber),
-                UUID.randomUUID(),
+                customerId,
                 UUID.randomUUID(),
                 confirmationDate,
                 DeliveryCommitment.of(confirmationDate.plusDays(7)),

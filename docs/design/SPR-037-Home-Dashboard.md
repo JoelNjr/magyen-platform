@@ -183,12 +183,14 @@ Inicialmente:
 
 La información debe permitir identificar:
 
-* orden;
+* orden comercial (`orderNumber`);
+* cliente (`customerName` cuando Commercial lo resuelve);
 * estado;
 * prioridad;
 * fecha de creación;
-* fechas planificadas;
-* cliente/orden comercial cuando pueda resolverse de manera segura.
+* fechas planificadas.
+
+Los UUID de producción y de orden comercial permanecen como identificadores técnicos internos (navegación/API). No se inventó un número de producción tipo `PROD-00015`.
 
 ---
 
@@ -969,6 +971,13 @@ Orden de `items`:
 3. creationDate ASC  
 4. productionOrderId
 
+Campos de presentación en cada ítem (aditivos; los UUID se conservan):
+
+* `orderNumber` — número comercial existente, ingresado al crear la Orden
+* `customerId` / `customerName` — cliente Commercial; `customerName` solo si el cliente existe
+
+No existe `productionNumber`. Home muestra `orderNumber` como identidad de negocio de la OP (relación 1:1).
+
 COMPLETED solo contribuye al conteo, no a `items`.
 
 ## 22.4 Profitability — fuente de verdad
@@ -1236,3 +1245,35 @@ Intelligence como producto de recomendaciones queda **diferido a V2**.
 **V1 (cerrado en este incremento):** dashboard operativo determinista + navegación limpia.
 
 **V2 (fuera de SPR-037):** Intelligence / recomendaciones / analytics predictivo / centros de alerta avanzados.
+
+---
+
+# 25. Corrección V1 pre-reset — identificadores legibles de Producción
+
+Antes del reset limpio de base de datos, Home y Producción mostraban UUID truncados como identidad visible.
+
+Eso era una representación interna expuesta por error en la UI. No era un identificador de negocio.
+
+## Decisión
+
+* No se introdujo un número persistente de producción (`PROD-#####`).
+* No hay `productionNumber` en el dominio ni en el esquema.
+* La identidad de negocio reutilizada es el `orderNumber` comercial (texto ingresado al confirmar la orden).
+* El nombre de cliente se resuelve desde Commercial (`GetCustomersUseCase`) cuando el cliente existe.
+* Los UUID (`productionOrderId`, `orderId`) siguen siendo identificadores técnicos para API y navegación.
+
+## Flujo
+
+Presentation → Application → `GetProductionOrdersUseCase` / `GetProductionOrderUseCase` → `CommercialOrderIdentityResolver` → `GetOrdersUseCase` + `GetCustomersUseCase`.
+
+Home solo orquesta el read model ya enriquecido. Sin JPA cruzado, sin nombres inventados a partir de UUID, sin reset de base de datos.
+
+## UI
+
+| Columna | Valor visible | Navegación |
+|---------|---------------|------------|
+| Producción | `orderNumber` | `/production/orders/:productionOrderId` |
+| Orden comercial | `orderNumber` | `/commercial/orders/:orderId` |
+| Cliente | `customerName` | — |
+
+Si falta el número o el nombre, se muestra `—`. No se recorta un UUID como etiqueta.

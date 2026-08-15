@@ -17,6 +17,7 @@ import {
 } from '@mui/material'
 import { Link as RouterLink, useNavigate } from 'react-router-dom'
 import { formatDisplayDate } from '../presentation/formatDisplayDate'
+import { resolveProductionBusinessLabel } from '../presentation/resolveProductionBusinessLabel'
 import {
   getProductionOrderStatusChipProps,
   getProductionPriorityChipProps,
@@ -32,6 +33,7 @@ function ProductionOrdersTableHead() {
       <TableRow>
         <TableCell sx={headerCellSx}>Orden de producción</TableCell>
         <TableCell sx={headerCellSx}>Orden comercial</TableCell>
+        <TableCell sx={headerCellSx}>Cliente</TableCell>
         <TableCell sx={headerCellSx}>Fecha creación</TableCell>
         <TableCell align="center" sx={headerCellSx}>
           Estado
@@ -84,6 +86,9 @@ function ProductionOrdersPage() {
                   </TableCell>
                   <TableCell>
                     <Skeleton width={180} />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton width={140} />
                   </TableCell>
                   <TableCell>
                     <Skeleton width={100} />
@@ -163,10 +168,23 @@ function ProductionOrdersPage() {
                   <TableRow key={productionOrder.productionOrderId} hover>
                     <TableCell>
                       <RouterLink to={detailPath}>
-                        {productionOrder.productionOrderId}
+                        {resolveProductionBusinessLabel(productionOrder.orderNumber)}
                       </RouterLink>
                     </TableCell>
-                    <TableCell>{productionOrder.orderId}</TableCell>
+                    <TableCell>
+                      {productionOrder.orderId ? (
+                        <RouterLink
+                          to={`/commercial/orders/${productionOrder.orderId}`}
+                        >
+                          {resolveProductionBusinessLabel(productionOrder.orderNumber)}
+                        </RouterLink>
+                      ) : (
+                        '—'
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {resolveProductionBusinessLabel(productionOrder.customerName)}
+                    </TableCell>
                     <TableCell>
                       {formatDisplayDate(productionOrder.creationDate)}
                     </TableCell>

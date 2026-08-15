@@ -1,5 +1,7 @@
 package com.magyen.platform.production.application.usecase;
 
+import com.magyen.platform.production.application.CommercialOrderIdentityResolver;
+import com.magyen.platform.production.application.CommercialOrderIdentityResolver.CommercialOrderIdentity;
 import com.magyen.platform.production.application.dto.GetProductionMaterialConsumptionResult;
 import com.magyen.platform.production.application.dto.GetProductionOrderCommand;
 import com.magyen.platform.production.application.dto.GetProductionOrderResult;
@@ -32,10 +34,12 @@ public class GetProductionOrderUseCase {
 
     private final ProductionOrderRepository productionOrderRepository;
     private final ProductionMaterialCostInventoryPort productionMaterialCostInventoryPort;
+    private final CommercialOrderIdentityResolver commercialOrderIdentityResolver;
 
     public GetProductionOrderUseCase(
             ProductionOrderRepository productionOrderRepository,
-            ProductionMaterialCostInventoryPort productionMaterialCostInventoryPort
+            ProductionMaterialCostInventoryPort productionMaterialCostInventoryPort,
+            CommercialOrderIdentityResolver commercialOrderIdentityResolver
     ) {
         this.productionOrderRepository = Objects.requireNonNull(
                 productionOrderRepository,
@@ -44,6 +48,10 @@ public class GetProductionOrderUseCase {
         this.productionMaterialCostInventoryPort = Objects.requireNonNull(
                 productionMaterialCostInventoryPort,
                 "Production material cost inventory port must not be null"
+        );
+        this.commercialOrderIdentityResolver = Objects.requireNonNull(
+                commercialOrderIdentityResolver,
+                "Commercial order identity resolver must not be null"
         );
     }
 
@@ -82,9 +90,15 @@ public class GetProductionOrderUseCase {
                 productionOrder.getLaborWorks()
         );
 
+        CommercialOrderIdentity commercialIdentity =
+                commercialOrderIdentityResolver.resolve(productionOrder.getOrderId());
+
         return new GetProductionOrderResult(
                 productionOrder.getId(),
                 productionOrder.getOrderId(),
+                commercialIdentity.orderNumber(),
+                commercialIdentity.customerId(),
+                commercialIdentity.customerName(),
                 productionOrder.getCreationDate(),
                 productionOrder.getStatus(),
                 productionOrder.getPriority(),

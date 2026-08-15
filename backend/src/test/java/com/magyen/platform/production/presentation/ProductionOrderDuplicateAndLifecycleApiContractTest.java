@@ -19,6 +19,7 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -85,6 +86,8 @@ class ProductionOrderDuplicateAndLifecycleApiContractTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.productionOrderId").value(productionOrderId.toString()))
                 .andExpect(jsonPath("$.orderId").value(fixture.orderId().toString()))
+                .andExpect(jsonPath("$.orderNumber").value(fixture.orderNumber()))
+                .andExpect(jsonPath("$.customerName").value(fixture.customerName()))
                 .andExpect(jsonPath("$.status").value("CREATED"))
                 .andExpect(jsonPath("$.items", hasSize(1)))
                 .andExpect(jsonPath("$.items[0].productName").value("Camiseta Deportiva"))
@@ -111,6 +114,18 @@ class ProductionOrderDuplicateAndLifecycleApiContractTest {
                 .andExpect(jsonPath("$.items[0].sizes[1].quantity").value(7))
                 .andExpect(jsonPath("$.items[0].sizes[2].size").value("L"))
                 .andExpect(jsonPath("$.items[0].sizes[2].quantity").value(10));
+
+        mockMvc.perform(get("/api/v1/production-orders"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath(
+                        "$.productionOrders[?(@.productionOrderId=='" + productionOrderId + "')].orderNumber"
+                ).value(hasItem(fixture.orderNumber())))
+                .andExpect(jsonPath(
+                        "$.productionOrders[?(@.productionOrderId=='" + productionOrderId + "')].customerName"
+                ).value(hasItem(fixture.customerName())))
+                .andExpect(jsonPath(
+                        "$.productionOrders[?(@.productionOrderId=='" + productionOrderId + "')].productionOrderId"
+                ).value(hasItem(productionOrderId.toString())));
 
         mockMvc.perform(
                         post("/api/v1/production-orders")
@@ -472,7 +487,7 @@ class ProductionOrderDuplicateAndLifecycleApiContractTest {
                 )
                 .andExpect(status().isOk());
 
-        return new ConfirmedOrderFixture(orderId, itemId);
+        return new ConfirmedOrderFixture(orderId, itemId, orderNumber, customer.getName());
     }
 
     private String createProductionPayload(UUID orderId) {
@@ -490,6 +505,11 @@ class ProductionOrderDuplicateAndLifecycleApiContractTest {
         return UUID.fromString(matcher.group(1));
     }
 
-    private record ConfirmedOrderFixture(UUID orderId, UUID itemId) {
+    private record ConfirmedOrderFixture(
+            UUID orderId,
+            UUID itemId,
+            String orderNumber,
+            String customerName
+    ) {
     }
 }

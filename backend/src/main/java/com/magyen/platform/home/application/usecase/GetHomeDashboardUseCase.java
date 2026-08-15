@@ -202,6 +202,9 @@ public class GetHomeDashboardUseCase {
                         .map(item -> new HomeProductionItem(
                                 item.productionOrderId(),
                                 item.orderId(),
+                                item.orderNumber(),
+                                item.customerId(),
+                                item.customerName(),
                                 item.status(),
                                 item.creationDate(),
                                 item.priority()

@@ -20,13 +20,14 @@ import {
   TableRow,
   Typography,
 } from '@mui/material'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, Link as RouterLink } from 'react-router-dom'
 import AddProductionOperationDialog from '../components/AddProductionOperationDialog'
 import AssignProductionOperatorDialog from '../components/AssignProductionOperatorDialog'
 import ConfirmProductionLifecycleDialog from '../components/ConfirmProductionLifecycleDialog'
 import PlanProductionOrderDialog from '../components/PlanProductionOrderDialog'
 import RegisterProductionLaborDialog from '../components/RegisterProductionLaborDialog'
 import { formatDisplayDate } from '../presentation/formatDisplayDate'
+import { resolveProductionBusinessLabel } from '../presentation/resolveProductionBusinessLabel'
 import {
   formatProductionOperationType,
   getProductionOperationStatusChipProps,
@@ -845,7 +846,11 @@ function ProductionOrderDetailPage() {
                   spacing={1.5}
                   alignItems={{ xs: 'flex-start', sm: 'center' }}
                 >
-                  <Typography variant="h4">Orden de producción</Typography>
+                  <Typography variant="h4">
+                    {productionOrder.orderNumber
+                      ? resolveProductionBusinessLabel(productionOrder.orderNumber)
+                      : 'Orden de producción'}
+                  </Typography>
                   <Chip
                     label={
                       getProductionOrderStatusChipProps(productionOrder.status)
@@ -870,6 +875,9 @@ function ProductionOrderDetailPage() {
                     variant="outlined"
                   />
                 </Stack>
+                <Typography variant="body2" color="text.secondary">
+                  ID de producción: {productionOrder.productionOrderId}
+                </Typography>
               </Stack>
 
               <Stack
@@ -912,18 +920,24 @@ function ProductionOrderDetailPage() {
             <Paper sx={{ p: 3 }}>
               <Grid container spacing={3}>
                 <Grid size={{ xs: 12, md: 6 }}>
-                  <DetailField label="ID de producción">
-                    <Typography sx={{ wordBreak: 'break-all' }}>
-                      {productionOrder.productionOrderId}
+                  <DetailField label="Cliente">
+                    <Typography>
+                      {resolveProductionBusinessLabel(productionOrder.customerName)}
                     </Typography>
                   </DetailField>
                 </Grid>
 
                 <Grid size={{ xs: 12, md: 6 }}>
                   <DetailField label="Orden comercial">
-                    <Typography sx={{ wordBreak: 'break-all' }}>
-                      {productionOrder.orderId}
-                    </Typography>
+                    {productionOrder.orderId ? (
+                      <Typography>
+                        <RouterLink to={`/commercial/orders/${productionOrder.orderId}`}>
+                          {resolveProductionBusinessLabel(productionOrder.orderNumber)}
+                        </RouterLink>
+                      </Typography>
+                    ) : (
+                      <Typography>—</Typography>
+                    )}
                   </DetailField>
                 </Grid>
 

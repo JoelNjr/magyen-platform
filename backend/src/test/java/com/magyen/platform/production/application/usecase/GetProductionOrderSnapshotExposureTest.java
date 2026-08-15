@@ -3,6 +3,8 @@ package com.magyen.platform.production.application.usecase;
 import com.magyen.platform.commercial.application.dto.ProductSpecificationCommand;
 import com.magyen.platform.commercial.application.dto.UpdateOrderItemProductSpecificationCommand;
 import com.magyen.platform.commercial.application.usecase.UpdateOrderItemProductSpecificationUseCase;
+import com.magyen.platform.commercial.domain.Customer;
+import com.magyen.platform.commercial.domain.CustomerRepository;
 import com.magyen.platform.commercial.domain.DeliveryCommitment;
 import com.magyen.platform.commercial.domain.Order;
 import com.magyen.platform.commercial.domain.OrderItem;
@@ -37,6 +39,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -57,6 +60,9 @@ class GetProductionOrderSnapshotExposureTest {
 
     @Autowired
     private OrderRepository orderRepository;
+
+    @Autowired
+    private CustomerRepository customerRepository;
 
     @Autowired
     private ProductionOrderRepository productionOrderRepository;
@@ -90,6 +96,9 @@ class GetProductionOrderSnapshotExposureTest {
 
         assertEquals(created.productionOrderId(), result.productionOrderId());
         assertEquals(commercialOrder.getId(), result.orderId());
+        assertEquals(commercialOrder.getOrderNumber().getValue(), result.orderNumber());
+        assertEquals(commercialOrder.getCustomerId(), result.customerId());
+        assertEquals("Colegio Snapshot", result.customerName());
         assertEquals(ProductionStatus.CREATED, result.status());
         assertEquals(1, result.items().size());
 
@@ -115,6 +124,8 @@ class GetProductionOrderSnapshotExposureTest {
 
         GetProductionOrderResponse response = productionPresentationMapper.toResponse(result);
         assertEquals(1, response.items().size());
+        assertEquals(result.orderNumber(), response.orderNumber());
+        assertEquals(result.customerName(), response.customerName());
         ProductionItemResponse responseItem = response.items().getFirst();
         assertEquals(item.productionItemId(), responseItem.productionItemId());
         assertEquals("Camiseta Deportiva", responseItem.productName());
@@ -201,6 +212,8 @@ class GetProductionOrderSnapshotExposureTest {
         assertEquals(saved.getId(), result.productionOrderId());
         assertTrue(result.items().isEmpty());
         assertTrue(result.operations().isEmpty());
+        assertNull(result.orderNumber());
+        assertNull(result.customerName());
 
         GetProductionOrderResponse response = productionPresentationMapper.toResponse(result);
         assertTrue(response.items().isEmpty());
@@ -237,9 +250,10 @@ class GetProductionOrderSnapshotExposureTest {
         );
 
         LocalDate today = LocalDate.now();
+        Customer customer = customerRepository.save(Customer.create("Colegio Snapshot"));
         Order order = Order.create(
                 OrderNumber.of("ORD-EXP-" + UUID.randomUUID().toString().substring(0, 8)),
-                UUID.randomUUID(),
+                customer.getId(),
                 UUID.randomUUID(),
                 today,
                 DeliveryCommitment.of(today.plusDays(10)),

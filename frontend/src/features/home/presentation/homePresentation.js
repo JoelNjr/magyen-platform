@@ -9,6 +9,7 @@ import {
   getProductionOrderStatusChipProps,
   getProductionPriorityChipProps,
 } from '../../production/presentation/productionStatusPresentation'
+import { resolveProductionBusinessLabel } from '../../production/presentation/resolveProductionBusinessLabel'
 import { getObligationTypeLabel } from '../../finance/presentation/financePresentation'
 
 export {
@@ -19,6 +20,7 @@ export {
   resolveApiErrorMessage,
   getProductionPriorityChipProps,
   getObligationTypeLabel,
+  resolveProductionBusinessLabel,
 }
 
 /**

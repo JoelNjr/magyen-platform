@@ -70,6 +70,41 @@ class ProductionDashboardAdapterTest {
                 .noneMatch(item -> item.productionOrderId().equals(completedId)));
     }
 
+    @Test
+    void passesThroughCommercialOrderNumberAndCustomerName() {
+        UUID productionOrderId = UUID.randomUUID();
+        UUID orderId = UUID.randomUUID();
+        UUID customerId = UUID.randomUUID();
+        when(getProductionOrdersUseCase.execute()).thenReturn(new GetProductionOrdersResult(List.of(
+                new ProductionOrderResult(
+                        productionOrderId,
+                        orderId,
+                        "PED-42",
+                        customerId,
+                        "Colegio XYZ",
+                        LocalDate.of(2026, 8, 9),
+                        ProductionStatus.IN_PROGRESS,
+                        ProductionPriority.NORMAL,
+                        null,
+                        null,
+                        null
+                )
+        )));
+
+        ProductionDashboardPort.HomeProductionSummarySnapshot snapshot =
+                new ProductionDashboardAdapter(getProductionOrdersUseCase).getCurrentProductionSummary();
+
+        assertEquals(1, snapshot.items().size());
+        assertEquals(productionOrderId, snapshot.items().getFirst().productionOrderId());
+        assertEquals(orderId, snapshot.items().getFirst().orderId());
+        assertEquals("PED-42", snapshot.items().getFirst().orderNumber());
+        assertEquals(customerId, snapshot.items().getFirst().customerId());
+        assertEquals("Colegio XYZ", snapshot.items().getFirst().customerName());
+        assertEquals("IN_PROGRESS", snapshot.items().getFirst().status());
+        assertEquals("NORMAL", snapshot.items().getFirst().priority());
+        assertEquals(LocalDate.of(2026, 8, 9), snapshot.items().getFirst().creationDate());
+    }
+
     private static ProductionOrderResult order(
             UUID productionOrderId,
             ProductionStatus status,
@@ -79,6 +114,9 @@ class ProductionDashboardAdapterTest {
         return new ProductionOrderResult(
                 productionOrderId,
                 UUID.randomUUID(),
+                null,
+                null,
+                null,
                 creationDate,
                 status,
                 priority,

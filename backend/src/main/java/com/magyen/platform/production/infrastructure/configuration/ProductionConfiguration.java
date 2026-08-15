@@ -1,11 +1,14 @@
 package com.magyen.platform.production.infrastructure.configuration;
 
+import com.magyen.platform.commercial.application.usecase.GetCustomersUseCase;
 import com.magyen.platform.commercial.application.usecase.GetOrderUseCase;
+import com.magyen.platform.commercial.application.usecase.GetOrdersUseCase;
 import com.magyen.platform.finance.application.usecase.GetPayrollEmployeeUseCase;
 import com.magyen.platform.finance.application.usecase.GetPayrollEmployeesUseCase;
 import com.magyen.platform.finance.application.usecase.RegisterProductionLaborPaymentExpenseUseCase;
 import com.magyen.platform.inventory.application.usecase.ConsumeInventoryMaterialUseCase;
 import com.magyen.platform.inventory.application.usecase.GetInventoryMovementBySourceUseCase;
+import com.magyen.platform.production.application.CommercialOrderIdentityResolver;
 import com.magyen.platform.production.application.ProductionSnapshotFactory;
 import com.magyen.platform.production.application.port.ProductionLaborEmployeePort;
 import com.magyen.platform.production.application.port.ProductionLaborFinancePort;
@@ -59,6 +62,14 @@ public class ProductionConfiguration {
     @Bean
     public ProductionSnapshotFactory productionSnapshotFactory() {
         return new ProductionSnapshotFactory();
+    }
+
+    @Bean
+    public CommercialOrderIdentityResolver commercialOrderIdentityResolver(
+            GetOrdersUseCase getOrdersUseCase,
+            GetCustomersUseCase getCustomersUseCase
+    ) {
+        return new CommercialOrderIdentityResolver(getOrdersUseCase, getCustomersUseCase);
     }
 
     @Bean
@@ -125,19 +136,25 @@ public class ProductionConfiguration {
 
     @Bean
     public GetProductionOrdersUseCase getProductionOrdersUseCase(
-            ProductionOrderRepository productionOrderRepository
+            ProductionOrderRepository productionOrderRepository,
+            CommercialOrderIdentityResolver commercialOrderIdentityResolver
     ) {
-        return new GetProductionOrdersUseCase(productionOrderRepository);
+        return new GetProductionOrdersUseCase(
+                productionOrderRepository,
+                commercialOrderIdentityResolver
+        );
     }
 
     @Bean
     public GetProductionOrderUseCase getProductionOrderUseCase(
             ProductionOrderRepository productionOrderRepository,
-            ProductionMaterialCostInventoryPort productionMaterialCostInventoryPort
+            ProductionMaterialCostInventoryPort productionMaterialCostInventoryPort,
+            CommercialOrderIdentityResolver commercialOrderIdentityResolver
     ) {
         return new GetProductionOrderUseCase(
                 productionOrderRepository,
-                productionMaterialCostInventoryPort
+                productionMaterialCostInventoryPort,
+                commercialOrderIdentityResolver
         );
     }
 

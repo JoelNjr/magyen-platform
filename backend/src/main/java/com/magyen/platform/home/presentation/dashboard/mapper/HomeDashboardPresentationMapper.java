@@ -131,6 +131,9 @@ public class HomeDashboardPresentationMapper {
                                 .map(item -> new HomeProductionItemResponse(
                                         item.productionOrderId(),
                                         item.orderId(),
+                                        item.orderNumber(),
+                                        item.customerId(),
+                                        item.customerName(),
                                         item.status(),
                                         item.creationDate(),
                                         item.priority()

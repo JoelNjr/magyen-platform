@@ -9,6 +9,9 @@ import java.util.UUID;
 public record HomeProductionItemResponse(
         UUID productionOrderId,
         UUID orderId,
+        String orderNumber,
+        UUID customerId,
+        String customerName,
         String status,
         LocalDate creationDate,
         String priority

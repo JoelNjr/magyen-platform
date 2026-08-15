@@ -862,6 +862,18 @@ Live API (`:8080`):
 | Usuario deshabilitado login / token | 401 |
 | Sin token `GET /admin/users` | 401 |
 
+---
+
+## 41. Reset de base de datos V1 (solo preparación)
+
+El procedimiento de reset limpio de Magyen V1 **no pertenece a este documento de autenticación**.
+
+Documento canónico (preparado, **no ejecutado**):
+
+`docs/12-V1-Database-Reset.md`
+
+Tras el reset futuro, la tabla `users` quedará vacía y el primer ADMIN se creará únicamente por bootstrap (`AUTH_BOOTSTRAP_*`). No se deben reutilizar `qa-operator` ni `inc4-live-operator`.
+
 
 
 

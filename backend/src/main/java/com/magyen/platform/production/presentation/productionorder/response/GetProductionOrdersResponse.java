@@ -17,6 +17,9 @@ public record GetProductionOrdersResponse(
     public record ProductionOrderResponse(
             UUID productionOrderId,
             UUID orderId,
+            String orderNumber,
+            UUID customerId,
+            String customerName,
             LocalDate creationDate,
             String status,
             String priority,
