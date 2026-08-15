@@ -547,3 +547,18 @@ CREATE UNIQUE INDEX uq_financial_transactions_payroll_source
     ON financial_transactions (source_type, source_id)
     WHERE source_type = 'PAYROLL'
       AND source_id IS NOT NULL;
+
+-- Administration module
+-- Aggregate: AuthenticationUser (identity de autenticación — SPR-038 Inc. 1)
+-- Independiente de Commercial / Production / Inventory / Plotter / Finance / Home.
+-- No hay FKs hacia módulos de negocio.
+
+CREATE TABLE users (
+    id              uuid            NOT NULL,
+    username        varchar(100)    NOT NULL,
+    password_hash   varchar(255)    NOT NULL,
+    enabled         boolean         NOT NULL,
+    role            varchar(30)     NOT NULL,
+    CONSTRAINT users_pkey PRIMARY KEY (id),
+    CONSTRAINT users_username_key UNIQUE (username)
+);

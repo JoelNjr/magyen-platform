@@ -1,6 +1,7 @@
 import {
   AppBar,
   Box,
+  Button,
   Drawer,
   List,
   ListItemButton,
@@ -9,6 +10,8 @@ import {
   Typography,
 } from '@mui/material'
 import { Link as RouterLink, Outlet, useLocation } from 'react-router-dom'
+import { useAuth } from '../features/auth/AuthContext'
+import { isAdmin } from '../features/auth/presentation/authPresentation'
 
 const DRAWER_WIDTH = 240
 
@@ -18,7 +21,8 @@ const navigationItems = [
   { label: 'Producción', path: '/production' },
   { label: 'Inventario', path: '/inventory' },
   { label: 'Plotter', path: '/plotter' },
-  { label: 'Finanzas', path: '/finance' },
+  { label: 'Finanzas', path: '/finance', adminOnly: true },
+  { label: 'Usuarios', path: '/admin/users', adminOnly: true },
 ]
 
 function isNavigationItemSelected(pathname, itemPath) {
@@ -27,6 +31,10 @@ function isNavigationItemSelected(pathname, itemPath) {
 
 function MainLayout() {
   const location = useLocation()
+  const { identity, logout } = useAuth()
+  const visibleNavigationItems = navigationItems.filter(
+    (item) => !item.adminOnly || isAdmin(identity)
+  )
 
   return (
     <Box sx={{ display: 'flex', height: '100vh' }}>
@@ -38,6 +46,15 @@ function MainLayout() {
           <Typography variant="h6" noWrap component="div">
             Magyen Platform
           </Typography>
+          <Box sx={{ flexGrow: 1 }} />
+          {identity?.username && (
+            <Typography variant="body2" sx={{ mr: 2 }} noWrap>
+              {identity.username}
+            </Typography>
+          )}
+          <Button color="inherit" onClick={logout}>
+            Cerrar sesión
+          </Button>
         </Toolbar>
       </AppBar>
 
@@ -55,7 +72,7 @@ function MainLayout() {
         <Toolbar />
         <Box sx={{ overflow: 'auto' }}>
           <List>
-            {navigationItems.map((item) => (
+            {visibleNavigationItems.map((item) => (
               <ListItemButton
                 key={item.path}
                 component={RouterLink}

@@ -19,6 +19,8 @@ import {
   Typography,
 } from '@mui/material'
 import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom'
+import { useAuth } from '../../auth/AuthContext'
+import { isAdmin } from '../../auth/presentation/authPresentation'
 import RegisterInventoryMovementDialog from '../components/RegisterInventoryMovementDialog'
 import UpdateInventoryMinimumStockDialog from '../components/UpdateInventoryMinimumStockDialog'
 import UpdateInventoryUnitCostDialog from '../components/UpdateInventoryUnitCostDialog'
@@ -90,6 +92,8 @@ function formatMovementMoney(value) {
 function InventoryDetailPage() {
   const { inventoryItemId } = useParams()
   const navigate = useNavigate()
+  const { identity } = useAuth()
+  const canConfigureUnitCost = isAdmin(identity)
 
   const [item, setItem] = useState(null)
   const [movements, setMovements] = useState([])
@@ -391,13 +395,15 @@ function InventoryDetailPage() {
                   >
                     Configurar stock mínimo
                   </Button>
-                  <Button
-                    variant="outlined"
-                    onClick={openUnitCostDialog}
-                    disabled={pageBusy}
-                  >
-                    Configurar costo unitario
-                  </Button>
+                  {canConfigureUnitCost && (
+                    <Button
+                      variant="outlined"
+                      onClick={openUnitCostDialog}
+                      disabled={pageBusy}
+                    >
+                      Configurar costo unitario
+                    </Button>
+                  )}
                 </Stack>
               </Stack>
 
@@ -579,15 +585,17 @@ function InventoryDetailPage() {
         currentMinimumStock={item?.minimumStock}
       />
 
-      <UpdateInventoryUnitCostDialog
-        open={unitCostDialogOpen}
-        onClose={closeUnitCostDialog}
-        onSubmit={handleUpdateUnitCost}
-        submitting={updatingUnitCost}
-        errorMessage={unitCostError}
-        currentUnitCost={item?.unitCost}
-        unitOfMeasure={item?.unitOfMeasure}
-      />
+      {canConfigureUnitCost && (
+        <UpdateInventoryUnitCostDialog
+          open={unitCostDialogOpen}
+          onClose={closeUnitCostDialog}
+          onSubmit={handleUpdateUnitCost}
+          submitting={updatingUnitCost}
+          errorMessage={unitCostError}
+          currentUnitCost={item?.unitCost}
+          unitOfMeasure={item?.unitOfMeasure}
+        />
+      )}
 
       <RegisterInventoryMovementDialog
         open={movementDialogOpen}

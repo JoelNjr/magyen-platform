@@ -1,5 +1,8 @@
 package com.magyen.platform.shared.presentation;
 
+import com.magyen.platform.administration.domain.exception.AdministrationDomainException;
+import com.magyen.platform.administration.domain.exception.AuthenticationFailedException;
+import com.magyen.platform.administration.domain.exception.AuthenticationUsernameAlreadyExistsException;
 import com.magyen.platform.commercial.domain.exception.OrderAlreadyExistsForQuotationException;
 import com.magyen.platform.commercial.domain.exception.OrderDomainException;
 import com.magyen.platform.commercial.domain.exception.QuotationDomainException;
@@ -19,6 +22,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -30,6 +34,70 @@ import java.time.LocalDateTime;
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccessDeniedException(
+            AccessDeniedException exception,
+            HttpServletRequest request
+    ) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.FORBIDDEN.value(),
+                HttpStatus.FORBIDDEN.getReasonPhrase(),
+                "You do not have permission to perform this action.",
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
+    }
+
+    @ExceptionHandler(AuthenticationFailedException.class)
+    public ResponseEntity<ErrorResponse> handleAuthenticationFailedException(
+            AuthenticationFailedException exception,
+            HttpServletRequest request
+    ) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.UNAUTHORIZED.value(),
+                HttpStatus.UNAUTHORIZED.getReasonPhrase(),
+                exception.getMessage(),
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+    }
+
+    @ExceptionHandler(AuthenticationUsernameAlreadyExistsException.class)
+    public ResponseEntity<ErrorResponse> handleAuthenticationUsernameAlreadyExistsException(
+            AuthenticationUsernameAlreadyExistsException exception,
+            HttpServletRequest request
+    ) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.CONFLICT.value(),
+                HttpStatus.CONFLICT.getReasonPhrase(),
+                exception.getMessage(),
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+    }
+
+    @ExceptionHandler(AdministrationDomainException.class)
+    public ResponseEntity<ErrorResponse> handleAdministrationDomainException(
+            AdministrationDomainException exception,
+            HttpServletRequest request
+    ) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                exception.getMessage(),
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResponse> handleIllegalArgumentException(
@@ -104,6 +172,17 @@ public class GlobalExceptionHandler {
                 ? exception.getMostSpecificCause().getMessage()
                 : exception.getMessage();
         String normalizedDetail = detail == null ? "" : detail.toLowerCase();
+
+        if (normalizedDetail.contains("users_username_key")) {
+            ErrorResponse conflictResponse = new ErrorResponse(
+                    LocalDateTime.now(),
+                    HttpStatus.CONFLICT.value(),
+                    HttpStatus.CONFLICT.getReasonPhrase(),
+                    AuthenticationUsernameAlreadyExistsException.DEFAULT_MESSAGE,
+                    request.getRequestURI()
+            );
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(conflictResponse);
+        }
 
         if (normalizedDetail.contains("quotation_id")
                 || normalizedDetail.contains("orders_quotation_id")) {

@@ -13,3 +13,14 @@ spring:
 
 springdotenv:
   directory: ..
+
+magyen:
+  security:
+    jwt:
+      secret: ${JWT_SECRET}
+      expiration-ms: ${JWT_EXPIRATION_MS:3600000}
+    bootstrap:
+      enabled: "${AUTH_BOOTSTRAP_ENABLED:false}"
+      username: "${AUTH_BOOTSTRAP_USERNAME:}"
+      password: "${AUTH_BOOTSTRAP_PASSWORD:}"
+      role: "${AUTH_BOOTSTRAP_ROLE:ADMIN}"
