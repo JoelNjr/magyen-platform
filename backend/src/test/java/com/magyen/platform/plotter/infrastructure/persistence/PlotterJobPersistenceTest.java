@@ -3,6 +3,7 @@ package com.magyen.platform.plotter.infrastructure.persistence;
 import com.magyen.platform.plotter.domain.PlotterJob;
 import com.magyen.platform.plotter.domain.PlotterJobRepository;
 import com.magyen.platform.plotter.domain.PlotterJobStatus;
+import com.magyen.platform.plotter.domain.PlotterJobType;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -49,6 +50,7 @@ class PlotterJobPersistenceTest {
         assertEquals(new BigDecimal("8000.00"), reloaded.getPricePerMeter());
         assertEquals(new BigDecimal("150000.00"), reloaded.getTotalAmount());
         assertEquals(PlotterJobStatus.REGISTERED, reloaded.getStatus());
+        assertEquals(PlotterJobType.EXTERNAL, reloaded.getJobType());
         assertEquals("Persistencia", reloaded.getObservations());
         assertTrue(plotterJobRepository.findAll().stream()
                 .anyMatch(job -> job.getId().equals(created.getId())));

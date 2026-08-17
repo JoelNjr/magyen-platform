@@ -8,8 +8,10 @@ import java.util.UUID;
  * Cuerpo HTTP para registrar un trabajo de plotter.
  */
 public record CreatePlotterJobRequest(
+        String jobType,
         UUID customerId,
         UUID orderId,
+        UUID plotterJobId,
         LocalDate creationDate,
         UUID paperInventoryItemId,
         BigDecimal printedMeters,

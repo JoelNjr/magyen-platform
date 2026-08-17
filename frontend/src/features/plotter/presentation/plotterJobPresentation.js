@@ -76,6 +76,34 @@ export function formatPlotterDate(value) {
   return date.toLocaleDateString('es-CO')
 }
 
+export function formatPlotterJobTypeLabel(jobType) {
+  switch (jobType) {
+    case 'INTERNAL_MAGYEN':
+      return 'Producción Magyen'
+    case 'EXTERNAL':
+      return 'Cliente externo'
+    default:
+      return jobType || '—'
+  }
+}
+
+export function isInternalPlotterJob(jobType) {
+  return jobType === 'INTERNAL_MAGYEN'
+}
+
+export function formatPlotterOrderLabel(jobOrOrder) {
+  const orderNumber = jobOrOrder?.orderNumber
+  if (!orderNumber) {
+    return '—'
+  }
+  const description = jobOrOrder?.orderDescription || jobOrOrder?.description
+  return description ? `#${orderNumber} — ${description}` : `#${orderNumber}`
+}
+
+export function formatPlotterCustomerLabel(job, fallbackName) {
+  return job?.customerName || fallbackName || '—'
+}
+
 export function calculatePlotterTotalPreview(printedMeters, pricePerMeter) {
   const meters = Number(printedMeters)
   const price = Number(pricePerMeter)

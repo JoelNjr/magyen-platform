@@ -3,6 +3,7 @@ package com.magyen.platform.commercial.application.usecase;
 import com.magyen.platform.commercial.application.dto.GetOrderProfitabilityQuery;
 import com.magyen.platform.commercial.application.dto.GetOrderProfitabilityResult;
 import com.magyen.platform.commercial.application.port.OrderPaymentCollectionPort;
+import com.magyen.platform.commercial.application.port.PlotterOrderCostPort;
 import com.magyen.platform.commercial.application.port.ProductionOrderCostPort;
 import com.magyen.platform.commercial.domain.Order;
 import com.magyen.platform.commercial.domain.OrderProfitabilityStatus;
@@ -21,7 +22,7 @@ import java.util.Objects;
  *   <li>Cobrado = suma de Payments Finance por orderId</li>
  *   <li>Material = costo histórico Inventory vía atribución Production</li>
  *   <li>Mano de obra = suma PENDING+PAID (CANCELLED excluido)</li>
- *   <li>Plotter diferido: sin orderId confiable en PlotterJob → costo 0 y no atribuible</li>
+ *   <li>Plotter interno = snapshot histórico del OUT de papel (no el EXPENSE de compra)</li>
  * </ul>
  */
 public class GetOrderProfitabilityUseCase {
@@ -32,11 +33,13 @@ public class GetOrderProfitabilityUseCase {
     private final OrderRepository orderRepository;
     private final OrderPaymentCollectionPort orderPaymentCollectionPort;
     private final ProductionOrderCostPort productionOrderCostPort;
+    private final PlotterOrderCostPort plotterOrderCostPort;
 
     public GetOrderProfitabilityUseCase(
             OrderRepository orderRepository,
             OrderPaymentCollectionPort orderPaymentCollectionPort,
-            ProductionOrderCostPort productionOrderCostPort
+            ProductionOrderCostPort productionOrderCostPort,
+            PlotterOrderCostPort plotterOrderCostPort
     ) {
         this.orderRepository = Objects.requireNonNull(orderRepository, "Order repository must not be null");
         this.orderPaymentCollectionPort = Objects.requireNonNull(
@@ -46,6 +49,10 @@ public class GetOrderProfitabilityUseCase {
         this.productionOrderCostPort = Objects.requireNonNull(
                 productionOrderCostPort,
                 "Production order cost port must not be null"
+        );
+        this.plotterOrderCostPort = Objects.requireNonNull(
+                plotterOrderCostPort,
+                "Plotter order cost port must not be null"
         );
     }
 
@@ -65,20 +72,20 @@ public class GetOrderProfitabilityUseCase {
 
         ProductionOrderCostPort.ProductionOrderCostSnapshot costs =
                 productionOrderCostPort.findCostsByOrderId(order.getId());
-
-        // Diferido: PlotterJob aún no tiene orderId confiable para atribución.
-        BigDecimal plotterMaterialCost = ZERO_MONEY;
-        boolean plotterCostAttributable = false;
+        PlotterOrderCostPort.PlotterOrderCostSnapshot plotterCosts =
+                plotterOrderCostPort.findCostsByOrderId(order.getId());
 
         BigDecimal materialCost = money(costs.materialCost());
         BigDecimal laborCost = money(costs.laborCost());
+        BigDecimal plotterMaterialCost = money(plotterCosts.plotterMaterialCost());
         BigDecimal collectedAmount = money(collection.collectedAmount());
         BigDecimal outstandingAmount = money(collection.outstandingAmount());
         BigDecimal totalDirectCost = money(materialCost.add(laborCost).add(plotterMaterialCost));
         BigDecimal directProfit = money(orderValue.subtract(totalDirectCost));
         BigDecimal directMarginPercentage = resolveMarginPercentage(orderValue, directProfit);
 
-        OrderProfitabilityStatus status = resolveStatus(costs);
+        int unvaluedCount = costs.unvaluedMaterialConsumptionCount() + plotterCosts.unvaluedJobCount();
+        OrderProfitabilityStatus status = resolveStatus(costs, plotterCosts);
 
         return new GetOrderProfitabilityResult(
                 order.getId(),
@@ -88,11 +95,11 @@ public class GetOrderProfitabilityUseCase {
                 materialCost,
                 laborCost,
                 plotterMaterialCost,
-                plotterCostAttributable,
+                plotterCosts.plotterCostAttributable(),
                 totalDirectCost,
                 directProfit,
                 directMarginPercentage,
-                costs.unvaluedMaterialConsumptionCount(),
+                unvaluedCount,
                 status
         );
     }
@@ -115,13 +122,16 @@ public class GetOrderProfitabilityUseCase {
     }
 
     private static OrderProfitabilityStatus resolveStatus(
-            ProductionOrderCostPort.ProductionOrderCostSnapshot costs
+            ProductionOrderCostPort.ProductionOrderCostSnapshot costs,
+            PlotterOrderCostPort.PlotterOrderCostSnapshot plotterCosts
     ) {
-        if (!costs.productionOrderFound()
-                || (costs.materialConsumptionCount() == 0 && costs.laborWorkCount() == 0)) {
+        boolean hasProductionActivity = costs.productionOrderFound()
+                && (costs.materialConsumptionCount() > 0 || costs.laborWorkCount() > 0);
+        boolean hasPlotterActivity = plotterCosts.internalJobCount() > 0;
+        if (!hasProductionActivity && !hasPlotterActivity) {
             return OrderProfitabilityStatus.NO_COST_DATA;
         }
-        if (costs.unvaluedMaterialConsumptionCount() > 0) {
+        if (costs.unvaluedMaterialConsumptionCount() > 0 || plotterCosts.unvaluedJobCount() > 0) {
             return OrderProfitabilityStatus.PARTIALLY_UNVALUED;
         }
         return OrderProfitabilityStatus.COMPLETE;

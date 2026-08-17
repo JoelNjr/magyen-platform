@@ -4,13 +4,17 @@ import com.magyen.platform.commercial.application.usecase.GetCustomersUseCase;
 import com.magyen.platform.commercial.application.usecase.GetOrderUseCase;
 import com.magyen.platform.commercial.application.usecase.GetOrdersUseCase;
 import com.magyen.platform.commercial.application.usecase.GetQuotationUseCase;
+import com.magyen.platform.finance.application.usecase.GetPayrollEmployeeUseCase;
+import com.magyen.platform.finance.application.usecase.GetPayrollEmployeesUseCase;
 import com.magyen.platform.finance.application.usecase.RegisterProductionLaborPaymentExpenseUseCase;
 import com.magyen.platform.inventory.application.usecase.ConsumeInventoryMaterialUseCase;
+import com.magyen.platform.inventory.application.usecase.GetInventoryItemUseCase;
 import com.magyen.platform.inventory.application.usecase.GetInventoryMovementBySourceUseCase;
 import com.magyen.platform.production.application.CommercialOrderIdentityResolver;
 import com.magyen.platform.production.application.ProductionSnapshotFactory;
 import com.magyen.platform.production.application.port.ProductionCommercialChronologyPort;
 import com.magyen.platform.production.application.port.ProductionLaborEmployeePort;
+import com.magyen.platform.production.application.port.ProductionLaborEarningsQuery;
 import com.magyen.platform.production.application.port.ProductionLaborFinancePort;
 import com.magyen.platform.production.application.port.ProductionMaterialConsumptionInventoryPort;
 import com.magyen.platform.production.application.port.ProductionMaterialCostInventoryPort;
@@ -21,12 +25,11 @@ import com.magyen.platform.production.application.usecase.CompleteProductionOper
 import com.magyen.platform.production.application.usecase.CompleteProductionOrderUseCase;
 import com.magyen.platform.production.application.usecase.CreateProductionOrderFromOrderUseCase;
 import com.magyen.platform.production.application.usecase.GetProductionCostsByCommercialOrderUseCase;
+import com.magyen.platform.production.application.usecase.GetEmployeeProductionEarningsUseCase;
 import com.magyen.platform.production.application.usecase.GetProductionLaborWorkUseCase;
 import com.magyen.platform.production.application.usecase.GetProductionLaborWorksUseCase;
 import com.magyen.platform.production.application.usecase.GetProductionMaterialConsumptionsUseCase;
 import com.magyen.platform.production.application.usecase.GetProductionOrderUseCase;
-import com.magyen.platform.production.application.usecase.CreateProductionOperatorUseCase;
-import com.magyen.platform.production.application.usecase.GetProductionOperatorsUseCase;
 import com.magyen.platform.production.application.usecase.GetProductionOrdersUseCase;
 import com.magyen.platform.production.application.usecase.ListEligibleProductionLaborOperatorsUseCase;
 import com.magyen.platform.production.application.usecase.PayProductionLaborWorkUseCase;
@@ -35,13 +38,10 @@ import com.magyen.platform.production.application.usecase.RegisterProductionLabo
 import com.magyen.platform.production.application.usecase.RegisterProductionMaterialConsumptionUseCase;
 import com.magyen.platform.production.application.usecase.StartProductionOperationUseCase;
 import com.magyen.platform.production.application.usecase.StartProductionOrderUseCase;
-import com.magyen.platform.production.domain.ProductionOperatorRepository;
 import com.magyen.platform.production.domain.ProductionOrderRepository;
 import com.magyen.platform.production.infrastructure.commercial.ProductionCommercialChronologyAdapter;
+import com.magyen.platform.production.infrastructure.finance.ProductionLaborEmployeeAdapter;
 import com.magyen.platform.production.infrastructure.finance.ProductionLaborFinanceAdapter;
-import com.magyen.platform.production.infrastructure.persistence.ProductionLaborOperatorAdapter;
-import com.magyen.platform.production.infrastructure.persistence.mapper.ProductionOperatorPersistenceMapper;
-import com.magyen.platform.production.presentation.operator.mapper.ProductionOperatorPresentationMapper;
 import com.magyen.platform.production.infrastructure.inventory.ProductionMaterialConsumptionInventoryAdapter;
 import com.magyen.platform.production.infrastructure.inventory.ProductionMaterialCostInventoryAdapter;
 import com.magyen.platform.production.infrastructure.persistence.mapper.ProductionPersistenceMapper;
@@ -63,30 +63,6 @@ public class ProductionConfiguration {
     @Bean
     public ProductionPersistenceMapper productionPersistenceMapper() {
         return new ProductionPersistenceMapper();
-    }
-
-    @Bean
-    public ProductionOperatorPersistenceMapper productionOperatorPersistenceMapper() {
-        return new ProductionOperatorPersistenceMapper();
-    }
-
-    @Bean
-    public ProductionOperatorPresentationMapper productionOperatorPresentationMapper() {
-        return new ProductionOperatorPresentationMapper();
-    }
-
-    @Bean
-    public CreateProductionOperatorUseCase createProductionOperatorUseCase(
-            ProductionOperatorRepository productionOperatorRepository
-    ) {
-        return new CreateProductionOperatorUseCase(productionOperatorRepository);
-    }
-
-    @Bean
-    public GetProductionOperatorsUseCase getProductionOperatorsUseCase(
-            ProductionOperatorRepository productionOperatorRepository
-    ) {
-        return new GetProductionOperatorsUseCase(productionOperatorRepository);
     }
 
     @Bean
@@ -210,9 +186,13 @@ public class ProductionConfiguration {
 
     @Bean
     public ProductionMaterialConsumptionInventoryPort productionMaterialConsumptionInventoryPort(
-            ConsumeInventoryMaterialUseCase consumeInventoryMaterialUseCase
+            ConsumeInventoryMaterialUseCase consumeInventoryMaterialUseCase,
+            GetInventoryItemUseCase getInventoryItemUseCase
     ) {
-        return new ProductionMaterialConsumptionInventoryAdapter(consumeInventoryMaterialUseCase);
+        return new ProductionMaterialConsumptionInventoryAdapter(
+                consumeInventoryMaterialUseCase,
+                getInventoryItemUseCase
+        );
     }
 
     @Bean
@@ -257,9 +237,17 @@ public class ProductionConfiguration {
 
     @Bean
     public ProductionLaborEmployeePort productionLaborEmployeePort(
-            ProductionOperatorRepository productionOperatorRepository
+            GetPayrollEmployeeUseCase getPayrollEmployeeUseCase,
+            GetPayrollEmployeesUseCase getPayrollEmployeesUseCase
     ) {
-        return new ProductionLaborOperatorAdapter(productionOperatorRepository);
+        return new ProductionLaborEmployeeAdapter(getPayrollEmployeeUseCase, getPayrollEmployeesUseCase);
+    }
+
+    @Bean
+    public GetEmployeeProductionEarningsUseCase getEmployeeProductionEarningsUseCase(
+            ProductionLaborEarningsQuery productionLaborEarningsQuery
+    ) {
+        return new GetEmployeeProductionEarningsUseCase(productionLaborEarningsQuery);
     }
 
     @Bean

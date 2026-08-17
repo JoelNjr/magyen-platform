@@ -36,13 +36,14 @@ class PlotterJobTest {
         assertEquals(new BigDecimal("8000.00"), plotterJob.getPricePerMeter());
         assertEquals(new BigDecimal("148000.00"), plotterJob.getTotalAmount());
         assertEquals(PlotterJobStatus.REGISTERED, plotterJob.getStatus());
+        assertEquals(PlotterJobType.EXTERNAL, plotterJob.getJobType());
         assertEquals("Trabajo para uniformes", plotterJob.getObservations());
         assertTrue(plotterJob.getId() != null);
         assertNull(plotterJob.getOrderId());
     }
 
     @Test
-    void storesOptionalCommercialOrderAttribution() {
+    void internalJobRequiresOrderAndDoesNotChargeASale() {
         UUID orderId = UUID.randomUUID();
         PlotterJob plotterJob = PlotterJob.create(
                 UUID.randomUUID(),
@@ -55,7 +56,23 @@ class PlotterJobTest {
         );
 
         assertEquals(orderId, plotterJob.getOrderId());
-        assertEquals(new BigDecimal("48000.00"), plotterJob.getTotalAmount());
+        assertEquals(PlotterJobType.INTERNAL_MAGYEN, plotterJob.getJobType());
+        assertEquals(new BigDecimal("0.00"), plotterJob.getTotalAmount());
+    }
+
+    @Test
+    void rejectsInternalJobWithoutCommercialOrder() {
+        assertThrows(PlotterDomainException.class, () -> PlotterJob.create(
+                UUID.randomUUID(),
+                PlotterJobType.INTERNAL_MAGYEN,
+                UUID.randomUUID(),
+                null,
+                LocalDate.of(2026, 8, 3),
+                UUID.randomUUID(),
+                new BigDecimal("6"),
+                BigDecimal.ZERO,
+                null
+        ));
     }
 
     @Test
@@ -105,6 +122,28 @@ class PlotterJobTest {
         assertEquals(new BigDecimal("0.00"), plotterJob.getPricePerMeter());
         assertEquals(new BigDecimal("0.00"), plotterJob.getTotalAmount());
         assertNull(plotterJob.getObservations());
+    }
+
+    @Test
+    void reconstitutesLegacyExternalJobWithLeftoverOrderId() {
+        UUID orderId = UUID.randomUUID();
+        PlotterJob plotterJob = PlotterJob.reconstitute(
+                UUID.randomUUID(),
+                PlotterJobType.EXTERNAL,
+                UUID.randomUUID(),
+                orderId,
+                LocalDate.of(2026, 8, 3),
+                UUID.randomUUID(),
+                new BigDecimal("7"),
+                new BigDecimal("8000"),
+                new BigDecimal("56000.00"),
+                PlotterJobStatus.REGISTERED,
+                null
+        );
+
+        assertEquals(PlotterJobType.EXTERNAL, plotterJob.getJobType());
+        assertEquals(orderId, plotterJob.getOrderId());
+        assertEquals(new BigDecimal("56000.00"), plotterJob.getTotalAmount());
     }
 
     @Test

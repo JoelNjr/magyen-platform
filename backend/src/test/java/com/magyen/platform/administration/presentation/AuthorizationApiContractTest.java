@@ -81,6 +81,7 @@ class AuthorizationApiContractTest {
         mockMvc.perform(authorized(get("/api/v1/inventory"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/plotter/jobs"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/finance/transactions"), accessToken)).andExpect(status().isOk());
+        mockMvc.perform(authorized(get("/api/v1/finance/payroll/employees"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/finance/summary"), accessToken)
                         .param("fromDate", "2026-08-01")
                         .param("toDate", "2026-08-31"))
@@ -99,6 +100,7 @@ class AuthorizationApiContractTest {
         mockMvc.perform(authorized(get("/api/v1/quotations"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/orders"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/production-orders"), accessToken)).andExpect(status().isOk());
+        mockMvc.perform(authorized(get("/api/v1/production/labor-operators"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/inventory"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/plotter/jobs"), accessToken)).andExpect(status().isOk());
     }
@@ -134,6 +136,24 @@ class AuthorizationApiContractTest {
                                 """))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.status").value(403));
+    }
+
+    @Test
+    void operatorCannotManagePayrollEmployees() throws Exception {
+        String accessToken = loginAs(AuthenticationRole.OPERATOR);
+
+        mockMvc.perform(authorized(get("/api/v1/finance/payroll/employees"), accessToken))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403));
+        mockMvc.perform(authorized(post("/api/v1/finance/payroll/employees"), accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "displayName": "No autorizado",
+                                  "compensationType": "PRODUCTION_BASED"
+                                }
+                                """))
+                .andExpect(status().isForbidden());
     }
 
     @Test

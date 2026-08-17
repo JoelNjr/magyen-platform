@@ -1,14 +1,18 @@
 package com.magyen.platform.plotter.infrastructure.configuration;
 
+import com.magyen.platform.commercial.application.usecase.GetCustomersUseCase;
 import com.magyen.platform.commercial.application.usecase.GetOrderUseCase;
 import com.magyen.platform.finance.application.usecase.RegisterPlotterPaymentIncomeUseCase;
 import com.magyen.platform.inventory.application.usecase.ConsumeInventoryMaterialUseCase;
+import com.magyen.platform.inventory.application.usecase.GetInventoryMovementBySourceUseCase;
 import com.magyen.platform.inventory.domain.InventoryItemRepository;
 import com.magyen.platform.plotter.application.port.PlotterCommercialOrderPort;
+import com.magyen.platform.plotter.application.port.PlotterInventoryCostPort;
 import com.magyen.platform.plotter.application.port.PlotterJobInventoryPort;
 import com.magyen.platform.plotter.application.port.PlotterPaymentFinancePort;
 import com.magyen.platform.plotter.infrastructure.commercial.PlotterCommercialOrderAdapter;
 import com.magyen.platform.plotter.application.usecase.CreatePlotterJobUseCase;
+import com.magyen.platform.plotter.application.usecase.GetInternalPlotterOrderCostsUseCase;
 import com.magyen.platform.plotter.application.usecase.GetPlotterJobUseCase;
 import com.magyen.platform.plotter.application.usecase.GetPlotterJobsUseCase;
 import com.magyen.platform.plotter.application.usecase.GetPlotterPaymentsUseCase;
@@ -16,6 +20,7 @@ import com.magyen.platform.plotter.application.usecase.RegisterPlotterPaymentUse
 import com.magyen.platform.plotter.domain.PlotterJobRepository;
 import com.magyen.platform.plotter.domain.PlotterPaymentRepository;
 import com.magyen.platform.plotter.infrastructure.finance.PlotterPaymentFinanceAdapter;
+import com.magyen.platform.plotter.infrastructure.inventory.PlotterInventoryCostAdapter;
 import com.magyen.platform.plotter.infrastructure.inventory.PlotterJobInventoryAdapter;
 import com.magyen.platform.plotter.infrastructure.persistence.mapper.PlotterPaymentPersistenceMapper;
 import com.magyen.platform.plotter.infrastructure.persistence.mapper.PlotterPersistenceMapper;
@@ -63,8 +68,26 @@ public class PlotterConfiguration {
     }
 
     @Bean
-    public PlotterCommercialOrderPort plotterCommercialOrderPort(GetOrderUseCase getOrderUseCase) {
-        return new PlotterCommercialOrderAdapter(getOrderUseCase);
+    public PlotterCommercialOrderPort plotterCommercialOrderPort(
+            GetOrderUseCase getOrderUseCase,
+            GetCustomersUseCase getCustomersUseCase
+    ) {
+        return new PlotterCommercialOrderAdapter(getOrderUseCase, getCustomersUseCase);
+    }
+
+    @Bean
+    public PlotterInventoryCostPort plotterInventoryCostPort(
+            GetInventoryMovementBySourceUseCase getInventoryMovementBySourceUseCase
+    ) {
+        return new PlotterInventoryCostAdapter(getInventoryMovementBySourceUseCase);
+    }
+
+    @Bean
+    public GetInternalPlotterOrderCostsUseCase getInternalPlotterOrderCostsUseCase(
+            PlotterJobRepository plotterJobRepository,
+            PlotterInventoryCostPort plotterInventoryCostPort
+    ) {
+        return new GetInternalPlotterOrderCostsUseCase(plotterJobRepository, plotterInventoryCostPort);
     }
 
     @Bean
@@ -83,17 +106,27 @@ public class PlotterConfiguration {
     @Bean
     public GetPlotterJobUseCase getPlotterJobUseCase(
             PlotterJobRepository plotterJobRepository,
-            PlotterPaymentRepository plotterPaymentRepository
+            PlotterPaymentRepository plotterPaymentRepository,
+            PlotterCommercialOrderPort plotterCommercialOrderPort
     ) {
-        return new GetPlotterJobUseCase(plotterJobRepository, plotterPaymentRepository);
+        return new GetPlotterJobUseCase(
+                plotterJobRepository,
+                plotterPaymentRepository,
+                plotterCommercialOrderPort
+        );
     }
 
     @Bean
     public GetPlotterJobsUseCase getPlotterJobsUseCase(
             PlotterJobRepository plotterJobRepository,
-            PlotterPaymentRepository plotterPaymentRepository
+            PlotterPaymentRepository plotterPaymentRepository,
+            PlotterCommercialOrderPort plotterCommercialOrderPort
     ) {
-        return new GetPlotterJobsUseCase(plotterJobRepository, plotterPaymentRepository);
+        return new GetPlotterJobsUseCase(
+                plotterJobRepository,
+                plotterPaymentRepository,
+                plotterCommercialOrderPort
+        );
     }
 
     @Bean

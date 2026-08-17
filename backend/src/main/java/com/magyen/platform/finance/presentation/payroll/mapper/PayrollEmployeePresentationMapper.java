@@ -6,6 +6,8 @@ import com.magyen.platform.finance.application.dto.CreatePayrollEmployeeCommand;
 import com.magyen.platform.finance.application.dto.CreatePayrollEmployeeResult;
 import com.magyen.platform.finance.application.dto.DeactivatePayrollEmployeeCommand;
 import com.magyen.platform.finance.application.dto.DeactivatePayrollEmployeeResult;
+import com.magyen.platform.finance.application.dto.GetPayrollEmployeeProductionEarningsQuery;
+import com.magyen.platform.finance.application.dto.GetPayrollEmployeeProductionEarningsResult;
 import com.magyen.platform.finance.application.dto.GetPayrollEmployeeQuery;
 import com.magyen.platform.finance.application.dto.GetPayrollEmployeeResult;
 import com.magyen.platform.finance.application.dto.GetPayrollEmployeesQuery;
@@ -19,6 +21,7 @@ import com.magyen.platform.finance.presentation.payroll.request.UpdatePayrollEmp
 import com.magyen.platform.finance.presentation.payroll.response.ActivatePayrollEmployeeResponse;
 import com.magyen.platform.finance.presentation.payroll.response.DeactivatePayrollEmployeeResponse;
 import com.magyen.platform.finance.presentation.payroll.response.GetPayrollEmployeesResponse;
+import com.magyen.platform.finance.presentation.payroll.response.PayrollEmployeeProductionEarningsResponse;
 import com.magyen.platform.finance.presentation.payroll.response.PayrollEmployeeResponse;
 
 import java.util.Objects;
@@ -64,6 +67,34 @@ public class PayrollEmployeePresentationMapper {
 
     public GetPayrollEmployeesQuery toListQuery(Boolean active) {
         return new GetPayrollEmployeesQuery(active);
+    }
+
+    public GetPayrollEmployeeProductionEarningsQuery toEarningsQuery(
+            UUID employeeId,
+            java.time.LocalDate fromDate,
+            java.time.LocalDate toDate
+    ) {
+        Objects.requireNonNull(employeeId, "Employee id must not be null");
+        return new GetPayrollEmployeeProductionEarningsQuery(employeeId, fromDate, toDate);
+    }
+
+    public PayrollEmployeeProductionEarningsResponse toResponse(
+            GetPayrollEmployeeProductionEarningsResult result
+    ) {
+        Objects.requireNonNull(result, "GetPayrollEmployeeProductionEarningsResult must not be null");
+        return new PayrollEmployeeProductionEarningsResponse(
+                result.employeeId(),
+                result.displayName(),
+                result.compensationType().name(),
+                result.productionLaborApplicable(),
+                result.fromDate(),
+                result.toDate(),
+                result.laborWorkCount(),
+                result.totalQuantity(),
+                result.totalCalculatedAmount(),
+                result.totalPaidAmount(),
+                result.totalPendingAmount()
+        );
     }
 
     public ActivatePayrollEmployeeCommand toActivateCommand(UUID employeeId) {

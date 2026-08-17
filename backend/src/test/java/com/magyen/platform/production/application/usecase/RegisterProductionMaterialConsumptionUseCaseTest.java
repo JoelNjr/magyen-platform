@@ -1,5 +1,7 @@
 package com.magyen.platform.production.application.usecase;
 
+import com.magyen.platform.inventory.application.dto.CreateInventoryItemCommand;
+import com.magyen.platform.inventory.application.usecase.CreateInventoryItemUseCase;
 import com.magyen.platform.inventory.domain.InventoryItem;
 import com.magyen.platform.inventory.domain.InventoryItemRepository;
 import com.magyen.platform.inventory.domain.InventoryMovement;
@@ -61,6 +63,9 @@ class RegisterProductionMaterialConsumptionUseCaseTest {
 
     @Autowired
     private InventoryMovementRepository inventoryMovementRepository;
+
+    @Autowired
+    private CreateInventoryItemUseCase createInventoryItemUseCase;
 
     private UUID productionOrderId;
     private InventoryItem inventoryItem;
@@ -280,6 +285,50 @@ class RegisterProductionMaterialConsumptionUseCaseTest {
                 new GetProductionMaterialConsumptionsQuery(productionOrderId)
         );
         assertTrue(history.consumptions().isEmpty());
+    }
+
+    @Test
+    void rejectsPlotterPaperRollAndStillAllowsFabricConsumption() {
+        moveToInProgress();
+
+        var paperRoll = createInventoryItemUseCase.execute(new CreateInventoryItemCommand(
+                "PINC-RP-" + UUID.randomUUID().toString().substring(0, 8),
+                "Papel sublimación",
+                "PAPER",
+                "METER",
+                new BigDecimal("80.0000"),
+                new BigDecimal("10.0000"),
+                null,
+                new BigDecimal("8000.00"),
+                "PAPER",
+                true
+        ));
+
+        ProductionDomainException exception = assertThrows(
+                ProductionDomainException.class,
+                () -> register(productionOrderId, paperRoll.inventoryItemId(), "6.0000", "METER")
+        );
+        assertTrue(exception.getMessage().contains("Plotter paper"));
+
+        assertTrue(getProductionMaterialConsumptionsUseCase.execute(
+                new GetProductionMaterialConsumptionsQuery(productionOrderId)
+        ).consumptions().isEmpty());
+        assertEquals(
+                new BigDecimal("80.0000"),
+                inventoryItemRepository.findById(paperRoll.inventoryItemId()).orElseThrow().getStock()
+        );
+        assertTrue(inventoryMovementRepository
+                .findByInventoryItemIdOrderByMovementDateDesc(paperRoll.inventoryItemId())
+                .isEmpty());
+
+        RegisterProductionMaterialConsumptionResult fabric = register(
+                productionOrderId,
+                inventoryItem.getId(),
+                "2.0000",
+                "METER"
+        );
+        assertEquals(inventoryItem.getId(), fabric.inventoryItemId());
+        assertEquals(new BigDecimal("133.2500"), fabric.remainingStock());
     }
 
     @Test

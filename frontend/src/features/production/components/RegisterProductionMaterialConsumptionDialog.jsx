@@ -28,6 +28,10 @@ function RegisterProductionMaterialConsumptionDialog({
   submitting,
   errorMessage,
 }) {
+  const consumableItems = useMemo(
+    () => (inventoryItems || []).filter((item) => !item.plotterPaperRoll),
+    [inventoryItems]
+  )
   const [form, setForm] = useState(EMPTY_FORM)
   const [validationError, setValidationError] = useState('')
 
@@ -40,15 +44,15 @@ function RegisterProductionMaterialConsumptionDialog({
 
     setForm({
       ...EMPTY_FORM,
-      inventoryItemId: inventoryItems[0]?.inventoryItemId || '',
+      inventoryItemId: consumableItems[0]?.inventoryItemId || '',
     })
-  }, [open, inventoryItems])
+  }, [open, consumableItems])
 
   const selectedItem = useMemo(
     () =>
-      inventoryItems.find((item) => item.inventoryItemId === form.inventoryItemId) ||
+      consumableItems.find((item) => item.inventoryItemId === form.inventoryItemId) ||
       null,
-    [inventoryItems, form.inventoryItemId]
+    [consumableItems, form.inventoryItemId]
   )
 
   function handleClose() {
@@ -105,11 +109,15 @@ function RegisterProductionMaterialConsumptionDialog({
           {(validationError || errorMessage) && (
             <Alert severity="error">{validationError || errorMessage}</Alert>
           )}
-          {!itemsLoading && inventoryItems.length === 0 ? (
+          {!itemsLoading && consumableItems.length === 0 ? (
             <Alert severity="warning">
-              No hay materiales de inventario disponibles.
+              No hay materiales de inventario disponibles para consumo de producción.
             </Alert>
           ) : null}
+          <Alert severity="info">
+            El papel de Plotter se registra en Plotter, no aquí. Este consumo es para
+            telas y demás materiales de producción.
+          </Alert>
           <TextField
             select
             label="Material"
@@ -117,9 +125,9 @@ function RegisterProductionMaterialConsumptionDialog({
             onChange={(event) => updateField('inventoryItemId', event.target.value)}
             required
             fullWidth
-            disabled={!inventoryItems.length || submitting}
+            disabled={!consumableItems.length || submitting}
           >
-            {inventoryItems.map((item) => (
+            {consumableItems.map((item) => (
               <MenuItem key={item.inventoryItemId} value={item.inventoryItemId}>
                 {formatInventoryConsumptionOption(item)}
               </MenuItem>
@@ -164,7 +172,7 @@ function RegisterProductionMaterialConsumptionDialog({
           type="button"
           variant="contained"
           onClick={handleSubmit}
-          disabled={submitting || !inventoryItems.length}
+          disabled={submitting || !consumableItems.length}
         >
           {submitting ? 'Registrando...' : 'Registrar consumo'}
         </Button>

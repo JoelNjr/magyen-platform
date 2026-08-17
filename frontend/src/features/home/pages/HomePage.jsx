@@ -364,7 +364,7 @@ function HomePage() {
         <SectionHeader
           title="Rentabilidad"
           priority="secondary"
-          subtitle="Rentabilidad directa de órdenes (no es ganancia neta)."
+          subtitle="Rentabilidad directa de órdenes. Incluye tela, mano de obra y papel de Plotter interno cuando existe. No es ganancia neta."
           actions={
             <Button component={RouterLink} to="/commercial/orders" size="small">
               Ver órdenes

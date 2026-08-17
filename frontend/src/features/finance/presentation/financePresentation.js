@@ -126,7 +126,7 @@ export function getOccurrenceStatusLabel(status) {
 }
 
 export function getPayrollCompensationTypeLabel(type) {
-  if (type === 'FIXED_PAYROLL') return 'Nómina fija'
+  if (type === 'FIXED_PAYROLL') return 'Fijo'
   if (type === 'PRODUCTION_BASED') return 'Por producción'
   return type || '—'
 }

@@ -6,6 +6,8 @@ import com.magyen.platform.finance.application.dto.CreatePayrollEmployeeCommand;
 import com.magyen.platform.finance.application.dto.CreatePayrollEmployeeResult;
 import com.magyen.platform.finance.application.dto.DeactivatePayrollEmployeeCommand;
 import com.magyen.platform.finance.application.dto.DeactivatePayrollEmployeeResult;
+import com.magyen.platform.finance.application.dto.GetPayrollEmployeeProductionEarningsQuery;
+import com.magyen.platform.finance.application.dto.GetPayrollEmployeeProductionEarningsResult;
 import com.magyen.platform.finance.application.dto.GetPayrollEmployeeQuery;
 import com.magyen.platform.finance.application.dto.GetPayrollEmployeeResult;
 import com.magyen.platform.finance.application.dto.GetPayrollEmployeesQuery;
@@ -15,6 +17,7 @@ import com.magyen.platform.finance.application.dto.UpdatePayrollEmployeeCompensa
 import com.magyen.platform.finance.application.usecase.ActivatePayrollEmployeeUseCase;
 import com.magyen.platform.finance.application.usecase.CreatePayrollEmployeeUseCase;
 import com.magyen.platform.finance.application.usecase.DeactivatePayrollEmployeeUseCase;
+import com.magyen.platform.finance.application.usecase.GetPayrollEmployeeProductionEarningsUseCase;
 import com.magyen.platform.finance.application.usecase.GetPayrollEmployeeUseCase;
 import com.magyen.platform.finance.application.usecase.GetPayrollEmployeesUseCase;
 import com.magyen.platform.finance.application.usecase.UpdatePayrollEmployeeCompensationUseCase;
@@ -24,6 +27,7 @@ import com.magyen.platform.finance.presentation.payroll.request.UpdatePayrollEmp
 import com.magyen.platform.finance.presentation.payroll.response.ActivatePayrollEmployeeResponse;
 import com.magyen.platform.finance.presentation.payroll.response.DeactivatePayrollEmployeeResponse;
 import com.magyen.platform.finance.presentation.payroll.response.GetPayrollEmployeesResponse;
+import com.magyen.platform.finance.presentation.payroll.response.PayrollEmployeeProductionEarningsResponse;
 import com.magyen.platform.finance.presentation.payroll.response.PayrollEmployeeResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -37,6 +41,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 /**
@@ -52,6 +57,7 @@ public class PayrollEmployeeController {
     private final CreatePayrollEmployeeUseCase createPayrollEmployeeUseCase;
     private final GetPayrollEmployeeUseCase getPayrollEmployeeUseCase;
     private final GetPayrollEmployeesUseCase getPayrollEmployeesUseCase;
+    private final GetPayrollEmployeeProductionEarningsUseCase getPayrollEmployeeProductionEarningsUseCase;
     private final UpdatePayrollEmployeeCompensationUseCase updatePayrollEmployeeCompensationUseCase;
     private final ActivatePayrollEmployeeUseCase activatePayrollEmployeeUseCase;
     private final DeactivatePayrollEmployeeUseCase deactivatePayrollEmployeeUseCase;
@@ -61,6 +67,7 @@ public class PayrollEmployeeController {
             CreatePayrollEmployeeUseCase createPayrollEmployeeUseCase,
             GetPayrollEmployeeUseCase getPayrollEmployeeUseCase,
             GetPayrollEmployeesUseCase getPayrollEmployeesUseCase,
+            GetPayrollEmployeeProductionEarningsUseCase getPayrollEmployeeProductionEarningsUseCase,
             UpdatePayrollEmployeeCompensationUseCase updatePayrollEmployeeCompensationUseCase,
             ActivatePayrollEmployeeUseCase activatePayrollEmployeeUseCase,
             DeactivatePayrollEmployeeUseCase deactivatePayrollEmployeeUseCase,
@@ -69,6 +76,7 @@ public class PayrollEmployeeController {
         this.createPayrollEmployeeUseCase = createPayrollEmployeeUseCase;
         this.getPayrollEmployeeUseCase = getPayrollEmployeeUseCase;
         this.getPayrollEmployeesUseCase = getPayrollEmployeesUseCase;
+        this.getPayrollEmployeeProductionEarningsUseCase = getPayrollEmployeeProductionEarningsUseCase;
         this.updatePayrollEmployeeCompensationUseCase = updatePayrollEmployeeCompensationUseCase;
         this.activatePayrollEmployeeUseCase = activatePayrollEmployeeUseCase;
         this.deactivatePayrollEmployeeUseCase = deactivatePayrollEmployeeUseCase;
@@ -98,6 +106,19 @@ public class PayrollEmployeeController {
     public ResponseEntity<PayrollEmployeeResponse> getEmployee(@PathVariable UUID employeeId) {
         GetPayrollEmployeeQuery query = payrollEmployeePresentationMapper.toGetQuery(employeeId);
         GetPayrollEmployeeResult result = getPayrollEmployeeUseCase.execute(query);
+        return ResponseEntity.ok(payrollEmployeePresentationMapper.toResponse(result));
+    }
+
+    @GetMapping("/{employeeId}/production-earnings")
+    public ResponseEntity<PayrollEmployeeProductionEarningsResponse> getProductionEarnings(
+            @PathVariable UUID employeeId,
+            @RequestParam LocalDate fromDate,
+            @RequestParam LocalDate toDate
+    ) {
+        GetPayrollEmployeeProductionEarningsQuery query =
+                payrollEmployeePresentationMapper.toEarningsQuery(employeeId, fromDate, toDate);
+        GetPayrollEmployeeProductionEarningsResult result =
+                getPayrollEmployeeProductionEarningsUseCase.execute(query);
         return ResponseEntity.ok(payrollEmployeePresentationMapper.toResponse(result));
     }
 

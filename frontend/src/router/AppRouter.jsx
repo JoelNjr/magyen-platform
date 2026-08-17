@@ -18,7 +18,6 @@ import InventoryDetailPage from '../features/inventory/pages/InventoryDetailPage
 import InventoryPage from '../features/inventory/pages/InventoryPage'
 import PlotterJobDetailPage from '../features/plotter/pages/PlotterJobDetailPage'
 import PlotterJobsPage from '../features/plotter/pages/PlotterJobsPage'
-import OperatorsPage from '../features/production/pages/OperatorsPage'
 import ProductionOrderDetailPage from '../features/production/pages/ProductionOrderDetailPage'
 import ProductionOrdersPage from '../features/production/pages/ProductionOrdersPage'
 import MainLayout from '../layout/MainLayout'
@@ -56,7 +55,6 @@ function AppRouter() {
               path="production/orders/:productionOrderId"
               element={<ProductionOrderDetailPage />}
             />
-            <Route path="production/operators" element={<OperatorsPage />} />
             <Route path="production" element={<ProductionOrdersPage />} />
             <Route
               path="inventory/:inventoryItemId"

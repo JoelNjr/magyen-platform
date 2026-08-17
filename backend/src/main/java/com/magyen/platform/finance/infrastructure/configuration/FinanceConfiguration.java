@@ -1,6 +1,7 @@
 package com.magyen.platform.finance.infrastructure.configuration;
 
 import com.magyen.platform.commercial.domain.OrderRepository;
+import com.magyen.platform.finance.application.port.EmployeeProductionEarningsPort;
 import com.magyen.platform.finance.application.usecase.ActivatePayrollEmployeeUseCase;
 import com.magyen.platform.finance.application.usecase.CancelPayrollPeriodUseCase;
 import com.magyen.platform.finance.application.usecase.CancelRecurringFinancialObligationOccurrenceUseCase;
@@ -17,6 +18,7 @@ import com.magyen.platform.finance.application.usecase.GetFinancialTransactionsU
 import com.magyen.platform.finance.application.usecase.GetOverdueFinancialObligationOccurrencesUseCase;
 import com.magyen.platform.finance.application.usecase.GetPaymentUseCase;
 import com.magyen.platform.finance.application.usecase.GetPaymentsByOrderUseCase;
+import com.magyen.platform.finance.application.usecase.GetPayrollEmployeeProductionEarningsUseCase;
 import com.magyen.platform.finance.application.usecase.GetPayrollEmployeeUseCase;
 import com.magyen.platform.finance.application.usecase.GetPayrollEmployeesUseCase;
 import com.magyen.platform.finance.application.usecase.GetPayrollPeriodUseCase;
@@ -48,6 +50,7 @@ import com.magyen.platform.finance.infrastructure.persistence.mapper.FinancialTr
 import com.magyen.platform.finance.infrastructure.persistence.mapper.PaymentPersistenceMapper;
 import com.magyen.platform.finance.infrastructure.persistence.mapper.PayrollEmployeePersistenceMapper;
 import com.magyen.platform.finance.infrastructure.persistence.mapper.PayrollPeriodPersistenceMapper;
+import com.magyen.platform.finance.infrastructure.production.PayrollEmployeeProductionEarningsAdapter;
 import com.magyen.platform.finance.infrastructure.persistence.mapper.RecurringFinancialObligationOccurrencePersistenceMapper;
 import com.magyen.platform.finance.infrastructure.persistence.mapper.RecurringFinancialObligationPersistenceMapper;
 import com.magyen.platform.finance.presentation.obligation.mapper.RecurringFinancialObligationPresentationMapper;
@@ -59,6 +62,7 @@ import com.magyen.platform.finance.presentation.summary.mapper.FinancialPeriodSu
 import com.magyen.platform.finance.presentation.transaction.mapper.FinancialTransactionPresentationMapper;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import com.magyen.platform.production.application.usecase.GetEmployeeProductionEarningsUseCase;
 
 import java.time.Clock;
 
@@ -446,6 +450,24 @@ public class FinanceConfiguration {
             FinancialTransactionRepository financialTransactionRepository
     ) {
         return new RegisterProductionLaborPaymentExpenseUseCase(financialTransactionRepository);
+    }
+
+    @Bean
+    public EmployeeProductionEarningsPort employeeProductionEarningsPort(
+            GetEmployeeProductionEarningsUseCase getEmployeeProductionEarningsUseCase
+    ) {
+        return new PayrollEmployeeProductionEarningsAdapter(getEmployeeProductionEarningsUseCase);
+    }
+
+    @Bean
+    public GetPayrollEmployeeProductionEarningsUseCase getPayrollEmployeeProductionEarningsUseCase(
+            PayrollEmployeeRepository payrollEmployeeRepository,
+            EmployeeProductionEarningsPort employeeProductionEarningsPort
+    ) {
+        return new GetPayrollEmployeeProductionEarningsUseCase(
+                payrollEmployeeRepository,
+                employeeProductionEarningsPort
+        );
     }
 
     @Bean

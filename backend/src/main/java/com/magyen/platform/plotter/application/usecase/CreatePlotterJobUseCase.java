@@ -8,6 +8,7 @@ import com.magyen.platform.plotter.application.port.PlotterJobInventoryPort;
 import com.magyen.platform.plotter.application.port.PlotterPaperRollView;
 import com.magyen.platform.plotter.domain.PlotterJob;
 import com.magyen.platform.plotter.domain.PlotterJobRepository;
+import com.magyen.platform.plotter.domain.PlotterJobType;
 import com.magyen.platform.plotter.domain.exception.PlotterDomainException;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,14 +18,14 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * Caso de uso que registra un trabajo de plotter, calcula el ingreso cobrado
- * y consume los metros impresos del rollo de papel seleccionado en Inventory.
+ * Registra un trabajo de Plotter y consume exactamente un OUT de Inventory.
  * <p>
- * Atomicidad: PlotterJob y el OUT de Inventory comparten la misma transacción.
- * Si Inventory falla, el trabajo no queda persistido.
+ * INTERNAL_MAGYEN: operación de material de producción atribuible a una Orden comercial.
+ * No crea EXPENSE ni INCOME. El papel se registra una sola vez (sourceId = plotterJobId).
+ * EXTERNAL: servicio a cliente; el cobro permanece en el flujo de pagos.
  * <p>
- * Idempotencia de stock: Inventory usa {@code sourceId = plotterJobId}.
- * No crea movimiento financiero. El pago de Plotter permanece separado.
+ * Atomicidad: PlotterJob y el OUT comparten transacción. Stock insuficiente no deja estado parcial.
+ * Idempotencia: el mismo {@code plotterJobId} no consume papel dos veces.
  */
 public class CreatePlotterJobUseCase {
 
@@ -56,6 +57,19 @@ public class CreatePlotterJobUseCase {
         Objects.requireNonNull(command, "Command must not be null");
         validateCommand(command);
 
+        if (command.plotterJobId() != null) {
+            var existing = plotterJobRepository.findById(command.plotterJobId());
+            if (existing.isPresent()) {
+                plotterJobInventoryPort.consumePaperMeters(
+                        existing.get().getPaperInventoryItemId(),
+                        existing.get().getPrintedMeters(),
+                        existing.get().getId(),
+                        existing.get().getObservations()
+                );
+                return PlotterJobReadMapper.toCreateResult(existing.get(), plotterCommercialOrderPort);
+            }
+        }
+
         PlotterPaperRollView paperRoll = plotterJobInventoryPort.requirePlotterPaperRoll(
                 command.paperInventoryItemId()
         );
@@ -72,28 +86,34 @@ public class CreatePlotterJobUseCase {
                 ? command.creationDate()
                 : LocalDate.now();
 
+        PlotterJobType jobType = resolveJobType(command);
+        UUID customerId = command.customerId();
         UUID orderId = command.orderId();
-        if (orderId != null) {
+
+        if (jobType.isInternal()) {
+            if (orderId == null) {
+                throw new PlotterDomainException("Internal Magyen plotter jobs require a commercial order");
+            }
             PlotterCommercialOrderView commercialOrder = plotterCommercialOrderPort.requireExistingOrder(orderId);
-            if (creationDate.isBefore(commercialOrder.confirmationDate())) {
-                throw new PlotterDomainException(
-                        "Plotter job date must not be before order confirmation date"
-                );
-            }
-            if (creationDate.isAfter(commercialOrder.deliveryDate())) {
-                throw new PlotterDomainException(
-                        "Plotter job date must not be after delivery date"
-                );
-            }
+            customerId = commercialOrder.customerId();
+            validateJobDate(creationDate, commercialOrder);
+        } else if (orderId != null) {
+            throw new PlotterDomainException("External plotter jobs must not reference a commercial order");
+        }
+
+        if (customerId == null) {
+            throw new PlotterDomainException("Customer id must not be null");
         }
 
         PlotterJob plotterJob = PlotterJob.create(
-                command.customerId(),
+                command.plotterJobId(),
+                jobType,
+                customerId,
                 orderId,
                 creationDate,
                 command.paperInventoryItemId(),
                 command.printedMeters(),
-                command.pricePerMeter(),
+                jobType.isInternal() ? BigDecimal.ZERO : command.pricePerMeter(),
                 command.observations()
         );
 
@@ -106,13 +126,32 @@ public class CreatePlotterJobUseCase {
                 savedPlotterJob.getObservations()
         );
 
-        return PlotterJobReadMapper.toCreateResult(savedPlotterJob);
+        return PlotterJobReadMapper.toCreateResult(savedPlotterJob, plotterCommercialOrderPort);
+    }
+
+    private static PlotterJobType resolveJobType(CreatePlotterJobCommand command) {
+        if (command.jobType() != null) {
+            return command.jobType();
+        }
+        return command.orderId() == null ? PlotterJobType.EXTERNAL : PlotterJobType.INTERNAL_MAGYEN;
+    }
+
+    private static void validateJobDate(LocalDate creationDate, PlotterCommercialOrderView commercialOrder) {
+        if (commercialOrder.confirmationDate() != null
+                && creationDate.isBefore(commercialOrder.confirmationDate())) {
+            throw new PlotterDomainException(
+                    "Plotter job date must not be before order confirmation date"
+            );
+        }
+        if (commercialOrder.deliveryDate() != null
+                && creationDate.isAfter(commercialOrder.deliveryDate())) {
+            throw new PlotterDomainException(
+                    "Plotter job date must not be after delivery date"
+            );
+        }
     }
 
     private void validateCommand(CreatePlotterJobCommand command) {
-        if (command.customerId() == null) {
-            throw new PlotterDomainException("Customer id must not be null");
-        }
         if (command.paperInventoryItemId() == null) {
             throw new PlotterDomainException("Paper inventory item id must not be null");
         }
@@ -122,11 +161,17 @@ public class CreatePlotterJobUseCase {
         if (command.printedMeters().compareTo(BigDecimal.ZERO) <= 0) {
             throw new PlotterDomainException("Printed meters must be greater than zero");
         }
-        if (command.pricePerMeter() == null) {
-            throw new PlotterDomainException("Price per meter must not be null");
-        }
-        if (command.pricePerMeter().compareTo(BigDecimal.ZERO) < 0) {
-            throw new PlotterDomainException("Price per meter must not be negative");
+        PlotterJobType jobType = resolveJobType(command);
+        if (jobType.isExternal()) {
+            if (command.customerId() == null) {
+                throw new PlotterDomainException("Customer id must not be null");
+            }
+            if (command.pricePerMeter() == null) {
+                throw new PlotterDomainException("Price per meter must not be null");
+            }
+            if (command.pricePerMeter().compareTo(BigDecimal.ZERO) < 0) {
+                throw new PlotterDomainException("Price per meter must not be negative");
+            }
         }
     }
 }

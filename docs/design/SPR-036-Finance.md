@@ -202,17 +202,19 @@ El resultado directo **no** usa el dinero cobrado como ingreso:
 
 `directProfit = orderValue − totalDirectCost`
 
+`totalDirectCost = materialCost + laborCost + plotterMaterialCost`
+
 ### Costos directos
 
 - **Materiales:** atribución histórica Inventory (`InventoryMovement` PRODUCTION OUT). No usa `InventoryItem.unitCost` actual. Consumos sin valorizar se reportan (`unvaluedMaterialConsumptionCount`) → status `PARTIALLY_UNVALUED`.
 - **Mano de obra:** suma de `ProductionLaborWork.calculatedAmount` en PENDING+PAID. CANCELLED excluido. Labor impaga **sí** cuenta (costo incurrido, no caja pagada).
-- **Plotter:** diferido. `PlotterJob` no tiene `orderId` confiable; no se infiere por `customerId`. `plotterMaterialCost = 0`, `plotterCostAttributable = false`.
+- **Plotter interno:** snapshot histórico del OUT de Inventory (`sourceType=PLOTTER`, `sourceId=plotterJobId`) de trabajos `INTERNAL_MAGYEN` atribuidos a la orden. No usa el EXPENSE de la compra. Un trabajo interno es operación de material de producción, no una segunda compra ni una venta. El papel de una orden Magyen se registra exactamente una vez. Ver `SPR-038-Increment-D-Plotter-Internal-External.md`.
 
 ### Estados
 
-- `NO_COST_DATA` — sin ProductionOrder o sin material/labor registrados
-- `PARTIALLY_UNVALUED` — hay consumos de material sin costo histórico
-- `COMPLETE` — costos directos disponibles sin material sin valorizar
+- `NO_COST_DATA` — sin ProductionOrder con material/labor y sin Plotter interno
+- `PARTIALLY_UNVALUED` — hay consumos de material o trabajos internos de Plotter sin costo histórico
+- `COMPLETE` — costos directos disponibles sin material/Plotter sin valorizar
 
 ### Qué NO es
 
@@ -400,6 +402,8 @@ Empleado
 Operarios por producción
 
 NO deben modelarse como nómina fija.
+
+En V1 (SPR-038 Incremento C) los operarios de producción **son** empleados de Finance `PayrollEmployee` con tipo de compensación `PRODUCTION_BASED`. Production no mantiene un segundo catálogo de personas.
 
 Su pago corresponde a producción:
 

@@ -203,13 +203,16 @@ Tras aplicar el SQL, refrescar en DBeaver el nodo de índices de `financial_tran
 
 ---
 
-## 12. Fuera de alcance (Incremento C+)
+## 12. Fuera de alcance
 
-* Unificación de empleados / nómina y tarifas automáticas
 * Comisiones
-* Trabajos internos de Plotter
+* Tarifas automáticas de mano de obra
 * PDF, notificaciones, Intelligence
 * Rediseño de Home o animaciones
 * Motor WAC / costo promedio
 * Segundo catálogo o segundo inventario
 * Telas Magyen adicionales
+
+La unificación de empleados / operarios quedó en `SPR-038-Increment-C-Employee-Labor-Unification.md`.
+
+Los trabajos internos de Plotter quedaron en `SPR-038-Increment-D-Plotter-Internal-External.md`.

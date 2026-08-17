@@ -28,16 +28,6 @@ export async function registerProductionMaterialConsumption(
   return response.data
 }
 
-export async function getProductionOperators() {
-  const response = await httpClient.get('/production/operators')
-  return response.data
-}
-
-export async function createProductionOperator(payload) {
-  const response = await httpClient.post('/production/operators', payload)
-  return response.data
-}
-
 export async function getEligibleProductionLaborOperators() {
   const response = await httpClient.get('/production/labor-operators')
   return response.data

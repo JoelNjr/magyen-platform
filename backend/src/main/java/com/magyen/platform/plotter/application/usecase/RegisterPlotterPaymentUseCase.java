@@ -57,6 +57,12 @@ public class RegisterPlotterPaymentUseCase {
                         "Plotter job not found: " + command.plotterJobId()
                 ));
 
+        if (job.getJobType().isInternal()) {
+            throw new PlotterDomainException(
+                    "Internal Magyen plotter jobs are production material operations and cannot receive customer payments"
+            );
+        }
+
         List<PlotterPayment> existingPayments =
                 plotterPaymentRepository.findByPlotterJobIdNewestFirst(job.getId());
         BigDecimal paidAmount = PlotterPaymentBalanceCalculator.sumPaid(existingPayments);

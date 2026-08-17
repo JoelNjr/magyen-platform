@@ -15,6 +15,7 @@ public class PlotterPersistenceMapper {
 
         PlotterJobEntity entity = new PlotterJobEntity();
         entity.setId(plotterJob.getId());
+        entity.setJobType(plotterJob.getJobType());
         entity.setCustomerId(plotterJob.getCustomerId());
         entity.setOrderId(plotterJob.getOrderId());
         entity.setCreationDate(plotterJob.getCreationDate());
@@ -32,6 +33,7 @@ public class PlotterPersistenceMapper {
 
         return PlotterJob.reconstitute(
                 entity.getId(),
+                entity.getJobType(),
                 entity.getCustomerId(),
                 entity.getOrderId(),
                 entity.getCreationDate(),

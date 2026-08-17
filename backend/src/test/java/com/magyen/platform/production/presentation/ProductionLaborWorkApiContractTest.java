@@ -1,9 +1,10 @@
 package com.magyen.platform.production.presentation;
 
-import com.magyen.platform.production.application.dto.CreateProductionOperatorCommand;
-import com.magyen.platform.production.application.dto.CreateProductionOperatorResult;
+import com.magyen.platform.finance.application.dto.CreatePayrollEmployeeCommand;
+import com.magyen.platform.finance.application.dto.CreatePayrollEmployeeResult;
+import com.magyen.platform.finance.application.usecase.CreatePayrollEmployeeUseCase;
+import com.magyen.platform.finance.domain.PayrollCompensationType;
 import com.magyen.platform.production.application.dto.PlanProductionOrderCommand;
-import com.magyen.platform.production.application.usecase.CreateProductionOperatorUseCase;
 import com.magyen.platform.production.application.dto.StartProductionOrderCommand;
 import com.magyen.platform.production.application.usecase.PlanProductionOrderUseCase;
 import com.magyen.platform.production.application.usecase.StartProductionOrderUseCase;
@@ -47,11 +48,11 @@ class ProductionLaborWorkApiContractTest {
     private StartProductionOrderUseCase startProductionOrderUseCase;
 
     @Autowired
-    private CreateProductionOperatorUseCase createProductionOperatorUseCase;
+    private CreatePayrollEmployeeUseCase createPayrollEmployeeUseCase;
 
     private MockMvc mockMvc;
     private UUID productionOrderId;
-    private CreateProductionOperatorResult productionOperator;
+    private CreatePayrollEmployeeResult productionOperator;
     private UUID unknownOperatorId;
 
     @BeforeEach
@@ -67,8 +68,12 @@ class ProductionLaborWorkApiContractTest {
         ));
         productionOrderId = created.getId();
 
-        productionOperator = createProductionOperatorUseCase.execute(new CreateProductionOperatorCommand(
-                "Operario-API-" + UUID.randomUUID().toString().substring(0, 8)
+        productionOperator = createPayrollEmployeeUseCase.execute(new CreatePayrollEmployeeCommand(
+                "Jean Carlos-API-" + UUID.randomUUID().toString().substring(0, 8),
+                PayrollCompensationType.PRODUCTION_BASED,
+                null,
+                null,
+                null
         ));
         unknownOperatorId = UUID.randomUUID();
     }
@@ -88,7 +93,7 @@ class ProductionLaborWorkApiContractTest {
                                           "unitRate": 800,
                                           "observation": "early"
                                         }
-                                        """.formatted(productionOperator.operatorId()))
+                                        """.formatted(productionOperator.employeeId()))
                 )
                 .andExpect(status().isBadRequest());
 
@@ -108,7 +113,7 @@ class ProductionLaborWorkApiContractTest {
                                           "calculatedAmount": 1,
                                           "observation": "client-amount-ignored"
                                         }
-                                        """.formatted(productionOperator.operatorId()))
+                                        """.formatted(productionOperator.employeeId()))
                 )
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.calculatedAmount").value(80000.0))
@@ -126,7 +131,7 @@ class ProductionLaborWorkApiContractTest {
                                           "unitOfMeasure": "UNIT",
                                           "unitRate": 500
                                         }
-                                        """.formatted(productionOperator.operatorId()))
+                                        """.formatted(productionOperator.employeeId()))
                 )
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.calculatedAmount").value(5000.0))
@@ -168,7 +173,7 @@ class ProductionLaborWorkApiContractTest {
 
         mockMvc.perform(get("/api/v1/production/labor-operators"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.operators[?(@.employeeId == '%s')]".formatted(productionOperator.operatorId())).exists())
+                .andExpect(jsonPath("$.operators[?(@.employeeId == '%s')]".formatted(productionOperator.employeeId())).exists())
                 .andExpect(jsonPath("$.operators[?(@.employeeId == '%s')]".formatted(unknownOperatorId)).doesNotExist());
 
         mockMvc.perform(
@@ -210,7 +215,7 @@ class ProductionLaborWorkApiContractTest {
                                           "unitOfMeasure": "UNIT",
                                           "unitRate": 1000
                                         }
-                                        """.formatted(productionOperator.operatorId()))
+                                        """.formatted(productionOperator.employeeId()))
                 )
                 .andExpect(status().isCreated())
                 .andReturn()

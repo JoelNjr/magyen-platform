@@ -114,6 +114,14 @@ export async function deactivatePayrollEmployee(employeeId) {
   return response.data
 }
 
+export async function getPayrollEmployeeProductionEarnings(employeeId, params) {
+  const response = await httpClient.get(
+    `/finance/payroll/employees/${employeeId}/production-earnings`,
+    { params }
+  )
+  return response.data
+}
+
 export async function getPayrollPeriods() {
   const response = await httpClient.get('/finance/payroll/periods')
   return response.data

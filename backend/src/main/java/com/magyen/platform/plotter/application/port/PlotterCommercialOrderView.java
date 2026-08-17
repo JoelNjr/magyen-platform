@@ -9,7 +9,9 @@ import java.util.UUID;
 public record PlotterCommercialOrderView(
         UUID orderId,
         String orderNumber,
+        String description,
         UUID customerId,
+        String customerName,
         LocalDate confirmationDate,
         LocalDate deliveryDate
 ) {

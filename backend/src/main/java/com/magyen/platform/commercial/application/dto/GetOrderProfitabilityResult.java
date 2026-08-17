@@ -9,8 +9,8 @@ import java.util.UUID;
  * Resultado de rentabilidad directa de una Orden.
  * <p>
  * {@code orderValue} es {@code Order.getTotal()} (valor comprometido), no el efectivo cobrado.
- * {@code plotterMaterialCost} queda en cero y {@code plotterCostAttributable=false}
- * hasta que PlotterJob exponga orderId confiable (diferido).
+ * {@code plotterMaterialCost} es el snapshot histórico de papel INTERNAL_MAGYEN.
+ * {@code plotterCostAttributable=true} cuando hay trabajos internos y todos tienen costo valorado.
  */
 public record GetOrderProfitabilityResult(
         UUID orderId,

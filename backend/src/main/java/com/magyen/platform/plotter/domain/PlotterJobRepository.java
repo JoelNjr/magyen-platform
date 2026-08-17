@@ -13,5 +13,7 @@ public interface PlotterJobRepository {
 
     Optional<PlotterJob> findById(UUID id);
 
+    List<PlotterJob> findByOrderId(UUID orderId);
+
     List<PlotterJob> findAll();
 }

@@ -19,6 +19,7 @@ import com.magyen.platform.plotter.application.dto.CreatePlotterJobCommand;
 import com.magyen.platform.plotter.application.dto.CreatePlotterJobResult;
 import com.magyen.platform.plotter.application.dto.GetPlotterJobQuery;
 import com.magyen.platform.plotter.application.dto.GetPlotterJobResult;
+import com.magyen.platform.plotter.domain.PlotterJobType;
 import com.magyen.platform.plotter.domain.exception.PlotterDomainException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -69,8 +70,9 @@ class PlotterOrderAttributionUseCaseTest {
         UUID sellerId = createSellerUseCase.execute(
                 new CreateSellerCommand("Seller-Plot-" + UUID.randomUUID().toString().substring(0, 8))
         ).sellerId();
+        String customerName = "Customer-Plot-" + UUID.randomUUID().toString().substring(0, 8);
         UUID customerId = createCustomerUseCase.execute(
-                new CreateCustomerCommand("Customer-Plot-" + UUID.randomUUID().toString().substring(0, 8))
+                new CreateCustomerCommand(customerName)
         ).customerId();
 
         var quotation = createQuotationUseCase.execute(new CreateQuotationCommand(
@@ -147,12 +149,18 @@ class PlotterOrderAttributionUseCaseTest {
         ));
 
         assertEquals(order.orderId(), created.orderId());
+        assertEquals(PlotterJobType.INTERNAL_MAGYEN, created.jobType());
+        assertEquals(order.orderNumber(), created.orderNumber());
+        assertEquals(customerName, created.customerName());
         assertEquals(LocalDate.of(2026, 8, 3), created.creationDate());
-        assertEquals(new BigDecimal("48000.00"), created.totalAmount());
+        assertEquals(new BigDecimal("0.00"), created.totalAmount());
 
         GetPlotterJobResult detail = getPlotterJobUseCase.execute(new GetPlotterJobQuery(created.plotterJobId()));
         assertEquals(order.orderId(), detail.orderId());
-        assertEquals(new BigDecimal("48000.00"), detail.outstandingAmount());
+        assertEquals(order.orderNumber(), detail.orderNumber());
+        assertEquals(customerName, detail.customerName());
+        assertEquals(PlotterJobType.INTERNAL_MAGYEN, detail.jobType());
+        assertEquals(new BigDecimal("0.00"), detail.outstandingAmount());
         assertEquals(new BigDecimal("0.00"), detail.paidAmount());
     }
 
@@ -182,6 +190,7 @@ class PlotterOrderAttributionUseCaseTest {
         ));
 
         assertNull(created.orderId());
+        assertEquals(PlotterJobType.EXTERNAL, created.jobType());
         assertEquals(LocalDate.of(2026, 8, 3), created.creationDate());
     }
 }

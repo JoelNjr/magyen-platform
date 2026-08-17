@@ -80,14 +80,6 @@ function ProductionOrdersPage() {
         alignItems={{ xs: 'stretch', sm: 'center' }}
       >
         <Typography variant="h3">Órdenes de producción</Typography>
-        <Button
-          type="button"
-          variant="outlined"
-          onClick={() => navigate('/production/operators')}
-          sx={{ alignSelf: { xs: 'stretch', sm: 'center' } }}
-        >
-          Operarios
-        </Button>
       </Stack>
 
       {loading && (

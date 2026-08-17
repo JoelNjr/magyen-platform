@@ -154,7 +154,8 @@ function UpdatePayrollEmployeeCompensationDialog({
             </>
           ) : (
             <Alert severity="info">
-              Este empleado es por producción; no tiene valor fijo de nómina.
+              Este empleado es por producción y puede seleccionarse en
+              Producción → Mano de obra. No tiene valor fijo de nómina.
             </Alert>
           )}
         </Stack>

@@ -22,10 +22,14 @@ import { getCustomers, getOrders } from '../../commercial/services/commercialSer
 import { getInventoryItems, getPlotterPaperRolls } from '../../inventory/services/inventoryService'
 import CreatePlotterJobDialog from '../components/CreatePlotterJobDialog'
 import {
+  formatPlotterCustomerLabel,
   formatPlotterDate,
+  formatPlotterJobTypeLabel,
   formatPlotterMoney,
   formatPlotterNumber,
+  formatPlotterOrderLabel,
   getPlotterStatusChipProps,
+  isInternalPlotterJob,
 } from '../presentation/plotterJobPresentation'
 import { createPlotterJob, getPlotterJobs } from '../services/plotterService'
 
@@ -40,11 +44,12 @@ function PlotterJobsTableHead() {
   return (
     <TableHead>
       <TableRow>
+        <TableCell sx={headerCellSx}>Tipo</TableCell>
         <TableCell sx={headerCellSx}>Cliente</TableCell>
+        <TableCell sx={headerCellSx}>Orden</TableCell>
         <TableCell sx={headerCellSx}>Fecha</TableCell>
         <TableCell sx={headerCellSx}>Rollo</TableCell>
         <TableCell sx={headerCellSx}>Metros</TableCell>
-        <TableCell sx={headerCellSx}>Precio por metro</TableCell>
         <TableCell sx={headerCellSx}>Total</TableCell>
         <TableCell align="center" sx={headerCellSx}>
           Estado
@@ -213,7 +218,7 @@ function PlotterJobsPage() {
               <TableBody>
                 {Array.from({ length: SKELETON_ROW_COUNT }).map((_, index) => (
                   <TableRow key={`skeleton-${index}`}>
-                    {Array.from({ length: 8 }).map((__, cellIndex) => (
+                    {Array.from({ length: 9 }).map((__, cellIndex) => (
                       <TableCell key={`skeleton-cell-${cellIndex}`}>
                         <Skeleton variant="text" />
                       </TableCell>
@@ -251,24 +256,28 @@ function PlotterJobsPage() {
               <TableBody>
                 {jobs.map((job) => {
                   const statusChip = getPlotterStatusChipProps(job.status)
-                  const customerLabel =
-                    customerNameById.get(job.customerId) || job.customerId
+                  const customerLabel = formatPlotterCustomerLabel(
+                    job,
+                    customerNameById.get(job.customerId)
+                  )
                   const paperLabel =
                     paperLabelById.get(job.paperInventoryItemId) ||
                     'Histórico / legado'
+                  const internal = isInternalPlotterJob(job.jobType)
 
                   return (
                     <TableRow key={job.plotterJobId} hover>
+                      <TableCell>{formatPlotterJobTypeLabel(job.jobType)}</TableCell>
                       <TableCell>{customerLabel}</TableCell>
+                      <TableCell>{formatPlotterOrderLabel(job)}</TableCell>
                       <TableCell>{formatPlotterDate(job.creationDate)}</TableCell>
                       <TableCell>{paperLabel}</TableCell>
                       <TableCell>
                         {formatPlotterNumber(job.printedMeters)} m
                       </TableCell>
                       <TableCell>
-                        {formatPlotterMoney(job.pricePerMeter)}
+                        {internal ? 'Producción' : formatPlotterMoney(job.totalAmount)}
                       </TableCell>
-                      <TableCell>{formatPlotterMoney(job.totalAmount)}</TableCell>
                       <TableCell align="center">
                         <Chip size="small" {...statusChip} />
                       </TableCell>

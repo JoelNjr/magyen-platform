@@ -52,6 +52,14 @@ public class JpaPlotterJobRepository implements PlotterJobRepository {
     }
 
     @Override
+    public List<PlotterJob> findByOrderId(UUID orderId) {
+        Objects.requireNonNull(orderId, "Order id must not be null");
+        return springDataPlotterJobRepository.findByOrderId(orderId).stream()
+                .map(plotterPersistenceMapper::toDomain)
+                .toList();
+    }
+
+    @Override
     public List<PlotterJob> findAll() {
         return springDataPlotterJobRepository.findAll().stream()
                 .map(plotterPersistenceMapper::toDomain)

@@ -240,8 +240,9 @@ CREATE TABLE production_operations (
         ON DELETE CASCADE
 );
 
--- Production-owned operators. Not authentication users and not Commercial sellers.
--- Historical labor keeps operator_employee_id even if the operator is later deactivated.
+-- Production leftover table. No longer mapped by JPA and not a source of truth.
+-- Operarios are Finance payroll_employees with compensation_type PRODUCTION_BASED.
+-- Retained so the live V1 database is not dropped. Do not recreate as a catalog.
 CREATE TABLE production_operators (
     id      uuid            NOT NULL,
     name    varchar(255)    NOT NULL,
@@ -289,6 +290,8 @@ CREATE INDEX idx_production_material_consumptions_inventory_item_id
 CREATE INDEX idx_production_material_consumptions_consumption_date
     ON production_material_consumptions (consumption_date);
 
+-- operator_employee_id is a soft UUID to payroll_employees.id (no FK).
+-- Production operators are PRODUCTION_BASED payroll employees.
 CREATE TABLE production_labor_work (
     id                          uuid            NOT NULL,
     production_order_id         uuid            NOT NULL,
@@ -384,10 +387,14 @@ CREATE UNIQUE INDEX uq_inventory_movements_source
 
 -- Plotter module
 -- Aggregate: PlotterJob
--- Soft refs: customer_id (Commercial), paper_inventory_item_id (Inventory) — no FKs
+-- Soft refs: customer_id (Commercial), order_id (Commercial), paper_inventory_item_id (Inventory) — no FKs
+-- job_type: INTERNAL_MAGYEN | EXTERNAL
+-- INTERNAL_MAGYEN is a production material operation, not a second purchase or sale.
+-- Paper consumption for an internal Magyen order is recorded exactly once (Inventory OUT sourceId = plotter job id).
 
 CREATE TABLE plotter_jobs (
     id                          uuid            NOT NULL,
+    job_type                    varchar(30)     NOT NULL,
     customer_id                 uuid            NOT NULL,
     order_id                    uuid            NULL,
     creation_date               date            NOT NULL,
@@ -399,6 +406,9 @@ CREATE TABLE plotter_jobs (
     observations                varchar(2000)   NULL,
     CONSTRAINT plotter_jobs_pkey PRIMARY KEY (id)
 );
+
+CREATE INDEX idx_plotter_jobs_job_type
+    ON plotter_jobs (job_type);
 
 CREATE INDEX idx_plotter_jobs_customer_id
     ON plotter_jobs (customer_id);

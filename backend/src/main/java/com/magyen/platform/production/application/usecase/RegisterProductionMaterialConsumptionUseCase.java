@@ -53,6 +53,8 @@ public class RegisterProductionMaterialConsumptionUseCase {
                         "Production order not found: " + command.productionOrderId()
                 ));
 
+        inventoryPort.requireConsumableForProduction(command.inventoryItemId());
+
         ProductionMaterialUnitOfMeasure unitOfMeasure =
                 ProductionMaterialUnitOfMeasure.of(command.unitOfMeasure());
 

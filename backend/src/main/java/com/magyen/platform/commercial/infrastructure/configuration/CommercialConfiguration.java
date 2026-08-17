@@ -3,6 +3,7 @@ package com.magyen.platform.commercial.infrastructure.configuration;
 import com.magyen.platform.commercial.application.CustomerNameResolver;
 import com.magyen.platform.commercial.application.SellerNameResolver;
 import com.magyen.platform.commercial.application.port.OrderPaymentCollectionPort;
+import com.magyen.platform.commercial.application.port.PlotterOrderCostPort;
 import com.magyen.platform.commercial.application.port.ProductionOrderCostPort;
 import com.magyen.platform.commercial.application.usecase.AddQuotationItemUseCase;
 import com.magyen.platform.commercial.application.usecase.ApproveQuotationUseCase;
@@ -27,6 +28,7 @@ import com.magyen.platform.commercial.domain.QuotationNumberGenerator;
 import com.magyen.platform.commercial.domain.QuotationRepository;
 import com.magyen.platform.commercial.domain.SellerRepository;
 import com.magyen.platform.commercial.infrastructure.finance.OrderPaymentCollectionAdapter;
+import com.magyen.platform.commercial.infrastructure.plotter.PlotterOrderCostAdapter;
 import com.magyen.platform.commercial.infrastructure.persistence.mapper.CustomerPersistenceMapper;
 import com.magyen.platform.commercial.infrastructure.persistence.mapper.OrderPersistenceMapper;
 import com.magyen.platform.commercial.infrastructure.persistence.mapper.QuotationPersistenceMapper;
@@ -38,6 +40,7 @@ import com.magyen.platform.commercial.presentation.order.mapper.OrderPresentatio
 import com.magyen.platform.commercial.presentation.quotation.mapper.QuotationPresentationMapper;
 import com.magyen.platform.commercial.presentation.seller.mapper.SellerPresentationMapper;
 import com.magyen.platform.finance.application.usecase.GetPaymentsByOrderUseCase;
+import com.magyen.platform.plotter.application.usecase.GetInternalPlotterOrderCostsUseCase;
 import com.magyen.platform.production.application.usecase.GetProductionCostsByCommercialOrderUseCase;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -226,15 +229,24 @@ public class CommercialConfiguration {
     }
 
     @Bean
+    public PlotterOrderCostPort plotterOrderCostPort(
+            GetInternalPlotterOrderCostsUseCase getInternalPlotterOrderCostsUseCase
+    ) {
+        return new PlotterOrderCostAdapter(getInternalPlotterOrderCostsUseCase);
+    }
+
+    @Bean
     public GetOrderProfitabilityUseCase getOrderProfitabilityUseCase(
             OrderRepository orderRepository,
             OrderPaymentCollectionPort orderPaymentCollectionPort,
-            ProductionOrderCostPort productionOrderCostPort
+            ProductionOrderCostPort productionOrderCostPort,
+            PlotterOrderCostPort plotterOrderCostPort
     ) {
         return new GetOrderProfitabilityUseCase(
                 orderRepository,
                 orderPaymentCollectionPort,
-                productionOrderCostPort
+                productionOrderCostPort,
+                plotterOrderCostPort
         );
     }
 

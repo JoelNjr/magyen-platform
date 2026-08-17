@@ -11,26 +11,34 @@ import com.magyen.platform.commercial.domain.OrderRepository;
 import com.magyen.platform.commercial.domain.OrderStatus;
 import com.magyen.platform.commercial.domain.PaymentSummary;
 import com.magyen.platform.commercial.domain.ProductSpecification;
+import com.magyen.platform.finance.application.dto.CreatePayrollEmployeeCommand;
+import com.magyen.platform.finance.application.dto.CreatePayrollEmployeeResult;
 import com.magyen.platform.finance.application.dto.RegisterPaymentCommand;
+import com.magyen.platform.finance.application.usecase.CreatePayrollEmployeeUseCase;
 import com.magyen.platform.finance.application.usecase.RegisterPaymentUseCase;
 import com.magyen.platform.finance.domain.FinancialTransactionRepository;
 import com.magyen.platform.finance.domain.FinancialTransactionSourceType;
 import com.magyen.platform.finance.domain.FinancialTransactionType;
+import com.magyen.platform.finance.domain.PayrollCompensationType;
+import com.magyen.platform.inventory.application.dto.CreateInventoryItemCommand;
+import com.magyen.platform.inventory.application.dto.CreateInventoryItemResult;
 import com.magyen.platform.inventory.application.dto.RegisterInventoryPurchaseCommand;
+import com.magyen.platform.inventory.application.usecase.CreateInventoryItemUseCase;
 import com.magyen.platform.inventory.application.usecase.RegisterInventoryPurchaseUseCase;
 import com.magyen.platform.inventory.domain.InventoryItem;
 import com.magyen.platform.inventory.domain.InventoryItemRepository;
 import com.magyen.platform.inventory.domain.MaterialCode;
+import com.magyen.platform.plotter.application.dto.CreatePlotterJobCommand;
+import com.magyen.platform.plotter.application.dto.CreatePlotterJobResult;
+import com.magyen.platform.plotter.application.usecase.CreatePlotterJobUseCase;
+import com.magyen.platform.plotter.domain.PlotterJobType;
 import com.magyen.platform.production.application.dto.CancelProductionLaborWorkCommand;
-import com.magyen.platform.production.application.dto.CreateProductionOperatorCommand;
-import com.magyen.platform.production.application.dto.CreateProductionOperatorResult;
 import com.magyen.platform.production.application.dto.PlanProductionOrderCommand;
 import com.magyen.platform.production.application.dto.RegisterProductionLaborWorkCommand;
 import com.magyen.platform.production.application.dto.RegisterProductionLaborWorkResult;
 import com.magyen.platform.production.application.dto.RegisterProductionMaterialConsumptionCommand;
 import com.magyen.platform.production.application.dto.StartProductionOrderCommand;
 import com.magyen.platform.production.application.usecase.CancelProductionLaborWorkUseCase;
-import com.magyen.platform.production.application.usecase.CreateProductionOperatorUseCase;
 import com.magyen.platform.production.application.usecase.PlanProductionOrderUseCase;
 import com.magyen.platform.production.application.usecase.RegisterProductionLaborWorkUseCase;
 import com.magyen.platform.production.application.usecase.RegisterProductionMaterialConsumptionUseCase;
@@ -92,7 +100,7 @@ class OrderProfitabilityUseCaseTest {
     private CancelProductionLaborWorkUseCase cancelProductionLaborWorkUseCase;
 
     @Autowired
-    private CreateProductionOperatorUseCase createProductionOperatorUseCase;
+    private CreatePayrollEmployeeUseCase createPayrollEmployeeUseCase;
 
     @Autowired
     private InventoryItemRepository inventoryItemRepository;
@@ -102,6 +110,12 @@ class OrderProfitabilityUseCaseTest {
 
     @Autowired
     private RegisterInventoryPurchaseUseCase registerInventoryPurchaseUseCase;
+
+    @Autowired
+    private CreateInventoryItemUseCase createInventoryItemUseCase;
+
+    @Autowired
+    private CreatePlotterJobUseCase createPlotterJobUseCase;
 
     @Test
     void calculatesCompleteProfitabilityWithPaymentsMaterialAndLabor() {
@@ -124,13 +138,13 @@ class OrderProfitabilityUseCaseTest {
         InventoryItem fabric = createFabric("15000.00", "100.0000");
         registerMaterial(productionOrderId, fabric.getId(), "10.0000", "METER");
 
-        CreateProductionOperatorResult operator = createProductionOperator();
-        registerLabor(productionOrderId, operator.operatorId(), "100", "800.00");
+        CreatePayrollEmployeeResult operator = createProductionBasedEmployee();
+        registerLabor(productionOrderId, operator.employeeId(), "100", "800.00");
         // Unpaid PENDING labor must still count toward laborCost
-        registerLabor(productionOrderId, operator.operatorId(), "50", "200.00");
+        registerLabor(productionOrderId, operator.employeeId(), "50", "200.00");
         RegisterProductionLaborWorkResult cancelled = registerLabor(
                 productionOrderId,
-                operator.operatorId(),
+                operator.employeeId(),
                 "10",
                 "100.00"
         );
@@ -209,8 +223,8 @@ class OrderProfitabilityUseCaseTest {
 
         registerMaterial(productionOrderId, fabric.getId(), "6.5000", "METER");
 
-        CreateProductionOperatorResult operator = createProductionOperator();
-        registerLabor(productionOrderId, operator.operatorId(), "30", "1000.00");
+        CreatePayrollEmployeeResult operator = createProductionBasedEmployee();
+        registerLabor(productionOrderId, operator.employeeId(), "30", "1000.00");
 
         GetOrderProfitabilityResult result = getOrderProfitabilityUseCase.execute(
                 new GetOrderProfitabilityQuery(order.getId())
@@ -318,6 +332,114 @@ class OrderProfitabilityUseCaseTest {
                 () -> getOrderProfitabilityUseCase.execute(new GetOrderProfitabilityQuery(missing))
         );
         assertTrue(exception.getMessage().contains(missing.toString()));
+    }
+
+    @Test
+    void includesInternalPlotterPaperCostWithoutCreatingFinanceIncome() {
+        Order order = createOrderWithTotal("400000.00");
+        CreateInventoryItemResult paperRoll = createPaperRoll("80.0000", "8000.00");
+
+        CreatePlotterJobResult job = createPlotterJobUseCase.execute(new CreatePlotterJobCommand(
+                null,
+                order.getId(),
+                LocalDate.of(2026, 8, 3),
+                paperRoll.inventoryItemId(),
+                new BigDecimal("6.0000"),
+                BigDecimal.ZERO,
+                "Papel sublimación interno",
+                PlotterJobType.INTERNAL_MAGYEN,
+                null
+        ));
+
+        assertEquals(PlotterJobType.INTERNAL_MAGYEN, job.jobType());
+        assertEquals(new BigDecimal("0.00"), job.totalAmount());
+
+        long financeCountBefore = countAllFinancialTransactions();
+        GetOrderProfitabilityResult result = getOrderProfitabilityUseCase.execute(
+                new GetOrderProfitabilityQuery(order.getId())
+        );
+
+        assertEquals(financeCountBefore, countAllFinancialTransactions());
+        assertEquals(new BigDecimal("400000.00"), result.orderValue());
+        assertEquals(new BigDecimal("0.00"), result.materialCost());
+        assertEquals(new BigDecimal("0.00"), result.laborCost());
+        assertEquals(new BigDecimal("48000.00"), result.plotterMaterialCost());
+        assertTrue(result.plotterCostAttributable());
+        assertEquals(new BigDecimal("48000.00"), result.totalDirectCost());
+        assertEquals(new BigDecimal("352000.00"), result.directProfit());
+        assertEquals(OrderProfitabilityStatus.COMPLETE, result.profitabilityStatus());
+        assertEquals(0, countPlotterIncome());
+    }
+
+    @Test
+    void purchaseExpenseIsNotDuplicatedWhenInternalPlotterPaperIsConsumed() {
+        Order order = createOrderWithTotal("400000.00");
+        CreateInventoryItemResult paperRoll = createPaperRoll("0.0000", null);
+
+        registerInventoryPurchaseUseCase.execute(new RegisterInventoryPurchaseCommand(
+                paperRoll.inventoryItemId(),
+                UUID.randomUUID(),
+                new BigDecimal("80.0000"),
+                new BigDecimal("8000.00"),
+                LocalDate.of(2026, 8, 2),
+                "compra papel plotter"
+        ));
+
+        long purchaseExpensesAfterBuy = countInventoryPurchaseExpenses();
+        assertEquals(1, purchaseExpensesAfterBuy);
+
+        createPlotterJobUseCase.execute(new CreatePlotterJobCommand(
+                null,
+                order.getId(),
+                LocalDate.of(2026, 8, 3),
+                paperRoll.inventoryItemId(),
+                new BigDecimal("6.0000"),
+                BigDecimal.ZERO,
+                null,
+                PlotterJobType.INTERNAL_MAGYEN,
+                null
+        ));
+
+        assertEquals(purchaseExpensesAfterBuy, countInventoryPurchaseExpenses());
+        assertEquals(0, countPlotterIncome());
+
+        GetOrderProfitabilityResult result = getOrderProfitabilityUseCase.execute(
+                new GetOrderProfitabilityQuery(order.getId())
+        );
+        assertEquals(new BigDecimal("48000.00"), result.plotterMaterialCost());
+        assertEquals(new BigDecimal("352000.00"), result.directProfit());
+        assertTrue(result.plotterCostAttributable());
+    }
+
+    private CreateInventoryItemResult createPaperRoll(String stock, String unitCost) {
+        return createInventoryItemUseCase.execute(new CreateInventoryItemCommand(
+                "OPRP-" + UUID.randomUUID().toString().substring(0, 8),
+                "Papel sublimación",
+                "PAPER",
+                "METER",
+                new BigDecimal(stock),
+                new BigDecimal("10.0000"),
+                null,
+                unitCost == null ? null : new BigDecimal(unitCost),
+                "PAPER",
+                true
+        ));
+    }
+
+    private long countInventoryPurchaseExpenses() {
+        return financialTransactionRepository.findAllNewestFirst().stream()
+                .filter(transaction -> transaction.getSourceType()
+                        == FinancialTransactionSourceType.INVENTORY_PURCHASE)
+                .filter(transaction -> transaction.getType() == FinancialTransactionType.EXPENSE)
+                .count();
+    }
+
+    private long countPlotterIncome() {
+        return financialTransactionRepository.findAllNewestFirst().stream()
+                .filter(transaction -> transaction.getSourceType()
+                        == FinancialTransactionSourceType.PLOTTER)
+                .filter(transaction -> transaction.getType() == FinancialTransactionType.INCOME)
+                .count();
     }
 
     private Order createOrderWithTotal(String unitPrice) {
@@ -445,9 +567,13 @@ class OrderProfitabilityUseCaseTest {
         ));
     }
 
-    private CreateProductionOperatorResult createProductionOperator() {
-        return createProductionOperatorUseCase.execute(new CreateProductionOperatorCommand(
-                "Operario-Prof-" + UUID.randomUUID().toString().substring(0, 8)
+    private CreatePayrollEmployeeResult createProductionBasedEmployee() {
+        return createPayrollEmployeeUseCase.execute(new CreatePayrollEmployeeCommand(
+                "Jean Carlos-Prof-" + UUID.randomUUID().toString().substring(0, 8),
+                PayrollCompensationType.PRODUCTION_BASED,
+                null,
+                null,
+                null
         ));
     }
 

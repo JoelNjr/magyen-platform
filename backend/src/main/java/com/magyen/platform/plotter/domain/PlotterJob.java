@@ -11,8 +11,9 @@ import java.util.UUID;
 /**
  * Aggregate Root del módulo de Plotter.
  * <p>
- * Registra el trabajo de impresión y el valor cobrado al cliente (ingreso).
- * No posee costos de material; esos se calcularán al integrar con Inventario.
+ * Un trabajo interno de Plotter es una operación de material de producción,
+ * no una segunda compra ni una venta. El costo de papel lo posee Inventory
+ * en el snapshot del OUT. Un trabajo externo cobra al cliente (ingreso).
  */
 public class PlotterJob {
 
@@ -20,6 +21,7 @@ public class PlotterJob {
     private static final RoundingMode MONEY_ROUNDING = RoundingMode.HALF_UP;
 
     private final UUID id;
+    private final PlotterJobType jobType;
     private final UUID customerId;
     private final UUID orderId;
     private final LocalDate creationDate;
@@ -32,6 +34,7 @@ public class PlotterJob {
 
     private PlotterJob(
             UUID id,
+            PlotterJobType jobType,
             UUID customerId,
             UUID orderId,
             LocalDate creationDate,
@@ -43,6 +46,7 @@ public class PlotterJob {
             String observations
     ) {
         this.id = Objects.requireNonNull(id, "Plotter job id must not be null");
+        this.jobType = Objects.requireNonNull(jobType, "Plotter job type must not be null");
         this.customerId = Objects.requireNonNull(customerId, "Customer id must not be null");
         this.orderId = orderId;
         this.creationDate = Objects.requireNonNull(creationDate, "Creation date must not be null");
@@ -55,11 +59,13 @@ public class PlotterJob {
         this.totalAmount = Objects.requireNonNull(totalAmount, "Total amount must not be null");
         this.status = Objects.requireNonNull(status, "Status must not be null");
         this.observations = normalizeObservations(observations);
+        if (jobType.isInternal() && orderId == null) {
+            throw new PlotterDomainException("Internal Magyen plotter jobs require a commercial order");
+        }
     }
 
     /**
-     * Crea un trabajo de plotter en estado {@link PlotterJobStatus#REGISTERED}.
-     * {@code totalAmount} se calcula como metros impresos × precio por metro.
+     * Crea un trabajo externo (cliente de impresión) en estado {@link PlotterJobStatus#REGISTERED}.
      */
     public static PlotterJob create(
             UUID customerId,
@@ -70,6 +76,8 @@ public class PlotterJob {
             String observations
     ) {
         return create(
+                UUID.randomUUID(),
+                PlotterJobType.EXTERNAL,
                 customerId,
                 null,
                 creationDate,
@@ -81,8 +89,7 @@ public class PlotterJob {
     }
 
     /**
-     * Crea un trabajo de plotter atribuible opcionalmente a una Orden comercial.
-     * {@code orderId} es una referencia blanda; no hay FK cruzada.
+     * Crea un trabajo de plotter. {@code orderId} es referencia blanda; no hay FK cruzada.
      */
     public static PlotterJob create(
             UUID customerId,
@@ -93,12 +100,43 @@ public class PlotterJob {
             BigDecimal pricePerMeter,
             String observations
     ) {
+        PlotterJobType jobType = orderId == null ? PlotterJobType.EXTERNAL : PlotterJobType.INTERNAL_MAGYEN;
+        BigDecimal chargedPrice = jobType.isInternal() ? BigDecimal.ZERO : pricePerMeter;
+        return create(
+                UUID.randomUUID(),
+                jobType,
+                customerId,
+                orderId,
+                creationDate,
+                paperInventoryItemId,
+                printedMeters,
+                chargedPrice,
+                observations
+        );
+    }
+
+    public static PlotterJob create(
+            UUID id,
+            PlotterJobType jobType,
+            UUID customerId,
+            UUID orderId,
+            LocalDate creationDate,
+            UUID paperInventoryItemId,
+            BigDecimal printedMeters,
+            BigDecimal pricePerMeter,
+            String observations
+    ) {
+        UUID jobId = id == null ? UUID.randomUUID() : id;
+        PlotterJobType resolvedType = Objects.requireNonNull(jobType, "Plotter job type must not be null");
         BigDecimal normalizedMeters = requirePositiveMeters(printedMeters);
-        BigDecimal normalizedPrice = requireValidPricePerMeter(pricePerMeter);
+        BigDecimal normalizedPrice = requireValidPricePerMeter(
+                resolvedType.isInternal() ? BigDecimal.ZERO : pricePerMeter
+        );
         BigDecimal totalAmount = calculateTotalAmount(normalizedMeters, normalizedPrice);
 
         return new PlotterJob(
-                UUID.randomUUID(),
+                jobId,
+                resolvedType,
                 customerId,
                 orderId,
                 creationDate,
@@ -111,9 +149,6 @@ public class PlotterJob {
         );
     }
 
-    /**
-     * Reconstruye un trabajo de plotter desde persistencia.
-     */
     public static PlotterJob reconstitute(
             UUID id,
             UUID customerId,
@@ -127,6 +162,7 @@ public class PlotterJob {
     ) {
         return reconstitute(
                 id,
+                PlotterJobType.EXTERNAL,
                 customerId,
                 null,
                 creationDate,
@@ -151,8 +187,37 @@ public class PlotterJob {
             PlotterJobStatus status,
             String observations
     ) {
+        return reconstitute(
+                id,
+                orderId == null ? PlotterJobType.EXTERNAL : PlotterJobType.INTERNAL_MAGYEN,
+                customerId,
+                orderId,
+                creationDate,
+                paperInventoryItemId,
+                printedMeters,
+                pricePerMeter,
+                totalAmount,
+                status,
+                observations
+        );
+    }
+
+    public static PlotterJob reconstitute(
+            UUID id,
+            PlotterJobType jobType,
+            UUID customerId,
+            UUID orderId,
+            LocalDate creationDate,
+            UUID paperInventoryItemId,
+            BigDecimal printedMeters,
+            BigDecimal pricePerMeter,
+            BigDecimal totalAmount,
+            PlotterJobStatus status,
+            String observations
+    ) {
         return new PlotterJob(
                 id,
+                jobType,
                 customerId,
                 orderId,
                 creationDate,
@@ -173,6 +238,10 @@ public class PlotterJob {
 
     public UUID getId() {
         return id;
+    }
+
+    public PlotterJobType getJobType() {
+        return jobType;
     }
 
     public UUID getCustomerId() {

@@ -6,9 +6,11 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  MenuItem,
   Stack,
   TextField,
+  ToggleButton,
+  ToggleButtonGroup,
+  Typography,
 } from '@mui/material'
 import { toIsoDate } from '../presentation/financePresentation'
 
@@ -62,7 +64,7 @@ function CreatePayrollEmployeeDialog({
 
     const displayName = form.displayName.trim()
     if (!displayName || !form.compensationType) {
-      setValidationError('Nombre y tipo de compensación son obligatorios.')
+      setValidationError('Nombre y tipo de pago son obligatorios.')
       return
     }
 
@@ -77,7 +79,7 @@ function CreatePayrollEmployeeDialog({
     const fixedAmountRaw = form.fixedAmount.trim()
     if (!fixedAmountRaw || !form.effectiveFrom) {
       setValidationError(
-        'Para nómina fija, valor fijo y vigencia desde son obligatorios.'
+        'Para pago fijo, valor fijo y vigencia desde son obligatorios.'
       )
       return
     }
@@ -119,19 +121,22 @@ function CreatePayrollEmployeeDialog({
             required
             fullWidth
           />
-          <TextField
-            select
-            label="Tipo de compensación"
-            value={form.compensationType}
-            onChange={(event) =>
-              updateField('compensationType', event.target.value)
-            }
-            required
-            fullWidth
-          >
-            <MenuItem value="FIXED_PAYROLL">Nómina fija</MenuItem>
-            <MenuItem value="PRODUCTION_BASED">Por producción</MenuItem>
-          </TextField>
+          <Stack spacing={1}>
+            <Typography variant="body2">Tipo de pago</Typography>
+            <ToggleButtonGroup
+              exclusive
+              fullWidth
+              value={form.compensationType}
+              onChange={(_, value) => {
+                if (value) {
+                  updateField('compensationType', value)
+                }
+              }}
+            >
+              <ToggleButton value="FIXED_PAYROLL">Fijo</ToggleButton>
+              <ToggleButton value="PRODUCTION_BASED">Por producción</ToggleButton>
+            </ToggleButtonGroup>
+          </Stack>
           {isFixed ? (
             <>
               <TextField
@@ -168,7 +173,8 @@ function CreatePayrollEmployeeDialog({
             </>
           ) : (
             <Alert severity="info">
-              Los operadores por producción no generan nómina fija automática.
+              Este empleado podrá seleccionarse en Producción → Mano de obra.
+              No genera nómina fija automática.
             </Alert>
           )}
         </Stack>

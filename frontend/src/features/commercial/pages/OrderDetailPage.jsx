@@ -896,10 +896,12 @@ function OrderDetailPage() {
                       Mano de obra: {formatCurrency(profitability.laborCost)}
                     </Typography>
                     <Typography>
-                      Plotter:{' '}
+                      Papel Plotter interno:{' '}
                       {profitability.plotterCostAttributable
                         ? formatCurrency(profitability.plotterMaterialCost)
-                        : 'No atribuible'}
+                        : Number(profitability.plotterMaterialCost) > 0
+                          ? `${formatCurrency(profitability.plotterMaterialCost)} (parcialmente sin valorizar)`
+                          : 'Sin trabajo interno'}
                     </Typography>
                     <Typography sx={{ fontWeight: 600 }}>
                       Total costos directos:{' '}

@@ -24,4 +24,9 @@ public interface ProductionMaterialConsumptionInventoryPort {
             UUID productionMaterialConsumptionId,
             String observation
     );
+
+    /**
+     * Rechaza rollos de papel Plotter: ese consumo físico se registra en Plotter, una sola vez.
+     */
+    void requireConsumableForProduction(UUID inventoryItemId);
 }

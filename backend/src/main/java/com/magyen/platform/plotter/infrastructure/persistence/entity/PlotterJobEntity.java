@@ -1,6 +1,7 @@
 package com.magyen.platform.plotter.infrastructure.persistence.entity;
 
 import com.magyen.platform.plotter.domain.PlotterJobStatus;
+import com.magyen.platform.plotter.domain.PlotterJobType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -15,8 +16,8 @@ import java.util.UUID;
 /**
  * Modelo relacional del agregado {@link com.magyen.platform.plotter.domain.PlotterJob}.
  * <p>
- * {@code customer_id} y {@code paper_inventory_item_id} son referencias técnicas blandas
- * (sin FK a Commercial ni Inventory).
+ * {@code customer_id}, {@code order_id} y {@code paper_inventory_item_id} son referencias
+ * técnicas blandas (sin FK a Commercial ni Inventory).
  */
 @Entity
 @Table(name = "plotter_jobs")
@@ -25,6 +26,10 @@ public class PlotterJobEntity {
     @Id
     @Column(name = "id", nullable = false, updatable = false)
     private UUID id;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "job_type", nullable = false, length = 30)
+    private PlotterJobType jobType;
 
     @Column(name = "customer_id", nullable = false)
     private UUID customerId;
@@ -63,6 +68,14 @@ public class PlotterJobEntity {
 
     public void setId(UUID id) {
         this.id = id;
+    }
+
+    public PlotterJobType getJobType() {
+        return jobType;
+    }
+
+    public void setJobType(PlotterJobType jobType) {
+        this.jobType = jobType;
     }
 
     public UUID getCustomerId() {

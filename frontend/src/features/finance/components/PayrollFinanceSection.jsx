@@ -19,6 +19,7 @@ import {
 import ConfirmFinanceActionDialog from './ConfirmFinanceActionDialog'
 import CreatePayrollEmployeeDialog from './CreatePayrollEmployeeDialog'
 import GeneratePayrollPeriodsDialog from './GeneratePayrollPeriodsDialog'
+import PayrollEmployeeProductionEarningsDialog from './PayrollEmployeeProductionEarningsDialog'
 import UpdatePayrollEmployeeCompensationDialog from './UpdatePayrollEmployeeCompensationDialog'
 import {
   formatFinanceDate,
@@ -108,6 +109,7 @@ function PayrollFinanceSection({
   const [cancelError, setCancelError] = useState('')
 
   const [togglingEmployeeId, setTogglingEmployeeId] = useState(null)
+  const [earningsEmployee, setEarningsEmployee] = useState(null)
 
   const loadEmployees = useCallback(async () => {
     setEmployeesLoading(true)
@@ -306,7 +308,7 @@ function PayrollFinanceSection({
               <TableHead>
                 <TableRow>
                   <TableCell sx={headerCellSx}>Nombre</TableCell>
-                  <TableCell sx={headerCellSx}>Tipo de compensación</TableCell>
+                  <TableCell sx={headerCellSx}>Tipo de pago</TableCell>
                   <TableCell sx={headerCellSx}>Valor fijo</TableCell>
                   <TableCell sx={headerCellSx}>Estado</TableCell>
                   <TableCell align="right" sx={headerCellSx}>
@@ -331,9 +333,18 @@ function PayrollFinanceSection({
                         </Typography>
                       </TableCell>
                       <TableCell>
-                        {getPayrollCompensationTypeLabel(
-                          employee.compensationType
-                        )}
+                        <Stack spacing={0.5}>
+                          <Typography>
+                            {getPayrollCompensationTypeLabel(
+                              employee.compensationType
+                            )}
+                          </Typography>
+                          {employee.compensationType === 'PRODUCTION_BASED' ? (
+                            <Typography variant="caption" color="text.secondary">
+                              Puede seleccionarse en Mano de obra
+                            </Typography>
+                          ) : null}
+                        </Stack>
                       </TableCell>
                       <TableCell>
                         {employee.compensationType === 'FIXED_PAYROLL'
@@ -353,6 +364,12 @@ function PayrollFinanceSection({
                           spacing={1}
                           justifyContent="flex-end"
                         >
+                          <Button
+                            size="small"
+                            onClick={() => setEarningsEmployee(employee)}
+                          >
+                            Ver mano de obra
+                          </Button>
                           <Button
                             size="small"
                             onClick={() => {
@@ -511,6 +528,12 @@ function PayrollFinanceSection({
         onSubmit={handleCreateEmployee}
         submitting={creating}
         errorMessage={createError}
+      />
+
+      <PayrollEmployeeProductionEarningsDialog
+        open={Boolean(earningsEmployee)}
+        employee={earningsEmployee}
+        onClose={() => setEarningsEmployee(null)}
       />
 
       <UpdatePayrollEmployeeCompensationDialog

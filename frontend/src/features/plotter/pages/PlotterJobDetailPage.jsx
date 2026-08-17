@@ -28,10 +28,14 @@ import {
 } from '../../inventory/services/inventoryService'
 import RegisterPlotterPaymentDialog from '../components/RegisterPlotterPaymentDialog'
 import {
+  formatPlotterCustomerLabel,
   formatPlotterDate,
+  formatPlotterJobTypeLabel,
   formatPlotterMoney,
   formatPlotterNumber,
+  formatPlotterOrderLabel,
   getPlotterStatusChipProps,
+  isInternalPlotterJob,
 } from '../presentation/plotterJobPresentation'
 import {
   getPlotterJob,
@@ -107,7 +111,9 @@ function PlotterJobDetailPage() {
       const matchedCustomer = customers.find(
         (customer) => customer.customerId === plotterJob.customerId
       )
-      setCustomerName(matchedCustomer?.name || plotterJob.customerId)
+      setCustomerName(
+        formatPlotterCustomerLabel(plotterJob, matchedCustomer?.name)
+      )
 
       try {
         const inventoryItem = await getInventoryItem(plotterJob.paperInventoryItemId)
@@ -215,7 +221,8 @@ function PlotterJobDetailPage() {
 
   const statusChip = getPlotterStatusChipProps(job.status)
   const outstanding = Number(job.outstandingAmount ?? 0)
-  const canRegisterPayment = outstanding > 0
+  const internalJob = isInternalPlotterJob(job.jobType)
+  const canRegisterPayment = !internalJob && outstanding > 0
 
   return (
     <>
@@ -229,7 +236,7 @@ function PlotterJobDetailPage() {
           <Stack spacing={0.5}>
             <Typography variant="h3">Trabajo de Plotter</Typography>
             <Typography variant="body2" color="text.secondary">
-              {plotterJobId}
+              {formatPlotterJobTypeLabel(job.jobType)}
             </Typography>
           </Stack>
           <Button onClick={() => navigate('/plotter')}>Volver</Button>
@@ -238,10 +245,22 @@ function PlotterJobDetailPage() {
         <Paper sx={{ p: 3 }}>
           <Grid container spacing={3}>
             <Grid item xs={12} sm={6} md={4}>
+              <DetailField label="Tipo de trabajo">
+                <Typography>{formatPlotterJobTypeLabel(job.jobType)}</Typography>
+              </DetailField>
+            </Grid>
+            <Grid item xs={12} sm={6} md={4}>
               <DetailField label="Cliente">
                 <Typography>{customerName}</Typography>
               </DetailField>
             </Grid>
+            {internalJob && (
+              <Grid item xs={12} sm={6} md={4}>
+                <DetailField label="Orden">
+                  <Typography>{formatPlotterOrderLabel(job)}</Typography>
+                </DetailField>
+              </Grid>
+            )}
             <Grid item xs={12} sm={6} md={4}>
               <DetailField label="Fecha">
                 <Typography>{formatPlotterDate(job.creationDate)}</Typography>
@@ -274,18 +293,30 @@ function PlotterJobDetailPage() {
                 <Typography>{formatPlotterNumber(job.printedMeters)} m</Typography>
               </DetailField>
             </Grid>
-            <Grid item xs={12} sm={6} md={4}>
-              <DetailField label="Precio por metro">
-                <Typography>{formatPlotterMoney(job.pricePerMeter)}</Typography>
-              </DetailField>
-            </Grid>
-            <Grid item xs={12} sm={6} md={4}>
-              <DetailField label="Total cobrado">
-                <Typography variant="h6">
-                  {formatPlotterMoney(job.totalAmount)}
-                </Typography>
-              </DetailField>
-            </Grid>
+            {!internalJob && (
+              <>
+                <Grid item xs={12} sm={6} md={4}>
+                  <DetailField label="Precio por metro">
+                    <Typography>{formatPlotterMoney(job.pricePerMeter)}</Typography>
+                  </DetailField>
+                </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                  <DetailField label="Total cobrado">
+                    <Typography variant="h6">
+                      {formatPlotterMoney(job.totalAmount)}
+                    </Typography>
+                  </DetailField>
+                </Grid>
+              </>
+            )}
+            {internalJob && (
+              <Grid item xs={12}>
+                <Alert severity="info">
+                  Este trabajo es una operación de material de producción, no una
+                  venta. El papel se registra una sola vez.
+                </Alert>
+              </Grid>
+            )}
             <Grid item xs={12}>
               <DetailField label="Observaciones">
                 <Typography>{job.observations || '—'}</Typography>
@@ -294,6 +325,7 @@ function PlotterJobDetailPage() {
           </Grid>
         </Paper>
 
+        {!internalJob && (
         <Paper sx={{ p: 3 }}>
           <Stack spacing={2}>
             <Stack
@@ -386,6 +418,7 @@ function PlotterJobDetailPage() {
             )}
           </Stack>
         </Paper>
+        )}
 
         <Paper sx={{ p: 3 }}>
           <Stack spacing={1.5}>

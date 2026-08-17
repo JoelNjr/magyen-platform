@@ -9,8 +9,12 @@ import java.util.UUID;
  */
 public record CreatePlotterJobResponse(
         UUID plotterJobId,
+        String jobType,
         UUID customerId,
+        String customerName,
         UUID orderId,
+        String orderNumber,
+        String orderDescription,
         LocalDate creationDate,
         UUID paperInventoryItemId,
         BigDecimal printedMeters,

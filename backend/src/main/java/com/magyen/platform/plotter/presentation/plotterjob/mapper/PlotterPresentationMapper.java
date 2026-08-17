@@ -9,6 +9,7 @@ import com.magyen.platform.plotter.application.dto.GetPlotterPaymentsQuery;
 import com.magyen.platform.plotter.application.dto.GetPlotterPaymentsResult;
 import com.magyen.platform.plotter.application.dto.RegisterPlotterPaymentCommand;
 import com.magyen.platform.plotter.application.dto.RegisterPlotterPaymentResult;
+import com.magyen.platform.plotter.domain.PlotterJobType;
 import com.magyen.platform.plotter.presentation.plotterjob.request.CreatePlotterJobRequest;
 import com.magyen.platform.plotter.presentation.plotterjob.request.RegisterPlotterPaymentRequest;
 import com.magyen.platform.plotter.presentation.plotterjob.response.CreatePlotterJobResponse;
@@ -29,6 +30,10 @@ public class PlotterPresentationMapper {
     public CreatePlotterJobCommand toCommand(CreatePlotterJobRequest request) {
         Objects.requireNonNull(request, "CreatePlotterJobRequest must not be null");
 
+        PlotterJobType jobType = request.jobType() == null || request.jobType().isBlank()
+                ? null
+                : PlotterJobType.of(request.jobType());
+
         return new CreatePlotterJobCommand(
                 request.customerId(),
                 request.orderId(),
@@ -36,7 +41,9 @@ public class PlotterPresentationMapper {
                 request.paperInventoryItemId(),
                 request.printedMeters(),
                 request.pricePerMeter(),
-                request.observations()
+                request.observations(),
+                jobType,
+                request.plotterJobId()
         );
     }
 
@@ -45,8 +52,12 @@ public class PlotterPresentationMapper {
 
         return new CreatePlotterJobResponse(
                 result.plotterJobId(),
+                result.jobType().name(),
                 result.customerId(),
+                result.customerName(),
                 result.orderId(),
+                result.orderNumber(),
+                result.orderDescription(),
                 result.creationDate(),
                 result.paperInventoryItemId(),
                 result.printedMeters(),
@@ -67,8 +78,12 @@ public class PlotterPresentationMapper {
 
         return new GetPlotterJobResponse(
                 result.plotterJobId(),
+                result.jobType().name(),
                 result.customerId(),
+                result.customerName(),
                 result.orderId(),
+                result.orderNumber(),
+                result.orderDescription(),
                 result.creationDate(),
                 result.paperInventoryItemId(),
                 result.printedMeters(),

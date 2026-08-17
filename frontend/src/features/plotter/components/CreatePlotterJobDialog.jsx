@@ -13,8 +13,11 @@ import {
 } from '@mui/material'
 import {
   calculatePlotterTotalPreview,
+  formatPlotterJobTypeLabel,
   formatPlotterMoney,
   formatPlotterNumber,
+  formatPlotterOrderLabel,
+  isInternalPlotterJob,
 } from '../presentation/plotterJobPresentation'
 
 function toIsoDate(date = new Date()) {
@@ -24,7 +27,15 @@ function toIsoDate(date = new Date()) {
   return `${year}-${month}-${day}`
 }
 
+function createPlotterJobId() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+  return `plotter-${Date.now()}`
+}
+
 const EMPTY_FORM = {
+  jobType: '',
   customerId: '',
   orderId: '',
   creationDate: '',
@@ -32,6 +43,7 @@ const EMPTY_FORM = {
   printedMeters: '',
   pricePerMeter: '',
   observations: '',
+  plotterJobId: '',
 }
 
 function CreatePlotterJobDialog({
@@ -58,24 +70,60 @@ function CreatePlotterJobDialog({
     setForm({
       ...EMPTY_FORM,
       creationDate: toIsoDate(),
+      plotterJobId: createPlotterJobId(),
     })
   }, [open])
 
-  const totalPreview = useMemo(
+  const selectedOrder = useMemo(
+    () => (orders || []).find((order) => order.orderId === form.orderId) || null,
+    [orders, form.orderId]
+  )
+
+  const selectedRoll = useMemo(
+    () =>
+      (paperRolls || []).find((roll) => roll.inventoryItemId === form.paperInventoryItemId) ||
+      null,
+    [paperRolls, form.paperInventoryItemId]
+  )
+
+  const isInternal = isInternalPlotterJob(form.jobType)
+  const isExternal = form.jobType === 'EXTERNAL'
+
+  const salePreview = useMemo(
     () => calculatePlotterTotalPreview(form.printedMeters, form.pricePerMeter),
     [form.printedMeters, form.pricePerMeter]
   )
+
+  const materialCostPreview = useMemo(() => {
+    const meters = Number(form.printedMeters)
+    const unitCost = Number(selectedRoll?.unitCost)
+    if (Number.isNaN(meters) || meters <= 0 || Number.isNaN(unitCost) || unitCost < 0) {
+      return null
+    }
+    return meters * unitCost
+  }, [form.printedMeters, selectedRoll])
 
   function handleClose() {
     if (submitting) {
       return
     }
-
     onClose()
   }
 
   function updateField(field, value) {
-    setForm((current) => ({ ...current, [field]: value }))
+    setForm((current) => {
+      const next = { ...current, [field]: value }
+      if (field === 'jobType') {
+        next.customerId = ''
+        next.orderId = ''
+        next.pricePerMeter = ''
+      }
+      if (field === 'orderId') {
+        const order = (orders || []).find((item) => item.orderId === value)
+        next.customerId = order?.customerId || ''
+      }
+      return next
+    })
     setValidationError('')
   }
 
@@ -84,39 +132,50 @@ function CreatePlotterJobDialog({
       return
     }
 
-    const customerId = form.customerId
-    const orderId = form.orderId || null
+    const jobType = form.jobType
     const creationDate = form.creationDate
     const paperInventoryItemId = form.paperInventoryItemId
     const printedMetersRaw = form.printedMeters.trim()
-    const pricePerMeterRaw = form.pricePerMeter.trim()
     const observations = form.observations.trim()
 
-    if (!customerId || !paperInventoryItemId || !printedMetersRaw || !pricePerMeterRaw || !creationDate) {
+    if (!jobType || !paperInventoryItemId || !printedMetersRaw || !creationDate) {
       setValidationError(
-        'Cliente, fecha, rollo de papel, metros impresos y precio por metro son obligatorios.'
+        'Tipo de trabajo, fecha, rollo de papel y metros impresos son obligatorios.'
       )
       return
     }
 
-    const printedMeters = Number(printedMetersRaw)
-    const pricePerMeter = Number(pricePerMeterRaw)
+    if (isInternal && !form.orderId) {
+      setValidationError('Selecciona la orden comercial de Magyen.')
+      return
+    }
 
+    if (isExternal && !form.customerId) {
+      setValidationError('Selecciona el cliente externo.')
+      return
+    }
+
+    const printedMeters = Number(printedMetersRaw)
     if (Number.isNaN(printedMeters) || printedMeters <= 0) {
       setValidationError('Los metros impresos deben ser un número mayor que cero.')
       return
     }
 
-    if (Number.isNaN(pricePerMeter) || pricePerMeter < 0) {
-      setValidationError('El precio por metro debe ser un número mayor o igual a cero.')
-      return
+    let pricePerMeter = null
+    if (isExternal) {
+      const pricePerMeterRaw = form.pricePerMeter.trim()
+      if (!pricePerMeterRaw) {
+        setValidationError('El precio por metro es obligatorio para un cliente externo.')
+        return
+      }
+      pricePerMeter = Number(pricePerMeterRaw)
+      if (Number.isNaN(pricePerMeter) || pricePerMeter < 0) {
+        setValidationError('El precio por metro debe ser un número mayor o igual a cero.')
+        return
+      }
     }
 
-    const selectedRoll = (paperRolls || []).find(
-      (roll) => roll.inventoryItemId === paperInventoryItemId
-    )
     const available = Number(selectedRoll?.stock)
-
     if (selectedRoll && !Number.isNaN(available) && printedMeters > available) {
       setValidationError(
         `Los metros impresos exceden el stock disponible del rollo (${formatPlotterNumber(available)} m).`
@@ -126,8 +185,10 @@ function CreatePlotterJobDialog({
 
     setValidationError('')
     onSubmit({
-      customerId,
-      orderId,
+      jobType,
+      plotterJobId: form.plotterJobId || createPlotterJobId(),
+      customerId: isExternal ? form.customerId : undefined,
+      orderId: isInternal ? form.orderId : undefined,
       creationDate,
       paperInventoryItemId,
       printedMeters,
@@ -148,108 +209,175 @@ function CreatePlotterJobDialog({
 
           <TextField
             select
-            label="Cliente"
-            value={form.customerId}
-            onChange={(event) => updateField('customerId', event.target.value)}
+            label="Tipo de trabajo"
+            value={form.jobType}
+            onChange={(event) => updateField('jobType', event.target.value)}
             fullWidth
-            disabled={submitting || loadingLookups}
+            disabled={submitting}
             autoFocus
+            helperText="Elige si este trabajo es para una orden de Magyen o para un cliente externo."
           >
-            {(customers || []).map((customer) => (
-              <MenuItem key={customer.customerId} value={customer.customerId}>
-                {customer.name}
-              </MenuItem>
-            ))}
+            <MenuItem value="INTERNAL_MAGYEN">
+              {formatPlotterJobTypeLabel('INTERNAL_MAGYEN')}
+            </MenuItem>
+            <MenuItem value="EXTERNAL">{formatPlotterJobTypeLabel('EXTERNAL')}</MenuItem>
           </TextField>
 
-          <TextField
-            select
-            label="Orden comercial"
-            value={form.orderId}
-            onChange={(event) => updateField('orderId', event.target.value)}
-            fullWidth
-            disabled={submitting || loadingLookups}
-            helperText="Opcional. Atribuye este trabajo a una orden comercial sin crear un ingreso automático."
-          >
-            <MenuItem value="">Sin orden asociada</MenuItem>
-            {(orders || []).map((order) => (
-              <MenuItem key={order.orderId} value={order.orderId}>
-                {order.orderNumber}
-                {order.customerName ? ` — ${order.customerName}` : ''}
-              </MenuItem>
-            ))}
-          </TextField>
+          {isInternal && (
+            <Alert severity="info">
+              Este trabajo es para una orden de Magyen. El papel se registra una sola vez
+              desde Plotter.
+            </Alert>
+          )}
 
-          <TextField
-            label="Fecha del trabajo"
-            type="date"
-            value={form.creationDate}
-            onChange={(event) => updateField('creationDate', event.target.value)}
-            InputLabelProps={{ shrink: true }}
-            fullWidth
-            disabled={submitting}
-          />
+          {isExternal && (
+            <Alert severity="info">
+              Este trabajo es para un cliente externo. No crea una orden comercial ni
+              producción.
+            </Alert>
+          )}
 
-          <TextField
-            select
-            label="Seleccionar rollo de papel"
-            value={form.paperInventoryItemId}
-            onChange={(event) => updateField('paperInventoryItemId', event.target.value)}
-            fullWidth
-            disabled={submitting || loadingLookups}
-            helperText={
-              (paperRolls || []).length === 0
-                ? 'No hay rollos de papel Plotter disponibles.'
-                : 'Solo se listan rollos elegibles (PAPER / METER).'
-            }
-          >
-            {(paperRolls || []).map((roll) => (
-              <MenuItem key={roll.inventoryItemId} value={roll.inventoryItemId}>
-                {roll.paperRollNumber || roll.materialCode} —{' '}
-                {formatPlotterNumber(roll.stock)} m disponibles
-              </MenuItem>
-            ))}
-          </TextField>
+          {isInternal && (
+            <>
+              <TextField
+                select
+                label="Orden comercial"
+                value={form.orderId}
+                onChange={(event) => updateField('orderId', event.target.value)}
+                fullWidth
+                disabled={submitting || loadingLookups}
+              >
+                {(orders || []).map((order) => (
+                  <MenuItem key={order.orderId} value={order.orderId}>
+                    {formatPlotterOrderLabel(order)}
+                    {order.customerName ? ` — ${order.customerName}` : ''}
+                  </MenuItem>
+                ))}
+              </TextField>
+              <TextField
+                label="Cliente"
+                value={selectedOrder?.customerName || '—'}
+                fullWidth
+                InputProps={{ readOnly: true }}
+                helperText="Se toma de la orden comercial."
+              />
+            </>
+          )}
 
-          <TextField
-            label="Metros impresos"
-            value={form.printedMeters}
-            onChange={(event) => updateField('printedMeters', event.target.value)}
-            fullWidth
-            disabled={submitting}
-            inputProps={{ inputMode: 'decimal' }}
-          />
+          {isExternal && (
+            <TextField
+              select
+              label="Cliente"
+              value={form.customerId}
+              onChange={(event) => updateField('customerId', event.target.value)}
+              fullWidth
+              disabled={submitting || loadingLookups}
+            >
+              {(customers || []).map((customer) => (
+                <MenuItem key={customer.customerId} value={customer.customerId}>
+                  {customer.name}
+                </MenuItem>
+              ))}
+            </TextField>
+          )}
 
-          <TextField
-            label="Precio por metro"
-            value={form.pricePerMeter}
-            onChange={(event) => updateField('pricePerMeter', event.target.value)}
-            fullWidth
-            disabled={submitting}
-            inputProps={{ inputMode: 'decimal' }}
-          />
+          {form.jobType && (
+            <>
+              <TextField
+                label="Fecha del trabajo"
+                type="date"
+                value={form.creationDate}
+                onChange={(event) => updateField('creationDate', event.target.value)}
+                InputLabelProps={{ shrink: true }}
+                fullWidth
+                disabled={submitting}
+              />
 
-          <Stack spacing={0.5}>
-            <Typography variant="body2" color="text.secondary">
-              Total cobrado (vista previa)
-            </Typography>
-            <Typography variant="h6">
-              {totalPreview === null ? '—' : formatPlotterMoney(totalPreview)}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              El total definitivo lo calcula el servidor.
-            </Typography>
-          </Stack>
+              <TextField
+                select
+                label="Papel de inventario"
+                value={form.paperInventoryItemId}
+                onChange={(event) => updateField('paperInventoryItemId', event.target.value)}
+                fullWidth
+                disabled={submitting || loadingLookups}
+                helperText={
+                  (paperRolls || []).length === 0
+                    ? 'No hay rollos de papel Plotter disponibles.'
+                    : 'Selecciona el rollo real de inventario. Unidad: metro.'
+                }
+              >
+                {(paperRolls || []).map((roll) => (
+                  <MenuItem key={roll.inventoryItemId} value={roll.inventoryItemId}>
+                    {roll.name || roll.paperRollNumber || roll.materialCode} —{' '}
+                    {formatPlotterNumber(roll.stock)} m
+                    {roll.unitCost != null && roll.unitCost !== ''
+                      ? ` — ${formatPlotterMoney(roll.unitCost)}/m`
+                      : ''}
+                  </MenuItem>
+                ))}
+              </TextField>
 
-          <TextField
-            label="Observaciones"
-            value={form.observations}
-            onChange={(event) => updateField('observations', event.target.value)}
-            fullWidth
-            disabled={submitting}
-            multiline
-            minRows={2}
-          />
+              <TextField
+                label="Cantidad (metros)"
+                value={form.printedMeters}
+                onChange={(event) => updateField('printedMeters', event.target.value)}
+                fullWidth
+                disabled={submitting}
+                inputProps={{ inputMode: 'decimal' }}
+              />
+
+              {isExternal && (
+                <TextField
+                  label="Precio por metro"
+                  value={form.pricePerMeter}
+                  onChange={(event) => updateField('pricePerMeter', event.target.value)}
+                  fullWidth
+                  disabled={submitting}
+                  inputProps={{ inputMode: 'decimal' }}
+                />
+              )}
+
+              {isInternal && (
+                <Stack spacing={0.5}>
+                  <Typography variant="body2" color="text.secondary">
+                    Costo de material (inventario)
+                  </Typography>
+                  <Typography variant="h6">
+                    {materialCostPreview === null
+                      ? 'Sin valoración histórica'
+                      : formatPlotterMoney(materialCostPreview)}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    No es una venta. El costo lo toma el inventario al consumir el papel.
+                  </Typography>
+                </Stack>
+              )}
+
+              {isExternal && (
+                <Stack spacing={0.5}>
+                  <Typography variant="body2" color="text.secondary">
+                    Total cobrado (vista previa)
+                  </Typography>
+                  <Typography variant="h6">
+                    {salePreview === null ? '—' : formatPlotterMoney(salePreview)}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    El total definitivo lo calcula el servidor.
+                  </Typography>
+                </Stack>
+              )}
+
+              <TextField
+                label="Observaciones"
+                value={form.observations}
+                onChange={(event) => updateField('observations', event.target.value)}
+                fullWidth
+                disabled={submitting}
+                multiline
+                minRows={2}
+              />
+            </>
+          )}
         </Stack>
       </DialogContent>
 
@@ -260,7 +388,7 @@ function CreatePlotterJobDialog({
         <Button
           variant="contained"
           onClick={handleSubmit}
-          disabled={submitting || loadingLookups}
+          disabled={submitting || loadingLookups || !form.jobType}
         >
           {submitting ? 'Guardando…' : 'Registrar trabajo'}
         </Button>

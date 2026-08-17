@@ -251,13 +251,17 @@ Si Inventory falla, el consumo de Production no queda persistido.
 Campos:
 
 - `customerId` (soft ref)
-- `creationDate` (servidor)
+- `jobType` (`INTERNAL_MAGYEN` | `EXTERNAL`)
+- `orderId` (soft ref; obligatorio solo en `INTERNAL_MAGYEN`)
+- `creationDate` (servidor o enviada)
 - `paperInventoryItemId` (soft ref a rollo)
 - `printedMeters`
-- `pricePerMeter`
-- `totalAmount` (calculado: metros × precio)
+- `pricePerMeter` (cobro al cliente externo; `0` en interno)
+- `totalAmount` (calculado: metros × precio; interno no es una venta)
 - `status` (`REGISTERED | IN_PROGRESS | COMPLETED | CANCELLED`)
 - `observations`
+
+Un trabajo interno es una operación de material de producción, no una segunda compra ni una venta. El consumo de papel de una orden Magyen se registra exactamente una vez (`sourceId = plotterJobId`). Ver `SPR-038-Increment-D-Plotter-Internal-External.md`.
 
 ### Ingreso vs costo
 
