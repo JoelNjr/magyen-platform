@@ -13,6 +13,8 @@ import com.magyen.platform.inventory.application.dto.IncreaseInventoryStockComma
 import com.magyen.platform.inventory.application.dto.IncreaseInventoryStockResult;
 import com.magyen.platform.inventory.application.dto.RegisterInventoryMovementCommand;
 import com.magyen.platform.inventory.application.dto.RegisterInventoryMovementResult;
+import com.magyen.platform.inventory.application.dto.RegisterInventoryPurchaseCommand;
+import com.magyen.platform.inventory.application.dto.RegisterInventoryPurchaseResult;
 import com.magyen.platform.inventory.application.dto.UpdateInventoryMinimumStockCommand;
 import com.magyen.platform.inventory.application.dto.UpdateInventoryUnitCostCommand;
 import com.magyen.platform.inventory.application.usecase.CreateInventoryItemUseCase;
@@ -22,6 +24,7 @@ import com.magyen.platform.inventory.application.usecase.GetInventoryItemsUseCas
 import com.magyen.platform.inventory.application.usecase.GetInventoryMovementsUseCase;
 import com.magyen.platform.inventory.application.usecase.IncreaseInventoryStockUseCase;
 import com.magyen.platform.inventory.application.usecase.RegisterInventoryMovementUseCase;
+import com.magyen.platform.inventory.application.usecase.RegisterInventoryPurchaseUseCase;
 import com.magyen.platform.inventory.application.usecase.UpdateInventoryMinimumStockUseCase;
 import com.magyen.platform.inventory.application.usecase.UpdateInventoryUnitCostUseCase;
 import com.magyen.platform.inventory.presentation.inventoryitem.mapper.InventoryPresentationMapper;
@@ -29,6 +32,7 @@ import com.magyen.platform.inventory.presentation.inventoryitem.request.CreateIn
 import com.magyen.platform.inventory.presentation.inventoryitem.request.DecreaseInventoryStockRequest;
 import com.magyen.platform.inventory.presentation.inventoryitem.request.IncreaseInventoryStockRequest;
 import com.magyen.platform.inventory.presentation.inventoryitem.request.RegisterInventoryMovementRequest;
+import com.magyen.platform.inventory.presentation.inventoryitem.request.RegisterInventoryPurchaseRequest;
 import com.magyen.platform.inventory.presentation.inventoryitem.request.UpdateInventoryMinimumStockRequest;
 import com.magyen.platform.inventory.presentation.inventoryitem.request.UpdateInventoryUnitCostRequest;
 import com.magyen.platform.inventory.presentation.inventoryitem.response.CreateInventoryItemResponse;
@@ -38,6 +42,7 @@ import com.magyen.platform.inventory.presentation.inventoryitem.response.GetInve
 import com.magyen.platform.inventory.presentation.inventoryitem.response.GetInventoryMovementsResponse;
 import com.magyen.platform.inventory.presentation.inventoryitem.response.IncreaseInventoryStockResponse;
 import com.magyen.platform.inventory.presentation.inventoryitem.response.RegisterInventoryMovementResponse;
+import com.magyen.platform.inventory.presentation.inventoryitem.response.RegisterInventoryPurchaseResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -67,6 +72,7 @@ public class InventoryController {
     private final IncreaseInventoryStockUseCase increaseInventoryStockUseCase;
     private final DecreaseInventoryStockUseCase decreaseInventoryStockUseCase;
     private final RegisterInventoryMovementUseCase registerInventoryMovementUseCase;
+    private final RegisterInventoryPurchaseUseCase registerInventoryPurchaseUseCase;
     private final InventoryPresentationMapper inventoryPresentationMapper;
 
     public InventoryController(
@@ -79,6 +85,7 @@ public class InventoryController {
             IncreaseInventoryStockUseCase increaseInventoryStockUseCase,
             DecreaseInventoryStockUseCase decreaseInventoryStockUseCase,
             RegisterInventoryMovementUseCase registerInventoryMovementUseCase,
+            RegisterInventoryPurchaseUseCase registerInventoryPurchaseUseCase,
             InventoryPresentationMapper inventoryPresentationMapper
     ) {
         this.createInventoryItemUseCase = createInventoryItemUseCase;
@@ -90,6 +97,7 @@ public class InventoryController {
         this.increaseInventoryStockUseCase = increaseInventoryStockUseCase;
         this.decreaseInventoryStockUseCase = decreaseInventoryStockUseCase;
         this.registerInventoryMovementUseCase = registerInventoryMovementUseCase;
+        this.registerInventoryPurchaseUseCase = registerInventoryPurchaseUseCase;
         this.inventoryPresentationMapper = inventoryPresentationMapper;
     }
 
@@ -212,5 +220,21 @@ public class InventoryController {
         RegisterInventoryMovementResponse response = inventoryPresentationMapper.toResponse(result);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PostMapping("/{inventoryItemId}/purchases")
+    public ResponseEntity<RegisterInventoryPurchaseResponse> registerInventoryPurchase(
+            @PathVariable UUID inventoryItemId,
+            @RequestBody RegisterInventoryPurchaseRequest request
+    ) {
+        RegisterInventoryPurchaseCommand command = inventoryPresentationMapper.toRegisterPurchaseCommand(
+                inventoryItemId,
+                request
+        );
+        RegisterInventoryPurchaseResult result = registerInventoryPurchaseUseCase.execute(command);
+        RegisterInventoryPurchaseResponse response = inventoryPresentationMapper.toResponse(result);
+
+        HttpStatus status = result.alreadyProcessed() ? HttpStatus.OK : HttpStatus.CREATED;
+        return ResponseEntity.status(status).body(response);
     }
 }

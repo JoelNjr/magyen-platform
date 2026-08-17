@@ -298,7 +298,7 @@ public class InventoryItem {
      * Registra un movimiento con origen auditable y actualiza el stock.
      * <p>
      * {@code sourceType}/{@code sourceId} no afectan el cálculo de costo.
-     * Reglas: MANUAL admite {@code sourceId} nulo; PRODUCTION y PLOTTER lo exigen.
+     * Reglas: MANUAL admite {@code sourceId} nulo; PRODUCTION, PLOTTER y PURCHASE lo exigen.
      */
     public InventoryMovement registerMovement(
             InventoryMovementType movementType,
@@ -343,6 +343,47 @@ public class InventoryItem {
                 this.unitCost,
                 sourceType,
                 sourceId
+        );
+    }
+
+    /**
+     * Registra una compra/recepción: aumenta stock, congela el costo de esa entrada
+     * y actualiza la valoración actual del material.
+     * <p>
+     * El gasto de caja en Finance es responsabilidad del caso de uso de aplicación,
+     * no de este agregado. El consumo posterior no debe crear otro gasto.
+     */
+    public InventoryMovement registerPurchase(
+            BigDecimal quantity,
+            BigDecimal purchaseUnitCost,
+            String observation,
+            LocalDateTime movementDate,
+            UUID purchaseId
+    ) {
+        Objects.requireNonNull(quantity, "Quantity must not be null");
+        Objects.requireNonNull(purchaseUnitCost, "Purchase unit cost must not be null");
+        Objects.requireNonNull(movementDate, "Movement date must not be null");
+        Objects.requireNonNull(purchaseId, "Purchase id must not be null");
+
+        if (purchaseUnitCost.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new InventoryDomainException("Purchase unit cost must be greater than zero");
+        }
+
+        BigDecimal normalizedPurchaseCost = purchaseUnitCost.setScale(MONEY_SCALE, MONEY_ROUNDING);
+        this.stock = applyIn(quantity);
+        this.unitCost = normalizedPurchaseCost;
+
+        return InventoryMovement.record(
+                this.id,
+                InventoryMovementType.IN,
+                quantity,
+                this.unitOfMeasure,
+                movementDate,
+                observation,
+                this.stock,
+                normalizedPurchaseCost,
+                InventoryMovementSourceType.PURCHASE,
+                purchaseId
         );
     }
 

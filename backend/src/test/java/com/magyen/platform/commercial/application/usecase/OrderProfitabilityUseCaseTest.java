@@ -14,6 +14,10 @@ import com.magyen.platform.commercial.domain.ProductSpecification;
 import com.magyen.platform.finance.application.dto.RegisterPaymentCommand;
 import com.magyen.platform.finance.application.usecase.RegisterPaymentUseCase;
 import com.magyen.platform.finance.domain.FinancialTransactionRepository;
+import com.magyen.platform.finance.domain.FinancialTransactionSourceType;
+import com.magyen.platform.finance.domain.FinancialTransactionType;
+import com.magyen.platform.inventory.application.dto.RegisterInventoryPurchaseCommand;
+import com.magyen.platform.inventory.application.usecase.RegisterInventoryPurchaseUseCase;
 import com.magyen.platform.inventory.domain.InventoryItem;
 import com.magyen.platform.inventory.domain.InventoryItemRepository;
 import com.magyen.platform.inventory.domain.MaterialCode;
@@ -96,6 +100,9 @@ class OrderProfitabilityUseCaseTest {
     @Autowired
     private FinancialTransactionRepository financialTransactionRepository;
 
+    @Autowired
+    private RegisterInventoryPurchaseUseCase registerInventoryPurchaseUseCase;
+
     @Test
     void calculatesCompleteProfitabilityWithPaymentsMaterialAndLabor() {
         Order order = createOrderWithTotal("1000000.00");
@@ -171,6 +178,57 @@ class OrderProfitabilityUseCaseTest {
 
         assertEquals(new BigDecimal("150000.00"), result.materialCost());
         assertEquals(OrderProfitabilityStatus.COMPLETE, result.profitabilityStatus());
+    }
+
+    @Test
+    void purchaseFinanceExpenseIsNotSubtractedAgainFromOrderProfitability() {
+        Order order = createOrderWithTotal("400000.00");
+        UUID productionOrderId = createInProgressProductionOrder(order.getId());
+
+        InventoryItem fabric = inventoryItemRepository.save(InventoryItem.create(
+                MaterialCode.of("OPFP-" + UUID.randomUUID().toString().substring(0, 8)),
+                "Sudáfrica",
+                "FABRIC",
+                "METER",
+                BigDecimal.ZERO,
+                null,
+                null,
+                null,
+                com.magyen.platform.inventory.domain.InventoryMaterialType.FABRIC,
+                null
+        ));
+
+        registerInventoryPurchaseUseCase.execute(new RegisterInventoryPurchaseCommand(
+                fabric.getId(),
+                UUID.randomUUID(),
+                new BigDecimal("100.0000"),
+                new BigDecimal("10000.00"),
+                LocalDate.of(2026, 8, 16),
+                "compra Sudáfrica"
+        ));
+
+        registerMaterial(productionOrderId, fabric.getId(), "6.5000", "METER");
+
+        CreateProductionOperatorResult operator = createProductionOperator();
+        registerLabor(productionOrderId, operator.operatorId(), "30", "1000.00");
+
+        GetOrderProfitabilityResult result = getOrderProfitabilityUseCase.execute(
+                new GetOrderProfitabilityQuery(order.getId())
+        );
+
+        assertEquals(new BigDecimal("400000.00"), result.orderValue());
+        assertEquals(new BigDecimal("65000.00"), result.materialCost());
+        assertEquals(new BigDecimal("30000.00"), result.laborCost());
+        assertEquals(new BigDecimal("95000.00"), result.totalDirectCost());
+        assertEquals(new BigDecimal("305000.00"), result.directProfit());
+        assertEquals(0, result.unvaluedMaterialConsumptionCount());
+
+        long purchaseExpenses = financialTransactionRepository.findAllNewestFirst().stream()
+                .filter(transaction -> transaction.getSourceType()
+                        == FinancialTransactionSourceType.INVENTORY_PURCHASE)
+                .filter(transaction -> transaction.getType() == FinancialTransactionType.EXPENSE)
+                .count();
+        assertEquals(1, purchaseExpenses);
     }
 
     @Test

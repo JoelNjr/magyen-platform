@@ -114,6 +114,17 @@ export function formatInventoryMoney(value) {
   })
 }
 
+export function formatInventoryConsumptionOption(item) {
+  if (!item) {
+    return 'Material'
+  }
+
+  const name = item.name || item.materialCode || 'Material'
+  const stock = formatStockWithUnit(item.stock, item.unitOfMeasure)
+  const unitCost = formatUnitCostLabel(item.unitCost, item.unitOfMeasure)
+  return `${name} — ${stock} disponibles — ${unitCost}`
+}
+
 export function formatUnitCostLabel(unitCost, unitOfMeasure) {
   const formatted = formatInventoryMoney(unitCost)
 

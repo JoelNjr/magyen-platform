@@ -584,6 +584,12 @@ CREATE UNIQUE INDEX uq_financial_transactions_payroll_source
     WHERE source_type = 'PAYROLL'
       AND source_id IS NOT NULL;
 
+-- Una compra de inventario no puede generar dos gastos del ledger.
+CREATE UNIQUE INDEX uq_financial_transactions_inventory_purchase_source
+    ON financial_transactions (source_type, source_id)
+    WHERE source_type = 'INVENTORY_PURCHASE'
+      AND source_id IS NOT NULL;
+
 -- Administration module
 -- Aggregate: AuthenticationUser (identity de autenticación — SPR-038 Inc. 1)
 -- Independiente de Commercial / Production / Inventory / Plotter / Finance / Home.

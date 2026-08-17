@@ -27,6 +27,8 @@ export function formatInventoryMovementSourceType(sourceType) {
       return 'Producción'
     case 'PLOTTER':
       return 'Plotter'
+    case 'PURCHASE':
+      return 'Compra'
     default:
       return sourceType || 'Manual'
   }
@@ -43,7 +45,7 @@ export function formatInventoryMovementSourceLabel(sourceType, sourceId) {
 }
 
 export function formatInventoryMovementSourceId(sourceType, sourceId) {
-  if (!sourceId || sourceType === 'MANUAL' || !sourceType) {
+  if (!sourceId || sourceType === 'MANUAL' || sourceType === 'PURCHASE' || !sourceType) {
     return null
   }
 

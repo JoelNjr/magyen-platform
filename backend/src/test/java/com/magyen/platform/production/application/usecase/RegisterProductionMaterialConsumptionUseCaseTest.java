@@ -113,6 +113,11 @@ class RegisterProductionMaterialConsumptionUseCaseTest {
         );
         assertEquals(1, history.consumptions().size());
         assertEquals(result.consumptionId(), history.consumptions().getFirst().consumptionId());
+        assertEquals("Tela Fastra", result.materialName());
+        assertEquals(inventoryItem.getMaterialCode().getValue(), result.materialCode());
+        assertEquals(new BigDecimal("18000.00"), result.unitCost());
+        assertEquals(new BigDecimal("336600.00"), result.totalCost());
+        assertEquals(new BigDecimal("116.5500"), result.remainingStock());
 
         InventoryItem reloadedItem = inventoryItemRepository.findById(inventoryItem.getId()).orElseThrow();
         assertEquals(new BigDecimal("116.5500"), reloadedItem.getStock());
@@ -253,6 +258,47 @@ class RegisterProductionMaterialConsumptionUseCaseTest {
                 () -> register(UUID.randomUUID(), inventoryItem.getId(), "1.0000", "METER")
         );
         assertTrue(missing.getMessage().contains("Production order not found"));
+    }
+
+    @Test
+    void rejectsConsumptionThatExceedsAvailableStockWithoutPartialMovement() {
+        moveToInProgress();
+
+        InventoryDomainException exception = assertThrows(
+                InventoryDomainException.class,
+                () -> register(productionOrderId, inventoryItem.getId(), "200.0000", "METER")
+        );
+        assertTrue(exception.getMessage().contains("below zero"));
+
+        InventoryItem reloaded = inventoryItemRepository.findById(inventoryItem.getId()).orElseThrow();
+        assertEquals(new BigDecimal("135.2500"), reloaded.getStock());
+        assertTrue(inventoryMovementRepository
+                .findByInventoryItemIdOrderByMovementDateDesc(inventoryItem.getId())
+                .isEmpty());
+
+        GetProductionMaterialConsumptionsResult history = getProductionMaterialConsumptionsUseCase.execute(
+                new GetProductionMaterialConsumptionsQuery(productionOrderId)
+        );
+        assertTrue(history.consumptions().isEmpty());
+    }
+
+    @Test
+    void requiresInventoryItemIdentityAndDoesNotAcceptMissingSelection() {
+        moveToInProgress();
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> registerProductionMaterialConsumptionUseCase.execute(
+                        new RegisterProductionMaterialConsumptionCommand(
+                                productionOrderId,
+                                null,
+                                new BigDecimal("1.0000"),
+                                "METER",
+                                "free text is not a material identity"
+                        )
+                )
+        );
+        assertTrue(exception.getMessage().contains("Inventory item id must not be null"));
     }
 
     private void moveToInProgress() {

@@ -182,6 +182,17 @@ class ConsumeInventoryMaterialUseCaseTest {
                         null
                 )
         ));
+
+        assertThrows(InventoryDomainException.class, () -> consumeInventoryMaterialUseCase.execute(
+                new ConsumeInventoryMaterialCommand(
+                        inventoryItem.getId(),
+                        new BigDecimal("1.0000"),
+                        "METER",
+                        InventoryMovementSourceType.PURCHASE,
+                        UUID.randomUUID(),
+                        null
+                )
+        ));
     }
 
 }

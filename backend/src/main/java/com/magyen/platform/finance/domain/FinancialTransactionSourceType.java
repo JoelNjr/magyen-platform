@@ -55,7 +55,14 @@ public enum FinancialTransactionSourceType {
      * Movimiento generado al pagar una ocurrencia de obligación recurrente.
      * {@code sourceId} = recurringFinancialObligationOccurrenceId.
      */
-    RECURRING_OBLIGATION;
+    RECURRING_OBLIGATION,
+
+    /**
+     * Gasto de caja por adquirir material de inventario.
+     * {@code sourceId} = purchaseId (no inventoryItemId; un material puede comprarse varias veces).
+     * No representa consumo de producción.
+     */
+    INVENTORY_PURCHASE;
 
     /**
      * Interpreta un origen desde entrada de negocio.

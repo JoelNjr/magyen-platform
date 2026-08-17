@@ -15,6 +15,8 @@ import com.magyen.platform.inventory.application.dto.IncreaseInventoryStockComma
 import com.magyen.platform.inventory.application.dto.IncreaseInventoryStockResult;
 import com.magyen.platform.inventory.application.dto.RegisterInventoryMovementCommand;
 import com.magyen.platform.inventory.application.dto.RegisterInventoryMovementResult;
+import com.magyen.platform.inventory.application.dto.RegisterInventoryPurchaseCommand;
+import com.magyen.platform.inventory.application.dto.RegisterInventoryPurchaseResult;
 import com.magyen.platform.inventory.application.dto.UpdateInventoryMinimumStockCommand;
 import com.magyen.platform.inventory.application.dto.UpdateInventoryUnitCostCommand;
 import com.magyen.platform.inventory.domain.InventoryMovementSourceType;
@@ -24,6 +26,7 @@ import com.magyen.platform.inventory.presentation.inventoryitem.request.CreateIn
 import com.magyen.platform.inventory.presentation.inventoryitem.request.DecreaseInventoryStockRequest;
 import com.magyen.platform.inventory.presentation.inventoryitem.request.IncreaseInventoryStockRequest;
 import com.magyen.platform.inventory.presentation.inventoryitem.request.RegisterInventoryMovementRequest;
+import com.magyen.platform.inventory.presentation.inventoryitem.request.RegisterInventoryPurchaseRequest;
 import com.magyen.platform.inventory.presentation.inventoryitem.request.UpdateInventoryMinimumStockRequest;
 import com.magyen.platform.inventory.presentation.inventoryitem.request.UpdateInventoryUnitCostRequest;
 import com.magyen.platform.inventory.presentation.inventoryitem.response.CreateInventoryItemResponse;
@@ -34,6 +37,7 @@ import com.magyen.platform.inventory.presentation.inventoryitem.response.GetInve
 import com.magyen.platform.inventory.presentation.inventoryitem.response.GetInventoryMovementsResponse;
 import com.magyen.platform.inventory.presentation.inventoryitem.response.IncreaseInventoryStockResponse;
 import com.magyen.platform.inventory.presentation.inventoryitem.response.RegisterInventoryMovementResponse;
+import com.magyen.platform.inventory.presentation.inventoryitem.response.RegisterInventoryPurchaseResponse;
 
 import java.util.Locale;
 import java.util.Objects;
@@ -252,6 +256,46 @@ public class InventoryPresentationMapper {
                 result.totalCost(),
                 result.sourceType().name(),
                 result.sourceId()
+        );
+    }
+
+    public RegisterInventoryPurchaseCommand toRegisterPurchaseCommand(
+            UUID inventoryItemId,
+            RegisterInventoryPurchaseRequest request
+    ) {
+        Objects.requireNonNull(inventoryItemId, "Inventory item id must not be null");
+        Objects.requireNonNull(request, "RegisterInventoryPurchaseRequest must not be null");
+
+        return new RegisterInventoryPurchaseCommand(
+                inventoryItemId,
+                request.purchaseId(),
+                request.quantity(),
+                request.unitCost(),
+                request.purchaseDate(),
+                request.observation()
+        );
+    }
+
+    public RegisterInventoryPurchaseResponse toResponse(RegisterInventoryPurchaseResult result) {
+        Objects.requireNonNull(result, "RegisterInventoryPurchaseResult must not be null");
+
+        return new RegisterInventoryPurchaseResponse(
+                result.purchaseId(),
+                result.inventoryItemId(),
+                result.materialName(),
+                result.materialCode(),
+                result.movementId(),
+                result.financialTransactionId(),
+                result.quantity(),
+                result.unitOfMeasure(),
+                result.unitCost(),
+                result.totalCost(),
+                result.resultingStock(),
+                result.purchaseDate(),
+                result.movementDate(),
+                result.observation(),
+                result.financeCategory(),
+                result.alreadyProcessed()
         );
     }
 

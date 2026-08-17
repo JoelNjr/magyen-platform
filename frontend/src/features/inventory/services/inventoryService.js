@@ -40,6 +40,14 @@ export async function updateInventoryUnitCost(inventoryItemId, unitCost) {
   return response.data
 }
 
+export async function registerInventoryPurchase(inventoryItemId, payload) {
+  const response = await httpClient.post(
+    `/inventory/${inventoryItemId}/purchases`,
+    payload
+  )
+  return response.data
+}
+
 export async function registerInventoryMovement(inventoryItemId, payload) {
   const response = await httpClient.post(
     `/inventory/${inventoryItemId}/movements`,

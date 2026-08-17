@@ -30,7 +30,14 @@ public enum InventoryMovementSourceType {
      * Consumo u origen asociado a un trabajo de plotter.
      * Requiere {@code sourceId} (plotterJobId).
      */
-    PLOTTER;
+    PLOTTER,
+
+    /**
+     * Entrada por compra / recepción de material.
+     * Requiere {@code sourceId} = purchaseId (no el inventoryItemId:
+     * el mismo material puede comprarse varias veces).
+     */
+    PURCHASE;
 
     /**
      * Interpreta un origen desde entrada de negocio.
@@ -62,6 +69,6 @@ public enum InventoryMovementSourceType {
     }
 
     public boolean requiresSourceId() {
-        return this == PRODUCTION || this == PLOTTER;
+        return this == PRODUCTION || this == PLOTTER || this == PURCHASE;
     }
 }

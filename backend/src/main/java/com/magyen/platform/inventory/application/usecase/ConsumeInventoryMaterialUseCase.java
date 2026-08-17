@@ -48,15 +48,16 @@ public class ConsumeInventoryMaterialUseCase {
         validateCommand(command);
 
         InventoryMovementSourceType sourceType = command.sourceType();
-        if (!sourceType.requiresSourceId()) {
+        if (sourceType != InventoryMovementSourceType.PRODUCTION
+                && sourceType != InventoryMovementSourceType.PLOTTER) {
             throw new InventoryDomainException(
-                    "Consume inventory material requires a non-manual source type"
+                    "Consume inventory material requires PRODUCTION or PLOTTER source type"
             );
         }
 
         return inventoryMovementRepository
                 .findBySourceTypeAndSourceId(sourceType, command.sourceId())
-                .map(existing -> toResult(existing, true))
+                .map(existing -> toResult(existing, loadItem(existing.getInventoryItemId()), true))
                 .orElseGet(() -> createOutMovement(command));
     }
 
@@ -86,11 +87,11 @@ public class ConsumeInventoryMaterialUseCase {
             );
 
             inventoryItemRepository.saveWithMovement(inventoryItem, movement);
-            return toResult(movement, false);
+            return toResult(movement, inventoryItem, false);
         } catch (DataIntegrityViolationException exception) {
             return inventoryMovementRepository
                     .findBySourceTypeAndSourceId(command.sourceType(), command.sourceId())
-                    .map(existing -> toResult(existing, true))
+                    .map(existing -> toResult(existing, inventoryItem, true))
                     .orElseThrow(() -> exception);
         }
     }
@@ -107,10 +108,21 @@ public class ConsumeInventoryMaterialUseCase {
         }
     }
 
-    private static ConsumeInventoryMaterialResult toResult(InventoryMovement movement, boolean alreadyProcessed) {
+    private InventoryItem loadItem(java.util.UUID inventoryItemId) {
+        return inventoryItemRepository.findById(inventoryItemId)
+                .orElseThrow(() -> new IllegalArgumentException("Inventory item not found: " + inventoryItemId));
+    }
+
+    private static ConsumeInventoryMaterialResult toResult(
+            InventoryMovement movement,
+            InventoryItem inventoryItem,
+            boolean alreadyProcessed
+    ) {
         return new ConsumeInventoryMaterialResult(
                 movement.getId(),
                 movement.getInventoryItemId(),
+                inventoryItem.getName(),
+                inventoryItem.getMaterialCode().getValue(),
                 movement.getMovementType(),
                 movement.getQuantity(),
                 movement.getUnitOfMeasure().getCode(),

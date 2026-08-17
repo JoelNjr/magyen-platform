@@ -28,6 +28,7 @@ import java.util.UUID;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -113,8 +114,12 @@ class ProductionMaterialConsumptionApiContractTest {
                 .andExpect(jsonPath("$.consumptionId").exists())
                 .andExpect(jsonPath("$.productionOrderId").value(productionOrderId.toString()))
                 .andExpect(jsonPath("$.inventoryItemId").value(fabric.getId().toString()))
+                .andExpect(jsonPath("$.materialName").value("Tela"))
                 .andExpect(jsonPath("$.quantity").value(18.7))
                 .andExpect(jsonPath("$.unitOfMeasure").value("METER"))
+                .andExpect(jsonPath("$.unitCost").value(18000.0))
+                .andExpect(jsonPath("$.totalCost").value(336600.0))
+                .andExpect(jsonPath("$.remainingStock").value(81.3))
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
@@ -219,6 +224,54 @@ class ProductionMaterialConsumptionApiContractTest {
                                         """.formatted(fabric.getId()))
                 )
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void rejectsMissingInventoryItemIdFreeTextMaterialAndInsufficientStock() throws Exception {
+        moveToInProgress();
+
+        mockMvc.perform(
+                        post("/api/v1/production-orders/{productionOrderId}/material-consumptions", productionOrderId)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                          "materialName": "Sudáfrica",
+                                          "quantity": 6.5,
+                                          "unitOfMeasure": "METER"
+                                        }
+                                        """)
+                )
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(
+                        post("/api/v1/production-orders/{productionOrderId}/material-consumptions", productionOrderId)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                          "quantity": 1.0000,
+                                          "unitOfMeasure": "METER"
+                                        }
+                                        """)
+                )
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(
+                        post("/api/v1/production-orders/{productionOrderId}/material-consumptions", productionOrderId)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                          "inventoryItemId": "%s",
+                                          "quantity": 200.0000,
+                                          "unitOfMeasure": "METER"
+                                        }
+                                        """.formatted(fabric.getId()))
+                )
+                .andExpect(status().isBadRequest());
+
+        assertEquals(new BigDecimal("100.0000"), inventoryItemRepository.findById(fabric.getId()).orElseThrow().getStock());
+        assertTrue(inventoryMovementRepository
+                .findByInventoryItemIdOrderByMovementDateDesc(fabric.getId())
+                .isEmpty());
     }
 
     private void moveToInProgress() {

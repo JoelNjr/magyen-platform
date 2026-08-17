@@ -90,7 +90,67 @@ class InventoryMovementSourceTest {
 
     @Test
     void rejectsInvalidSourceType() {
-        assertThrows(InventoryDomainException.class, () -> InventoryMovementSourceType.of("PURCHASE"));
+        assertThrows(InventoryDomainException.class, () -> InventoryMovementSourceType.of("BUY"));
+    }
+
+    @Test
+    void purchaseRequiresSourceIdAndSnapshotsPurchaseUnitCost() {
+        InventoryItem inventoryItem = createFabric();
+        UUID purchaseId = UUID.randomUUID();
+
+        InventoryMovement movement = inventoryItem.registerPurchase(
+                new BigDecimal("100.0000"),
+                new BigDecimal("10000.00"),
+                "compra",
+                LocalDateTime.now(),
+                purchaseId
+        );
+
+        assertEquals(InventoryMovementSourceType.PURCHASE, movement.getSourceType());
+        assertEquals(purchaseId, movement.getSourceId());
+        assertEquals(new BigDecimal("10000.00"), movement.getUnitCost());
+        assertEquals(new BigDecimal("1000000.00"), movement.getTotalCost());
+        assertEquals(new BigDecimal("150.0000"), inventoryItem.getStock());
+        assertEquals(new BigDecimal("10000.00"), inventoryItem.getUnitCost());
+
+        assertThrows(InventoryDomainException.class, () -> inventoryItem.registerPurchase(
+                BigDecimal.ZERO,
+                new BigDecimal("10000.00"),
+                null,
+                LocalDateTime.now(),
+                UUID.randomUUID()
+        ));
+        assertThrows(InventoryDomainException.class, () -> inventoryItem.registerPurchase(
+                new BigDecimal("-1.0000"),
+                new BigDecimal("10000.00"),
+                null,
+                LocalDateTime.now(),
+                UUID.randomUUID()
+        ));
+        assertThrows(InventoryDomainException.class, () -> inventoryItem.registerPurchase(
+                new BigDecimal("1.0000"),
+                BigDecimal.ZERO,
+                null,
+                LocalDateTime.now(),
+                UUID.randomUUID()
+        ));
+        assertThrows(InventoryDomainException.class, () -> inventoryItem.registerPurchase(
+                new BigDecimal("1.0000"),
+                new BigDecimal("-1.00"),
+                null,
+                LocalDateTime.now(),
+                UUID.randomUUID()
+        ));
+
+        assertThrows(InventoryDomainException.class, () -> inventoryItem.registerMovement(
+                InventoryMovementType.IN,
+                new BigDecimal("1.0000"),
+                null,
+                null,
+                LocalDateTime.now(),
+                InventoryMovementSourceType.PURCHASE,
+                null
+        ));
     }
 
     @Test

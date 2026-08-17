@@ -13,6 +13,8 @@ import java.util.UUID;
 public record ConsumeInventoryMaterialResult(
         UUID movementId,
         UUID inventoryItemId,
+        String materialName,
+        String materialCode,
         InventoryMovementType movementType,
         BigDecimal quantity,
         String unitOfMeasure,

@@ -9,11 +9,15 @@ import com.magyen.platform.inventory.application.usecase.GetInventoryMovementByS
 import com.magyen.platform.inventory.application.usecase.GetInventoryMovementsUseCase;
 import com.magyen.platform.inventory.application.usecase.IncreaseInventoryStockUseCase;
 import com.magyen.platform.inventory.application.usecase.RegisterInventoryMovementUseCase;
+import com.magyen.platform.inventory.application.usecase.RegisterInventoryPurchaseUseCase;
 import com.magyen.platform.inventory.application.usecase.UpdateInventoryMinimumStockUseCase;
 import com.magyen.platform.inventory.application.usecase.UpdateInventoryUnitCostUseCase;
 import com.magyen.platform.inventory.domain.InventoryItemRepository;
 import com.magyen.platform.inventory.domain.InventoryMovementRepository;
 import com.magyen.platform.inventory.domain.PaperRollNumberGenerator;
+import com.magyen.platform.inventory.infrastructure.finance.InventoryPurchaseFinanceAdapter;
+import com.magyen.platform.inventory.application.port.InventoryPurchaseFinancePort;
+import com.magyen.platform.finance.application.usecase.EnsureInventoryPurchaseExpenseUseCase;
 import com.magyen.platform.inventory.infrastructure.persistence.mapper.InventoryPersistenceMapper;
 import com.magyen.platform.inventory.presentation.inventoryitem.mapper.InventoryPresentationMapper;
 import org.springframework.context.annotation.Bean;
@@ -109,5 +113,25 @@ public class InventoryConfiguration {
             InventoryMovementRepository inventoryMovementRepository
     ) {
         return new ConsumeInventoryMaterialUseCase(inventoryItemRepository, inventoryMovementRepository);
+    }
+
+    @Bean
+    public InventoryPurchaseFinancePort inventoryPurchaseFinancePort(
+            EnsureInventoryPurchaseExpenseUseCase ensureInventoryPurchaseExpenseUseCase
+    ) {
+        return new InventoryPurchaseFinanceAdapter(ensureInventoryPurchaseExpenseUseCase);
+    }
+
+    @Bean
+    public RegisterInventoryPurchaseUseCase registerInventoryPurchaseUseCase(
+            InventoryItemRepository inventoryItemRepository,
+            InventoryMovementRepository inventoryMovementRepository,
+            InventoryPurchaseFinancePort inventoryPurchaseFinancePort
+    ) {
+        return new RegisterInventoryPurchaseUseCase(
+                inventoryItemRepository,
+                inventoryMovementRepository,
+                inventoryPurchaseFinancePort
+        );
     }
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Alert,
   Button,
@@ -9,12 +9,13 @@ import {
   MenuItem,
   Stack,
   TextField,
+  Typography,
 } from '@mui/material'
+import { formatInventoryConsumptionOption, formatStockWithUnit } from '../../inventory/presentation/inventoryStatusPresentation'
 
 const EMPTY_FORM = {
   inventoryItemId: '',
   quantity: '',
-  unitOfMeasure: 'METER',
   observation: '',
 }
 
@@ -43,6 +44,13 @@ function RegisterProductionMaterialConsumptionDialog({
     })
   }, [open, inventoryItems])
 
+  const selectedItem = useMemo(
+    () =>
+      inventoryItems.find((item) => item.inventoryItemId === form.inventoryItemId) ||
+      null,
+    [inventoryItems, form.inventoryItemId]
+  )
+
   function handleClose() {
     if (submitting) {
       return
@@ -61,15 +69,23 @@ function RegisterProductionMaterialConsumptionDialog({
     }
 
     const quantity = Number(form.quantity)
-    const unitOfMeasure = form.unitOfMeasure.trim()
+    const unitOfMeasure = selectedItem?.unitOfMeasure
 
     if (!form.inventoryItemId || !unitOfMeasure || form.quantity === '') {
-      setValidationError('Material, cantidad y unidad son obligatorios.')
+      setValidationError('Material y cantidad son obligatorios.')
       return
     }
 
     if (Number.isNaN(quantity) || quantity <= 0) {
       setValidationError('La cantidad debe ser mayor que cero.')
+      return
+    }
+
+    const available = Number(selectedItem?.stock)
+    if (!Number.isNaN(available) && quantity > available) {
+      setValidationError(
+        'No hay stock suficiente. El inventario no permite dejar el material en negativo.'
+      )
       return
     }
 
@@ -83,7 +99,7 @@ function RegisterProductionMaterialConsumptionDialog({
 
   return (
     <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
-      <DialogTitle>Registrar consumo de material</DialogTitle>
+      <DialogTitle>Registrar consumo</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
           {(validationError || errorMessage) && (
@@ -105,10 +121,16 @@ function RegisterProductionMaterialConsumptionDialog({
           >
             {inventoryItems.map((item) => (
               <MenuItem key={item.inventoryItemId} value={item.inventoryItemId}>
-                {item.name || item.materialCode}
+                {formatInventoryConsumptionOption(item)}
               </MenuItem>
             ))}
           </TextField>
+          {selectedItem ? (
+            <Typography variant="body2" color="text.secondary">
+              Stock disponible:{' '}
+              {formatStockWithUnit(selectedItem.stock, selectedItem.unitOfMeasure)}
+            </Typography>
+          ) : null}
           <TextField
             label="Cantidad"
             value={form.quantity}
@@ -117,14 +139,11 @@ function RegisterProductionMaterialConsumptionDialog({
             fullWidth
             disabled={submitting}
             inputProps={{ inputMode: 'decimal' }}
-          />
-          <TextField
-            label="Unidad"
-            value={form.unitOfMeasure}
-            onChange={(event) => updateField('unitOfMeasure', event.target.value)}
-            required
-            fullWidth
-            disabled={submitting}
+            helperText={
+              selectedItem
+                ? `Unidad: ${selectedItem.unitOfMeasure}. El costo lo calcula el inventario.`
+                : 'El costo lo calcula el inventario.'
+            }
           />
           <TextField
             label="Observación"

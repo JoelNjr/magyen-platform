@@ -7,6 +7,7 @@ import com.magyen.platform.inventory.domain.InventoryItemRepository;
 import com.magyen.platform.inventory.domain.InventoryMovement;
 import com.magyen.platform.inventory.domain.InventoryMovementSourceType;
 import com.magyen.platform.inventory.domain.InventoryUnitOfMeasure;
+import com.magyen.platform.inventory.domain.exception.InventoryDomainException;
 
 import java.time.LocalDateTime;
 import java.util.Objects;
@@ -41,6 +42,12 @@ public class RegisterInventoryMovementUseCase {
         InventoryMovementSourceType sourceType = command.sourceType() == null
                 ? InventoryMovementSourceType.MANUAL
                 : command.sourceType();
+
+        if (sourceType == InventoryMovementSourceType.PURCHASE) {
+            throw new InventoryDomainException(
+                    "Inventory purchases must be registered through the purchase flow"
+            );
+        }
 
         InventoryMovement movement = inventoryItem.registerMovement(
                 command.movementType(),

@@ -454,8 +454,13 @@ public class ProductionPresentationMapper {
                 result.consumptionId(),
                 result.productionOrderId(),
                 result.inventoryItemId(),
+                result.materialName(),
+                result.materialCode(),
                 result.quantity(),
                 result.unitOfMeasure(),
+                result.unitCost(),
+                result.totalCost(),
+                result.remainingStock(),
                 result.consumptionDate(),
                 result.observation()
         );

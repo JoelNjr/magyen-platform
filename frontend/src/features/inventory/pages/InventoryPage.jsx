@@ -19,6 +19,7 @@ import {
 } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
 import CreateInventoryItemDialog from '../components/CreateInventoryItemDialog'
+import RegisterInventoryPurchaseDialog from '../components/RegisterInventoryPurchaseDialog'
 import {
   formatStockWithUnit,
   formatUnitCostLabel,
@@ -28,6 +29,7 @@ import {
 import {
   createInventoryItem,
   getInventoryItems,
+  registerInventoryPurchase,
 } from '../services/inventoryService'
 
 const headerCellSx = { fontWeight: 'bold' }
@@ -66,6 +68,9 @@ function InventoryPage() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [creating, setCreating] = useState(false)
   const [createError, setCreateError] = useState('')
+  const [purchaseDialogOpen, setPurchaseDialogOpen] = useState(false)
+  const [purchasing, setPurchasing] = useState(false)
+  const [purchaseError, setPurchaseError] = useState('')
   const [successOpen, setSuccessOpen] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
 
@@ -88,8 +93,53 @@ function InventoryPage() {
     loadInventoryItems()
   }, [])
 
+  function openPurchaseDialog() {
+    if (creating || purchasing) {
+      return
+    }
+    setPurchaseError('')
+    setPurchaseDialogOpen(true)
+  }
+
+  function handlePurchaseDialogClose() {
+    if (purchasing) {
+      return
+    }
+    setPurchaseDialogOpen(false)
+    setPurchaseError('')
+  }
+
+  async function handleRegisterPurchase(payload) {
+    if (purchasing) {
+      return
+    }
+
+    setPurchaseError('')
+    setPurchasing(true)
+
+    try {
+      await registerInventoryPurchase(payload.inventoryItemId, {
+        purchaseId: payload.purchaseId,
+        quantity: payload.quantity,
+        unitCost: payload.unitCost,
+        purchaseDate: payload.purchaseDate,
+        observation: payload.observation,
+      })
+      await loadInventoryItems()
+      setPurchaseDialogOpen(false)
+      setSuccessMessage('Entrada de material registrada. El gasto de la compra quedó en Finanzas.')
+      setSuccessOpen(true)
+    } catch (error) {
+      setPurchaseError(
+        resolveApiErrorMessage(error, 'No fue posible registrar la entrada de material.')
+      )
+    } finally {
+      setPurchasing(false)
+    }
+  }
+
   function openCreateDialog() {
-    if (creating) {
+    if (creating || purchasing) {
       return
     }
 
@@ -143,15 +193,27 @@ function InventoryPage() {
           alignItems={{ xs: 'stretch', sm: 'center' }}
         >
           <Typography variant="h3">Inventario</Typography>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={openCreateDialog}
-            disabled={loading || creating}
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={1}
             sx={{ alignSelf: { xs: 'stretch', sm: 'center' } }}
           >
-            Nuevo material
-          </Button>
+            <Button
+              variant="outlined"
+              onClick={openPurchaseDialog}
+              disabled={loading || creating || purchasing || items.length === 0}
+            >
+              Registrar entrada de material
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={openCreateDialog}
+              disabled={loading || creating || purchasing}
+            >
+              Nuevo material
+            </Button>
+          </Stack>
         </Stack>
 
         {loading && (
@@ -284,6 +346,15 @@ function InventoryPage() {
         onSubmit={handleCreateInventoryItem}
         submitting={creating}
         errorMessage={createError}
+      />
+
+      <RegisterInventoryPurchaseDialog
+        open={purchaseDialogOpen}
+        items={items}
+        onClose={handlePurchaseDialogClose}
+        onSubmit={handleRegisterPurchase}
+        submitting={purchasing}
+        errorMessage={purchaseError}
       />
 
       <Snackbar

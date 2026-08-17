@@ -22,6 +22,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
 @Transactional
@@ -112,5 +113,25 @@ class InventoryMovementSourceUseCaseTest {
                         null
                 )
         ));
+    }
+
+    @Test
+    void rejectsPurchaseThroughManualMovementFlow() {
+        InventoryDomainException exception = assertThrows(
+                InventoryDomainException.class,
+                () -> registerInventoryMovementUseCase.execute(
+                        new RegisterInventoryMovementCommand(
+                                inventoryItem.getId(),
+                                InventoryMovementType.IN,
+                                new BigDecimal("1.0000"),
+                                null,
+                                "must use purchase flow",
+                                InventoryMovementSourceType.PURCHASE,
+                                UUID.randomUUID()
+                        )
+                )
+        );
+
+        assertTrue(exception.getMessage().contains("purchase flow"));
     }
 }

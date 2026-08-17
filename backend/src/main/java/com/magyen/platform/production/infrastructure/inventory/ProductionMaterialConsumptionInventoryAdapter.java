@@ -49,6 +49,8 @@ public class ProductionMaterialConsumptionInventoryAdapter implements Production
         return new ProductionMaterialConsumptionInventoryResult(
                 result.movementId(),
                 result.inventoryItemId(),
+                result.materialName(),
+                result.materialCode(),
                 result.resultingStock(),
                 result.unitCost(),
                 result.totalCost(),

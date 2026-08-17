@@ -11,8 +11,13 @@ public record RegisterProductionMaterialConsumptionResponse(
         UUID consumptionId,
         UUID productionOrderId,
         UUID inventoryItemId,
+        String materialName,
+        String materialCode,
         BigDecimal quantity,
         String unitOfMeasure,
+        BigDecimal unitCost,
+        BigDecimal totalCost,
+        BigDecimal remainingStock,
         LocalDateTime consumptionDate,
         String observation
 ) {

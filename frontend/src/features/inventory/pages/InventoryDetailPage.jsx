@@ -22,6 +22,7 @@ import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
 import { isAdmin } from '../../auth/presentation/authPresentation'
 import RegisterInventoryMovementDialog from '../components/RegisterInventoryMovementDialog'
+import RegisterInventoryPurchaseDialog from '../components/RegisterInventoryPurchaseDialog'
 import UpdateInventoryMinimumStockDialog from '../components/UpdateInventoryMinimumStockDialog'
 import UpdateInventoryUnitCostDialog from '../components/UpdateInventoryUnitCostDialog'
 import {
@@ -45,6 +46,7 @@ import {
   getInventoryItem,
   getInventoryMovements,
   registerInventoryMovement,
+  registerInventoryPurchase,
   updateInventoryMinimumStock,
   updateInventoryUnitCost,
 } from '../services/inventoryService'
@@ -114,11 +116,15 @@ function InventoryDetailPage() {
   const [registeringMovement, setRegisteringMovement] = useState(false)
   const [movementError, setMovementError] = useState('')
 
+  const [purchaseDialogOpen, setPurchaseDialogOpen] = useState(false)
+  const [purchasing, setPurchasing] = useState(false)
+  const [purchaseError, setPurchaseError] = useState('')
+
   const [successOpen, setSuccessOpen] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
 
   const pageBusy =
-    updatingMinimumStock || updatingUnitCost || registeringMovement
+    updatingMinimumStock || updatingUnitCost || registeringMovement || purchasing
 
   async function refreshDetail() {
     const inventoryItem = await getInventoryItem(inventoryItemId)
@@ -295,6 +301,50 @@ function InventoryDetailPage() {
     }
   }
 
+  function openPurchaseDialog() {
+    if (pageBusy || !item) {
+      return
+    }
+    setPurchaseError('')
+    setPurchaseDialogOpen(true)
+  }
+
+  function closePurchaseDialog() {
+    if (purchasing) {
+      return
+    }
+    setPurchaseDialogOpen(false)
+    setPurchaseError('')
+  }
+
+  async function handleRegisterPurchase(payload) {
+    setPurchaseError('')
+    setPurchasing(true)
+
+    try {
+      await registerInventoryPurchase(inventoryItemId, {
+        purchaseId: payload.purchaseId,
+        quantity: payload.quantity,
+        unitCost: payload.unitCost,
+        purchaseDate: payload.purchaseDate,
+        observation: payload.observation,
+      })
+      await refreshDetail()
+      setPurchaseDialogOpen(false)
+      setSuccessMessage('Entrada de material registrada. El gasto de la compra quedó en Finanzas.')
+      setSuccessOpen(true)
+    } catch (error) {
+      setPurchaseError(
+        resolveApiErrorMessage(
+          error,
+          'No fue posible registrar la entrada de material.'
+        )
+      )
+    } finally {
+      setPurchasing(false)
+    }
+  }
+
   const statusChip = getInventoryStockStatusChipProps(item?.lowStock)
   const monitoringDisabled =
     item &&
@@ -383,6 +433,13 @@ function InventoryDetailPage() {
                 >
                   <Button
                     variant="contained"
+                    onClick={openPurchaseDialog}
+                    disabled={pageBusy}
+                  >
+                    Registrar entrada de material
+                  </Button>
+                  <Button
+                    variant="outlined"
                     onClick={openMovementDialog}
                     disabled={pageBusy}
                   >
@@ -605,6 +662,15 @@ function InventoryDetailPage() {
         errorMessage={movementError}
         currentStock={item?.stock}
         unitOfMeasure={item?.unitOfMeasure}
+      />
+
+      <RegisterInventoryPurchaseDialog
+        open={purchaseDialogOpen}
+        lockedItem={item}
+        onClose={closePurchaseDialog}
+        onSubmit={handleRegisterPurchase}
+        submitting={purchasing}
+        errorMessage={purchaseError}
       />
 
       <Snackbar

@@ -9,6 +9,8 @@ import java.util.UUID;
 public record ProductionMaterialConsumptionInventoryResult(
         UUID movementId,
         UUID inventoryItemId,
+        String materialName,
+        String materialCode,
         BigDecimal resultingStock,
         BigDecimal unitCost,
         BigDecimal totalCost,
