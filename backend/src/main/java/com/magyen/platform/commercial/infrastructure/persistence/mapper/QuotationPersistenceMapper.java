@@ -30,7 +30,7 @@ public class QuotationPersistenceMapper {
         quotationEntity.setCreationDate(quotation.getCreationDate());
         quotationEntity.setDeliveryDate(quotation.getDeliveryDate());
         quotationEntity.setStatus(quotation.getStatus());
-        quotationEntity.setSalesperson(quotation.getSalesperson());
+        quotationEntity.setSellerId(quotation.getSellerId());
         quotationEntity.setObservations(quotation.getObservations());
         quotationEntity.setTotalAmount(toAmount(quotation.getTotal()));
 
@@ -60,7 +60,7 @@ public class QuotationPersistenceMapper {
                 quotationEntity.getCreationDate(),
                 quotationEntity.getDeliveryDate(),
                 quotationEntity.getStatus(),
-                quotationEntity.getSalesperson(),
+                quotationEntity.getSellerId(),
                 quotationEntity.getObservations(),
                 items
         );
@@ -119,7 +119,7 @@ public class QuotationPersistenceMapper {
         itemEntity.setGarmentType(resolved.getGarmentType());
         itemEntity.setCollarType(resolved.getCollarType());
         itemEntity.setSleeveType(resolved.getSleeveType());
-        itemEntity.setGarmentVariant(resolved.getGarmentVariant());
+        itemEntity.setCuffRequired(resolved.getCuffRequired());
         itemEntity.setSublimationRequired(resolved.isSublimationRequired());
         itemEntity.setEmbroideryRequired(resolved.isEmbroideryRequired());
         itemEntity.setDtfRequired(resolved.isDtfRequired());
@@ -134,11 +134,11 @@ public class QuotationPersistenceMapper {
     private ProductSpecification toProductSpecification(QuotationItemEntity itemEntity) {
         Objects.requireNonNull(itemEntity, "Quotation item entity must not be null");
 
-        return ProductSpecification.of(
+        return ProductSpecification.reconstitute(
                 itemEntity.getGarmentType(),
                 itemEntity.getCollarType(),
                 itemEntity.getSleeveType(),
-                itemEntity.getGarmentVariant(),
+                itemEntity.getCuffRequired(),
                 itemEntity.isSublimationRequired(),
                 itemEntity.isEmbroideryRequired(),
                 itemEntity.isDtfRequired(),

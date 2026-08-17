@@ -11,23 +11,22 @@ import com.magyen.platform.commercial.domain.OrderRepository;
 import com.magyen.platform.commercial.domain.OrderStatus;
 import com.magyen.platform.commercial.domain.PaymentSummary;
 import com.magyen.platform.commercial.domain.ProductSpecification;
-import com.magyen.platform.finance.application.dto.CreatePayrollEmployeeCommand;
-import com.magyen.platform.finance.application.dto.CreatePayrollEmployeeResult;
 import com.magyen.platform.finance.application.dto.RegisterPaymentCommand;
-import com.magyen.platform.finance.application.usecase.CreatePayrollEmployeeUseCase;
 import com.magyen.platform.finance.application.usecase.RegisterPaymentUseCase;
 import com.magyen.platform.finance.domain.FinancialTransactionRepository;
-import com.magyen.platform.finance.domain.PayrollCompensationType;
 import com.magyen.platform.inventory.domain.InventoryItem;
 import com.magyen.platform.inventory.domain.InventoryItemRepository;
 import com.magyen.platform.inventory.domain.MaterialCode;
 import com.magyen.platform.production.application.dto.CancelProductionLaborWorkCommand;
+import com.magyen.platform.production.application.dto.CreateProductionOperatorCommand;
+import com.magyen.platform.production.application.dto.CreateProductionOperatorResult;
 import com.magyen.platform.production.application.dto.PlanProductionOrderCommand;
 import com.magyen.platform.production.application.dto.RegisterProductionLaborWorkCommand;
 import com.magyen.platform.production.application.dto.RegisterProductionLaborWorkResult;
 import com.magyen.platform.production.application.dto.RegisterProductionMaterialConsumptionCommand;
 import com.magyen.platform.production.application.dto.StartProductionOrderCommand;
 import com.magyen.platform.production.application.usecase.CancelProductionLaborWorkUseCase;
+import com.magyen.platform.production.application.usecase.CreateProductionOperatorUseCase;
 import com.magyen.platform.production.application.usecase.PlanProductionOrderUseCase;
 import com.magyen.platform.production.application.usecase.RegisterProductionLaborWorkUseCase;
 import com.magyen.platform.production.application.usecase.RegisterProductionMaterialConsumptionUseCase;
@@ -89,7 +88,7 @@ class OrderProfitabilityUseCaseTest {
     private CancelProductionLaborWorkUseCase cancelProductionLaborWorkUseCase;
 
     @Autowired
-    private CreatePayrollEmployeeUseCase createPayrollEmployeeUseCase;
+    private CreateProductionOperatorUseCase createProductionOperatorUseCase;
 
     @Autowired
     private InventoryItemRepository inventoryItemRepository;
@@ -118,13 +117,13 @@ class OrderProfitabilityUseCaseTest {
         InventoryItem fabric = createFabric("15000.00", "100.0000");
         registerMaterial(productionOrderId, fabric.getId(), "10.0000", "METER");
 
-        CreatePayrollEmployeeResult operator = createProductionOperator();
-        registerLabor(productionOrderId, operator.employeeId(), "100", "800.00");
+        CreateProductionOperatorResult operator = createProductionOperator();
+        registerLabor(productionOrderId, operator.operatorId(), "100", "800.00");
         // Unpaid PENDING labor must still count toward laborCost
-        registerLabor(productionOrderId, operator.employeeId(), "50", "200.00");
+        registerLabor(productionOrderId, operator.operatorId(), "50", "200.00");
         RegisterProductionLaborWorkResult cancelled = registerLabor(
                 productionOrderId,
-                operator.employeeId(),
+                operator.operatorId(),
                 "10",
                 "100.00"
         );
@@ -282,7 +281,7 @@ class OrderProfitabilityUseCaseTest {
                 UUID.randomUUID(),
                 today,
                 DeliveryCommitment.of(today.plusDays(7)),
-                "Tester",
+                UUID.randomUUID(),
                 "Orden rentabilidad",
                 List.of(item)
         );
@@ -313,7 +312,7 @@ class OrderProfitabilityUseCaseTest {
                 OrderStatus.CONFIRMED,
                 DeliveryCommitment.of(today.plusDays(7)),
                 PaymentSummary.forConfirmedOrder(zero),
-                "Tester",
+                UUID.randomUUID(),
                 "Orden valor cero",
                 List.of(item)
         );
@@ -336,7 +335,7 @@ class OrderProfitabilityUseCaseTest {
                 LocalDate.now().plusDays(3),
                 ProductionPriority.NORMAL
         ));
-        startProductionOrderUseCase.execute(new StartProductionOrderCommand(created.getId()));
+        startProductionOrderUseCase.execute(new StartProductionOrderCommand(created.getId(), null));
         return created.getId();
     }
 
@@ -388,13 +387,9 @@ class OrderProfitabilityUseCaseTest {
         ));
     }
 
-    private CreatePayrollEmployeeResult createProductionOperator() {
-        return createPayrollEmployeeUseCase.execute(new CreatePayrollEmployeeCommand(
-                "Operario-Prof-" + UUID.randomUUID().toString().substring(0, 8),
-                PayrollCompensationType.PRODUCTION_BASED,
-                null,
-                null,
-                null
+    private CreateProductionOperatorResult createProductionOperator() {
+        return createProductionOperatorUseCase.execute(new CreateProductionOperatorCommand(
+                "Operario-Prof-" + UUID.randomUUID().toString().substring(0, 8)
         ));
     }
 

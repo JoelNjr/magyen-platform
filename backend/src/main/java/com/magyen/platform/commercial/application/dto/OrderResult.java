@@ -12,11 +12,17 @@ import java.util.UUID;
 public record OrderResult(
         UUID orderId,
         String orderNumber,
+        String description,
         UUID customerId,
+        String customerName,
         UUID quotationId,
+        Long quotationNumber,
+        String quotationNumberDisplay,
         LocalDate confirmationDate,
+        LocalDate promisedDeliveryDate,
         OrderStatus status,
-        String salesperson,
+        UUID sellerId,
+        String sellerName,
         String observations,
         BigDecimal totalAmount
 ) {

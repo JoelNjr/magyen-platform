@@ -17,8 +17,17 @@ import {
   formatPlotterNumber,
 } from '../presentation/plotterJobPresentation'
 
+function toIsoDate(date = new Date()) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 const EMPTY_FORM = {
   customerId: '',
+  orderId: '',
+  creationDate: '',
   paperInventoryItemId: '',
   printedMeters: '',
   pricePerMeter: '',
@@ -32,6 +41,7 @@ function CreatePlotterJobDialog({
   submitting,
   errorMessage,
   customers,
+  orders,
   paperRolls,
   loadingLookups,
 }) {
@@ -42,7 +52,13 @@ function CreatePlotterJobDialog({
     if (!open) {
       setForm(EMPTY_FORM)
       setValidationError('')
+      return
     }
+
+    setForm({
+      ...EMPTY_FORM,
+      creationDate: toIsoDate(),
+    })
   }, [open])
 
   const totalPreview = useMemo(
@@ -69,14 +85,16 @@ function CreatePlotterJobDialog({
     }
 
     const customerId = form.customerId
+    const orderId = form.orderId || null
+    const creationDate = form.creationDate
     const paperInventoryItemId = form.paperInventoryItemId
     const printedMetersRaw = form.printedMeters.trim()
     const pricePerMeterRaw = form.pricePerMeter.trim()
     const observations = form.observations.trim()
 
-    if (!customerId || !paperInventoryItemId || !printedMetersRaw || !pricePerMeterRaw) {
+    if (!customerId || !paperInventoryItemId || !printedMetersRaw || !pricePerMeterRaw || !creationDate) {
       setValidationError(
-        'Cliente, rollo de papel, metros impresos y precio por metro son obligatorios.'
+        'Cliente, fecha, rollo de papel, metros impresos y precio por metro son obligatorios.'
       )
       return
     }
@@ -109,6 +127,8 @@ function CreatePlotterJobDialog({
     setValidationError('')
     onSubmit({
       customerId,
+      orderId,
+      creationDate,
       paperInventoryItemId,
       printedMeters,
       pricePerMeter,
@@ -141,6 +161,34 @@ function CreatePlotterJobDialog({
               </MenuItem>
             ))}
           </TextField>
+
+          <TextField
+            select
+            label="Orden comercial"
+            value={form.orderId}
+            onChange={(event) => updateField('orderId', event.target.value)}
+            fullWidth
+            disabled={submitting || loadingLookups}
+            helperText="Opcional. Atribuye este trabajo a una orden comercial sin crear un ingreso automático."
+          >
+            <MenuItem value="">Sin orden asociada</MenuItem>
+            {(orders || []).map((order) => (
+              <MenuItem key={order.orderId} value={order.orderId}>
+                {order.orderNumber}
+                {order.customerName ? ` — ${order.customerName}` : ''}
+              </MenuItem>
+            ))}
+          </TextField>
+
+          <TextField
+            label="Fecha del trabajo"
+            type="date"
+            value={form.creationDate}
+            onChange={(event) => updateField('creationDate', event.target.value)}
+            InputLabelProps={{ shrink: true }}
+            fullWidth
+            disabled={submitting}
+          />
 
           <TextField
             select

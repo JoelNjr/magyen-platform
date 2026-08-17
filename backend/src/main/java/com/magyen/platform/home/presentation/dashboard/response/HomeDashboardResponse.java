@@ -12,6 +12,7 @@ public record HomeDashboardResponse(
         Instant generatedAt,
         HomeFinancialSummaryResponse financialSummary,
         HomeReceivablesResponse receivables,
+        HomeReceivablesResponse completedReceivables,
         HomeCommitmentsResponse commitments,
         HomeInventoryAlertsResponse inventoryAlerts,
         HomePaperRollAlertsResponse paperRollAlerts,

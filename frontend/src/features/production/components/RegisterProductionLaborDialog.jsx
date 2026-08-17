@@ -147,7 +147,8 @@ function RegisterProductionLaborDialog({
           )}
           {!operatorsLoading && operators.length === 0 ? (
             <Alert severity="warning">
-              No hay operarios disponibles para producción.
+              No hay operarios disponibles. Créelos en Producción → Operarios.
+              El operario no requiere cuenta de acceso.
             </Alert>
           ) : null}
           <TextField

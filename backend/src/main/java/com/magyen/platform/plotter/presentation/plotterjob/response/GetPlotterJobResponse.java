@@ -10,6 +10,7 @@ import java.util.UUID;
 public record GetPlotterJobResponse(
         UUID plotterJobId,
         UUID customerId,
+        UUID orderId,
         LocalDate creationDate,
         UUID paperInventoryItemId,
         BigDecimal printedMeters,

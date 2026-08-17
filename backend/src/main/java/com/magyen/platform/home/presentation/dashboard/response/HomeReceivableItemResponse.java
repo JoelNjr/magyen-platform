@@ -9,7 +9,9 @@ import java.util.UUID;
 public record HomeReceivableItemResponse(
         UUID orderId,
         String orderNumber,
+        String description,
         UUID customerId,
+        String customerName,
         BigDecimal orderValue,
         BigDecimal collectedAmount,
         BigDecimal outstandingAmount

@@ -1,16 +1,12 @@
 package com.magyen.platform.production.application.usecase;
 
-import com.magyen.platform.finance.application.dto.CreatePayrollEmployeeCommand;
-import com.magyen.platform.finance.application.dto.CreatePayrollEmployeeResult;
-import com.magyen.platform.finance.application.dto.DeactivatePayrollEmployeeCommand;
-import com.magyen.platform.finance.application.usecase.CreatePayrollEmployeeUseCase;
-import com.magyen.platform.finance.application.usecase.DeactivatePayrollEmployeeUseCase;
 import com.magyen.platform.finance.domain.FinancialTransaction;
 import com.magyen.platform.finance.domain.FinancialTransactionRepository;
 import com.magyen.platform.finance.domain.FinancialTransactionSourceType;
 import com.magyen.platform.finance.domain.FinancialTransactionType;
-import com.magyen.platform.finance.domain.PayrollCompensationType;
 import com.magyen.platform.production.application.dto.CancelProductionLaborWorkCommand;
+import com.magyen.platform.production.application.dto.CreateProductionOperatorCommand;
+import com.magyen.platform.production.application.dto.CreateProductionOperatorResult;
 import com.magyen.platform.production.application.dto.GetProductionLaborWorksQuery;
 import com.magyen.platform.production.application.dto.GetProductionLaborWorksResult;
 import com.magyen.platform.production.application.dto.GetProductionOrderCommand;
@@ -22,6 +18,8 @@ import com.magyen.platform.production.application.dto.RegisterProductionLaborWor
 import com.magyen.platform.production.application.dto.RegisterProductionLaborWorkResult;
 import com.magyen.platform.production.application.dto.StartProductionOrderCommand;
 import com.magyen.platform.production.domain.ProductionLaborWorkStatus;
+import com.magyen.platform.production.domain.ProductionOperator;
+import com.magyen.platform.production.domain.ProductionOperatorRepository;
 import com.magyen.platform.production.domain.ProductionOrder;
 import com.magyen.platform.production.domain.ProductionOrderRepository;
 import com.magyen.platform.production.domain.ProductionPriority;
@@ -49,10 +47,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ProductionLaborWorkUseCaseTest {
 
     @Autowired
-    private CreatePayrollEmployeeUseCase createPayrollEmployeeUseCase;
+    private CreateProductionOperatorUseCase createProductionOperatorUseCase;
 
     @Autowired
-    private DeactivatePayrollEmployeeUseCase deactivatePayrollEmployeeUseCase;
+    private ProductionOperatorRepository productionOperatorRepository;
 
     @Autowired
     private RegisterProductionLaborWorkUseCase registerProductionLaborWorkUseCase;
@@ -98,17 +96,16 @@ class ProductionLaborWorkUseCaseTest {
 
     @Test
     void coversRegistrationPaymentCancelAndCostAttributionCases() {
-        CreatePayrollEmployeeResult productionOperator = createProductionBased("Operario-A-" + suffix());
-        CreatePayrollEmployeeResult fixedEmployee = createFixed("Fijo-" + suffix());
-        CreatePayrollEmployeeResult secondOperator = createProductionBased("Operario-B-" + suffix());
-        CreatePayrollEmployeeResult inactiveOperator = createProductionBased("Operario-Inactivo-" + suffix());
-        deactivatePayrollEmployeeUseCase.execute(new DeactivatePayrollEmployeeCommand(inactiveOperator.employeeId()));
-
-        assertEquals(PayrollCompensationType.PRODUCTION_BASED, productionOperator.compensationType());
-        assertEquals(PayrollCompensationType.FIXED_PAYROLL, fixedEmployee.compensationType());
+        CreateProductionOperatorResult productionOperator = createOperator("Operario-A-" + suffix());
+        UUID unknownOperatorId = UUID.randomUUID();
+        CreateProductionOperatorResult secondOperator = createOperator("Operario-B-" + suffix());
+        CreateProductionOperatorResult inactiveOperator = createOperator("Operario-Inactivo-" + suffix());
+        ProductionOperator deactivated = productionOperatorRepository.findById(inactiveOperator.operatorId()).orElseThrow();
+        deactivated.deactivate();
+        productionOperatorRepository.save(deactivated);
 
         assertThrows(ProductionDomainException.class, () -> register(
-                productionOperator.employeeId(),
+                productionOperator.operatorId(),
                 "100",
                 "800.00",
                 "before-start"
@@ -117,13 +114,13 @@ class ProductionLaborWorkUseCaseTest {
         moveToInProgress();
 
         assertThrows(ProductionDomainException.class, () -> register(
-                fixedEmployee.employeeId(),
+                unknownOperatorId,
                 "100",
                 "800.00",
-                "fixed-rejected"
+                "unknown-rejected"
         ));
         assertThrows(ProductionDomainException.class, () -> register(
-                inactiveOperator.employeeId(),
+                inactiveOperator.operatorId(),
                 "100",
                 "800.00",
                 "inactive-rejected"
@@ -131,7 +128,7 @@ class ProductionLaborWorkUseCaseTest {
         assertThrows(IllegalArgumentException.class, () -> registerProductionLaborWorkUseCase.execute(
                 new RegisterProductionLaborWorkCommand(
                         UUID.randomUUID(),
-                        productionOperator.employeeId(),
+                        productionOperator.operatorId(),
                         LocalDate.of(2026, 8, 10),
                         "Confección",
                         new BigDecimal("100"),
@@ -141,13 +138,13 @@ class ProductionLaborWorkUseCaseTest {
                 )
         ));
         assertThrows(ProductionDomainException.class, () -> register(
-                productionOperator.employeeId(),
+                productionOperator.operatorId(),
                 "0",
                 "800.00",
                 "qty"
         ));
         assertThrows(ProductionDomainException.class, () -> register(
-                productionOperator.employeeId(),
+                productionOperator.operatorId(),
                 "10",
                 "-1.00",
                 "rate"
@@ -156,7 +153,7 @@ class ProductionLaborWorkUseCaseTest {
         long financeBefore = countPayrollExpenses();
 
         RegisterProductionLaborWorkResult first = register(
-                productionOperator.employeeId(),
+                productionOperator.operatorId(),
                 "100",
                 "800.00",
                 "first"
@@ -166,13 +163,13 @@ class ProductionLaborWorkUseCaseTest {
         assertEquals(financeBefore, countPayrollExpenses());
 
         RegisterProductionLaborWorkResult secondSameOperator = register(
-                productionOperator.employeeId(),
+                productionOperator.operatorId(),
                 "50",
                 "200.00",
                 "second-same"
         );
         RegisterProductionLaborWorkResult otherOperator = register(
-                secondOperator.employeeId(),
+                secondOperator.operatorId(),
                 "100",
                 "300.00",
                 "other-operator"
@@ -206,7 +203,7 @@ class ProductionLaborWorkUseCaseTest {
         assertEquals(FinancialTransactionType.EXPENSE, expense.getType());
         assertEquals("PAYROLL", expense.getCategory());
         assertEquals(new BigDecimal("80000.00"), expense.getAmount().getValue());
-        assertTrue(expense.getDescription().contains(productionOperator.displayName()));
+        assertTrue(expense.getDescription().contains(productionOperator.name()));
 
         assertThrows(ProductionLaborWorkAlreadyPaidException.class, () -> payProductionLaborWorkUseCase.execute(
                 new PayProductionLaborWorkCommand(
@@ -282,27 +279,11 @@ class ProductionLaborWorkUseCaseTest {
                 LocalDate.now().plusDays(3),
                 ProductionPriority.NORMAL
         ));
-        startProductionOrderUseCase.execute(new StartProductionOrderCommand(productionOrderId));
+        startProductionOrderUseCase.execute(new StartProductionOrderCommand(productionOrderId, null));
     }
 
-    private CreatePayrollEmployeeResult createProductionBased(String displayName) {
-        return createPayrollEmployeeUseCase.execute(new CreatePayrollEmployeeCommand(
-                displayName,
-                PayrollCompensationType.PRODUCTION_BASED,
-                null,
-                null,
-                null
-        ));
-    }
-
-    private CreatePayrollEmployeeResult createFixed(String displayName) {
-        return createPayrollEmployeeUseCase.execute(new CreatePayrollEmployeeCommand(
-                displayName,
-                PayrollCompensationType.FIXED_PAYROLL,
-                new BigDecimal("1500000.00"),
-                LocalDate.of(2026, 8, 1),
-                null
-        ));
+    private CreateProductionOperatorResult createOperator(String name) {
+        return createProductionOperatorUseCase.execute(new CreateProductionOperatorCommand(name));
     }
 
     private long countPayrollExpenses() {

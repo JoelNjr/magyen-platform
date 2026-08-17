@@ -6,13 +6,15 @@ import java.util.Objects;
  * Especificación comercial tipada del producto comprometido o cotizado.
  * <p>
  * Value Object inmutable. No modela ejecución de producción, consumo de materiales ni costos.
+ * Tipo de prenda, cuello, manga y puño son catálogos cerrados. {@code color} de tela/base
+ * permanece como texto del ítem, no de esta especificación.
  */
 public final class ProductSpecification {
 
     private final String garmentType;
     private final String collarType;
     private final String sleeveType;
-    private final String garmentVariant;
+    private final Boolean cuffRequired;
     private final boolean sublimationRequired;
     private final boolean embroideryRequired;
     private final boolean dtfRequired;
@@ -27,7 +29,7 @@ public final class ProductSpecification {
             String garmentType,
             String collarType,
             String sleeveType,
-            String garmentVariant,
+            Boolean cuffRequired,
             boolean sublimationRequired,
             boolean embroideryRequired,
             boolean dtfRequired,
@@ -41,7 +43,7 @@ public final class ProductSpecification {
         this.garmentType = garmentType;
         this.collarType = collarType;
         this.sleeveType = sleeveType;
-        this.garmentVariant = garmentVariant;
+        this.cuffRequired = cuffRequired;
         this.sublimationRequired = sublimationRequired;
         this.embroideryRequired = embroideryRequired;
         this.dtfRequired = dtfRequired;
@@ -74,11 +76,14 @@ public final class ProductSpecification {
         );
     }
 
+    /**
+     * Crea una especificación validando los catálogos comerciales cerrados.
+     */
     public static ProductSpecification of(
             String garmentType,
             String collarType,
             String sleeveType,
-            String garmentVariant,
+            Boolean cuffRequired,
             boolean sublimationRequired,
             boolean embroideryRequired,
             boolean dtfRequired,
@@ -90,10 +95,45 @@ public final class ProductSpecification {
             String itemObservations
     ) {
         return new ProductSpecification(
-                garmentType,
-                collarType,
-                sleeveType,
-                garmentVariant,
+                GarmentType.canonicalize(garmentType),
+                CollarType.canonicalize(collarType),
+                SleeveType.canonicalize(sleeveType),
+                cuffRequired,
+                sublimationRequired,
+                embroideryRequired,
+                dtfRequired,
+                decorationNotes,
+                includesNames,
+                includesNumbers,
+                includesLogos,
+                personalizationNotes,
+                itemObservations
+        );
+    }
+
+    /**
+     * Reconstruye desde persistencia sin revalidar catálogos, para no romper filas históricas.
+     */
+    public static ProductSpecification reconstitute(
+            String garmentType,
+            String collarType,
+            String sleeveType,
+            Boolean cuffRequired,
+            boolean sublimationRequired,
+            boolean embroideryRequired,
+            boolean dtfRequired,
+            String decorationNotes,
+            boolean includesNames,
+            boolean includesNumbers,
+            boolean includesLogos,
+            String personalizationNotes,
+            String itemObservations
+    ) {
+        return new ProductSpecification(
+                blankToNull(garmentType),
+                blankToNull(collarType),
+                blankToNull(sleeveType),
+                cuffRequired,
                 sublimationRequired,
                 embroideryRequired,
                 dtfRequired,
@@ -118,8 +158,8 @@ public final class ProductSpecification {
         return sleeveType;
     }
 
-    public String getGarmentVariant() {
-        return garmentVariant;
+    public Boolean getCuffRequired() {
+        return cuffRequired;
     }
 
     public boolean isSublimationRequired() {
@@ -180,7 +220,7 @@ public final class ProductSpecification {
                 && Objects.equals(garmentType, that.garmentType)
                 && Objects.equals(collarType, that.collarType)
                 && Objects.equals(sleeveType, that.sleeveType)
-                && Objects.equals(garmentVariant, that.garmentVariant)
+                && Objects.equals(cuffRequired, that.cuffRequired)
                 && Objects.equals(decorationNotes, that.decorationNotes)
                 && Objects.equals(personalizationNotes, that.personalizationNotes)
                 && Objects.equals(itemObservations, that.itemObservations);
@@ -192,7 +232,7 @@ public final class ProductSpecification {
                 garmentType,
                 collarType,
                 sleeveType,
-                garmentVariant,
+                cuffRequired,
                 sublimationRequired,
                 embroideryRequired,
                 dtfRequired,
@@ -203,5 +243,12 @@ public final class ProductSpecification {
                 personalizationNotes,
                 itemObservations
         );
+    }
+
+    private static String blankToNull(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value;
     }
 }

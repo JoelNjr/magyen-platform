@@ -7,6 +7,8 @@ import com.magyen.platform.commercial.domain.Order;
 import com.magyen.platform.commercial.domain.OrderItem;
 import com.magyen.platform.commercial.domain.OrderNumber;
 import com.magyen.platform.commercial.domain.OrderRepository;
+import com.magyen.platform.commercial.domain.OrderStatus;
+import com.magyen.platform.commercial.domain.PaymentSummary;
 import com.magyen.platform.commercial.domain.ProductSpecification;
 import com.magyen.platform.finance.application.dto.CancelRecurringFinancialObligationOccurrenceCommand;
 import com.magyen.platform.finance.application.dto.CreateRecurringFinancialObligationCommand;
@@ -451,6 +453,100 @@ class GetHomeDashboardUseCaseTest {
         assertEquals(beforeTransactionCount, afterTransactions.size());
         assertEquals(beforeFingerprint, fingerprint(afterTransactions));
         assertEquals(beforeMovementCount, springDataInventoryMovementRepository.count());
+    }
+
+    @Test
+    void completedReceivablesIncludesDeliveredOrdersWithOutstandingBalance() {
+        Customer customer = customerRepository.save(Customer.create("Cliente Completado " + suffix()));
+        Order delivered = createDeliveredOrder(
+                customer.getId(),
+                "ORD-HOME-DEL-",
+                "Camisetas de voleibol",
+                "400000.00"
+        );
+        registerPaymentUseCase.execute(new RegisterPaymentCommand(
+                delivered.getId(),
+                new BigDecimal("200000.00"),
+                LocalDate.of(2026, 8, 6),
+                "Abono pedido completado"
+        ));
+
+        GetHomeDashboardResult result = getHomeDashboardUseCase.execute(
+                new GetHomeDashboardQuery(null, null)
+        );
+
+        HomeReceivableItem item = requireCompletedReceivable(result, delivered.getId());
+        assertEquals(delivered.getOrderNumber().getValue(), item.orderNumber());
+        assertEquals("Camisetas de voleibol", item.description());
+        assertEquals(customer.getName(), item.customerName());
+        assertEquals(0, item.orderValue().compareTo(new BigDecimal("400000.00")));
+        assertEquals(0, item.collectedAmount().compareTo(new BigDecimal("200000.00")));
+        assertEquals(0, item.outstandingAmount().compareTo(new BigDecimal("200000.00")));
+    }
+
+    @Test
+    void completedReceivablesExcludesFullyPaidDeliveredOrders() {
+        Customer customer = customerRepository.save(Customer.create("Cliente Pagado " + suffix()));
+        Order delivered = createDeliveredOrder(
+                customer.getId(),
+                "ORD-HOME-PAID-",
+                "Pedido pagado",
+                "150000.00"
+        );
+        registerPaymentUseCase.execute(new RegisterPaymentCommand(
+                delivered.getId(),
+                new BigDecimal("150000.00"),
+                LocalDate.of(2026, 8, 6),
+                "Pago total"
+        ));
+
+        GetHomeDashboardResult result = getHomeDashboardUseCase.execute(
+                new GetHomeDashboardQuery(null, null)
+        );
+
+        assertTrue(result.completedReceivables().items().stream()
+                .noneMatch(item -> item.orderId().equals(delivered.getId())));
+    }
+
+    @Test
+    void completedReceivablesExcludesOrdersNotYetDelivered() {
+        Order confirmed = createOrderWithTotal("ORD-HOME-OPEN-", "800000.00");
+
+        GetHomeDashboardResult result = getHomeDashboardUseCase.execute(
+                new GetHomeDashboardQuery(null, null)
+        );
+
+        requireReceivable(result, confirmed.getId());
+        assertTrue(result.completedReceivables().items().stream()
+                .noneMatch(item -> item.orderId().equals(confirmed.getId())));
+    }
+
+    @Test
+    void completedReceivablesReadPathCreatesNoFinancialTransactions() {
+        Customer customer = customerRepository.save(Customer.create("Cliente Guard " + suffix()));
+        Order delivered = createDeliveredOrder(
+                customer.getId(),
+                "ORD-HOME-GUARD-",
+                "Pedido guardia",
+                "250000.00"
+        );
+        registerPaymentUseCase.execute(new RegisterPaymentCommand(
+                delivered.getId(),
+                new BigDecimal("50000.00"),
+                LocalDate.of(2026, 8, 6),
+                "Abono guardia"
+        ));
+
+        List<FinancialTransaction> beforeTransactions = financialTransactionRepository.findAllNewestFirst();
+        long beforeTransactionCount = beforeTransactions.size();
+        String beforeFingerprint = fingerprint(beforeTransactions);
+
+        GetHomeDashboardResult result = getHomeDashboardUseCase.execute(new GetHomeDashboardQuery(null, null));
+        requireCompletedReceivable(result, delivered.getId());
+
+        List<FinancialTransaction> afterTransactions = financialTransactionRepository.findAllNewestFirst();
+        assertEquals(beforeTransactionCount, afterTransactions.size());
+        assertEquals(beforeFingerprint, fingerprint(afterTransactions));
     }
 
     @Test
@@ -963,7 +1059,7 @@ class GetHomeDashboardUseCaseTest {
                 LocalDate.of(2026, 8, 6),
                 ProductionPriority.LOW
         ));
-        startProductionOrderUseCase.execute(new StartProductionOrderCommand(inProgress.getId()));
+        startProductionOrderUseCase.execute(new StartProductionOrderCommand(inProgress.getId(), null));
 
         ProductionOrder completed = productionOrderRepository.save(ProductionOrder.create(
                 completedCommercial.getId(),
@@ -979,8 +1075,8 @@ class GetHomeDashboardUseCaseTest {
                 LocalDate.of(2026, 8, 7),
                 ProductionPriority.URGENT
         ));
-        startProductionOrderUseCase.execute(new StartProductionOrderCommand(completed.getId()));
-        completeProductionOrderUseCase.execute(new CompleteProductionOrderCommand(completed.getId()));
+        startProductionOrderUseCase.execute(new StartProductionOrderCommand(completed.getId(), null));
+        completeProductionOrderUseCase.execute(new CompleteProductionOrderCommand(completed.getId(), null));
 
         GetHomeDashboardResult result = getHomeDashboardUseCase.execute(
                 new GetHomeDashboardQuery(null, null)
@@ -1151,7 +1247,7 @@ class GetHomeDashboardUseCaseTest {
                 LocalDate.of(2026, 8, 4),
                 ProductionPriority.NORMAL
         ));
-        startProductionOrderUseCase.execute(new StartProductionOrderCommand(created.getId()));
+        startProductionOrderUseCase.execute(new StartProductionOrderCommand(created.getId(), null));
         return created.getId();
     }
 
@@ -1267,12 +1363,50 @@ class GetHomeDashboardUseCaseTest {
                 UUID.randomUUID(),
                 confirmationDate,
                 DeliveryCommitment.of(confirmationDate.plusDays(7)),
-                "Tester",
+                UUID.randomUUID(),
                 "Orden Home receivables",
+                "Descripción Home receivables",
                 List.of(item)
         );
 
         return orderRepository.save(order);
+    }
+
+    private Order createDeliveredOrder(UUID customerId, String numberPrefix, String description, String unitPrice) {
+        LocalDate confirmationDate = LocalDate.of(2026, 8, 1);
+        OrderItem item = OrderItem.reconstitute(
+                UUID.randomUUID(),
+                "Producto Home Completado",
+                1,
+                "Hydrotech",
+                "Blanco",
+                Money.of(new BigDecimal(unitPrice)),
+                ProductSpecification.empty(),
+                List.of()
+        );
+        Money total = item.getSubtotal();
+        Order order = Order.reconstitute(
+                UUID.randomUUID(),
+                OrderNumber.of(numberPrefix + suffix()),
+                customerId,
+                UUID.randomUUID(),
+                confirmationDate,
+                OrderStatus.DELIVERED,
+                DeliveryCommitment.of(confirmationDate.plusDays(7)),
+                PaymentSummary.forConfirmedOrder(total),
+                UUID.randomUUID(),
+                "Orden Home completada",
+                description,
+                List.of(item)
+        );
+        return orderRepository.save(order);
+    }
+
+    private static HomeReceivableItem requireCompletedReceivable(GetHomeDashboardResult result, UUID orderId) {
+        return result.completedReceivables().items().stream()
+                .filter(item -> item.orderId().equals(orderId))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Expected completed receivable for order " + orderId));
     }
 
     private static String fingerprint(List<FinancialTransaction> transactions) {

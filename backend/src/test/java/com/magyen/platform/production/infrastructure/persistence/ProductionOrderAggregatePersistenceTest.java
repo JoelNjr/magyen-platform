@@ -168,7 +168,7 @@ class ProductionOrderAggregatePersistenceTest {
                 operationIds(reloadedAfterPlan)
         );
 
-        startProductionOrderUseCase.execute(new StartProductionOrderCommand(productionOrderId));
+        startProductionOrderUseCase.execute(new StartProductionOrderCommand(productionOrderId, null));
 
         ProductionOrder reloadedAfterStartOrder = reload(productionOrderId);
         assertEquals(ProductionStatus.IN_PROGRESS, reloadedAfterStartOrder.getStatus());
@@ -203,7 +203,7 @@ class ProductionOrderAggregatePersistenceTest {
                 findOperation(reloadedAfterOperations, sewingOperationId).getStatus()
         );
 
-        completeProductionOrderUseCase.execute(new CompleteProductionOrderCommand(productionOrderId));
+        completeProductionOrderUseCase.execute(new CompleteProductionOrderCommand(productionOrderId, null));
 
         ProductionOrder finalAggregate = reload(productionOrderId);
         assertEquals(ProductionStatus.COMPLETED, finalAggregate.getStatus());

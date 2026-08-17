@@ -136,10 +136,16 @@ class CommercialDashboardAdapterProfitabilityTest {
         return new OrderResult(
                 orderId,
                 "ORD-" + orderId.toString().substring(0, 8),
+                null,
                 UUID.randomUUID(),
+                "Cliente",
                 UUID.randomUUID(),
+                1L,
+                "C000001",
                 LocalDate.of(2026, 8, 1),
+                LocalDate.of(2026, 8, 10),
                 status,
+                UUID.randomUUID(),
                 "Tester",
                 null,
                 new BigDecimal(total)

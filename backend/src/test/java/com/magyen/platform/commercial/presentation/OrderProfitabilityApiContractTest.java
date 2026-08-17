@@ -176,7 +176,7 @@ class OrderProfitabilityApiContractTest {
                 UUID.randomUUID(),
                 today,
                 DeliveryCommitment.of(today.plusDays(7)),
-                "Tester",
+                UUID.randomUUID(),
                 "Orden API rentabilidad",
                 List.of(item)
         );
@@ -199,7 +199,7 @@ class OrderProfitabilityApiContractTest {
                 LocalDate.now().plusDays(3),
                 ProductionPriority.NORMAL
         ));
-        startProductionOrderUseCase.execute(new StartProductionOrderCommand(created.getId()));
+        startProductionOrderUseCase.execute(new StartProductionOrderCommand(created.getId(), null));
         return created.getId();
     }
 }

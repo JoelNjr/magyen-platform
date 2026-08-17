@@ -43,6 +43,7 @@ function OrdersTableHead() {
     <TableHead>
       <TableRow>
         <TableCell sx={headerCellSx}>Número de orden</TableCell>
+        <TableCell sx={headerCellSx}>Descripción</TableCell>
         <TableCell sx={headerCellSx}>Cliente</TableCell>
         <TableCell align="center" sx={headerCellSx}>
           Estado
@@ -126,6 +127,9 @@ function OrdersPage() {
                   <TableCell>
                     <Skeleton width="80%" />
                   </TableCell>
+                  <TableCell>
+                    <Skeleton width="80%" />
+                  </TableCell>
                   <TableCell align="center">
                     <Skeleton
                       width={90}
@@ -185,11 +189,13 @@ function OrdersPage() {
                         {order.orderNumber}
                       </RouterLink>
                     </TableCell>
+                    <TableCell>{order.description || '—'}</TableCell>
                     <TableCell>
-                      {resolveCustomerName(
-                        order.customerId,
-                        customerNameById
-                      )}
+                      {order.customerName ||
+                        resolveCustomerName(
+                          order.customerId,
+                          customerNameById
+                        )}
                     </TableCell>
                     <TableCell align="center">
                       <Chip
@@ -201,7 +207,7 @@ function OrdersPage() {
                     <TableCell>
                       {formatDisplayDate(order.confirmationDate)}
                     </TableCell>
-                    <TableCell>{order.salesperson}</TableCell>
+                    <TableCell>{order.sellerName || '—'}</TableCell>
                     <TableCell align="right">
                       {formatCurrency(order.totalAmount)}
                     </TableCell>

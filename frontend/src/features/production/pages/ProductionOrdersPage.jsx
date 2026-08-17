@@ -33,6 +33,7 @@ function ProductionOrdersTableHead() {
       <TableRow>
         <TableCell sx={headerCellSx}>Orden de producción</TableCell>
         <TableCell sx={headerCellSx}>Orden comercial</TableCell>
+        <TableCell sx={headerCellSx}>Descripción</TableCell>
         <TableCell sx={headerCellSx}>Cliente</TableCell>
         <TableCell sx={headerCellSx}>Fecha creación</TableCell>
         <TableCell align="center" sx={headerCellSx}>
@@ -72,7 +73,22 @@ function ProductionOrdersPage() {
 
   return (
     <Stack spacing={3}>
-      <Typography variant="h3">Órdenes de producción</Typography>
+      <Stack
+        direction={{ xs: 'column', sm: 'row' }}
+        spacing={2}
+        justifyContent="space-between"
+        alignItems={{ xs: 'stretch', sm: 'center' }}
+      >
+        <Typography variant="h3">Órdenes de producción</Typography>
+        <Button
+          type="button"
+          variant="outlined"
+          onClick={() => navigate('/production/operators')}
+          sx={{ alignSelf: { xs: 'stretch', sm: 'center' } }}
+        >
+          Operarios
+        </Button>
+      </Stack>
 
       {loading && (
         <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
@@ -81,6 +97,9 @@ function ProductionOrdersPage() {
             <TableBody>
               {Array.from({ length: SKELETON_ROW_COUNT }).map((_, index) => (
                 <TableRow key={`production-order-skeleton-${index}`}>
+                  <TableCell>
+                    <Skeleton width={180} />
+                  </TableCell>
                   <TableCell>
                     <Skeleton width={180} />
                   </TableCell>
@@ -178,9 +197,12 @@ function ProductionOrdersPage() {
                         >
                           {resolveProductionBusinessLabel(productionOrder.orderNumber)}
                         </RouterLink>
-                      ) : (
+                        ) : (
                         '—'
                       )}
+                    </TableCell>
+                    <TableCell>
+                      {productionOrder.orderDescription || '—'}
                     </TableCell>
                     <TableCell>
                       {resolveProductionBusinessLabel(productionOrder.customerName)}

@@ -63,7 +63,14 @@ class InventoryMinimumStockPersistenceTest {
         InventoryItem withThreshold = inventoryItemRepository.findById(id).orElseThrow();
         assertEquals(new BigDecimal("2.0000"), withThreshold.getMinimumStock());
 
-        InventoryItem existing = inventoryItemRepository.findByCode(MaterialCode.of("TELA-001")).orElseThrow();
+        InventoryItem existing = inventoryItemRepository.save(InventoryItem.create(
+                MaterialCode.of("TELA-MIN-" + UUID.randomUUID().toString().substring(0, 8)),
+                "Tela umbral",
+                "FABRIC",
+                "METER",
+                new BigDecimal("135.2500"),
+                new BigDecimal("30.0000")
+        ));
         assertEquals(0, existing.getStock().compareTo(new BigDecimal("135.2500")));
         assertEquals(0, existing.getMinimumStock().compareTo(new BigDecimal("30.0000")));
     }

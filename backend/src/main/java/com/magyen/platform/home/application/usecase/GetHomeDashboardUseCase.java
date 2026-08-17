@@ -74,6 +74,8 @@ public class GetHomeDashboardUseCase {
         );
         CommercialDashboardPort.HomeReceivablesSnapshot receivables =
                 commercialDashboardPort.getCurrentOutstandingReceivables();
+        CommercialDashboardPort.HomeReceivablesSnapshot completedReceivables =
+                commercialDashboardPort.getCompletedOutstandingReceivables();
         FinanceDashboardPort.HomeFinancialCommitmentsSnapshot commitments =
                 financeDashboardPort.getCurrentFinancialCommitments();
         InventoryDashboardPort.HomeInventoryAlertsSnapshot inventoryAlerts =
@@ -94,6 +96,7 @@ public class GetHomeDashboardUseCase {
                         summary.transactionCount()
                 ),
                 toReceivablesSummary(receivables),
+                toReceivablesSummary(completedReceivables),
                 toCommitmentsSummary(commitments),
                 toInventoryAlertsSummary(inventoryAlerts.inventoryAlerts()),
                 toPaperRollAlertsSummary(inventoryAlerts.paperRollAlerts()),
@@ -113,7 +116,9 @@ public class GetHomeDashboardUseCase {
                         .map(item -> new HomeReceivableItem(
                                 item.orderId(),
                                 item.orderNumber(),
+                                item.description(),
                                 item.customerId(),
+                                item.customerName(),
                                 item.orderValue(),
                                 item.collectedAmount(),
                                 item.outstandingAmount()
@@ -203,6 +208,7 @@ public class GetHomeDashboardUseCase {
                                 item.productionOrderId(),
                                 item.orderId(),
                                 item.orderNumber(),
+                                item.orderDescription(),
                                 item.customerId(),
                                 item.customerName(),
                                 item.status(),

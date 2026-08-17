@@ -5,7 +5,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Puerto de Application para resolver operarios PRODUCTION_BASED desde Finance.
+ * Puerto de Application para resolver operarios de producción.
+ * <p>
+ * La implementación V1 usa {@code ProductionOperator}, no nómina ni usuarios de login.
  */
 public interface ProductionLaborEmployeePort {
 

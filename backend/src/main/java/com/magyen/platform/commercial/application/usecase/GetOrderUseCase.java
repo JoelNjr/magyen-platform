@@ -1,5 +1,7 @@
 package com.magyen.platform.commercial.application.usecase;
 
+import com.magyen.platform.commercial.application.CustomerNameResolver;
+import com.magyen.platform.commercial.application.SellerNameResolver;
 import com.magyen.platform.commercial.application.dto.DeliveryCommitmentResult;
 import com.magyen.platform.commercial.application.dto.GetOrderCommand;
 import com.magyen.platform.commercial.application.dto.GetOrderResult;
@@ -13,6 +15,10 @@ import com.magyen.platform.commercial.domain.OrderItem;
 import com.magyen.platform.commercial.domain.OrderRepository;
 import com.magyen.platform.commercial.domain.PaymentSummary;
 import com.magyen.platform.commercial.domain.ProductSpecification;
+import com.magyen.platform.commercial.domain.Quotation;
+import com.magyen.platform.commercial.domain.QuotationNumber;
+import com.magyen.platform.commercial.domain.QuotationNumberFormat;
+import com.magyen.platform.commercial.domain.QuotationRepository;
 import com.magyen.platform.commercial.domain.SizeBreakdown;
 
 import java.util.List;
@@ -24,9 +30,26 @@ import java.util.Objects;
 public class GetOrderUseCase {
 
     private final OrderRepository orderRepository;
+    private final QuotationRepository quotationRepository;
+    private final SellerNameResolver sellerNameResolver;
+    private final CustomerNameResolver customerNameResolver;
 
-    public GetOrderUseCase(OrderRepository orderRepository) {
+    public GetOrderUseCase(
+            OrderRepository orderRepository,
+            QuotationRepository quotationRepository,
+            SellerNameResolver sellerNameResolver,
+            CustomerNameResolver customerNameResolver
+    ) {
         this.orderRepository = Objects.requireNonNull(orderRepository, "Order repository must not be null");
+        this.quotationRepository = Objects.requireNonNull(
+                quotationRepository,
+                "Quotation repository must not be null"
+        );
+        this.sellerNameResolver = Objects.requireNonNull(sellerNameResolver, "Seller name resolver must not be null");
+        this.customerNameResolver = Objects.requireNonNull(
+                customerNameResolver,
+                "Customer name resolver must not be null"
+        );
     }
 
     public GetOrderResult execute(GetOrderCommand command) {
@@ -50,16 +73,26 @@ public class GetOrderUseCase {
                 .map(this::toItemResult)
                 .toList();
 
+        Long quotationNumberValue = quotationRepository.findById(order.getQuotationId())
+                .map(Quotation::getQuotationNumber)
+                .map(QuotationNumber::getValue)
+                .orElse(null);
+
         return new GetOrderResult(
                 order.getId(),
                 order.getOrderNumber().getValue(),
+                order.getDescription(),
                 order.getCustomerId(),
+                customerNameResolver.resolveName(order.getCustomerId()),
                 order.getQuotationId(),
+                quotationNumberValue,
+                QuotationNumberFormat.display(quotationNumberValue),
                 order.getConfirmationDate(),
                 order.getStatus(),
                 toDeliveryCommitmentResult(order.getDeliveryCommitment()),
                 toPaymentSummaryResult(order.getPaymentSummary()),
-                order.getSalesperson(),
+                order.getSellerId(),
+                sellerNameResolver.resolveName(order.getSellerId()),
                 order.getObservations(),
                 items,
                 order.getTotal().getAmount()
@@ -96,7 +129,7 @@ public class GetOrderUseCase {
                 resolved.getGarmentType(),
                 resolved.getCollarType(),
                 resolved.getSleeveType(),
-                resolved.getGarmentVariant(),
+                resolved.getCuffRequired(),
                 resolved.isSublimationRequired(),
                 resolved.isEmbroideryRequired(),
                 resolved.isDtfRequired(),

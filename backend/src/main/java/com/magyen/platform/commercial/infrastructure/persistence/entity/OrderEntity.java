@@ -61,11 +61,14 @@ public class OrderEntity {
     @Column(name = "remaining_balance", nullable = false, precision = 19, scale = 2)
     private BigDecimal remainingBalance;
 
-    @Column(name = "salesperson", nullable = false, length = 255)
-    private String salesperson;
+    @Column(name = "seller_id", nullable = false, updatable = false)
+    private UUID sellerId;
 
     @Column(name = "observations", length = 2000)
     private String observations;
+
+    @Column(name = "description", length = 2000)
+    private String description;
 
     @Column(name = "total_amount", nullable = false, precision = 19, scale = 2)
     private BigDecimal totalAmount;
@@ -172,12 +175,12 @@ public class OrderEntity {
         this.remainingBalance = remainingBalance;
     }
 
-    public String getSalesperson() {
-        return salesperson;
+    public UUID getSellerId() {
+        return sellerId;
     }
 
-    public void setSalesperson(String salesperson) {
-        this.salesperson = salesperson;
+    public void setSellerId(UUID sellerId) {
+        this.sellerId = sellerId;
     }
 
     public String getObservations() {
@@ -186,6 +189,14 @@ public class OrderEntity {
 
     public void setObservations(String observations) {
         this.observations = observations;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     public BigDecimal getTotalAmount() {

@@ -9,7 +9,8 @@ import java.util.UUID;
 public record CreateQuotationRequest(
         UUID customerId,
         LocalDate deliveryDate,
-        String salesperson,
-        String observations
+        UUID sellerId,
+        String observations,
+        LocalDate quotationDate
 ) {
 }

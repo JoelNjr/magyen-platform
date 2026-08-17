@@ -2,6 +2,8 @@ package com.magyen.platform.commercial.presentation;
 
 import com.magyen.platform.commercial.domain.Customer;
 import com.magyen.platform.commercial.domain.CustomerRepository;
+import com.magyen.platform.commercial.domain.Seller;
+import com.magyen.platform.commercial.domain.SellerRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,6 +49,9 @@ class OrderItemSizesApiContractTest {
 
     @Autowired
     private CustomerRepository customerRepository;
+
+    @Autowired
+    private SellerRepository sellerRepository;
 
     private MockMvc mockMvc;
 
@@ -94,7 +99,7 @@ class OrderItemSizesApiContractTest {
                 .andExpect(jsonPath("$.items[0].sizes[0].quantity").value(8))
                 .andExpect(jsonPath("$.items[0].sizes[3].size").value("XL"))
                 .andExpect(jsonPath("$.items[0].sizes[3].quantity").value(7))
-                .andExpect(jsonPath("$.items[0].productSpecification.garmentType").value("Camiseta deportiva"))
+                .andExpect(jsonPath("$.items[0].productSpecification.garmentType").value("Camiseta"))
                 .andExpect(jsonPath("$.items[0].productSpecification.sublimationRequired").value(true));
     }
 
@@ -338,10 +343,10 @@ class OrderItemSizesApiContractTest {
 
         mockMvc.perform(get("/api/v1/orders/{orderId}", prepared.orderId()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.items[0].productSpecification.garmentType").value("Camiseta deportiva"))
-                .andExpect(jsonPath("$.items[0].productSpecification.collarType").value("Cuello redondo"))
-                .andExpect(jsonPath("$.items[0].productSpecification.sleeveType").value("Manga corta"))
-                .andExpect(jsonPath("$.items[0].productSpecification.garmentVariant").value("Jugador"))
+                .andExpect(jsonPath("$.items[0].productSpecification.garmentType").value("Camiseta"))
+                .andExpect(jsonPath("$.items[0].productSpecification.collarType").value("Redondo"))
+                .andExpect(jsonPath("$.items[0].productSpecification.sleeveType").value("Manga corta sisa"))
+                .andExpect(jsonPath("$.items[0].productSpecification.cuffRequired").value(true))
                 .andExpect(jsonPath("$.items[0].productSpecification.sublimationRequired").value(true))
                 .andExpect(jsonPath("$.items[0].productSpecification.includesNames").value(true))
                 .andExpect(jsonPath("$.items[0].productSpecification.includesNumbers").value(true))
@@ -363,10 +368,10 @@ class OrderItemSizesApiContractTest {
                   "color": "Azul",
                   "unitPrice": 50000,
                   "productSpecification": {
-                    "garmentType": "Camiseta deportiva",
-                    "collarType": "Cuello redondo",
-                    "sleeveType": "Manga corta",
-                    "garmentVariant": "Jugador",
+                    "garmentType": "Camiseta",
+                    "collarType": "Redondo",
+                    "sleeveType": "Manga corta sisa",
+                    "cuffRequired": true,
                     "sublimationRequired": true,
                     "embroideryRequired": false,
                     "dtfRequired": false,
@@ -408,7 +413,6 @@ class OrderItemSizesApiContractTest {
                                           "quotationId": "%s",
                                           "orderNumber": "%s",
                                           "deliveryDate": "%s",
-                                          "salesperson": "Size Tester",
                                           "observations": "Size contract"
                                         }
                                         """.formatted(quotationId, orderNumber, LocalDate.now().plusDays(10)))
@@ -428,6 +432,7 @@ class OrderItemSizesApiContractTest {
 
     private UUID createDraftQuotation() throws Exception {
         Customer customer = customerRepository.save(Customer.create("Cliente Size API"));
+        Seller seller = sellerRepository.save(Seller.create("Size Tester " + UUID.randomUUID()));
 
         MvcResult result = mockMvc.perform(
                         post("/api/v1/quotations")
@@ -436,10 +441,10 @@ class OrderItemSizesApiContractTest {
                                         {
                                           "customerId": "%s",
                                           "deliveryDate": "%s",
-                                          "salesperson": "Size Tester",
+                                          "sellerId": "%s",
                                           "observations": "SizeBreakdown contract"
                                         }
-                                        """.formatted(customer.getId(), LocalDate.now().plusDays(14)))
+                                        """.formatted(customer.getId(), LocalDate.now().plusDays(14), seller.getId()))
                 )
                 .andExpect(status().isCreated())
                 .andReturn();

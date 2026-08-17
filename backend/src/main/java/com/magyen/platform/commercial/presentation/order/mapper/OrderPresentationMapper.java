@@ -52,8 +52,9 @@ public class OrderPresentationMapper {
         return new CreateOrderFromQuotationCommand(
                 request.quotationId(),
                 request.orderNumber(),
+                request.description(),
+                request.confirmationDate(),
                 request.deliveryDate(),
-                request.salesperson(),
                 request.observations()
         );
     }
@@ -121,8 +122,12 @@ public class OrderPresentationMapper {
         return new GetOrderResponse(
                 result.orderId(),
                 result.orderNumber(),
+                result.description(),
                 result.customerId(),
+                result.customerName(),
                 result.quotationId(),
+                result.quotationNumber(),
+                result.quotationNumberDisplay(),
                 result.confirmationDate(),
                 result.status().name(),
                 new DeliveryCommitmentResponse(
@@ -135,7 +140,8 @@ public class OrderPresentationMapper {
                         result.paymentSummary().committedTotal(),
                         result.paymentSummary().remainingBalance()
                 ),
-                result.salesperson(),
+                result.sellerId(),
+                result.sellerName(),
                 result.observations(),
                 items,
                 result.totalAmount()
@@ -146,11 +152,16 @@ public class OrderPresentationMapper {
         return new OrderResponse(
                 order.orderId(),
                 order.orderNumber(),
+                order.description(),
                 order.customerId(),
+                order.customerName(),
                 order.quotationId(),
+                order.quotationNumber(),
+                order.quotationNumberDisplay(),
                 order.confirmationDate(),
                 order.status().name(),
-                order.salesperson(),
+                order.sellerId(),
+                order.sellerName(),
                 order.observations(),
                 order.totalAmount()
         );
@@ -205,7 +216,7 @@ public class OrderPresentationMapper {
                         request.garmentType(),
                         request.collarType(),
                         request.sleeveType(),
-                        request.garmentVariant(),
+                        request.cuffRequired(),
                         booleanOrFalse(request.sublimationRequired()),
                         booleanOrFalse(request.embroideryRequired()),
                         booleanOrFalse(request.dtfRequired()),
@@ -272,7 +283,7 @@ public class OrderPresentationMapper {
                 resolved.garmentType(),
                 resolved.collarType(),
                 resolved.sleeveType(),
-                resolved.garmentVariant(),
+                resolved.cuffRequired(),
                 resolved.sublimationRequired(),
                 resolved.embroideryRequired(),
                 resolved.dtfRequired(),

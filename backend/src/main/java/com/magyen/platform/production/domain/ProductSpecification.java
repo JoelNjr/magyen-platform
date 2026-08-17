@@ -7,13 +7,14 @@ import java.util.Objects;
  * <p>
  * Value Object inmutable propio de Producción. Representa un snapshot operativo
  * y no depende del estado posterior del ítem comercial original.
+ * No revalida catálogos comerciales: captura lo ya comprometido.
  */
 public final class ProductSpecification {
 
     private final String garmentType;
     private final String collarType;
     private final String sleeveType;
-    private final String garmentVariant;
+    private final Boolean cuffRequired;
     private final boolean sublimationRequired;
     private final boolean embroideryRequired;
     private final boolean dtfRequired;
@@ -28,7 +29,7 @@ public final class ProductSpecification {
             String garmentType,
             String collarType,
             String sleeveType,
-            String garmentVariant,
+            Boolean cuffRequired,
             boolean sublimationRequired,
             boolean embroideryRequired,
             boolean dtfRequired,
@@ -42,7 +43,7 @@ public final class ProductSpecification {
         this.garmentType = garmentType;
         this.collarType = collarType;
         this.sleeveType = sleeveType;
-        this.garmentVariant = garmentVariant;
+        this.cuffRequired = cuffRequired;
         this.sublimationRequired = sublimationRequired;
         this.embroideryRequired = embroideryRequired;
         this.dtfRequired = dtfRequired;
@@ -79,7 +80,7 @@ public final class ProductSpecification {
             String garmentType,
             String collarType,
             String sleeveType,
-            String garmentVariant,
+            Boolean cuffRequired,
             boolean sublimationRequired,
             boolean embroideryRequired,
             boolean dtfRequired,
@@ -94,7 +95,7 @@ public final class ProductSpecification {
                 garmentType,
                 collarType,
                 sleeveType,
-                garmentVariant,
+                cuffRequired,
                 sublimationRequired,
                 embroideryRequired,
                 dtfRequired,
@@ -119,8 +120,8 @@ public final class ProductSpecification {
         return sleeveType;
     }
 
-    public String getGarmentVariant() {
-        return garmentVariant;
+    public Boolean getCuffRequired() {
+        return cuffRequired;
     }
 
     public boolean isSublimationRequired() {
@@ -181,7 +182,7 @@ public final class ProductSpecification {
                 && Objects.equals(garmentType, that.garmentType)
                 && Objects.equals(collarType, that.collarType)
                 && Objects.equals(sleeveType, that.sleeveType)
-                && Objects.equals(garmentVariant, that.garmentVariant)
+                && Objects.equals(cuffRequired, that.cuffRequired)
                 && Objects.equals(decorationNotes, that.decorationNotes)
                 && Objects.equals(personalizationNotes, that.personalizationNotes)
                 && Objects.equals(itemObservations, that.itemObservations);
@@ -193,7 +194,7 @@ public final class ProductSpecification {
                 garmentType,
                 collarType,
                 sleeveType,
-                garmentVariant,
+                cuffRequired,
                 sublimationRequired,
                 embroideryRequired,
                 dtfRequired,

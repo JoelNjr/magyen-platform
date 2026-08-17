@@ -9,8 +9,9 @@ import java.util.UUID;
 public record CreateOrderRequest(
         UUID quotationId,
         String orderNumber,
+        String description,
+        LocalDate confirmationDate,
         LocalDate deliveryDate,
-        String salesperson,
         String observations
 ) {
 }

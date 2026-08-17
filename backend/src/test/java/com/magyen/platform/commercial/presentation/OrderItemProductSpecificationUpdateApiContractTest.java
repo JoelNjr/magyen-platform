@@ -2,6 +2,8 @@ package com.magyen.platform.commercial.presentation;
 
 import com.magyen.platform.commercial.domain.Customer;
 import com.magyen.platform.commercial.domain.CustomerRepository;
+import com.magyen.platform.commercial.domain.Seller;
+import com.magyen.platform.commercial.domain.SellerRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,6 +50,9 @@ class OrderItemProductSpecificationUpdateApiContractTest {
     @Autowired
     private CustomerRepository customerRepository;
 
+    @Autowired
+    private SellerRepository sellerRepository;
+
     private MockMvc mockMvc;
 
     @BeforeEach
@@ -65,10 +70,10 @@ class OrderItemProductSpecificationUpdateApiContractTest {
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("""
                                         {
-                                          "garmentType": "Camiseta deportiva",
+                                          "garmentType": "Camiseta",
                                           "collarType": "Redondo",
-                                          "sleeveType": "Corta",
-                                          "garmentVariant": "Masculina",
+                                          "sleeveType": "Manga corta sisa",
+                                          "cuffRequired": true,
                                           "sublimationRequired": true,
                                           "embroideryRequired": false,
                                           "dtfRequired": true,
@@ -83,10 +88,10 @@ class OrderItemProductSpecificationUpdateApiContractTest {
                 )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.orderItemId").value(prepared.orderItemId().toString()))
-                .andExpect(jsonPath("$.productSpecification.garmentType").value("Camiseta deportiva"))
+                .andExpect(jsonPath("$.productSpecification.garmentType").value("Camiseta"))
                 .andExpect(jsonPath("$.productSpecification.collarType").value("Redondo"))
-                .andExpect(jsonPath("$.productSpecification.sleeveType").value("Corta"))
-                .andExpect(jsonPath("$.productSpecification.garmentVariant").value("Masculina"))
+                .andExpect(jsonPath("$.productSpecification.sleeveType").value("Manga corta sisa"))
+                .andExpect(jsonPath("$.productSpecification.cuffRequired").value(true))
                 .andExpect(jsonPath("$.productSpecification.sublimationRequired").value(true))
                 .andExpect(jsonPath("$.productSpecification.embroideryRequired").value(false))
                 .andExpect(jsonPath("$.productSpecification.dtfRequired").value(true))
@@ -103,7 +108,7 @@ class OrderItemProductSpecificationUpdateApiContractTest {
         mockMvc.perform(get("/api/v1/orders/{orderId}", prepared.orderId()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].productSpecification.garmentType")
-                        .value("Camiseta deportiva"))
+                        .value("Camiseta"))
                 .andExpect(jsonPath("$.items[0].productSpecification.dtfRequired").value(true))
                 .andExpect(jsonPath("$.items[0].productSpecification.itemObservations")
                         .value("Entregar muestra antes de producción"))
@@ -122,9 +127,9 @@ class OrderItemProductSpecificationUpdateApiContractTest {
                                 .content("""
                                         {
                                           "garmentType": "Camiseta",
-                                          "collarType": "V",
-                                          "sleeveType": "Larga",
-                                          "garmentVariant": "Femenina",
+                                          "collarType": "En V recto",
+                                          "sleeveType": "Manga larga sisa",
+                                          "cuffRequired": false,
                                           "sublimationRequired": false,
                                           "embroideryRequired": false,
                                           "dtfRequired": false,
@@ -142,6 +147,7 @@ class OrderItemProductSpecificationUpdateApiContractTest {
 
     private PreparedOrder createOrderWithItem() throws Exception {
         Customer customer = customerRepository.save(Customer.create("Cliente Spec Update"));
+        Seller seller = sellerRepository.save(Seller.create("Spec Updater " + UUID.randomUUID()));
 
         MvcResult quotationResult = mockMvc.perform(
                         post("/api/v1/quotations")
@@ -150,10 +156,10 @@ class OrderItemProductSpecificationUpdateApiContractTest {
                                         {
                                           "customerId": "%s",
                                           "deliveryDate": "%s",
-                                          "salesperson": "Spec Updater",
+                                          "sellerId": "%s",
                                           "observations": "Update specification"
                                         }
-                                        """.formatted(customer.getId(), LocalDate.now().plusDays(14)))
+                                        """.formatted(customer.getId(), LocalDate.now().plusDays(14), seller.getId()))
                 )
                 .andExpect(status().isCreated())
                 .andReturn();
@@ -187,7 +193,6 @@ class OrderItemProductSpecificationUpdateApiContractTest {
                                           "quotationId": "%s",
                                           "orderNumber": "%s",
                                           "deliveryDate": "%s",
-                                          "salesperson": "Spec Updater",
                                           "observations": "Spec update contract"
                                         }
                                         """.formatted(quotationId, orderNumber, LocalDate.now().plusDays(10)))

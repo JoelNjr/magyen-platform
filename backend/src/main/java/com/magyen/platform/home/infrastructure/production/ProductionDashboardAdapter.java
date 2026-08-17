@@ -85,6 +85,7 @@ public class ProductionDashboardAdapter implements ProductionDashboardPort {
                 order.productionOrderId(),
                 order.orderId(),
                 order.orderNumber(),
+                order.orderDescription(),
                 order.customerId(),
                 order.customerName(),
                 order.status() == null ? null : order.status().name(),

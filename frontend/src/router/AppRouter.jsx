@@ -10,6 +10,7 @@ import OrderDetailPage from '../features/commercial/pages/OrderDetailPage'
 import OrdersPage from '../features/commercial/pages/OrdersPage'
 import QuotationDetailPage from '../features/commercial/pages/QuotationDetailPage'
 import QuotationsPage from '../features/commercial/pages/QuotationsPage'
+import SellersPage from '../features/commercial/pages/SellersPage'
 import FinancePage from '../features/finance/pages/FinancePage'
 import HomePage from '../features/home/pages/HomePage'
 import IntelligencePage from '../features/intelligence/pages/IntelligencePage'
@@ -17,6 +18,7 @@ import InventoryDetailPage from '../features/inventory/pages/InventoryDetailPage
 import InventoryPage from '../features/inventory/pages/InventoryPage'
 import PlotterJobDetailPage from '../features/plotter/pages/PlotterJobDetailPage'
 import PlotterJobsPage from '../features/plotter/pages/PlotterJobsPage'
+import OperatorsPage from '../features/production/pages/OperatorsPage'
 import ProductionOrderDetailPage from '../features/production/pages/ProductionOrderDetailPage'
 import ProductionOrdersPage from '../features/production/pages/ProductionOrdersPage'
 import MainLayout from '../layout/MainLayout'
@@ -39,6 +41,7 @@ function AppRouter() {
             <Route path="home" element={<HomePage />} />
             <Route path="commercial/new" element={<CreateQuotationPage />} />
             <Route path="commercial/customers" element={<CustomersPage />} />
+            <Route path="commercial/sellers" element={<SellersPage />} />
             <Route
               path="commercial/orders/:orderId"
               element={<OrderDetailPage />}
@@ -53,6 +56,7 @@ function AppRouter() {
               path="production/orders/:productionOrderId"
               element={<ProductionOrderDetailPage />}
             />
+            <Route path="production/operators" element={<OperatorsPage />} />
             <Route path="production" element={<ProductionOrdersPage />} />
             <Route
               path="inventory/:inventoryItemId"

@@ -53,6 +53,8 @@ class PlotterInventoryIntegrationUseCaseTest {
 
         CreatePlotterJobResult job = createPlotterJobUseCase.execute(new CreatePlotterJobCommand(
                 UUID.randomUUID(),
+                null,
+                null,
                 roll.inventoryItemId(),
                 new BigDecimal("12.50"),
                 new BigDecimal("8000"),
@@ -94,6 +96,8 @@ class PlotterInventoryIntegrationUseCaseTest {
         assertThrows(PlotterDomainException.class, () ->
                 createPlotterJobUseCase.execute(new CreatePlotterJobCommand(
                         UUID.randomUUID(),
+                        null,
+                        null,
                         fabric.inventoryItemId(),
                         new BigDecimal("1.00"),
                         new BigDecimal("8000"),
@@ -107,6 +111,8 @@ class PlotterInventoryIntegrationUseCaseTest {
         assertThrows(PlotterDomainException.class, () ->
                 createPlotterJobUseCase.execute(new CreatePlotterJobCommand(
                         UUID.randomUUID(),
+                        null,
+                        null,
                         roll.inventoryItemId(),
                         new BigDecimal("12.50"),
                         new BigDecimal("8000"),
@@ -124,6 +130,8 @@ class PlotterInventoryIntegrationUseCaseTest {
         CreateInventoryItemResult roll = createPaperRoll(new BigDecimal("100.0000"), new BigDecimal("4500.00"));
         CreatePlotterJobResult job = createPlotterJobUseCase.execute(new CreatePlotterJobCommand(
                 UUID.randomUUID(),
+                null,
+                null,
                 roll.inventoryItemId(),
                 new BigDecimal("12.50"),
                 new BigDecimal("8000"),

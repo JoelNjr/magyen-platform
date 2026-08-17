@@ -35,7 +35,7 @@ class ProductionItemSnapshotTest {
                 "Camiseta",
                 "Redondo",
                 "Corta",
-                "Dry-fit",
+                true,
                 true,
                 false,
                 true,
@@ -58,7 +58,7 @@ class ProductionItemSnapshotTest {
         assertEquals("Camiseta", preserved.getGarmentType());
         assertEquals("Redondo", preserved.getCollarType());
         assertEquals("Corta", preserved.getSleeveType());
-        assertEquals("Dry-fit", preserved.getGarmentVariant());
+        assertEquals(Boolean.TRUE, preserved.getCuffRequired());
         assertTrue(preserved.isSublimationRequired());
         assertFalse(preserved.isEmbroideryRequired());
         assertTrue(preserved.isDtfRequired());

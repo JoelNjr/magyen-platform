@@ -16,7 +16,8 @@ public record QuotationResult(
         LocalDate creationDate,
         LocalDate deliveryDate,
         QuotationStatus status,
-        String salesperson,
+        UUID sellerId,
+        String sellerName,
         String observations,
         BigDecimal totalAmount
 ) {

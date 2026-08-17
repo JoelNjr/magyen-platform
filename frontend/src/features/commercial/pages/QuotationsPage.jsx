@@ -141,6 +141,12 @@ function QuotationsPage() {
               Clientes
             </Button>
             <Button
+              variant="outlined"
+              onClick={() => navigate('/commercial/sellers')}
+            >
+              Vendedores
+            </Button>
+            <Button
               variant="contained"
               startIcon={<AddIcon />}
               onClick={() => navigate('/commercial/new')}
@@ -248,7 +254,7 @@ function QuotationsPage() {
                           size="small"
                         />
                       </TableCell>
-                      <TableCell>{quotation.salesperson}</TableCell>
+                      <TableCell>{quotation.sellerName || '—'}</TableCell>
                       <TableCell align="right">
                         {formatCurrency(quotation.totalAmount)}
                       </TableCell>

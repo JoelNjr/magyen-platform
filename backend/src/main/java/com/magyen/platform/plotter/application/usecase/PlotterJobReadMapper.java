@@ -18,6 +18,7 @@ final class PlotterJobReadMapper {
         return new CreatePlotterJobResult(
                 plotterJob.getId(),
                 plotterJob.getCustomerId(),
+                plotterJob.getOrderId(),
                 plotterJob.getCreationDate(),
                 plotterJob.getPaperInventoryItemId(),
                 plotterJob.getPrintedMeters(),
@@ -36,6 +37,7 @@ final class PlotterJobReadMapper {
         return new GetPlotterJobResult(
                 plotterJob.getId(),
                 plotterJob.getCustomerId(),
+                plotterJob.getOrderId(),
                 plotterJob.getCreationDate(),
                 plotterJob.getPaperInventoryItemId(),
                 plotterJob.getPrintedMeters(),

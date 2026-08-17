@@ -2,6 +2,7 @@ package com.magyen.platform.production.application.usecase;
 
 import com.magyen.platform.production.application.dto.PlanProductionOrderCommand;
 import com.magyen.platform.production.application.dto.PlanProductionOrderResult;
+import com.magyen.platform.production.application.port.ProductionCommercialChronologyPort;
 import com.magyen.platform.production.domain.ProductionOrder;
 import com.magyen.platform.production.domain.ProductionOrderRepository;
 
@@ -11,15 +12,24 @@ import java.util.Objects;
  * Caso de uso que coordina la planificación de una Orden de Producción existente.
  * <p>
  * Transición de dominio: CREATED → PLANNED.
+ * Permite fechas históricas y valida cronología comercial cuando la orden existe.
  */
 public class PlanProductionOrderUseCase {
 
     private final ProductionOrderRepository productionOrderRepository;
+    private final ProductionCommercialChronologyPort productionCommercialChronologyPort;
 
-    public PlanProductionOrderUseCase(ProductionOrderRepository productionOrderRepository) {
+    public PlanProductionOrderUseCase(
+            ProductionOrderRepository productionOrderRepository,
+            ProductionCommercialChronologyPort productionCommercialChronologyPort
+    ) {
         this.productionOrderRepository = Objects.requireNonNull(
                 productionOrderRepository,
                 "Production order repository must not be null"
+        );
+        this.productionCommercialChronologyPort = Objects.requireNonNull(
+                productionCommercialChronologyPort,
+                "Production commercial chronology port must not be null"
         );
     }
 
@@ -30,6 +40,13 @@ public class PlanProductionOrderUseCase {
         ProductionOrder productionOrder = productionOrderRepository.findById(command.productionOrderId())
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Production order not found: " + command.productionOrderId()
+                ));
+
+        productionCommercialChronologyPort.findChronology(productionOrder.getOrderId())
+                .ifPresent(chronology -> ProductionBusinessChronology.validatePlan(
+                        chronology,
+                        command.plannedStartDate(),
+                        command.plannedEndDate()
                 ));
 
         productionOrder.plan(

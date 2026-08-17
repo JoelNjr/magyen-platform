@@ -8,6 +8,7 @@ import com.magyen.platform.home.application.dto.HomeInventoryAlertsSummary;
 import com.magyen.platform.home.application.dto.HomePaperRollAlertsSummary;
 import com.magyen.platform.home.application.dto.HomeProductionSummary;
 import com.magyen.platform.home.application.dto.HomeProfitabilitySummary;
+import com.magyen.platform.home.application.dto.HomeReceivableItem;
 import com.magyen.platform.home.application.dto.HomeReceivablesSummary;
 import com.magyen.platform.home.presentation.dashboard.response.HomeCommitmentItemResponse;
 import com.magyen.platform.home.presentation.dashboard.response.HomeCommitmentsResponse;
@@ -39,6 +40,7 @@ public class HomeDashboardPresentationMapper {
         Objects.requireNonNull(result, "Dashboard result must not be null");
         HomeFinancialSummary summary = result.financialSummary();
         HomeReceivablesSummary receivables = result.receivables();
+        HomeReceivablesSummary completedReceivables = result.completedReceivables();
         HomeCommitmentsSummary commitments = result.commitments();
         HomeInventoryAlertsSummary inventoryAlerts = result.inventoryAlerts();
         HomePaperRollAlertsSummary paperRollAlerts = result.paperRollAlerts();
@@ -54,21 +56,8 @@ public class HomeDashboardPresentationMapper {
                         summary.netResult(),
                         summary.transactionCount()
                 ),
-                new HomeReceivablesResponse(
-                        receivables.totalOutstandingAmount(),
-                        receivables.totalCollectedAmount(),
-                        receivables.orderCount(),
-                        receivables.items().stream()
-                                .map(item -> new HomeReceivableItemResponse(
-                                        item.orderId(),
-                                        item.orderNumber(),
-                                        item.customerId(),
-                                        item.orderValue(),
-                                        item.collectedAmount(),
-                                        item.outstandingAmount()
-                                ))
-                                .toList()
-                ),
+                toReceivablesResponse(receivables),
+                toReceivablesResponse(completedReceivables),
                 new HomeCommitmentsResponse(
                         commitments.totalPendingAmount(),
                         commitments.totalOverdueAmount(),
@@ -132,6 +121,7 @@ public class HomeDashboardPresentationMapper {
                                         item.productionOrderId(),
                                         item.orderId(),
                                         item.orderNumber(),
+                                        item.orderDescription(),
                                         item.customerId(),
                                         item.customerName(),
                                         item.status(),
@@ -151,6 +141,30 @@ public class HomeDashboardPresentationMapper {
                         profitabilitySummary.averageMarginPercentage(),
                         profitabilitySummary.unvaluedCostCount()
                 )
+        );
+    }
+
+    private static HomeReceivablesResponse toReceivablesResponse(HomeReceivablesSummary receivables) {
+        return new HomeReceivablesResponse(
+                receivables.totalOutstandingAmount(),
+                receivables.totalCollectedAmount(),
+                receivables.orderCount(),
+                receivables.items().stream()
+                        .map(HomeDashboardPresentationMapper::toReceivableItemResponse)
+                        .toList()
+        );
+    }
+
+    private static HomeReceivableItemResponse toReceivableItemResponse(HomeReceivableItem item) {
+        return new HomeReceivableItemResponse(
+                item.orderId(),
+                item.orderNumber(),
+                item.description(),
+                item.customerId(),
+                item.customerName(),
+                item.orderValue(),
+                item.collectedAmount(),
+                item.outstandingAmount()
         );
     }
 }

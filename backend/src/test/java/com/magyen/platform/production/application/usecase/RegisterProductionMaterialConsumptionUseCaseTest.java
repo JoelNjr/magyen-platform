@@ -237,9 +237,9 @@ class RegisterProductionMaterialConsumptionUseCaseTest {
                 "METER"
         ));
 
-        startProductionOrderUseCase.execute(new StartProductionOrderCommand(productionOrderId));
+        startProductionOrderUseCase.execute(new StartProductionOrderCommand(productionOrderId, null));
         completeProductionOrderUseCase.execute(
-                new com.magyen.platform.production.application.dto.CompleteProductionOrderCommand(productionOrderId)
+                new com.magyen.platform.production.application.dto.CompleteProductionOrderCommand(productionOrderId, null)
         );
         assertThrows(ProductionDomainException.class, () -> register(
                 productionOrderId,
@@ -262,7 +262,7 @@ class RegisterProductionMaterialConsumptionUseCaseTest {
                 LocalDate.now().plusDays(2),
                 ProductionPriority.NORMAL
         ));
-        startProductionOrderUseCase.execute(new StartProductionOrderCommand(productionOrderId));
+        startProductionOrderUseCase.execute(new StartProductionOrderCommand(productionOrderId, null));
     }
 
     private RegisterProductionMaterialConsumptionResult register(

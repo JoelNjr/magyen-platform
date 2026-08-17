@@ -2,6 +2,8 @@ package com.magyen.platform.commercial.presentation;
 
 import com.magyen.platform.commercial.domain.Customer;
 import com.magyen.platform.commercial.domain.CustomerRepository;
+import com.magyen.platform.commercial.domain.Seller;
+import com.magyen.platform.commercial.domain.SellerRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,6 +46,9 @@ class OneOrderPerQuotationApiContractTest {
 
     @Autowired
     private CustomerRepository customerRepository;
+
+    @Autowired
+    private SellerRepository sellerRepository;
 
     private MockMvc mockMvc;
 
@@ -91,6 +96,7 @@ class OneOrderPerQuotationApiContractTest {
     @Test
     void rejectsOrderCreationFromDraftQuotation() throws Exception {
         Customer customer = customerRepository.save(Customer.create("Cliente Draft Order"));
+        Seller seller = sellerRepository.save(Seller.create("Draft Guard " + UUID.randomUUID()));
 
         MvcResult quotationResult = mockMvc.perform(
                         post("/api/v1/quotations")
@@ -99,10 +105,10 @@ class OneOrderPerQuotationApiContractTest {
                                         {
                                           "customerId": "%s",
                                           "deliveryDate": "%s",
-                                          "salesperson": "Draft Guard",
+                                          "sellerId": "%s",
                                           "observations": "Draft cannot create order"
                                         }
-                                        """.formatted(customer.getId(), LocalDate.now().plusDays(12)))
+                                        """.formatted(customer.getId(), LocalDate.now().plusDays(12), seller.getId()))
                 )
                 .andExpect(status().isCreated())
                 .andReturn();
@@ -137,6 +143,7 @@ class OneOrderPerQuotationApiContractTest {
 
     private UUID createApprovedQuotationWithItem() throws Exception {
         Customer customer = customerRepository.save(Customer.create("Cliente One Order"));
+        Seller seller = sellerRepository.save(Seller.create("One Order Guard " + UUID.randomUUID()));
 
         MvcResult quotationResult = mockMvc.perform(
                         post("/api/v1/quotations")
@@ -145,10 +152,10 @@ class OneOrderPerQuotationApiContractTest {
                                         {
                                           "customerId": "%s",
                                           "deliveryDate": "%s",
-                                          "salesperson": "One Order Guard",
+                                          "sellerId": "%s",
                                           "observations": "One order per quotation"
                                         }
-                                        """.formatted(customer.getId(), LocalDate.now().plusDays(14)))
+                                        """.formatted(customer.getId(), LocalDate.now().plusDays(14), seller.getId()))
                 )
                 .andExpect(status().isCreated())
                 .andReturn();
@@ -186,7 +193,6 @@ class OneOrderPerQuotationApiContractTest {
                   "quotationId": "%s",
                   "orderNumber": "%s",
                   "deliveryDate": "%s",
-                  "salesperson": "One Order Guard",
                   "observations": "Duplicate prevention"
                 }
                 """.formatted(quotationId, orderNumber, LocalDate.now().plusDays(10));

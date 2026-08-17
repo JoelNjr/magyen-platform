@@ -239,7 +239,7 @@ class ProductionMaterialCostAttributionUseCaseTest {
                 LocalDate.now().plusDays(2),
                 ProductionPriority.NORMAL
         ));
-        startProductionOrderUseCase.execute(new StartProductionOrderCommand(productionOrderId));
+        startProductionOrderUseCase.execute(new StartProductionOrderCommand(productionOrderId, null));
     }
 
     private InventoryItem createFabric(String unitCost, String stock) {

@@ -22,7 +22,8 @@ public record GetQuotationsResponse(
             LocalDate creationDate,
             LocalDate deliveryDate,
             String status,
-            String salesperson,
+            UUID sellerId,
+            String sellerName,
             String observations,
             BigDecimal totalAmount
     ) {

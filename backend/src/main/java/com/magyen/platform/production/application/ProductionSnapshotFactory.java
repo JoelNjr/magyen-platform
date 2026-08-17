@@ -54,7 +54,7 @@ public class ProductionSnapshotFactory {
                 specification.garmentType(),
                 specification.collarType(),
                 specification.sleeveType(),
-                specification.garmentVariant(),
+                specification.cuffRequired(),
                 specification.sublimationRequired(),
                 specification.embroideryRequired(),
                 specification.dtfRequired(),

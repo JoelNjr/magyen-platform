@@ -2,6 +2,8 @@ package com.magyen.platform.plotter.application.usecase;
 
 import com.magyen.platform.plotter.application.dto.CreatePlotterJobCommand;
 import com.magyen.platform.plotter.application.dto.CreatePlotterJobResult;
+import com.magyen.platform.plotter.application.port.PlotterCommercialOrderPort;
+import com.magyen.platform.plotter.application.port.PlotterCommercialOrderView;
 import com.magyen.platform.plotter.application.port.PlotterJobInventoryPort;
 import com.magyen.platform.plotter.application.port.PlotterPaperRollView;
 import com.magyen.platform.plotter.domain.PlotterJob;
@@ -12,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Caso de uso que registra un trabajo de plotter, calcula el ingreso cobrado
@@ -21,15 +24,18 @@ import java.util.Objects;
  * Si Inventory falla, el trabajo no queda persistido.
  * <p>
  * Idempotencia de stock: Inventory usa {@code sourceId = plotterJobId}.
+ * No crea movimiento financiero. El pago de Plotter permanece separado.
  */
 public class CreatePlotterJobUseCase {
 
     private final PlotterJobRepository plotterJobRepository;
     private final PlotterJobInventoryPort plotterJobInventoryPort;
+    private final PlotterCommercialOrderPort plotterCommercialOrderPort;
 
     public CreatePlotterJobUseCase(
             PlotterJobRepository plotterJobRepository,
-            PlotterJobInventoryPort plotterJobInventoryPort
+            PlotterJobInventoryPort plotterJobInventoryPort,
+            PlotterCommercialOrderPort plotterCommercialOrderPort
     ) {
         this.plotterJobRepository = Objects.requireNonNull(
                 plotterJobRepository,
@@ -38,6 +44,10 @@ public class CreatePlotterJobUseCase {
         this.plotterJobInventoryPort = Objects.requireNonNull(
                 plotterJobInventoryPort,
                 "Plotter job inventory port must not be null"
+        );
+        this.plotterCommercialOrderPort = Objects.requireNonNull(
+                plotterCommercialOrderPort,
+                "Plotter commercial order port must not be null"
         );
     }
 
@@ -58,9 +68,29 @@ public class CreatePlotterJobUseCase {
             );
         }
 
+        LocalDate creationDate = command.creationDate() != null
+                ? command.creationDate()
+                : LocalDate.now();
+
+        UUID orderId = command.orderId();
+        if (orderId != null) {
+            PlotterCommercialOrderView commercialOrder = plotterCommercialOrderPort.requireExistingOrder(orderId);
+            if (creationDate.isBefore(commercialOrder.confirmationDate())) {
+                throw new PlotterDomainException(
+                        "Plotter job date must not be before order confirmation date"
+                );
+            }
+            if (creationDate.isAfter(commercialOrder.deliveryDate())) {
+                throw new PlotterDomainException(
+                        "Plotter job date must not be after delivery date"
+                );
+            }
+        }
+
         PlotterJob plotterJob = PlotterJob.create(
                 command.customerId(),
-                LocalDate.now(),
+                orderId,
+                creationDate,
                 command.paperInventoryItemId(),
                 command.printedMeters(),
                 command.pricePerMeter(),

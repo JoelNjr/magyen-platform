@@ -36,6 +36,8 @@ public class ProductionPersistenceMapper {
         productionOrderEntity.setPriority(productionOrder.getPriority());
         productionOrderEntity.setPlannedStartDate(productionOrder.getPlannedStartDate());
         productionOrderEntity.setPlannedEndDate(productionOrder.getPlannedEndDate());
+        productionOrderEntity.setActualStartDate(productionOrder.getActualStartDate());
+        productionOrderEntity.setActualCompletionDate(productionOrder.getActualCompletionDate());
         productionOrderEntity.setObservations(productionOrder.getObservations());
 
         List<ProductionItemEntity> itemEntities = new ArrayList<>();
@@ -116,7 +118,9 @@ public class ProductionPersistenceMapper {
                 items,
                 operations,
                 materialConsumptions,
-                laborWorks
+                laborWorks,
+                productionOrderEntity.getActualStartDate(),
+                productionOrderEntity.getActualCompletionDate()
         );
     }
 
@@ -184,7 +188,7 @@ public class ProductionPersistenceMapper {
         itemEntity.setGarmentType(resolved.getGarmentType());
         itemEntity.setCollarType(resolved.getCollarType());
         itemEntity.setSleeveType(resolved.getSleeveType());
-        itemEntity.setGarmentVariant(resolved.getGarmentVariant());
+        itemEntity.setCuffRequired(resolved.getCuffRequired());
         itemEntity.setSublimationRequired(resolved.isSublimationRequired());
         itemEntity.setEmbroideryRequired(resolved.isEmbroideryRequired());
         itemEntity.setDtfRequired(resolved.isDtfRequired());
@@ -203,7 +207,7 @@ public class ProductionPersistenceMapper {
                 itemEntity.getGarmentType(),
                 itemEntity.getCollarType(),
                 itemEntity.getSleeveType(),
-                itemEntity.getGarmentVariant(),
+                itemEntity.getCuffRequired(),
                 itemEntity.isSublimationRequired(),
                 itemEntity.isEmbroideryRequired(),
                 itemEntity.isDtfRequired(),

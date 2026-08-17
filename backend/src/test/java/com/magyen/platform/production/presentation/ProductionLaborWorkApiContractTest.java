@@ -1,10 +1,9 @@
 package com.magyen.platform.production.presentation;
 
-import com.magyen.platform.finance.application.dto.CreatePayrollEmployeeCommand;
-import com.magyen.platform.finance.application.dto.CreatePayrollEmployeeResult;
-import com.magyen.platform.finance.application.usecase.CreatePayrollEmployeeUseCase;
-import com.magyen.platform.finance.domain.PayrollCompensationType;
+import com.magyen.platform.production.application.dto.CreateProductionOperatorCommand;
+import com.magyen.platform.production.application.dto.CreateProductionOperatorResult;
 import com.magyen.platform.production.application.dto.PlanProductionOrderCommand;
+import com.magyen.platform.production.application.usecase.CreateProductionOperatorUseCase;
 import com.magyen.platform.production.application.dto.StartProductionOrderCommand;
 import com.magyen.platform.production.application.usecase.PlanProductionOrderUseCase;
 import com.magyen.platform.production.application.usecase.StartProductionOrderUseCase;
@@ -21,7 +20,6 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -49,12 +47,12 @@ class ProductionLaborWorkApiContractTest {
     private StartProductionOrderUseCase startProductionOrderUseCase;
 
     @Autowired
-    private CreatePayrollEmployeeUseCase createPayrollEmployeeUseCase;
+    private CreateProductionOperatorUseCase createProductionOperatorUseCase;
 
     private MockMvc mockMvc;
     private UUID productionOrderId;
-    private CreatePayrollEmployeeResult productionOperator;
-    private CreatePayrollEmployeeResult fixedEmployee;
+    private CreateProductionOperatorResult productionOperator;
+    private UUID unknownOperatorId;
 
     @BeforeEach
     void setUp() {
@@ -69,20 +67,10 @@ class ProductionLaborWorkApiContractTest {
         ));
         productionOrderId = created.getId();
 
-        productionOperator = createPayrollEmployeeUseCase.execute(new CreatePayrollEmployeeCommand(
-                "Operario-API-" + UUID.randomUUID().toString().substring(0, 8),
-                PayrollCompensationType.PRODUCTION_BASED,
-                null,
-                null,
-                null
+        productionOperator = createProductionOperatorUseCase.execute(new CreateProductionOperatorCommand(
+                "Operario-API-" + UUID.randomUUID().toString().substring(0, 8)
         ));
-        fixedEmployee = createPayrollEmployeeUseCase.execute(new CreatePayrollEmployeeCommand(
-                "Fijo-API-" + UUID.randomUUID().toString().substring(0, 8),
-                PayrollCompensationType.FIXED_PAYROLL,
-                new BigDecimal("1200000.00"),
-                LocalDate.of(2026, 8, 1),
-                null
-        ));
+        unknownOperatorId = UUID.randomUUID();
     }
 
     @Test
@@ -100,7 +88,7 @@ class ProductionLaborWorkApiContractTest {
                                           "unitRate": 800,
                                           "observation": "early"
                                         }
-                                        """.formatted(productionOperator.employeeId()))
+                                        """.formatted(productionOperator.operatorId()))
                 )
                 .andExpect(status().isBadRequest());
 
@@ -120,7 +108,7 @@ class ProductionLaborWorkApiContractTest {
                                           "calculatedAmount": 1,
                                           "observation": "client-amount-ignored"
                                         }
-                                        """.formatted(productionOperator.employeeId()))
+                                        """.formatted(productionOperator.operatorId()))
                 )
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.calculatedAmount").value(80000.0))
@@ -138,7 +126,7 @@ class ProductionLaborWorkApiContractTest {
                                           "unitOfMeasure": "UNIT",
                                           "unitRate": 500
                                         }
-                                        """.formatted(productionOperator.employeeId()))
+                                        """.formatted(productionOperator.operatorId()))
                 )
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.calculatedAmount").value(5000.0))
@@ -160,7 +148,7 @@ class ProductionLaborWorkApiContractTest {
                                           "unitOfMeasure": "UNIT",
                                           "unitRate": 500
                                         }
-                                        """.formatted(fixedEmployee.employeeId()))
+                                        """.formatted(unknownOperatorId))
                 )
                 .andExpect(status().isBadRequest());
 
@@ -180,8 +168,8 @@ class ProductionLaborWorkApiContractTest {
 
         mockMvc.perform(get("/api/v1/production/labor-operators"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.operators[?(@.employeeId == '%s')]".formatted(productionOperator.employeeId())).exists())
-                .andExpect(jsonPath("$.operators[?(@.employeeId == '%s')]".formatted(fixedEmployee.employeeId())).doesNotExist());
+                .andExpect(jsonPath("$.operators[?(@.employeeId == '%s')]".formatted(productionOperator.operatorId())).exists())
+                .andExpect(jsonPath("$.operators[?(@.employeeId == '%s')]".formatted(unknownOperatorId)).doesNotExist());
 
         mockMvc.perform(
                         patch(
@@ -222,7 +210,7 @@ class ProductionLaborWorkApiContractTest {
                                           "unitOfMeasure": "UNIT",
                                           "unitRate": 1000
                                         }
-                                        """.formatted(productionOperator.employeeId()))
+                                        """.formatted(productionOperator.operatorId()))
                 )
                 .andExpect(status().isCreated())
                 .andReturn()
@@ -251,6 +239,6 @@ class ProductionLaborWorkApiContractTest {
                 LocalDate.now().plusDays(2),
                 ProductionPriority.NORMAL
         ));
-        startProductionOrderUseCase.execute(new StartProductionOrderCommand(productionOrderId));
+        startProductionOrderUseCase.execute(new StartProductionOrderCommand(productionOrderId, null));
     }
 }

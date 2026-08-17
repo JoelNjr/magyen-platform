@@ -31,6 +31,8 @@ public class PlotterPresentationMapper {
 
         return new CreatePlotterJobCommand(
                 request.customerId(),
+                request.orderId(),
+                request.creationDate(),
                 request.paperInventoryItemId(),
                 request.printedMeters(),
                 request.pricePerMeter(),
@@ -44,6 +46,7 @@ public class PlotterPresentationMapper {
         return new CreatePlotterJobResponse(
                 result.plotterJobId(),
                 result.customerId(),
+                result.orderId(),
                 result.creationDate(),
                 result.paperInventoryItemId(),
                 result.printedMeters(),
@@ -65,6 +68,7 @@ public class PlotterPresentationMapper {
         return new GetPlotterJobResponse(
                 result.plotterJobId(),
                 result.customerId(),
+                result.orderId(),
                 result.creationDate(),
                 result.paperInventoryItemId(),
                 result.printedMeters(),

@@ -73,7 +73,14 @@ class InventoryCostPersistenceTest {
 
     @Test
     void loadsHistoricalNullCostsAndExistingBaselineWithoutFabricatedCost() {
-        InventoryItem existing = inventoryItemRepository.findByCode(MaterialCode.of("TELA-001")).orElseThrow();
+        InventoryItem existing = inventoryItemRepository.save(InventoryItem.create(
+                MaterialCode.of("TELA-NULL-" + UUID.randomUUID().toString().substring(0, 8)),
+                "Tela sin costo",
+                "FABRIC",
+                "METER",
+                new BigDecimal("135.2500"),
+                null
+        ));
 
         assertNull(existing.getUnitCost());
         assertEquals(0, existing.getStock().compareTo(new BigDecimal("135.2500")));

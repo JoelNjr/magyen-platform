@@ -7,6 +7,7 @@ import {
   DialogContentText,
   DialogTitle,
   Stack,
+  TextField,
 } from '@mui/material'
 
 function ConfirmProductionLifecycleDialog({
@@ -19,6 +20,9 @@ function ConfirmProductionLifecycleDialog({
   onConfirm,
   submitting,
   errorMessage,
+  dateLabel,
+  dateValue,
+  onDateChange,
 }) {
   function handleClose() {
     if (submitting) {
@@ -36,6 +40,18 @@ function ConfirmProductionLifecycleDialog({
         <Stack spacing={2}>
           {errorMessage && <Alert severity="error">{errorMessage}</Alert>}
           <DialogContentText>{description}</DialogContentText>
+          {dateLabel ? (
+            <TextField
+              label={dateLabel}
+              type="date"
+              value={dateValue || ''}
+              onChange={(event) => onDateChange?.(event.target.value)}
+              InputLabelProps={{ shrink: true }}
+              fullWidth
+              disabled={submitting}
+              helperText="Puede ser una fecha histórica. No se sobrescribe con la fecha de hoy."
+            />
+          ) : null}
         </Stack>
       </DialogContent>
 
@@ -47,7 +63,7 @@ function ConfirmProductionLifecycleDialog({
           type="button"
           variant="contained"
           onClick={onConfirm}
-          disabled={submitting}
+          disabled={submitting || (dateLabel && !dateValue)}
         >
           {submitting ? submittingLabel : confirmLabel}
         </Button>

@@ -38,6 +38,24 @@ class PlotterJobTest {
         assertEquals(PlotterJobStatus.REGISTERED, plotterJob.getStatus());
         assertEquals("Trabajo para uniformes", plotterJob.getObservations());
         assertTrue(plotterJob.getId() != null);
+        assertNull(plotterJob.getOrderId());
+    }
+
+    @Test
+    void storesOptionalCommercialOrderAttribution() {
+        UUID orderId = UUID.randomUUID();
+        PlotterJob plotterJob = PlotterJob.create(
+                UUID.randomUUID(),
+                orderId,
+                LocalDate.of(2026, 8, 3),
+                UUID.randomUUID(),
+                new BigDecimal("6"),
+                new BigDecimal("8000"),
+                null
+        );
+
+        assertEquals(orderId, plotterJob.getOrderId());
+        assertEquals(new BigDecimal("48000.00"), plotterJob.getTotalAmount());
     }
 
     @Test

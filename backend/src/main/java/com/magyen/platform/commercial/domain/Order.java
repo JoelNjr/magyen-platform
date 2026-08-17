@@ -26,8 +26,9 @@ public class Order {
     private OrderStatus status;
     private final DeliveryCommitment deliveryCommitment;
     private PaymentSummary paymentSummary;
-    private final String salesperson;
+    private final UUID sellerId;
     private final String observations;
+    private final String description;
     private final List<OrderItem> items;
     private Money total;
 
@@ -40,8 +41,9 @@ public class Order {
             OrderStatus status,
             DeliveryCommitment deliveryCommitment,
             PaymentSummary paymentSummary,
-            String salesperson,
+            UUID sellerId,
             String observations,
+            String description,
             List<OrderItem> items
     ) {
         this.id = Objects.requireNonNull(id, "Order id must not be null");
@@ -54,8 +56,9 @@ public class Order {
                 deliveryCommitment,
                 "Delivery commitment must not be null"
         );
-        this.salesperson = requireNonBlank(salesperson, "Salesperson must not be blank");
+        this.sellerId = Objects.requireNonNull(sellerId, "Seller id must not be null");
         this.observations = observations;
+        this.description = blankToNull(description);
         this.items = new ArrayList<>(Objects.requireNonNull(items, "Items must not be null"));
         this.total = calculateTotal(this.items);
         this.paymentSummary = Objects.requireNonNull(paymentSummary, "Payment summary must not be null");
@@ -75,8 +78,32 @@ public class Order {
             UUID quotationId,
             LocalDate confirmationDate,
             DeliveryCommitment deliveryCommitment,
-            String salesperson,
+            UUID sellerId,
             String observations,
+            List<OrderItem> items
+    ) {
+        return create(
+                orderNumber,
+                customerId,
+                quotationId,
+                confirmationDate,
+                deliveryCommitment,
+                sellerId,
+                observations,
+                null,
+                items
+        );
+    }
+
+    public static Order create(
+            OrderNumber orderNumber,
+            UUID customerId,
+            UUID quotationId,
+            LocalDate confirmationDate,
+            DeliveryCommitment deliveryCommitment,
+            UUID sellerId,
+            String observations,
+            String description,
             List<OrderItem> items
     ) {
         Objects.requireNonNull(items, "Items must not be null");
@@ -96,8 +123,9 @@ public class Order {
                 OrderStatus.CONFIRMED,
                 deliveryCommitment,
                 paymentSummary,
-                salesperson,
+                sellerId,
                 observations,
+                description,
                 committedItems
         );
     }
@@ -114,8 +142,40 @@ public class Order {
             OrderStatus status,
             DeliveryCommitment deliveryCommitment,
             PaymentSummary paymentSummary,
-            String salesperson,
+            UUID sellerId,
             String observations,
+            List<OrderItem> items
+    ) {
+        validateDeliveryCommitment(confirmationDate, deliveryCommitment);
+
+        return reconstitute(
+                id,
+                orderNumber,
+                customerId,
+                quotationId,
+                confirmationDate,
+                status,
+                deliveryCommitment,
+                paymentSummary,
+                sellerId,
+                observations,
+                null,
+                items
+        );
+    }
+
+    public static Order reconstitute(
+            UUID id,
+            OrderNumber orderNumber,
+            UUID customerId,
+            UUID quotationId,
+            LocalDate confirmationDate,
+            OrderStatus status,
+            DeliveryCommitment deliveryCommitment,
+            PaymentSummary paymentSummary,
+            UUID sellerId,
+            String observations,
+            String description,
             List<OrderItem> items
     ) {
         validateDeliveryCommitment(confirmationDate, deliveryCommitment);
@@ -129,8 +189,9 @@ public class Order {
                 status,
                 deliveryCommitment,
                 paymentSummary,
-                salesperson,
+                sellerId,
                 observations,
+                description,
                 items
         );
     }
@@ -266,12 +327,16 @@ public class Order {
         return paymentSummary;
     }
 
-    public String getSalesperson() {
-        return salesperson;
+    public UUID getSellerId() {
+        return sellerId;
     }
 
     public String getObservations() {
         return observations;
+    }
+
+    public String getDescription() {
+        return description;
     }
 
     public List<OrderItem> getItems() {
@@ -394,11 +459,11 @@ public class Order {
         }
     }
 
-    private static String requireNonBlank(String value, String message) {
-        Objects.requireNonNull(value, message);
-        if (value.isBlank()) {
-            throw new IllegalArgumentException(message);
+    private static String blankToNull(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
         }
-        return value;
+        return value.trim();
     }
+
 }

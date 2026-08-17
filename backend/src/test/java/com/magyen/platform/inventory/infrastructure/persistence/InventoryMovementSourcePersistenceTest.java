@@ -92,7 +92,24 @@ class InventoryMovementSourcePersistenceTest {
 
     @Test
     void loadsHistoricalMovementsWithNormalizedManualSource() {
-        InventoryItem existing = inventoryItemRepository.findByCode(MaterialCode.of("TELA-001")).orElseThrow();
+        InventoryItem existing = inventoryItemRepository.save(InventoryItem.create(
+                MaterialCode.of("TELA-SRC-" + UUID.randomUUID().toString().substring(0, 8)),
+                "Tela fuente",
+                "FABRIC",
+                "METER",
+                new BigDecimal("10.0000"),
+                null
+        ));
+        InventoryMovement historical = existing.registerMovement(
+                InventoryMovementType.IN,
+                new BigDecimal("1.0000"),
+                null,
+                "manual histórico",
+                LocalDateTime.now(),
+                InventoryMovementSourceType.MANUAL,
+                null
+        );
+        inventoryItemRepository.saveWithMovement(existing, historical);
 
         inventoryMovementRepository
                 .findByInventoryItemIdOrderByMovementDateDesc(existing.getId())

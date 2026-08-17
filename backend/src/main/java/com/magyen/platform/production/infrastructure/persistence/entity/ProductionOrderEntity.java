@@ -47,6 +47,12 @@ public class ProductionOrderEntity {
     @Column(name = "planned_end_date")
     private LocalDate plannedEndDate;
 
+    @Column(name = "actual_start_date")
+    private LocalDate actualStartDate;
+
+    @Column(name = "actual_completion_date")
+    private LocalDate actualCompletionDate;
+
     @Column(name = "observations", length = 2000)
     private String observations;
 
@@ -119,6 +125,22 @@ public class ProductionOrderEntity {
 
     public void setPlannedEndDate(LocalDate plannedEndDate) {
         this.plannedEndDate = plannedEndDate;
+    }
+
+    public LocalDate getActualStartDate() {
+        return actualStartDate;
+    }
+
+    public void setActualStartDate(LocalDate actualStartDate) {
+        this.actualStartDate = actualStartDate;
+    }
+
+    public LocalDate getActualCompletionDate() {
+        return actualCompletionDate;
+    }
+
+    public void setActualCompletionDate(LocalDate actualCompletionDate) {
+        this.actualCompletionDate = actualCompletionDate;
     }
 
     public String getObservations() {

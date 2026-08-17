@@ -20,8 +20,8 @@ class OrderItemProductSpecificationTest {
         ProductSpecification specification = ProductSpecification.of(
                 "Camiseta",
                 "Redondo",
-                "Corta",
-                "Dry-fit",
+                "Manga corta sisa",
+                true,
                 true,
                 false,
                 true,
@@ -35,8 +35,8 @@ class OrderItemProductSpecificationTest {
 
         assertEquals("Camiseta", specification.getGarmentType());
         assertEquals("Redondo", specification.getCollarType());
-        assertEquals("Corta", specification.getSleeveType());
-        assertEquals("Dry-fit", specification.getGarmentVariant());
+        assertEquals("Manga corta sisa", specification.getSleeveType());
+        assertEquals(Boolean.TRUE, specification.getCuffRequired());
         assertTrue(specification.isSublimationRequired());
         assertFalse(specification.isEmbroideryRequired());
         assertTrue(specification.isDtfRequired());

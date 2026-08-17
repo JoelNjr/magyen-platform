@@ -5,11 +5,14 @@ import java.util.UUID;
 
 /**
  * Entrada del caso de uso para crear una cotización.
+ * <p>
+ * {@code quotationDate} es opcional: si es nulo, se usa la fecha de hoy.
  */
 public record CreateQuotationCommand(
         UUID customerId,
         LocalDate deliveryDate,
-        String salesperson,
-        String observations
+        UUID sellerId,
+        String observations,
+        LocalDate quotationDate
 ) {
 }

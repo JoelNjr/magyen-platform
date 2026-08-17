@@ -42,7 +42,7 @@ class ProductionItemSnapshotPersistenceTest {
                 "Camiseta",
                 "Redondo",
                 "Corta",
-                "Dry-fit",
+                true,
                 true,
                 false,
                 true,
@@ -103,7 +103,7 @@ class ProductionItemSnapshotPersistenceTest {
         assertEquals("Camiseta", reloadedSpecification.getGarmentType());
         assertEquals("Redondo", reloadedSpecification.getCollarType());
         assertEquals("Corta", reloadedSpecification.getSleeveType());
-        assertEquals("Dry-fit", reloadedSpecification.getGarmentVariant());
+        assertEquals(Boolean.TRUE, reloadedSpecification.getCuffRequired());
         assertTrue(reloadedSpecification.isSublimationRequired());
         assertFalse(reloadedSpecification.isEmbroideryRequired());
         assertTrue(reloadedSpecification.isDtfRequired());

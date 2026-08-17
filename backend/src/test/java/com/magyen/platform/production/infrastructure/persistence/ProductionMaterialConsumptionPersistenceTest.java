@@ -68,7 +68,7 @@ class ProductionMaterialConsumptionPersistenceTest {
                 LocalDate.now().plusDays(3),
                 ProductionPriority.NORMAL
         ));
-        startProductionOrderUseCase.execute(new StartProductionOrderCommand(productionOrderId));
+        startProductionOrderUseCase.execute(new StartProductionOrderCommand(productionOrderId, null));
 
         InventoryItem fabric = inventoryItemRepository.save(InventoryItem.create(
                 MaterialCode.of("PMF-" + UUID.randomUUID().toString().substring(0, 8)),

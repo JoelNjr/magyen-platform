@@ -29,6 +29,9 @@ public class PlotterJobEntity {
     @Column(name = "customer_id", nullable = false)
     private UUID customerId;
 
+    @Column(name = "order_id")
+    private UUID orderId;
+
     @Column(name = "creation_date", nullable = false)
     private LocalDate creationDate;
 
@@ -68,6 +71,14 @@ public class PlotterJobEntity {
 
     public void setCustomerId(UUID customerId) {
         this.customerId = customerId;
+    }
+
+    public UUID getOrderId() {
+        return orderId;
+    }
+
+    public void setOrderId(UUID orderId) {
+        this.orderId = orderId;
     }
 
     public LocalDate getCreationDate() {

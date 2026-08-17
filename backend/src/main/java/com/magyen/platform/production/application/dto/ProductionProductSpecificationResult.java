@@ -7,7 +7,7 @@ public record ProductionProductSpecificationResult(
         String garmentType,
         String collarType,
         String sleeveType,
-        String garmentVariant,
+        Boolean cuffRequired,
         boolean sublimationRequired,
         boolean embroideryRequired,
         boolean dtfRequired,

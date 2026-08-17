@@ -86,10 +86,16 @@ class CommercialOrderIdentityResolverTest {
         return new OrderResult(
                 orderId,
                 orderNumber,
+                "Descripción de prueba",
                 customerId,
+                null,
                 UUID.randomUUID(),
+                1L,
+                "C000001",
                 LocalDate.of(2026, 8, 1),
+                LocalDate.of(2026, 8, 10),
                 OrderStatus.CONFIRMED,
+                UUID.randomUUID(),
                 "Tester",
                 null,
                 BigDecimal.TEN

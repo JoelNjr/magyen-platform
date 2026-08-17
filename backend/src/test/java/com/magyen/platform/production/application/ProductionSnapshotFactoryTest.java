@@ -43,7 +43,7 @@ class ProductionSnapshotFactoryTest {
                                 "Camiseta",
                                 "Redondo",
                                 "Corta",
-                                "Dry-fit",
+                                true,
                                 true,
                                 false,
                                 true,
@@ -74,7 +74,7 @@ class ProductionSnapshotFactoryTest {
         assertEquals("Camiseta", specification.getGarmentType());
         assertEquals("Redondo", specification.getCollarType());
         assertEquals("Corta", specification.getSleeveType());
-        assertEquals("Dry-fit", specification.getGarmentVariant());
+        assertEquals(Boolean.TRUE, specification.getCuffRequired());
         assertTrue(specification.isSublimationRequired());
         assertFalse(specification.isEmbroideryRequired());
         assertTrue(specification.isDtfRequired());
@@ -128,12 +128,17 @@ class ProductionSnapshotFactoryTest {
         return new GetOrderResult(
                 UUID.randomUUID(),
                 "ORD-SNAP-TEST",
+                "Snapshot description",
                 UUID.randomUUID(),
+                "Snapshot Customer",
                 UUID.randomUUID(),
+                1L,
+                "C000001",
                 today,
                 status,
                 new DeliveryCommitmentResult(today.plusDays(10), null),
                 new PaymentSummaryResult(true, false, new BigDecimal("900000"), new BigDecimal("900000")),
+                UUID.randomUUID(),
                 "Snapshot Tester",
                 "Commercial source",
                 items,

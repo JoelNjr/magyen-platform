@@ -13,23 +13,38 @@ import {
 } from '@mui/material'
 import { formatDisplayDate } from '../presentation/formatDisplayDate'
 
+function toIsoDate(date = new Date()) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 function CreateOrderFromQuotationDialog({
   open,
   onClose,
   onSubmit,
   submitting,
   errorMessage,
+  quotationDate,
   deliveryDate,
-  salesperson,
+  sellerName,
 }) {
   const [orderNumber, setOrderNumber] = useState('')
+  const [description, setDescription] = useState('')
+  const [confirmationDate, setConfirmationDate] = useState('')
   const [validationError, setValidationError] = useState('')
 
   useEffect(() => {
     if (!open) {
       setOrderNumber('')
+      setDescription('')
+      setConfirmationDate('')
       setValidationError('')
+      return
     }
+
+    setConfirmationDate(toIsoDate())
   }, [open])
 
   function handleClose() {
@@ -43,13 +58,17 @@ function CreateOrderFromQuotationDialog({
   function handleSubmit() {
     const trimmedOrderNumber = orderNumber.trim()
 
-    if (!trimmedOrderNumber) {
-      setValidationError('El número de orden es obligatorio.')
+    if (!trimmedOrderNumber || !confirmationDate) {
+      setValidationError('El número de orden y la fecha de confirmación son obligatorios.')
       return
     }
 
     setValidationError('')
-    onSubmit({ orderNumber: trimmedOrderNumber })
+    onSubmit({
+      orderNumber: trimmedOrderNumber,
+      description: description.trim() || null,
+      confirmationDate,
+    })
   }
 
   return (
@@ -69,16 +88,35 @@ function CreateOrderFromQuotationDialog({
 
           <Stack spacing={0.5}>
             <Typography variant="body2" color="text.secondary">
+              Fecha de cotización
+            </Typography>
+            <Typography>{formatDisplayDate(quotationDate)}</Typography>
+          </Stack>
+
+          <Stack spacing={0.5}>
+            <Typography variant="body2" color="text.secondary">
               Fecha de entrega
             </Typography>
             <Typography>{formatDisplayDate(deliveryDate)}</Typography>
           </Stack>
 
+          <TextField
+            label="Fecha de confirmación"
+            type="date"
+            value={confirmationDate}
+            onChange={(event) => setConfirmationDate(event.target.value)}
+            InputLabelProps={{ shrink: true }}
+            fullWidth
+            required
+            disabled={submitting}
+            helperText="Debe ser igual o posterior a la cotización e igual o anterior a la entrega."
+          />
+
           <Stack spacing={0.5}>
             <Typography variant="body2" color="text.secondary">
               Vendedor
             </Typography>
-            <Typography>{salesperson}</Typography>
+            <Typography>{sellerName || '—'}</Typography>
           </Stack>
 
           <TextField
@@ -89,6 +127,15 @@ function CreateOrderFromQuotationDialog({
             required
             disabled={submitting}
             helperText="Identificador comercial de la orden. No se genera automáticamente."
+          />
+
+          <TextField
+            label="Descripción del pedido"
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+            fullWidth
+            disabled={submitting}
+            helperText="Explica de qué se trata el pedido. No reemplaza el número de orden."
           />
         </Stack>
       </DialogContent>

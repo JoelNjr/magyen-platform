@@ -281,7 +281,7 @@ function QuotationDetailPage() {
     setCreateOrderError('')
   }
 
-  async function handleCreateOrderSubmit({ orderNumber }) {
+  async function handleCreateOrderSubmit({ orderNumber, description, confirmationDate }) {
     if (creatingOrder) {
       return
     }
@@ -293,8 +293,9 @@ function QuotationDetailPage() {
       const createdOrder = await createOrder({
         quotationId: quotation.quotationId,
         orderNumber,
+        description,
+        confirmationDate,
         deliveryDate: quotation.deliveryDate,
-        salesperson: quotation.salesperson,
         observations: quotation.observations,
       })
 
@@ -431,7 +432,7 @@ function QuotationDetailPage() {
 
               <Grid size={{ xs: 12, md: 6 }}>
                 <DetailField label="Vendedor">
-                  <Typography>{quotation.salesperson}</Typography>
+                  <Typography>{quotation.sellerName || '—'}</Typography>
                 </DetailField>
               </Grid>
 
@@ -506,7 +507,7 @@ function QuotationDetailPage() {
                       <TableRow>
                         <TableCell sx={headerCellSx}>Producto</TableCell>
                         <TableCell sx={headerCellSx}>Tela</TableCell>
-                        <TableCell sx={headerCellSx}>Color</TableCell>
+                        <TableCell sx={headerCellSx}>Color de tela / base</TableCell>
                         <TableCell align="right" sx={headerCellSx}>
                           Cantidad
                         </TableCell>
@@ -590,8 +591,9 @@ function QuotationDetailPage() {
             onSubmit={handleCreateOrderSubmit}
             submitting={creatingOrder}
             errorMessage={createOrderError}
+            quotationDate={quotation.creationDate}
             deliveryDate={quotation.deliveryDate}
-            salesperson={quotation.salesperson}
+            sellerName={quotation.sellerName}
           />
         </>
       )}

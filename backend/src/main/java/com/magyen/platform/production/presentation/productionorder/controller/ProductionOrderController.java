@@ -55,7 +55,9 @@ import com.magyen.platform.production.presentation.productionorder.request.AddPr
 import com.magyen.platform.production.presentation.productionorder.request.AssignProductionOperationOperatorRequest;
 import com.magyen.platform.production.presentation.productionorder.request.CreateProductionOrderRequest;
 import com.magyen.platform.production.presentation.productionorder.request.PayProductionLaborWorkRequest;
+import com.magyen.platform.production.presentation.productionorder.request.CompleteProductionOrderRequest;
 import com.magyen.platform.production.presentation.productionorder.request.PlanProductionOrderRequest;
+import com.magyen.platform.production.presentation.productionorder.request.StartProductionOrderRequest;
 import com.magyen.platform.production.presentation.productionorder.request.RegisterProductionLaborWorkRequest;
 import com.magyen.platform.production.presentation.productionorder.request.RegisterProductionMaterialConsumptionRequest;
 import com.magyen.platform.production.presentation.productionorder.response.AddProductionOperationResponse;
@@ -198,9 +200,13 @@ public class ProductionOrderController {
 
     @PatchMapping("/{productionOrderId}/start")
     public ResponseEntity<StartProductionOrderResponse> startProductionOrder(
-            @PathVariable UUID productionOrderId
+            @PathVariable UUID productionOrderId,
+            @RequestBody(required = false) StartProductionOrderRequest request
     ) {
-        StartProductionOrderCommand command = productionPresentationMapper.toStartOrderCommand(productionOrderId);
+        StartProductionOrderCommand command = productionPresentationMapper.toStartOrderCommand(
+                productionOrderId,
+                request
+        );
         StartProductionOrderResult result = startProductionOrderUseCase.execute(command);
         StartProductionOrderResponse response = productionPresentationMapper.toStartOrderResponse(result);
 
@@ -209,9 +215,13 @@ public class ProductionOrderController {
 
     @PatchMapping("/{productionOrderId}/complete")
     public ResponseEntity<CompleteProductionOrderResponse> completeProductionOrder(
-            @PathVariable UUID productionOrderId
+            @PathVariable UUID productionOrderId,
+            @RequestBody(required = false) CompleteProductionOrderRequest request
     ) {
-        CompleteProductionOrderCommand command = productionPresentationMapper.toCompleteOrderCommand(productionOrderId);
+        CompleteProductionOrderCommand command = productionPresentationMapper.toCompleteOrderCommand(
+                productionOrderId,
+                request
+        );
         CompleteProductionOrderResult result = completeProductionOrderUseCase.execute(command);
         CompleteProductionOrderResponse response = productionPresentationMapper.toCompleteOrderResponse(result);
 

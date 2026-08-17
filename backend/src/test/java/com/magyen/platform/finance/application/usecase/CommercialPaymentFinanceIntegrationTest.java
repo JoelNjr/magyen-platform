@@ -195,7 +195,7 @@ class CommercialPaymentFinanceIntegrationTest {
                 UUID.randomUUID(),
                 today,
                 DeliveryCommitment.of(today.plusDays(7)),
-                "Tester",
+                UUID.randomUUID(),
                 "Orden para integración Payment→Finance",
                 List.of(item)
         );

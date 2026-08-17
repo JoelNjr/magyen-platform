@@ -59,6 +59,7 @@ public class GetProductionOrdersUseCase {
                 productionOrder.getId(),
                 productionOrder.getOrderId(),
                 commercialIdentity.orderNumber(),
+                commercialIdentity.orderDescription(),
                 commercialIdentity.customerId(),
                 commercialIdentity.customerName(),
                 productionOrder.getCreationDate(),
@@ -66,6 +67,8 @@ public class GetProductionOrdersUseCase {
                 productionOrder.getPriority(),
                 productionOrder.getPlannedStartDate(),
                 productionOrder.getPlannedEndDate(),
+                productionOrder.getActualStartDate(),
+                productionOrder.getActualCompletionDate(),
                 productionOrder.getObservations()
         );
     }

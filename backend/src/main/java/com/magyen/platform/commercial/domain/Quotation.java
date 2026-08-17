@@ -24,7 +24,7 @@ public class Quotation {
     private final LocalDate creationDate;
     private LocalDate deliveryDate;
     private QuotationStatus status;
-    private String salesperson;
+    private final UUID sellerId;
     private String observations;
     private final List<QuotationItem> items;
     private Money total;
@@ -36,7 +36,7 @@ public class Quotation {
             LocalDate creationDate,
             LocalDate deliveryDate,
             QuotationStatus status,
-            String salesperson,
+            UUID sellerId,
             String observations,
             List<QuotationItem> items
     ) {
@@ -46,7 +46,7 @@ public class Quotation {
         this.creationDate = Objects.requireNonNull(creationDate, "Creation date must not be null");
         this.deliveryDate = Objects.requireNonNull(deliveryDate, "Delivery date must not be null");
         this.status = Objects.requireNonNull(status, "Status must not be null");
-        this.salesperson = requireNonBlank(salesperson, "Salesperson must not be blank");
+        this.sellerId = Objects.requireNonNull(sellerId, "Seller id must not be null");
         this.observations = observations;
         this.items = new ArrayList<>(items);
         recalculateTotal();
@@ -60,7 +60,7 @@ public class Quotation {
             UUID customerId,
             LocalDate creationDate,
             LocalDate deliveryDate,
-            String salesperson,
+            UUID sellerId,
             String observations
     ) {
         Objects.requireNonNull(quotationNumber, "Quotation number must not be null");
@@ -73,7 +73,7 @@ public class Quotation {
                 creationDate,
                 deliveryDate,
                 QuotationStatus.DRAFT,
-                salesperson,
+                sellerId,
                 observations,
                 List.of()
         );
@@ -92,7 +92,7 @@ public class Quotation {
             LocalDate creationDate,
             LocalDate deliveryDate,
             QuotationStatus status,
-            String salesperson,
+            UUID sellerId,
             String observations,
             List<QuotationItem> items
     ) {
@@ -105,7 +105,7 @@ public class Quotation {
                 creationDate,
                 deliveryDate,
                 status,
-                salesperson,
+                sellerId,
                 observations,
                 items
         );
@@ -206,10 +206,6 @@ public class Quotation {
         this.deliveryDate = newDeliveryDate;
     }
 
-    public void updateSalesperson(String newSalesperson) {
-        this.salesperson = requireNonBlank(newSalesperson, "Salesperson must not be blank");
-    }
-
     public void updateObservations(String newObservations) {
         this.observations = newObservations;
     }
@@ -242,8 +238,8 @@ public class Quotation {
         return status;
     }
 
-    public String getSalesperson() {
-        return salesperson;
+    public UUID getSellerId() {
+        return sellerId;
     }
 
     public String getObservations() {
@@ -325,11 +321,4 @@ public class Quotation {
         }
     }
 
-    private static String requireNonBlank(String value, String message) {
-        Objects.requireNonNull(value, message);
-        if (value.isBlank()) {
-            throw new IllegalArgumentException(message);
-        }
-        return value;
-    }
 }

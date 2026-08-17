@@ -40,8 +40,9 @@ public class QuotationPresentationMapper {
         return new CreateQuotationCommand(
                 request.customerId(),
                 request.deliveryDate(),
-                request.salesperson(),
-                request.observations()
+                request.sellerId(),
+                request.observations(),
+                request.quotationDate()
         );
     }
 
@@ -107,7 +108,8 @@ public class QuotationPresentationMapper {
                         quotation.creationDate(),
                         quotation.deliveryDate(),
                         quotation.status().name(),
-                        quotation.salesperson(),
+                        quotation.sellerId(),
+                        quotation.sellerName(),
                         quotation.observations(),
                         quotation.totalAmount()
                 ))
@@ -145,7 +147,8 @@ public class QuotationPresentationMapper {
                 result.creationDate(),
                 result.deliveryDate(),
                 result.status().name(),
-                result.salesperson(),
+                result.sellerId(),
+                result.sellerName(),
                 result.observations(),
                 items,
                 result.totalAmount(),
@@ -162,7 +165,7 @@ public class QuotationPresentationMapper {
                 request.garmentType(),
                 request.collarType(),
                 request.sleeveType(),
-                request.garmentVariant(),
+                request.cuffRequired(),
                 booleanOrFalse(request.sublimationRequired()),
                 booleanOrFalse(request.embroideryRequired()),
                 booleanOrFalse(request.dtfRequired()),
@@ -188,7 +191,7 @@ public class QuotationPresentationMapper {
                 resolved.garmentType(),
                 resolved.collarType(),
                 resolved.sleeveType(),
-                resolved.garmentVariant(),
+                resolved.cuffRequired(),
                 resolved.sublimationRequired(),
                 resolved.embroideryRequired(),
                 resolved.dtfRequired(),

@@ -185,6 +185,8 @@ class PlotterPaymentFinanceIntegrationTest {
 
         return createPlotterJobUseCase.execute(new CreatePlotterJobCommand(
                 UUID.randomUUID(),
+                null,
+                null,
                 roll.inventoryItemId(),
                 new BigDecimal("1.0000"),
                 new BigDecimal(pricePerMeterForOneMeter),

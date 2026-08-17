@@ -43,8 +43,8 @@ class OrderItemSpecificationPersistenceTest {
         ProductSpecification specification = ProductSpecification.of(
                 "Camiseta",
                 "Redondo",
-                "Corta",
-                "Dry-fit",
+                "Manga corta sisa",
+                true,
                 true,
                 false,
                 true,
@@ -78,7 +78,7 @@ class OrderItemSpecificationPersistenceTest {
                 UUID.randomUUID(),
                 today,
                 DeliveryCommitment.of(today.plusDays(10)),
-                "Persistence Tester",
+                UUID.randomUUID(),
                 "Specification persistence",
                 List.of(item)
         );
@@ -103,8 +103,8 @@ class OrderItemSpecificationPersistenceTest {
         ProductSpecification reloadedSpecification = reloadedItem.getProductSpecification();
         assertEquals("Camiseta", reloadedSpecification.getGarmentType());
         assertEquals("Redondo", reloadedSpecification.getCollarType());
-        assertEquals("Corta", reloadedSpecification.getSleeveType());
-        assertEquals("Dry-fit", reloadedSpecification.getGarmentVariant());
+        assertEquals("Manga corta sisa", reloadedSpecification.getSleeveType());
+        assertEquals(Boolean.TRUE, reloadedSpecification.getCuffRequired());
         assertTrue(reloadedSpecification.isSublimationRequired());
         assertTrue(reloadedSpecification.isDtfRequired());
         assertTrue(reloadedSpecification.isIncludesNames());
@@ -150,7 +150,7 @@ class OrderItemSpecificationPersistenceTest {
                 UUID.randomUUID(),
                 today,
                 DeliveryCommitment.of(today.plusDays(5)),
-                "Compatibility Tester",
+                UUID.randomUUID(),
                 null,
                 List.of(item)
         );

@@ -69,7 +69,7 @@ public class AddQuotationItemUseCase {
                 command.garmentType(),
                 command.collarType(),
                 command.sleeveType(),
-                command.garmentVariant(),
+                command.cuffRequired(),
                 command.sublimationRequired(),
                 command.embroideryRequired(),
                 command.dtfRequired(),

@@ -21,6 +21,7 @@ public class PlotterJob {
 
     private final UUID id;
     private final UUID customerId;
+    private final UUID orderId;
     private final LocalDate creationDate;
     private final UUID paperInventoryItemId;
     private final BigDecimal printedMeters;
@@ -32,6 +33,7 @@ public class PlotterJob {
     private PlotterJob(
             UUID id,
             UUID customerId,
+            UUID orderId,
             LocalDate creationDate,
             UUID paperInventoryItemId,
             BigDecimal printedMeters,
@@ -42,6 +44,7 @@ public class PlotterJob {
     ) {
         this.id = Objects.requireNonNull(id, "Plotter job id must not be null");
         this.customerId = Objects.requireNonNull(customerId, "Customer id must not be null");
+        this.orderId = orderId;
         this.creationDate = Objects.requireNonNull(creationDate, "Creation date must not be null");
         this.paperInventoryItemId = Objects.requireNonNull(
                 paperInventoryItemId,
@@ -66,6 +69,30 @@ public class PlotterJob {
             BigDecimal pricePerMeter,
             String observations
     ) {
+        return create(
+                customerId,
+                null,
+                creationDate,
+                paperInventoryItemId,
+                printedMeters,
+                pricePerMeter,
+                observations
+        );
+    }
+
+    /**
+     * Crea un trabajo de plotter atribuible opcionalmente a una Orden comercial.
+     * {@code orderId} es una referencia blanda; no hay FK cruzada.
+     */
+    public static PlotterJob create(
+            UUID customerId,
+            UUID orderId,
+            LocalDate creationDate,
+            UUID paperInventoryItemId,
+            BigDecimal printedMeters,
+            BigDecimal pricePerMeter,
+            String observations
+    ) {
         BigDecimal normalizedMeters = requirePositiveMeters(printedMeters);
         BigDecimal normalizedPrice = requireValidPricePerMeter(pricePerMeter);
         BigDecimal totalAmount = calculateTotalAmount(normalizedMeters, normalizedPrice);
@@ -73,6 +100,7 @@ public class PlotterJob {
         return new PlotterJob(
                 UUID.randomUUID(),
                 customerId,
+                orderId,
                 creationDate,
                 paperInventoryItemId,
                 normalizedMeters,
@@ -97,9 +125,36 @@ public class PlotterJob {
             PlotterJobStatus status,
             String observations
     ) {
+        return reconstitute(
+                id,
+                customerId,
+                null,
+                creationDate,
+                paperInventoryItemId,
+                printedMeters,
+                pricePerMeter,
+                totalAmount,
+                status,
+                observations
+        );
+    }
+
+    public static PlotterJob reconstitute(
+            UUID id,
+            UUID customerId,
+            UUID orderId,
+            LocalDate creationDate,
+            UUID paperInventoryItemId,
+            BigDecimal printedMeters,
+            BigDecimal pricePerMeter,
+            BigDecimal totalAmount,
+            PlotterJobStatus status,
+            String observations
+    ) {
         return new PlotterJob(
                 id,
                 customerId,
+                orderId,
                 creationDate,
                 paperInventoryItemId,
                 printedMeters,
@@ -122,6 +177,10 @@ public class PlotterJob {
 
     public UUID getCustomerId() {
         return customerId;
+    }
+
+    public UUID getOrderId() {
+        return orderId;
     }
 
     public LocalDate getCreationDate() {

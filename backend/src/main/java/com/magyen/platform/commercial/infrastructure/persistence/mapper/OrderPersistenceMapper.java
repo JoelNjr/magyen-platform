@@ -34,8 +34,9 @@ public class OrderPersistenceMapper {
         orderEntity.setQuotationId(order.getQuotationId());
         orderEntity.setConfirmationDate(order.getConfirmationDate());
         orderEntity.setStatus(order.getStatus());
-        orderEntity.setSalesperson(order.getSalesperson());
+        orderEntity.setSellerId(order.getSellerId());
         orderEntity.setObservations(order.getObservations());
+        orderEntity.setDescription(order.getDescription());
         orderEntity.setTotalAmount(toAmount(order.getTotal()));
 
         mapDeliveryCommitment(orderEntity, order.getDeliveryCommitment());
@@ -69,8 +70,9 @@ public class OrderPersistenceMapper {
                 orderEntity.getStatus(),
                 toDeliveryCommitment(orderEntity),
                 toPaymentSummary(orderEntity),
-                orderEntity.getSalesperson(),
+                orderEntity.getSellerId(),
                 orderEntity.getObservations(),
+                orderEntity.getDescription(),
                 items
         );
     }
@@ -146,7 +148,7 @@ public class OrderPersistenceMapper {
         itemEntity.setGarmentType(resolved.getGarmentType());
         itemEntity.setCollarType(resolved.getCollarType());
         itemEntity.setSleeveType(resolved.getSleeveType());
-        itemEntity.setGarmentVariant(resolved.getGarmentVariant());
+        itemEntity.setCuffRequired(resolved.getCuffRequired());
         itemEntity.setSublimationRequired(resolved.isSublimationRequired());
         itemEntity.setEmbroideryRequired(resolved.isEmbroideryRequired());
         itemEntity.setDtfRequired(resolved.isDtfRequired());
@@ -161,11 +163,11 @@ public class OrderPersistenceMapper {
     private ProductSpecification toProductSpecification(OrderItemEntity itemEntity) {
         Objects.requireNonNull(itemEntity, "Order item entity must not be null");
 
-        return ProductSpecification.of(
+        return ProductSpecification.reconstitute(
                 itemEntity.getGarmentType(),
                 itemEntity.getCollarType(),
                 itemEntity.getSleeveType(),
-                itemEntity.getGarmentVariant(),
+                itemEntity.getCuffRequired(),
                 itemEntity.isSublimationRequired(),
                 itemEntity.isEmbroideryRequired(),
                 itemEntity.isDtfRequired(),

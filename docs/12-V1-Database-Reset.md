@@ -1,20 +1,14 @@
 # Magyen V1 — Procedimiento de reset limpio de base de datos
 
-**Estado:** Prepared only — not executed.  
-**Fecha de preparación:** 15 de agosto de 2026  
-**Rama al preparar:** `main`  
+**Estado:** Ejecutado en local el 15 de agosto de 2026.  
+**Commit de procedimiento:** `a5f84d6`  
+**Backup:** `backups/magyen_platform_pre_v1_reset_20260815_115047.dump`  
+**Rama:** `main`  
 **Contenedor:** `magyen-postgres`  
 **Base:** `magyen_platform`  
 **Volumen Docker:** `magyen-platform_postgres_data`
 
-Este documento es un procedimiento operativo para ejecutar **más adelante**, solo después de aprobación explícita.
-
-**No se ha ejecutado ningún reset.**  
-**No se ha modificado ningún dato.**  
-**No se ha recreado el volumen Docker.**  
-**No se ha reiniciado ninguna secuencia.**  
-**No se ha creado el ADMIN de V1.**  
-**No se han ingresado datos reales de negocio.**
+Este documento es el procedimiento canónico. La ejecución local ya se realizó (Opción B). No repetir el reset salvo nueva aprobación explícita.
 
 ---
 

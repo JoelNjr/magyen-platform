@@ -14,7 +14,7 @@ import java.util.Objects;
 /**
  * Registra trabajo de mano de obra PENDING en una Orden de Producción IN_PROGRESS.
  * <p>
- * No crea movimiento financiero. Valida operario activo PRODUCTION_BASED vía puerto.
+ * No crea movimiento financiero. Valida operario de producción activo vía puerto.
  */
 public class RegisterProductionLaborWorkUseCase {
 

@@ -46,7 +46,7 @@ class GetProductionOrdersUseCaseTest {
         when(productionOrderRepository.findAll()).thenReturn(List.of(productionOrder));
         when(commercialOrderIdentityResolver.resolveAll()).thenReturn(Map.of(
                 orderId,
-                new CommercialOrderIdentity(orderId, "PED-42", customerId, "Colegio XYZ")
+                new CommercialOrderIdentity(orderId, "PED-42", "Uniformes colegio", customerId, "Colegio XYZ")
         ));
 
         GetProductionOrdersResult result = new GetProductionOrdersUseCase(
@@ -58,6 +58,7 @@ class GetProductionOrdersUseCaseTest {
         assertEquals(productionOrder.getId(), item.productionOrderId());
         assertEquals(orderId, item.orderId());
         assertEquals("PED-42", item.orderNumber());
+        assertEquals("Uniformes colegio", item.orderDescription());
         assertEquals(customerId, item.customerId());
         assertEquals("Colegio XYZ", item.customerName());
         assertEquals(LocalDate.of(2026, 8, 9), item.creationDate());

@@ -1,10 +1,13 @@
 package com.magyen.platform.plotter.infrastructure.configuration;
 
+import com.magyen.platform.commercial.application.usecase.GetOrderUseCase;
 import com.magyen.platform.finance.application.usecase.RegisterPlotterPaymentIncomeUseCase;
 import com.magyen.platform.inventory.application.usecase.ConsumeInventoryMaterialUseCase;
 import com.magyen.platform.inventory.domain.InventoryItemRepository;
+import com.magyen.platform.plotter.application.port.PlotterCommercialOrderPort;
 import com.magyen.platform.plotter.application.port.PlotterJobInventoryPort;
 import com.magyen.platform.plotter.application.port.PlotterPaymentFinancePort;
+import com.magyen.platform.plotter.infrastructure.commercial.PlotterCommercialOrderAdapter;
 import com.magyen.platform.plotter.application.usecase.CreatePlotterJobUseCase;
 import com.magyen.platform.plotter.application.usecase.GetPlotterJobUseCase;
 import com.magyen.platform.plotter.application.usecase.GetPlotterJobsUseCase;
@@ -60,11 +63,21 @@ public class PlotterConfiguration {
     }
 
     @Bean
+    public PlotterCommercialOrderPort plotterCommercialOrderPort(GetOrderUseCase getOrderUseCase) {
+        return new PlotterCommercialOrderAdapter(getOrderUseCase);
+    }
+
+    @Bean
     public CreatePlotterJobUseCase createPlotterJobUseCase(
             PlotterJobRepository plotterJobRepository,
-            PlotterJobInventoryPort plotterJobInventoryPort
+            PlotterJobInventoryPort plotterJobInventoryPort,
+            PlotterCommercialOrderPort plotterCommercialOrderPort
     ) {
-        return new CreatePlotterJobUseCase(plotterJobRepository, plotterJobInventoryPort);
+        return new CreatePlotterJobUseCase(
+                plotterJobRepository,
+                plotterJobInventoryPort,
+                plotterCommercialOrderPort
+        );
     }
 
     @Bean

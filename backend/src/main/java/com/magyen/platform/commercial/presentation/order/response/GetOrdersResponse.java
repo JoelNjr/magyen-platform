@@ -18,11 +18,16 @@ public record GetOrdersResponse(
     public record OrderResponse(
             UUID orderId,
             String orderNumber,
+            String description,
             UUID customerId,
+            String customerName,
             UUID quotationId,
+            Long quotationNumber,
+            String quotationNumberDisplay,
             LocalDate confirmationDate,
             String status,
-            String salesperson,
+            UUID sellerId,
+            String sellerName,
             String observations,
             BigDecimal totalAmount
     ) {

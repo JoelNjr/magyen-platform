@@ -1,6 +1,7 @@
 package com.magyen.platform.home.application.port;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -16,6 +17,14 @@ public interface CommercialDashboardPort {
      * Saldos pendientes actuales ({@code outstandingAmount > 0}).
      */
     HomeReceivablesSnapshot getCurrentOutstandingReceivables();
+
+    /**
+     * Pedidos ya entregados/cerrados que aún tienen saldo pendiente.
+     * <p>
+     * Solo lectura. Usa {@link com.magyen.platform.commercial.application.port.OrderPaymentCollectionPort}
+     * como fuente de cobros.
+     */
+    HomeReceivablesSnapshot getCompletedOutstandingReceivables();
 
     /**
      * Resumen de rentabilidad directa de Órdenes comerciales elegibles.
@@ -37,10 +46,13 @@ public interface CommercialDashboardPort {
     record ReceivableItem(
             UUID orderId,
             String orderNumber,
+            String description,
             UUID customerId,
+            String customerName,
             BigDecimal orderValue,
             BigDecimal collectedAmount,
-            BigDecimal outstandingAmount
+            BigDecimal outstandingAmount,
+            LocalDate promisedDeliveryDate
     ) {
     }
 

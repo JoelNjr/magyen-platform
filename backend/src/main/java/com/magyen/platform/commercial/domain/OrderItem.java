@@ -14,6 +14,9 @@ import java.util.UUID;
 /**
  * Representa un producto comprometido por Magyen dentro de una Orden.
  * <p>
+ * {@code color} es el color de tela / base, no el diseño sublimado completo.
+ * En productos sublimados el valor de negocio es {@code Blanco}.
+ * <p>
  * Solo puede ser creado por el agregado {@link Order}.
  */
 public class OrderItem {
@@ -104,7 +107,7 @@ public class OrderItem {
                 UUID.randomUUID(),
                 productName,
                 quantity,
-                fabric,
+                CommercialFabric.canonicalize(fabric),
                 color,
                 unitPrice,
                 productSpecification,

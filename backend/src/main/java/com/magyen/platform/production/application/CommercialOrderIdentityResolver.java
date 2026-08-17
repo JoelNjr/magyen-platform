@@ -78,6 +78,7 @@ public class CommercialOrderIdentityResolver {
         return new CommercialOrderIdentity(
                 order.orderId(),
                 orderNumber,
+                order.description(),
                 order.customerId(),
                 customerNameById.get(order.customerId())
         );
@@ -89,12 +90,13 @@ public class CommercialOrderIdentityResolver {
     public record CommercialOrderIdentity(
             UUID orderId,
             String orderNumber,
+            String orderDescription,
             UUID customerId,
             String customerName
     ) {
 
         public static CommercialOrderIdentity missing(UUID orderId) {
-            return new CommercialOrderIdentity(orderId, null, null, null);
+            return new CommercialOrderIdentity(orderId, null, null, null, null);
         }
     }
 }

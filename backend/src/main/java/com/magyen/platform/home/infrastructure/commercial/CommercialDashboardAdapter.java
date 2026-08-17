@@ -37,8 +37,14 @@ public class CommercialDashboardAdapter implements CommercialDashboardPort {
             OrderStatus.DELIVERED
     );
 
+    private static final Set<OrderStatus> COMPLETED_RECEIVABLE_STATUSES = EnumSet.of(
+            OrderStatus.DELIVERED,
+            OrderStatus.CLOSED
+    );
+
     private static final Comparator<ReceivableItem> RECEIVABLE_ORDER = Comparator
             .comparing(ReceivableItem::outstandingAmount, Comparator.reverseOrder())
+            .thenComparing(ReceivableItem::promisedDeliveryDate, Comparator.nullsLast(Comparator.reverseOrder()))
             .thenComparing(ReceivableItem::orderNumber, Comparator.nullsLast(String::compareTo))
             .thenComparing(item -> item.orderId().toString());
 
@@ -64,7 +70,20 @@ public class CommercialDashboardAdapter implements CommercialDashboardPort {
 
     @Override
     public HomeReceivablesSnapshot getCurrentOutstandingReceivables() {
+        return collectOutstandingReceivables(order -> true);
+    }
+
+    @Override
+    public HomeReceivablesSnapshot getCompletedOutstandingReceivables() {
+        return collectOutstandingReceivables(order -> order.status() != null
+                && COMPLETED_RECEIVABLE_STATUSES.contains(order.status()));
+    }
+
+    private HomeReceivablesSnapshot collectOutstandingReceivables(
+            java.util.function.Predicate<OrderResult> orderFilter
+    ) {
         List<ReceivableItem> outstandingItems = getOrdersUseCase.execute().orders().stream()
+                .filter(orderFilter)
                 .map(this::toReceivableItemIfOutstanding)
                 .flatMap(Optional::stream)
                 .sorted(RECEIVABLE_ORDER)
@@ -152,10 +171,13 @@ public class CommercialDashboardAdapter implements CommercialDashboardPort {
         return Optional.of(new ReceivableItem(
                 order.orderId(),
                 order.orderNumber(),
+                order.description(),
                 order.customerId(),
+                order.customerName(),
                 order.totalAmount(),
                 collection.collectedAmount(),
-                outstandingAmount
+                outstandingAmount,
+                order.promisedDeliveryDate()
         ));
     }
 

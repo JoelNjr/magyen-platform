@@ -13,6 +13,12 @@ import {
   Typography,
 } from '@mui/material'
 import { updateOrderItemProductSpecification } from '../services/commercialService'
+import CatalogSelect from './CatalogSelect'
+import {
+  toSelectOptions,
+  useCommercialCatalogs,
+  withCurrentOption,
+} from './useCommercialCatalogs'
 
 function resolveApiErrorMessage(error, fallbackMessage) {
   return error?.response?.data?.message || fallbackMessage
@@ -23,7 +29,7 @@ function emptyFormState() {
     garmentType: '',
     collarType: '',
     sleeveType: '',
-    garmentVariant: '',
+    cuffRequired: '',
     sublimationRequired: false,
     embroideryRequired: false,
     dtfRequired: false,
@@ -36,6 +42,16 @@ function emptyFormState() {
   }
 }
 
+function toCuffSelectValue(value) {
+  if (value === true) {
+    return 'true'
+  }
+  if (value === false) {
+    return 'false'
+  }
+  return ''
+}
+
 function toFormState(specification) {
   const source = specification ?? {}
 
@@ -43,7 +59,7 @@ function toFormState(specification) {
     garmentType: source.garmentType ?? '',
     collarType: source.collarType ?? '',
     sleeveType: source.sleeveType ?? '',
-    garmentVariant: source.garmentVariant ?? '',
+    cuffRequired: toCuffSelectValue(source.cuffRequired),
     sublimationRequired: Boolean(source.sublimationRequired),
     embroideryRequired: Boolean(source.embroideryRequired),
     dtfRequired: Boolean(source.dtfRequired),
@@ -63,6 +79,8 @@ function ManageOrderItemProductSpecificationDialog({
   orderItem,
   onSaved,
 }) {
+  const { catalogs, loading: catalogsLoading, failed: catalogsFailed } =
+    useCommercialCatalogs()
   const [form, setForm] = useState(emptyFormState)
   const [submitting, setSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
@@ -95,7 +113,7 @@ function ManageOrderItemProductSpecificationDialog({
       garmentType: form.garmentType.trim() || null,
       collarType: form.collarType.trim() || null,
       sleeveType: form.sleeveType.trim() || null,
-      garmentVariant: form.garmentVariant.trim() || null,
+      cuffRequired: form.cuffRequired === '' ? null : form.cuffRequired === 'true',
       sublimationRequired: form.sublimationRequired,
       embroideryRequired: form.embroideryRequired,
       dtfRequired: form.dtfRequired,
@@ -134,6 +152,8 @@ function ManageOrderItemProductSpecificationDialog({
     return null
   }
 
+  const fieldsDisabled = submitting || catalogsLoading
+
   return (
     <Dialog open={open} onClose={handleClose} fullWidth maxWidth="md">
       <DialogTitle>Editar especificaciones</DialogTitle>
@@ -141,6 +161,11 @@ function ManageOrderItemProductSpecificationDialog({
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
           {errorMessage && <Alert severity="error">{errorMessage}</Alert>}
+          {catalogsFailed && (
+            <Alert severity="warning">
+              No fue posible cargar los catálogos comerciales.
+            </Alert>
+          )}
 
           <Stack spacing={0.5}>
             <Typography variant="h6">{orderItem.productName}</Typography>
@@ -150,38 +175,39 @@ function ManageOrderItemProductSpecificationDialog({
           </Stack>
 
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
-            <TextField
+            <CatalogSelect
               label="Tipo de prenda"
               value={form.garmentType}
-              onChange={(event) => updateField('garmentType', event.target.value)}
-              fullWidth
-              disabled={submitting}
+              onChange={(value) => updateField('garmentType', value)}
+              options={withCurrentOption(
+                catalogs.garmentTypes,
+                form.garmentType
+              )}
+              disabled={fieldsDisabled}
             />
-            <TextField
+            <CatalogSelect
               label="Tipo de cuello"
               value={form.collarType}
-              onChange={(event) => updateField('collarType', event.target.value)}
-              fullWidth
-              disabled={submitting}
+              onChange={(value) => updateField('collarType', value)}
+              options={withCurrentOption(catalogs.collarTypes, form.collarType)}
+              disabled={fieldsDisabled}
             />
           </Stack>
 
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
-            <TextField
+            <CatalogSelect
               label="Tipo de manga"
               value={form.sleeveType}
-              onChange={(event) => updateField('sleeveType', event.target.value)}
-              fullWidth
-              disabled={submitting}
+              onChange={(value) => updateField('sleeveType', value)}
+              options={withCurrentOption(catalogs.sleeveTypes, form.sleeveType)}
+              disabled={fieldsDisabled}
             />
-            <TextField
-              label="Variante"
-              value={form.garmentVariant}
-              onChange={(event) =>
-                updateField('garmentVariant', event.target.value)
-              }
-              fullWidth
-              disabled={submitting}
+            <CatalogSelect
+              label="Lleva puño"
+              value={form.cuffRequired}
+              onChange={(value) => updateField('cuffRequired', value)}
+              options={toSelectOptions(catalogs.cuffOptions)}
+              disabled={fieldsDisabled}
             />
           </Stack>
 
@@ -311,7 +337,7 @@ function ManageOrderItemProductSpecificationDialog({
           type="button"
           variant="contained"
           onClick={handleSave}
-          disabled={submitting}
+          disabled={fieldsDisabled}
         >
           {submitting ? 'Guardando...' : 'Guardar especificaciones'}
         </Button>

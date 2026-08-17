@@ -17,6 +17,27 @@ export async function getProductionMaterialConsumptions(productionOrderId) {
   return response.data
 }
 
+export async function registerProductionMaterialConsumption(
+  productionOrderId,
+  payload
+) {
+  const response = await httpClient.post(
+    `/production-orders/${productionOrderId}/material-consumptions`,
+    payload
+  )
+  return response.data
+}
+
+export async function getProductionOperators() {
+  const response = await httpClient.get('/production/operators')
+  return response.data
+}
+
+export async function createProductionOperator(payload) {
+  const response = await httpClient.post('/production/operators', payload)
+  return response.data
+}
+
 export async function getEligibleProductionLaborOperators() {
   const response = await httpClient.get('/production/labor-operators')
   return response.data
@@ -37,10 +58,14 @@ export async function registerProductionLaborWork(productionOrderId, payload) {
   return response.data
 }
 
-export async function payProductionLaborWork(productionOrderId, laborWorkId) {
+export async function payProductionLaborWork(
+  productionOrderId,
+  laborWorkId,
+  payload = {}
+) {
   const response = await httpClient.patch(
     `/production-orders/${productionOrderId}/labor/${laborWorkId}/pay`,
-    {}
+    payload
   )
   return response.data
 }
@@ -72,16 +97,18 @@ export async function planProductionOrder(productionOrderId, payload) {
   return response.data
 }
 
-export async function startProductionOrder(productionOrderId) {
+export async function startProductionOrder(productionOrderId, payload = {}) {
   const response = await httpClient.patch(
-    `/production-orders/${productionOrderId}/start`
+    `/production-orders/${productionOrderId}/start`,
+    payload
   )
   return response.data
 }
 
-export async function completeProductionOrder(productionOrderId) {
+export async function completeProductionOrder(productionOrderId, payload = {}) {
   const response = await httpClient.patch(
-    `/production-orders/${productionOrderId}/complete`
+    `/production-orders/${productionOrderId}/complete`,
+    payload
   )
   return response.data
 }

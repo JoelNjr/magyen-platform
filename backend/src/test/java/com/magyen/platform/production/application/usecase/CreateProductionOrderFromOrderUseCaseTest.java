@@ -116,8 +116,8 @@ class CreateProductionOrderFromOrderUseCaseTest {
         assertEquals(20, firstItem.getQuantity());
         assertEquals("Camiseta", firstItem.getProductSpecification().getGarmentType());
         assertEquals("Redondo", firstItem.getProductSpecification().getCollarType());
-        assertEquals("Corta", firstItem.getProductSpecification().getSleeveType());
-        assertEquals("Dry-fit", firstItem.getProductSpecification().getGarmentVariant());
+        assertEquals("Manga corta sisa", firstItem.getProductSpecification().getSleeveType());
+        assertEquals(Boolean.TRUE, firstItem.getProductSpecification().getCuffRequired());
         assertTrue(firstItem.getProductSpecification().isSublimationRequired());
         assertEquals("Full print", firstItem.getProductSpecification().getDecorationNotes());
         assertTrue(firstItem.getProductSpecification().isIncludesNames());
@@ -133,7 +133,7 @@ class CreateProductionOrderFromOrderUseCaseTest {
 
         ProductionItem secondItem = findItemByProductName(productionOrder, "Pantalón");
         assertEquals(12, secondItem.getQuantity());
-        assertEquals("Pantalón", secondItem.getProductSpecification().getGarmentType());
+        assertEquals("Pantaloneta", secondItem.getProductSpecification().getGarmentType());
         assertTrue(secondItem.getProductSpecification().isEmbroideryRequired());
         assertEquals(Map.of("M", 5, "L", 7), secondItem.getSizeBreakdowns().stream()
                 .collect(Collectors.toMap(
@@ -166,10 +166,10 @@ class CreateProductionOrderFromOrderUseCaseTest {
                         commercialOrder.getId(),
                         commercialItemId,
                         new ProductSpecificationCommand(
-                                "Polo",
-                                "Mao",
-                                "Larga",
-                                "Premium",
+                                "Camiseta tipo polo",
+                                "En V recto",
+                                "Manga larga sisa",
+                                false,
                                 false,
                                 true,
                                 false,
@@ -201,7 +201,7 @@ class CreateProductionOrderFromOrderUseCaseTest {
                 .filter(item -> item.getId().equals(commercialItemId))
                 .findFirst()
                 .orElseThrow();
-        assertEquals("Polo", mutatedItem.getProductSpecification().getGarmentType());
+        assertEquals("Camiseta tipo polo", mutatedItem.getProductSpecification().getGarmentType());
         assertEquals(2, mutatedItem.getSizeBreakdowns().size());
 
         ProductionOrder productionOrder = reloadProductionOrder(result.productionOrderId());
@@ -209,8 +209,8 @@ class CreateProductionOrderFromOrderUseCaseTest {
 
         assertEquals("Camiseta", snapshotItem.getProductSpecification().getGarmentType());
         assertEquals("Redondo", snapshotItem.getProductSpecification().getCollarType());
-        assertEquals("Corta", snapshotItem.getProductSpecification().getSleeveType());
-        assertEquals("Dry-fit", snapshotItem.getProductSpecification().getGarmentVariant());
+        assertEquals("Manga corta sisa", snapshotItem.getProductSpecification().getSleeveType());
+        assertEquals(Boolean.TRUE, snapshotItem.getProductSpecification().getCuffRequired());
         assertTrue(snapshotItem.getProductSpecification().isSublimationRequired());
         assertEquals("Full print", snapshotItem.getProductSpecification().getDecorationNotes());
         assertEquals("Roster completo", snapshotItem.getProductSpecification().getPersonalizationNotes());
@@ -229,13 +229,13 @@ class CreateProductionOrderFromOrderUseCaseTest {
                         UUID.randomUUID(),
                         "Sudadera",
                         8,
-                        "Algodón",
+                        "Hydrotech",
                         "Gris",
                         Money.of(new BigDecimal("55000")),
                         ProductSpecification.of(
-                                "Sudadera",
-                                "Capucha",
-                                "Larga",
+                                "Conjunto deportivo",
+                                "Redondo",
+                                "Manga larga sisa",
                                 null,
                                 false,
                                 false,
@@ -266,7 +266,7 @@ class CreateProductionOrderFromOrderUseCaseTest {
         assertEquals("Sudadera", productionOrder.getItems().getFirst().getProductName());
         assertEquals(8, productionOrder.getItems().getFirst().getQuantity());
         assertTrue(productionOrder.getItems().getFirst().getSizeBreakdowns().isEmpty());
-        assertEquals("Sudadera", productionOrder.getItems().getFirst().getProductSpecification().getGarmentType());
+        assertEquals("Conjunto deportivo", productionOrder.getItems().getFirst().getProductSpecification().getGarmentType());
     }
 
     @Test
@@ -388,14 +388,14 @@ class CreateProductionOrderFromOrderUseCaseTest {
                         ProductionPriority.HIGH
                 )
         );
-        startProductionOrderUseCase.execute(new StartProductionOrderCommand(productionOrderId));
+        startProductionOrderUseCase.execute(new StartProductionOrderCommand(productionOrderId, null));
         startProductionOperationUseCase.execute(
                 new StartProductionOperationCommand(productionOrderId, addResult.operationId())
         );
         completeProductionOperationUseCase.execute(
                 new CompleteProductionOperationCommand(productionOrderId, addResult.operationId())
         );
-        completeProductionOrderUseCase.execute(new CompleteProductionOrderCommand(productionOrderId));
+        completeProductionOrderUseCase.execute(new CompleteProductionOrderCommand(productionOrderId, null));
 
         ProductionOrder completed = reloadProductionOrder(productionOrderId);
         assertEquals(ProductionStatus.COMPLETED, completed.getStatus());
@@ -441,8 +441,8 @@ class CreateProductionOrderFromOrderUseCaseTest {
                 ProductSpecification.of(
                         "Camiseta",
                         "Redondo",
-                        "Corta",
-                        "Dry-fit",
+                        "Manga corta sisa",
+                        true,
                         true,
                         false,
                         true,
@@ -468,10 +468,10 @@ class CreateProductionOrderFromOrderUseCaseTest {
                 "Negro",
                 Money.of(new BigDecimal("30000")),
                 ProductSpecification.of(
-                        "Pantalón",
-                        null,
-                        null,
-                        "Slim",
+                        "Pantaloneta",
+                        "Redondo",
+                        "Manga corta sisa",
+                        false,
                         false,
                         true,
                         false,
@@ -499,7 +499,7 @@ class CreateProductionOrderFromOrderUseCaseTest {
                 UUID.randomUUID(),
                 today,
                 DeliveryCommitment.of(today.plusDays(14)),
-                "Creation Tester",
+                UUID.randomUUID(),
                 "Commercial order for production creation",
                 items
         );

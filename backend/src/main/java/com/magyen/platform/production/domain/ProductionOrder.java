@@ -28,6 +28,8 @@ public class ProductionOrder {
     private ProductionPriority priority;
     private LocalDate plannedStartDate;
     private LocalDate plannedEndDate;
+    private LocalDate actualStartDate;
+    private LocalDate actualCompletionDate;
     private final String observations;
     private final List<ProductionItem> items;
     private final List<ProductionOperation> operations;
@@ -42,6 +44,8 @@ public class ProductionOrder {
             ProductionPriority priority,
             LocalDate plannedStartDate,
             LocalDate plannedEndDate,
+            LocalDate actualStartDate,
+            LocalDate actualCompletionDate,
             String observations,
             List<ProductionItem> items,
             List<ProductionOperation> operations,
@@ -55,6 +59,8 @@ public class ProductionOrder {
         this.priority = Objects.requireNonNull(priority, "Priority must not be null");
         this.plannedStartDate = plannedStartDate;
         this.plannedEndDate = plannedEndDate;
+        this.actualStartDate = actualStartDate;
+        this.actualCompletionDate = actualCompletionDate;
         this.observations = observations;
         this.items = new ArrayList<>(Objects.requireNonNull(items, "Items must not be null"));
         this.operations = new ArrayList<>(Objects.requireNonNull(operations, "Operations must not be null"));
@@ -111,6 +117,8 @@ public class ProductionOrder {
                 priority,
                 plannedStartDate,
                 plannedEndDate,
+                null,
+                null,
                 observations,
                 items == null ? List.of() : items,
                 List.of(),
@@ -198,6 +206,43 @@ public class ProductionOrder {
             List<ProductionMaterialConsumption> materialConsumptions,
             List<ProductionLaborWork> laborWorks
     ) {
+        return reconstitute(
+                id,
+                orderId,
+                creationDate,
+                status,
+                priority,
+                plannedStartDate,
+                plannedEndDate,
+                observations,
+                items,
+                operations,
+                materialConsumptions,
+                laborWorks,
+                null,
+                null
+        );
+    }
+
+    /**
+     * Reconstruye una Orden de Producción incluyendo fechas reales de inicio y cierre.
+     */
+    public static ProductionOrder reconstitute(
+            UUID id,
+            UUID orderId,
+            LocalDate creationDate,
+            ProductionStatus status,
+            ProductionPriority priority,
+            LocalDate plannedStartDate,
+            LocalDate plannedEndDate,
+            String observations,
+            List<ProductionItem> items,
+            List<ProductionOperation> operations,
+            List<ProductionMaterialConsumption> materialConsumptions,
+            List<ProductionLaborWork> laborWorks,
+            LocalDate actualStartDate,
+            LocalDate actualCompletionDate
+    ) {
         return new ProductionOrder(
                 id,
                 orderId,
@@ -206,6 +251,8 @@ public class ProductionOrder {
                 priority,
                 plannedStartDate,
                 plannedEndDate,
+                actualStartDate,
+                actualCompletionDate,
                 observations,
                 items == null ? List.of() : items,
                 operations == null ? List.of() : operations,
@@ -250,6 +297,15 @@ public class ProductionOrder {
      * Transición válida: {@link ProductionStatus#PLANNED} → {@link ProductionStatus#IN_PROGRESS}.
      */
     public void start() {
+        start(LocalDate.now());
+    }
+
+    /**
+     * Inicia la ejecución con una fecha real de inicio, incluyendo fechas históricas.
+     */
+    public void start(LocalDate actualStartDate) {
+        Objects.requireNonNull(actualStartDate, "Actual start date must not be null");
+
         if (status == ProductionStatus.IN_PROGRESS) {
             return;
         }
@@ -260,6 +316,7 @@ public class ProductionOrder {
             );
         }
 
+        this.actualStartDate = actualStartDate;
         this.status = ProductionStatus.IN_PROGRESS;
     }
 
@@ -270,6 +327,15 @@ public class ProductionOrder {
      * Todas las operaciones deben estar completadas.
      */
     public void complete() {
+        complete(LocalDate.now());
+    }
+
+    /**
+     * Completa la Orden de Producción con una fecha real de cierre, incluyendo fechas históricas.
+     */
+    public void complete(LocalDate actualCompletionDate) {
+        Objects.requireNonNull(actualCompletionDate, "Actual completion date must not be null");
+
         if (status == ProductionStatus.COMPLETED) {
             return;
         }
@@ -280,8 +346,15 @@ public class ProductionOrder {
             );
         }
 
+        if (actualStartDate != null && actualCompletionDate.isBefore(actualStartDate)) {
+            throw new ProductionDomainException(
+                    "Production completion date must not be before production start date"
+            );
+        }
+
         ensureAllOperationsCompleted();
 
+        this.actualCompletionDate = actualCompletionDate;
         this.status = ProductionStatus.COMPLETED;
     }
 
@@ -453,6 +526,14 @@ public class ProductionOrder {
 
     public LocalDate getPlannedEndDate() {
         return plannedEndDate;
+    }
+
+    public LocalDate getActualStartDate() {
+        return actualStartDate;
+    }
+
+    public LocalDate getActualCompletionDate() {
+        return actualCompletionDate;
     }
 
     public String getObservations() {

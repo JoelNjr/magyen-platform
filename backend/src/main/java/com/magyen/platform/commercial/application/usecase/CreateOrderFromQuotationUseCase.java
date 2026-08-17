@@ -56,7 +56,15 @@ public class CreateOrderFromQuotationUseCase {
             throw new OrderAlreadyExistsForQuotationException();
         }
 
-        LocalDate confirmationDate = LocalDate.now();
+        LocalDate confirmationDate = command.confirmationDate() != null
+                ? command.confirmationDate()
+                : LocalDate.now();
+
+        if (confirmationDate.isBefore(quotation.getCreationDate())) {
+            throw new IllegalArgumentException(
+                    "Confirmation date must not be before quotation date"
+            );
+        }
 
         Order order = Order.create(
                 OrderNumber.of(command.orderNumber()),
@@ -64,8 +72,9 @@ public class CreateOrderFromQuotationUseCase {
                 quotation.getId(),
                 confirmationDate,
                 DeliveryCommitment.of(command.deliveryDate()),
-                command.salesperson(),
+                quotation.getSellerId(),
                 command.observations(),
+                command.description(),
                 mapItems(quotation.getItems())
         );
 
@@ -83,14 +92,9 @@ public class CreateOrderFromQuotationUseCase {
         Objects.requireNonNull(command.quotationId(), "Quotation id must not be null");
         Objects.requireNonNull(command.orderNumber(), "Order number must not be null");
         Objects.requireNonNull(command.deliveryDate(), "Delivery date must not be null");
-        Objects.requireNonNull(command.salesperson(), "Salesperson must not be null");
 
         if (command.orderNumber().isBlank()) {
             throw new IllegalArgumentException("Order number must not be blank");
-        }
-
-        if (command.salesperson().isBlank()) {
-            throw new IllegalArgumentException("Salesperson must not be blank");
         }
     }
 

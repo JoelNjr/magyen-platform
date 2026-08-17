@@ -1,5 +1,6 @@
 package com.magyen.platform.commercial.application.usecase;
 
+import com.magyen.platform.commercial.application.SellerNameResolver;
 import com.magyen.platform.commercial.application.dto.GetQuotationCommand;
 import com.magyen.platform.commercial.application.dto.GetQuotationResult;
 import com.magyen.platform.commercial.application.dto.ProductSpecificationResult;
@@ -23,13 +24,16 @@ public class GetQuotationUseCase {
 
     private final QuotationRepository quotationRepository;
     private final OrderRepository orderRepository;
+    private final SellerNameResolver sellerNameResolver;
 
     public GetQuotationUseCase(
             QuotationRepository quotationRepository,
-            OrderRepository orderRepository
+            OrderRepository orderRepository,
+            SellerNameResolver sellerNameResolver
     ) {
         this.quotationRepository = Objects.requireNonNull(quotationRepository, "Quotation repository must not be null");
         this.orderRepository = Objects.requireNonNull(orderRepository, "Order repository must not be null");
+        this.sellerNameResolver = Objects.requireNonNull(sellerNameResolver, "Seller name resolver must not be null");
     }
 
     public GetQuotationResult execute(GetQuotationCommand command) {
@@ -64,7 +68,8 @@ public class GetQuotationUseCase {
                 quotation.getCreationDate(),
                 quotation.getDeliveryDate(),
                 quotation.getStatus(),
-                quotation.getSalesperson(),
+                quotation.getSellerId(),
+                sellerNameResolver.resolveName(quotation.getSellerId()),
                 quotation.getObservations(),
                 items,
                 quotation.getTotal().getAmount(),
@@ -99,7 +104,7 @@ public class GetQuotationUseCase {
                 resolved.getGarmentType(),
                 resolved.getCollarType(),
                 resolved.getSleeveType(),
-                resolved.getGarmentVariant(),
+                resolved.getCuffRequired(),
                 resolved.isSublimationRequired(),
                 resolved.isEmbroideryRequired(),
                 resolved.isDtfRequired(),

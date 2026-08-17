@@ -10,6 +10,7 @@ public record HomeProductionItem(
         UUID productionOrderId,
         UUID orderId,
         String orderNumber,
+        String orderDescription,
         UUID customerId,
         String customerName,
         String status,

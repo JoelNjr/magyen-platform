@@ -228,6 +228,6 @@ class ProductionMaterialConsumptionApiContractTest {
                 LocalDate.now().plusDays(1),
                 ProductionPriority.NORMAL
         ));
-        startProductionOrderUseCase.execute(new StartProductionOrderCommand(productionOrderId));
+        startProductionOrderUseCase.execute(new StartProductionOrderCommand(productionOrderId, null));
     }
 }

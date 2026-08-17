@@ -9,6 +9,16 @@ CREATE TABLE customers (
     CONSTRAINT customers_pkey PRIMARY KEY (id)
 );
 
+-- Internal Magyen sellers. Commercial-owned person identity for quotations/orders.
+-- Not an authentication user. Historical rows keep seller_id even if later deactivated.
+CREATE TABLE sellers (
+    id      uuid            NOT NULL,
+    name    varchar(255)    NOT NULL,
+    active  boolean         NOT NULL,
+    CONSTRAINT sellers_pkey PRIMARY KEY (id),
+    CONSTRAINT sellers_name_key UNIQUE (name)
+);
+
 -- Sequence for commercial quotation numbers (concurrency-safe source of next values).
 -- Application generation wiring is deferred; column remains nullable until historical backfill.
 CREATE SEQUENCE quotation_number_seq
@@ -25,7 +35,7 @@ CREATE TABLE quotations (
     creation_date       date            NOT NULL,
     delivery_date       date            NOT NULL,
     status              varchar(20)     NOT NULL,
-    salesperson         varchar(255)    NOT NULL,
+    seller_id           uuid            NOT NULL,
     observations        varchar(2000)   NULL,
     total_amount        numeric(19, 2)  NOT NULL,
     CONSTRAINT quotations_pkey PRIMARY KEY (id),
@@ -45,6 +55,7 @@ CREATE TABLE quotation_items (
     collar_type             varchar(100)    NULL,
     sleeve_type             varchar(100)    NULL,
     garment_variant         varchar(100)    NULL,
+    cuff_required           boolean         NULL,
     sublimation_required    boolean         NOT NULL DEFAULT FALSE,
     embroidery_required     boolean         NOT NULL DEFAULT FALSE,
     dtf_required            boolean         NOT NULL DEFAULT FALSE,
@@ -67,6 +78,9 @@ CREATE INDEX idx_quotations_status
 CREATE INDEX idx_quotations_customer_id
     ON quotations (customer_id);
 
+CREATE INDEX idx_quotations_seller_id
+    ON quotations (seller_id);
+
 CREATE INDEX idx_quotation_items_quotation_id
     ON quotation_items (quotation_id);
 
@@ -83,8 +97,9 @@ CREATE TABLE orders (
     final_payment_acknowledged  boolean         NOT NULL,
     committed_total             numeric(19, 2)  NOT NULL,
     remaining_balance           numeric(19, 2)  NOT NULL,
-    salesperson                 varchar(255)    NOT NULL,
+    seller_id                   uuid            NOT NULL,
     observations                varchar(2000)   NULL,
+    description                 varchar(2000)   NULL,
     total_amount                numeric(19, 2)  NOT NULL,
     CONSTRAINT orders_pkey PRIMARY KEY (id),
     CONSTRAINT orders_quotation_id_key UNIQUE (quotation_id)
@@ -103,6 +118,7 @@ CREATE TABLE order_items (
     collar_type             varchar(100)    NULL,
     sleeve_type             varchar(100)    NULL,
     garment_variant         varchar(100)    NULL,
+    cuff_required           boolean         NULL,
     sublimation_required    boolean         NOT NULL DEFAULT FALSE,
     embroidery_required     boolean         NOT NULL DEFAULT FALSE,
     dtf_required            boolean         NOT NULL DEFAULT FALSE,
@@ -138,6 +154,9 @@ CREATE INDEX idx_orders_status
 CREATE INDEX idx_orders_customer_id
     ON orders (customer_id);
 
+CREATE INDEX idx_orders_seller_id
+    ON orders (seller_id);
+
 -- quotation_id lookups are served by orders_quotation_id_key (UNIQUE).
 
 CREATE INDEX idx_order_items_order_id
@@ -155,9 +174,11 @@ CREATE TABLE production_orders (
     creation_date       date            NOT NULL,
     status              varchar(30)     NOT NULL,
     priority            varchar(30)     NOT NULL,
-    planned_start_date  date            NULL,
-    planned_end_date    date            NULL,
-    observations        varchar(2000)   NULL,
+    planned_start_date      date            NULL,
+    planned_end_date        date            NULL,
+    actual_start_date       date            NULL,
+    actual_completion_date  date            NULL,
+    observations            varchar(2000)   NULL,
     CONSTRAINT production_orders_pkey PRIMARY KEY (id),
     CONSTRAINT production_orders_order_id_key UNIQUE (order_id)
 );
@@ -171,6 +192,7 @@ CREATE TABLE production_items (
     collar_type             varchar(100)    NULL,
     sleeve_type             varchar(100)    NULL,
     garment_variant         varchar(100)    NULL,
+    cuff_required           boolean         NULL,
     sublimation_required    boolean         NOT NULL DEFAULT FALSE,
     embroidery_required     boolean         NOT NULL DEFAULT FALSE,
     dtf_required            boolean         NOT NULL DEFAULT FALSE,
@@ -216,6 +238,16 @@ CREATE TABLE production_operations (
         FOREIGN KEY (production_order_id)
         REFERENCES production_orders (id)
         ON DELETE CASCADE
+);
+
+-- Production-owned operators. Not authentication users and not Commercial sellers.
+-- Historical labor keeps operator_employee_id even if the operator is later deactivated.
+CREATE TABLE production_operators (
+    id      uuid            NOT NULL,
+    name    varchar(255)    NOT NULL,
+    active  boolean         NOT NULL,
+    CONSTRAINT production_operators_pkey PRIMARY KEY (id),
+    CONSTRAINT production_operators_name_key UNIQUE (name)
 );
 
 CREATE INDEX idx_production_orders_status
@@ -357,6 +389,7 @@ CREATE UNIQUE INDEX uq_inventory_movements_source
 CREATE TABLE plotter_jobs (
     id                          uuid            NOT NULL,
     customer_id                 uuid            NOT NULL,
+    order_id                    uuid            NULL,
     creation_date               date            NOT NULL,
     paper_inventory_item_id     uuid            NOT NULL,
     printed_meters              numeric(19, 4)  NOT NULL,
@@ -369,6 +402,9 @@ CREATE TABLE plotter_jobs (
 
 CREATE INDEX idx_plotter_jobs_customer_id
     ON plotter_jobs (customer_id);
+
+CREATE INDEX idx_plotter_jobs_order_id
+    ON plotter_jobs (order_id);
 
 CREATE INDEX idx_plotter_jobs_creation_date
     ON plotter_jobs (creation_date);

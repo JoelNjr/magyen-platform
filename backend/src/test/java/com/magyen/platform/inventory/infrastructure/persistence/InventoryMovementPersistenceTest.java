@@ -84,7 +84,14 @@ class InventoryMovementPersistenceTest {
 
     @Test
     void loadsExistingInventoryBaselineWithoutFabricatedCost() {
-        InventoryItem existing = inventoryItemRepository.findByCode(MaterialCode.of("TELA-001")).orElseThrow();
+        InventoryItem existing = inventoryItemRepository.save(InventoryItem.create(
+                MaterialCode.of("TELA-BASE-" + UUID.randomUUID().toString().substring(0, 8)),
+                "Tela Sudáfrica Blanca",
+                "FABRIC",
+                "METER",
+                new BigDecimal("135.2500"),
+                null
+        ));
 
         assertEquals("Tela Sudáfrica Blanca", existing.getName());
         assertEquals("METER", existing.getUnitOfMeasure());

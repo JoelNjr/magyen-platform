@@ -53,8 +53,8 @@ public class QuotationItemEntity {
     @Column(name = "sleeve_type", length = 100)
     private String sleeveType;
 
-    @Column(name = "garment_variant", length = 100)
-    private String garmentVariant;
+    @Column(name = "cuff_required")
+    private Boolean cuffRequired;
 
     @Column(name = "sublimation_required", nullable = false)
     private boolean sublimationRequired;
@@ -174,12 +174,12 @@ public class QuotationItemEntity {
         this.sleeveType = sleeveType;
     }
 
-    public String getGarmentVariant() {
-        return garmentVariant;
+    public Boolean getCuffRequired() {
+        return cuffRequired;
     }
 
-    public void setGarmentVariant(String garmentVariant) {
-        this.garmentVariant = garmentVariant;
+    public void setCuffRequired(Boolean cuffRequired) {
+        this.cuffRequired = cuffRequired;
     }
 
     public boolean isSublimationRequired() {

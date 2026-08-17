@@ -2,6 +2,8 @@ package com.magyen.platform.commercial.presentation;
 
 import com.magyen.platform.commercial.domain.Customer;
 import com.magyen.platform.commercial.domain.CustomerRepository;
+import com.magyen.platform.commercial.domain.Seller;
+import com.magyen.platform.commercial.domain.SellerRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,6 +45,9 @@ class ProductSpecificationApiContractTest {
 
     @Autowired
     private CustomerRepository customerRepository;
+
+    @Autowired
+    private SellerRepository sellerRepository;
 
     private MockMvc mockMvc;
 
@@ -96,10 +101,10 @@ class ProductSpecificationApiContractTest {
                                           "color": "Azul",
                                           "unitPrice": 45000,
                                           "productSpecification": {
-                                            "garmentType": "Camiseta deportiva",
-                                            "collarType": "Cuello redondo",
-                                            "sleeveType": "Manga corta",
-                                            "garmentVariant": "Jugador",
+                                            "garmentType": "Camiseta",
+                                            "collarType": "Redondo",
+                                            "sleeveType": "Manga corta sisa",
+                                            "cuffRequired": true,
                                             "sublimationRequired": true,
                                             "embroideryRequired": false,
                                             "dtfRequired": false,
@@ -117,10 +122,10 @@ class ProductSpecificationApiContractTest {
 
         mockMvc.perform(get("/api/v1/quotations/{quotationId}", quotationId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.items[0].productSpecification.garmentType").value("Camiseta deportiva"))
-                .andExpect(jsonPath("$.items[0].productSpecification.collarType").value("Cuello redondo"))
-                .andExpect(jsonPath("$.items[0].productSpecification.sleeveType").value("Manga corta"))
-                .andExpect(jsonPath("$.items[0].productSpecification.garmentVariant").value("Jugador"))
+                .andExpect(jsonPath("$.items[0].productSpecification.garmentType").value("Camiseta"))
+                .andExpect(jsonPath("$.items[0].productSpecification.collarType").value("Redondo"))
+                .andExpect(jsonPath("$.items[0].productSpecification.sleeveType").value("Manga corta sisa"))
+                .andExpect(jsonPath("$.items[0].productSpecification.cuffRequired").value(true))
                 .andExpect(jsonPath("$.items[0].productSpecification.sublimationRequired").value(true))
                 .andExpect(jsonPath("$.items[0].productSpecification.embroideryRequired").value(false))
                 .andExpect(jsonPath("$.items[0].productSpecification.dtfRequired").value(false))
@@ -145,7 +150,6 @@ class ProductSpecificationApiContractTest {
                                           "quotationId": "%s",
                                           "orderNumber": "%s",
                                           "deliveryDate": "%s",
-                                          "salesperson": "API Tester",
                                           "observations": "Spec contract"
                                         }
                                         """.formatted(quotationId, orderNumber, LocalDate.now().plusDays(10)))
@@ -158,7 +162,7 @@ class ProductSpecificationApiContractTest {
         mockMvc.perform(get("/api/v1/orders/{orderId}", orderId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].productName").value("Camiseta Deportiva"))
-                .andExpect(jsonPath("$.items[0].productSpecification.garmentType").value("Camiseta deportiva"))
+                .andExpect(jsonPath("$.items[0].productSpecification.garmentType").value("Camiseta"))
                 .andExpect(jsonPath("$.items[0].productSpecification.sublimationRequired").value(true))
                 .andExpect(jsonPath("$.items[0].productSpecification.includesNames").value(true))
                 .andExpect(jsonPath("$.items[0].productSpecification.includesNumbers").value(true))
@@ -172,6 +176,7 @@ class ProductSpecificationApiContractTest {
 
     private UUID createDraftQuotation() throws Exception {
         Customer customer = customerRepository.save(Customer.create("Cliente Spec API"));
+        Seller seller = sellerRepository.save(Seller.create("API Tester " + UUID.randomUUID()));
 
         MvcResult result = mockMvc.perform(
                         post("/api/v1/quotations")
@@ -180,10 +185,10 @@ class ProductSpecificationApiContractTest {
                                         {
                                           "customerId": "%s",
                                           "deliveryDate": "%s",
-                                          "salesperson": "API Tester",
+                                          "sellerId": "%s",
                                           "observations": "ProductSpecification contract"
                                         }
-                                        """.formatted(customer.getId(), LocalDate.now().plusDays(14)))
+                                        """.formatted(customer.getId(), LocalDate.now().plusDays(14), seller.getId()))
                 )
                 .andExpect(status().isCreated())
                 .andReturn();

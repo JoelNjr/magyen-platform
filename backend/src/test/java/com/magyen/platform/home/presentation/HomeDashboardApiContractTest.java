@@ -105,6 +105,11 @@ class HomeDashboardApiContractTest {
                 .andExpect(jsonPath("$.receivables.totalCollectedAmount").isNumber())
                 .andExpect(jsonPath("$.receivables.orderCount").isNumber())
                 .andExpect(jsonPath("$.receivables.items").isArray())
+                .andExpect(jsonPath("$.completedReceivables").exists())
+                .andExpect(jsonPath("$.completedReceivables.totalOutstandingAmount").isNumber())
+                .andExpect(jsonPath("$.completedReceivables.totalCollectedAmount").isNumber())
+                .andExpect(jsonPath("$.completedReceivables.orderCount").isNumber())
+                .andExpect(jsonPath("$.completedReceivables.items").isArray())
                 .andExpect(jsonPath("$.commitments").exists())
                 .andExpect(jsonPath("$.commitments.totalPendingAmount").isNumber())
                 .andExpect(jsonPath("$.commitments.totalOverdueAmount").isNumber())
@@ -363,7 +368,7 @@ class HomeDashboardApiContractTest {
                 UUID.randomUUID(),
                 confirmationDate,
                 DeliveryCommitment.of(confirmationDate.plusDays(7)),
-                "Tester",
+                UUID.randomUUID(),
                 "Orden Home API receivables",
                 List.of(item)
         );

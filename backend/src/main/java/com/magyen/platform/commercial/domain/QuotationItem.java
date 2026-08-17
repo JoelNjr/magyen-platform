@@ -8,6 +8,9 @@ import java.util.UUID;
 /**
  * Representa un producto solicitado por el cliente dentro de una cotización.
  * <p>
+ * {@code color} es el color de tela / base, no el diseño sublimado completo.
+ * En productos sublimados el valor de negocio es {@code Blanco}.
+ * <p>
  * Solo puede ser creado por el agregado {@link Quotation}.
  */
 public class QuotationItem {
@@ -64,7 +67,7 @@ public class QuotationItem {
                 UUID.randomUUID(),
                 productName,
                 quantity,
-                fabric,
+                CommercialFabric.canonicalize(fabric),
                 color,
                 unitPrice,
                 productSpecification

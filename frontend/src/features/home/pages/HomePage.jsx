@@ -142,6 +142,7 @@ function HomePage() {
 
   const financial = dashboard?.financialSummary
   const receivables = dashboard?.receivables
+  const completedReceivables = dashboard?.completedReceivables
   const commitments = dashboard?.commitments
   const inventoryAlerts = dashboard?.inventoryAlerts
   const paperRollAlerts = dashboard?.paperRollAlerts
@@ -149,6 +150,9 @@ function HomePage() {
   const profitability = dashboard?.profitabilitySummary
 
   const receivableItems = Array.isArray(receivables?.items) ? receivables.items : []
+  const completedReceivableItems = Array.isArray(completedReceivables?.items)
+    ? completedReceivables.items
+    : []
   const commitmentItems = Array.isArray(commitments?.items) ? commitments.items : []
   const paperItems = Array.isArray(paperRollAlerts?.items) ? paperRollAlerts.items : []
   const productionItems = Array.isArray(production?.items) ? production.items : []
@@ -256,7 +260,7 @@ function HomePage() {
             <TableContainer component={Paper} variant="outlined">
               <Table size="small">
                 <TableBody>
-                  <LoadingRows columns={6} />
+                  <LoadingRows columns={7} />
                 </TableBody>
               </Table>
             </TableContainer>
@@ -272,6 +276,7 @@ function HomePage() {
                   <TableRow>
                     <TableCell sx={headerCellSx}>Producción</TableCell>
                     <TableCell sx={headerCellSx}>Orden comercial</TableCell>
+                    <TableCell sx={headerCellSx}>Descripción</TableCell>
                     <TableCell sx={headerCellSx}>Cliente</TableCell>
                     <TableCell sx={headerCellSx}>Estado</TableCell>
                     <TableCell sx={headerCellSx}>Prioridad</TableCell>
@@ -320,6 +325,9 @@ function HomePage() {
                           ) : (
                             '—'
                           )}
+                        </TableCell>
+                        <TableCell>
+                          {item.orderDescription || '—'}
                         </TableCell>
                         <TableCell>
                           {resolveProductionBusinessLabel(item.customerName)}
@@ -688,6 +696,92 @@ function HomePage() {
                     <TableCell title={item.customerId}>
                       {formatCustomerId(item.customerId)}
                     </TableCell>
+                    <TableCell align="right">
+                      {formatFinanceMoney(item.outstandingAmount)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
+      </Stack>
+
+      {/* 5b — Completed order receivables */}
+      <Stack spacing={2}>
+        <SectionHeader
+          title="Dinero por cobrar de pedidos completados"
+          priority="standard"
+          subtitle="Pedidos entregados o cerrados que todavía tienen saldo pendiente."
+          actions={
+            <Button component={RouterLink} to="/commercial/orders" size="small">
+              Ver órdenes
+            </Button>
+          }
+        />
+        {!failed ? (
+          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+            {loading ? (
+              <Skeleton width={180} height={32} />
+            ) : (
+              <>
+                <CounterChip
+                  label="Pendiente"
+                  value={formatFinanceMoney(
+                    completedReceivables?.totalOutstandingAmount
+                  )}
+                  color="warning"
+                />
+                <CounterChip
+                  label="Pedidos"
+                  value={completedReceivables?.orderCount ?? 0}
+                />
+              </>
+            )}
+          </Stack>
+        ) : null}
+        {loading ? (
+          <TableContainer component={Paper} variant="outlined">
+            <Table size="small">
+              <TableBody>
+                <LoadingRows columns={4} />
+              </TableBody>
+            </Table>
+          </TableContainer>
+        ) : failed ? null : completedReceivableItems.length === 0 ? (
+          <EmptyState
+            icon={<ReceiptLongOutlinedIcon color="disabled" fontSize="large" />}
+            message="No hay pedidos completados con saldo pendiente."
+          />
+        ) : (
+          <TableContainer component={Paper} variant="outlined" sx={{ overflowX: 'auto' }}>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={headerCellSx}>Orden</TableCell>
+                  <TableCell sx={headerCellSx}>Cliente</TableCell>
+                  <TableCell sx={headerCellSx}>Descripción</TableCell>
+                  <TableCell sx={headerCellSx} align="right">
+                    Pendiente
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {completedReceivableItems.map((item) => (
+                  <TableRow key={item.orderId} hover>
+                    <TableCell>
+                      <Link
+                        component={RouterLink}
+                        to={`/commercial/orders/${item.orderId}`}
+                        underline="hover"
+                      >
+                        {item.orderNumber || '—'}
+                      </Link>
+                    </TableCell>
+                    <TableCell>
+                      {item.customerName || '—'}
+                    </TableCell>
+                    <TableCell>{item.description || '—'}</TableCell>
                     <TableCell align="right">
                       {formatFinanceMoney(item.outstandingAmount)}
                     </TableCell>

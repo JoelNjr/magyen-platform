@@ -2,6 +2,8 @@ package com.magyen.platform.production.presentation;
 
 import com.magyen.platform.commercial.domain.Customer;
 import com.magyen.platform.commercial.domain.CustomerRepository;
+import com.magyen.platform.commercial.domain.Seller;
+import com.magyen.platform.commercial.domain.SellerRepository;
 import com.magyen.platform.production.domain.exception.ProductionOrderAlreadyExistsException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -55,6 +57,9 @@ class ProductionOrderDuplicateAndLifecycleApiContractTest {
     @Autowired
     private CustomerRepository customerRepository;
 
+    @Autowired
+    private SellerRepository sellerRepository;
+
     private MockMvc mockMvc;
 
     @BeforeEach
@@ -94,8 +99,8 @@ class ProductionOrderDuplicateAndLifecycleApiContractTest {
                 .andExpect(jsonPath("$.items[0].quantity").value(20))
                 .andExpect(jsonPath("$.items[0].productSpecification.garmentType").value("Camiseta"))
                 .andExpect(jsonPath("$.items[0].productSpecification.collarType").value("Redondo"))
-                .andExpect(jsonPath("$.items[0].productSpecification.sleeveType").value("Corta"))
-                .andExpect(jsonPath("$.items[0].productSpecification.garmentVariant").value("Dry-fit"))
+                .andExpect(jsonPath("$.items[0].productSpecification.sleeveType").value("Manga corta sisa"))
+                .andExpect(jsonPath("$.items[0].productSpecification.cuffRequired").value(true))
                 .andExpect(jsonPath("$.items[0].productSpecification.sublimationRequired").value(true))
                 .andExpect(jsonPath("$.items[0].productSpecification.embroideryRequired").value(false))
                 .andExpect(jsonPath("$.items[0].productSpecification.dtfRequired").value(true))
@@ -214,10 +219,10 @@ class ProductionOrderDuplicateAndLifecycleApiContractTest {
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("""
                                         {
-                                          "garmentType": "Polo",
-                                          "collarType": "Mao",
-                                          "sleeveType": "Larga",
-                                          "garmentVariant": "Premium",
+                                          "garmentType": "Camiseta tipo polo",
+                                          "collarType": "En V recto",
+                                          "sleeveType": "Manga larga sisa",
+                                          "cuffRequired": false,
                                           "sublimationRequired": false,
                                           "embroideryRequired": true,
                                           "dtfRequired": false,
@@ -386,6 +391,7 @@ class ProductionOrderDuplicateAndLifecycleApiContractTest {
 
     private ConfirmedOrderFixture createConfirmedOrderWithSpecificationAndSizes() throws Exception {
         Customer customer = customerRepository.save(Customer.create("Cliente Prod E2E"));
+        Seller seller = sellerRepository.save(Seller.create("Production Guard " + UUID.randomUUID()));
 
         MvcResult quotationResult = mockMvc.perform(
                         post("/api/v1/quotations")
@@ -394,10 +400,10 @@ class ProductionOrderDuplicateAndLifecycleApiContractTest {
                                         {
                                           "customerId": "%s",
                                           "deliveryDate": "%s",
-                                          "salesperson": "Production Guard",
+                                          "sellerId": "%s",
                                           "observations": "E2E production source"
                                         }
-                                        """.formatted(customer.getId(), LocalDate.now().plusDays(14)))
+                                        """.formatted(customer.getId(), LocalDate.now().plusDays(14), seller.getId()))
                 )
                 .andExpect(status().isCreated())
                 .andReturn();
@@ -431,7 +437,6 @@ class ProductionOrderDuplicateAndLifecycleApiContractTest {
                                           "quotationId": "%s",
                                           "orderNumber": "%s",
                                           "deliveryDate": "%s",
-                                          "salesperson": "Production Guard",
                                           "observations": "Confirmed source order"
                                         }
                                         """.formatted(quotationId, orderNumber, LocalDate.now().plusDays(10)))
@@ -456,8 +461,8 @@ class ProductionOrderDuplicateAndLifecycleApiContractTest {
                                         {
                                           "garmentType": "Camiseta",
                                           "collarType": "Redondo",
-                                          "sleeveType": "Corta",
-                                          "garmentVariant": "Dry-fit",
+                                          "sleeveType": "Manga corta sisa",
+                                          "cuffRequired": true,
                                           "sublimationRequired": true,
                                           "embroideryRequired": false,
                                           "dtfRequired": true,

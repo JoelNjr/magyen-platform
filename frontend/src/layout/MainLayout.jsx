@@ -15,9 +15,37 @@ import { isAdmin } from '../features/auth/presentation/authPresentation'
 
 const DRAWER_WIDTH = 240
 
+function isQuotationsSelected(pathname) {
+  return (
+    pathname === '/commercial' ||
+    pathname.startsWith('/commercial/new') ||
+    pathname.startsWith('/commercial/quotations')
+  )
+}
+
+function isOrdersSelected(pathname) {
+  return (
+    pathname === '/commercial/orders' ||
+    pathname.startsWith('/commercial/orders/')
+  )
+}
+
 const navigationItems = [
   { label: 'Inicio', path: '/home' },
-  { label: 'Comercial', path: '/commercial' },
+  {
+    label: 'Cotizaciones',
+    path: '/commercial',
+    selectedWhen: isQuotationsSelected,
+    children: [
+      { label: 'Clientes', path: '/commercial/customers' },
+      { label: 'Vendedores', path: '/commercial/sellers' },
+    ],
+  },
+  {
+    label: 'Órdenes',
+    path: '/commercial/orders',
+    selectedWhen: isOrdersSelected,
+  },
   { label: 'Producción', path: '/production' },
   { label: 'Inventario', path: '/inventory' },
   { label: 'Plotter', path: '/plotter' },
@@ -25,8 +53,11 @@ const navigationItems = [
   { label: 'Usuarios', path: '/admin/users', adminOnly: true },
 ]
 
-function isNavigationItemSelected(pathname, itemPath) {
-  return pathname === itemPath || pathname.startsWith(`${itemPath}/`)
+function isNavigationItemSelected(pathname, item) {
+  if (typeof item.selectedWhen === 'function') {
+    return item.selectedWhen(pathname)
+  }
+  return pathname === item.path || pathname.startsWith(`${item.path}/`)
 }
 
 function MainLayout() {
@@ -73,14 +104,31 @@ function MainLayout() {
         <Box sx={{ overflow: 'auto' }}>
           <List>
             {visibleNavigationItems.map((item) => (
-              <ListItemButton
-                key={item.path}
-                component={RouterLink}
-                to={item.path}
-                selected={isNavigationItemSelected(location.pathname, item.path)}
-              >
-                <ListItemText primary={item.label} />
-              </ListItemButton>
+              <Box key={item.path}>
+                <ListItemButton
+                  component={RouterLink}
+                  to={item.path}
+                  selected={isNavigationItemSelected(location.pathname, item)}
+                >
+                  <ListItemText primary={item.label} />
+                </ListItemButton>
+                {Array.isArray(item.children)
+                  ? item.children.map((child) => (
+                      <ListItemButton
+                        key={child.path}
+                        component={RouterLink}
+                        to={child.path}
+                        selected={isNavigationItemSelected(
+                          location.pathname,
+                          child
+                        )}
+                        sx={{ pl: 4 }}
+                      >
+                        <ListItemText primary={child.label} />
+                      </ListItemButton>
+                    ))
+                  : null}
+              </Box>
             ))}
           </List>
         </Box>

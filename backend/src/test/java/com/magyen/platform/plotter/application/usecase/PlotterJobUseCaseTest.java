@@ -45,6 +45,8 @@ class PlotterJobUseCaseTest {
 
         CreatePlotterJobResult created = createPlotterJobUseCase.execute(new CreatePlotterJobCommand(
                 customerId,
+                null,
+                null,
                 roll.inventoryItemId(),
                 new BigDecimal("10.5"),
                 new BigDecimal("8000"),
@@ -82,6 +84,8 @@ class PlotterJobUseCaseTest {
         assertThrows(PlotterDomainException.class, () ->
                 createPlotterJobUseCase.execute(new CreatePlotterJobCommand(
                         UUID.randomUUID(),
+                        null,
+                        null,
                         roll.inventoryItemId(),
                         BigDecimal.ZERO,
                         new BigDecimal("8000"),
@@ -92,6 +96,8 @@ class PlotterJobUseCaseTest {
         assertThrows(PlotterDomainException.class, () ->
                 createPlotterJobUseCase.execute(new CreatePlotterJobCommand(
                         UUID.randomUUID(),
+                        null,
+                        null,
                         roll.inventoryItemId(),
                         new BigDecimal("10"),
                         new BigDecimal("-1"),
@@ -107,6 +113,8 @@ class PlotterJobUseCaseTest {
         assertThrows(PlotterDomainException.class, () ->
                 createPlotterJobUseCase.execute(new CreatePlotterJobCommand(
                         null,
+                        null,
+                        null,
                         roll.inventoryItemId(),
                         new BigDecimal("10"),
                         new BigDecimal("8000"),
@@ -117,6 +125,8 @@ class PlotterJobUseCaseTest {
         assertThrows(PlotterDomainException.class, () ->
                 createPlotterJobUseCase.execute(new CreatePlotterJobCommand(
                         UUID.randomUUID(),
+                        null,
+                        null,
                         null,
                         new BigDecimal("10"),
                         new BigDecimal("8000"),

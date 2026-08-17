@@ -1,6 +1,7 @@
 package com.magyen.platform.plotter.presentation.plotterjob.request;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.UUID;
 
 /**
@@ -8,6 +9,8 @@ import java.util.UUID;
  */
 public record CreatePlotterJobRequest(
         UUID customerId,
+        UUID orderId,
+        LocalDate creationDate,
         UUID paperInventoryItemId,
         BigDecimal printedMeters,
         BigDecimal pricePerMeter,

@@ -10,12 +10,23 @@ import {
 } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
 import CreateCustomerDialog from '../components/CreateCustomerDialog'
+import CreateSellerDialog from '../components/CreateSellerDialog'
 import CustomerSelector from '../components/CustomerSelector'
+import SellerSelector from '../components/SellerSelector'
 import {
   createCustomer,
   createQuotation,
+  createSeller,
   getCustomers,
+  getSellers,
 } from '../services/commercialService'
+
+function toIsoDate(date = new Date()) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
 
 function CreateQuotationPage() {
   const navigate = useNavigate()
@@ -23,17 +34,27 @@ function CreateQuotationPage() {
   const [customersLoading, setCustomersLoading] = useState(true)
   const [customersFailed, setCustomersFailed] = useState(false)
   const [customerId, setCustomerId] = useState('')
+  const [sellers, setSellers] = useState([])
+  const [sellersLoading, setSellersLoading] = useState(true)
+  const [sellersFailed, setSellersFailed] = useState(false)
+  const [sellerId, setSellerId] = useState('')
+  const [quotationDate, setQuotationDate] = useState(toIsoDate())
   const [deliveryDate, setDeliveryDate] = useState('')
-  const [salesperson, setSalesperson] = useState('')
   const [observations, setObservations] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [failed, setFailed] = useState(false)
   const [customerRequiredError, setCustomerRequiredError] = useState(false)
+  const [sellerRequiredError, setSellerRequiredError] = useState(false)
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [creatingCustomer, setCreatingCustomer] = useState(false)
   const [createCustomerFailed, setCreateCustomerFailed] = useState(false)
   const [customersRefreshFailed, setCustomersRefreshFailed] = useState(false)
   const [customerCreatedOpen, setCustomerCreatedOpen] = useState(false)
+  const [createSellerDialogOpen, setCreateSellerDialogOpen] = useState(false)
+  const [creatingSeller, setCreatingSeller] = useState(false)
+  const [createSellerFailed, setCreateSellerFailed] = useState(false)
+  const [sellersRefreshFailed, setSellersRefreshFailed] = useState(false)
+  const [sellerCreatedOpen, setSellerCreatedOpen] = useState(false)
 
   useEffect(() => {
     setCustomersLoading(true)
@@ -49,6 +70,21 @@ function CreateQuotationPage() {
         setCustomers([])
         setCustomersFailed(true)
         setCustomersLoading(false)
+      })
+
+    setSellersLoading(true)
+    setSellersFailed(false)
+
+    getSellers()
+      .then((data) => {
+        const nextSellers = Array.isArray(data?.sellers) ? data.sellers : []
+        setSellers(nextSellers)
+        setSellersLoading(false)
+      })
+      .catch(() => {
+        setSellers([])
+        setSellersFailed(true)
+        setSellersLoading(false)
       })
   }, [])
 
@@ -99,13 +135,66 @@ function CreateQuotationPage() {
     }
   }
 
+  function openCreateSellerDialog() {
+    if (creatingSeller || sellersLoading) {
+      return
+    }
+
+    setCreateSellerFailed(false)
+    setSellersRefreshFailed(false)
+    setCreateSellerDialogOpen(true)
+  }
+
+  function handleCreateSellerDialogClose() {
+    if (creatingSeller) {
+      return
+    }
+
+    setCreateSellerDialogOpen(false)
+    setCreateSellerFailed(false)
+  }
+
+  async function handleCreateSeller(name) {
+    setCreateSellerFailed(false)
+    setSellersRefreshFailed(false)
+    setCreatingSeller(true)
+
+    try {
+      const createdSeller = await createSeller({ name })
+
+      try {
+        const data = await getSellers()
+        const nextSellers = Array.isArray(data?.sellers) ? data.sellers : []
+        setSellers(nextSellers)
+        setSellersFailed(false)
+      } catch {
+        setSellersRefreshFailed(true)
+      }
+
+      setSellerId(createdSeller.sellerId)
+      setSellerRequiredError(false)
+      setCreateSellerDialogOpen(false)
+      setSellerCreatedOpen(true)
+    } catch {
+      setCreateSellerFailed(true)
+    } finally {
+      setCreatingSeller(false)
+    }
+  }
+
   async function handleSubmit(event) {
     event.preventDefault()
     setFailed(false)
     setCustomerRequiredError(false)
+    setSellerRequiredError(false)
 
     if (!customerId) {
       setCustomerRequiredError(true)
+      return
+    }
+
+    if (!sellerId) {
+      setSellerRequiredError(true)
       return
     }
 
@@ -114,7 +203,8 @@ function CreateQuotationPage() {
     const payload = {
       customerId,
       deliveryDate,
-      salesperson,
+      sellerId,
+      quotationDate,
       observations,
     }
 
@@ -148,9 +238,19 @@ function CreateQuotationPage() {
               <Alert severity="error">Debes seleccionar un cliente.</Alert>
             )}
 
+            {sellerRequiredError && (
+              <Alert severity="error">Debes seleccionar un vendedor.</Alert>
+            )}
+
             {customersRefreshFailed && (
               <Alert severity="warning">
                 El cliente se creó, pero no fue posible actualizar el listado.
+              </Alert>
+            )}
+
+            {sellersRefreshFailed && (
+              <Alert severity="warning">
+                El vendedor se creó, pero no fue posible actualizar el listado.
               </Alert>
             )}
 
@@ -180,6 +280,18 @@ function CreateQuotationPage() {
             </Stack>
 
             <TextField
+              label="Fecha de cotización"
+              type="date"
+              value={quotationDate}
+              onChange={(event) => setQuotationDate(event.target.value)}
+              fullWidth
+              required
+              disabled={submitting}
+              helperText="Por defecto es hoy. Cámbiela solo para registrar una cotización histórica."
+              slotProps={{ inputLabel: { shrink: true } }}
+            />
+
+            <TextField
               label="Fecha de entrega"
               type="date"
               value={deliveryDate}
@@ -189,13 +301,30 @@ function CreateQuotationPage() {
               slotProps={{ inputLabel: { shrink: true } }}
             />
 
-            <TextField
-              label="Vendedor"
-              value={salesperson}
-              onChange={(event) => setSalesperson(event.target.value)}
-              fullWidth
-              disabled={submitting}
-            />
+            <Stack spacing={1}>
+              <SellerSelector
+                sellers={sellers}
+                value={sellerId}
+                onChange={(selectedSellerId) => {
+                  setSellerId(selectedSellerId)
+                  setSellerRequiredError(false)
+                }}
+                loading={sellersLoading}
+                error={sellersFailed}
+                disabled={submitting || creatingSeller}
+                required
+              />
+
+              <Button
+                type="button"
+                variant="text"
+                onClick={openCreateSellerDialog}
+                disabled={sellersLoading || submitting || creatingSeller}
+                sx={{ alignSelf: 'flex-start' }}
+              >
+                + Nuevo vendedor
+              </Button>
+            </Stack>
 
             <TextField
               label="Observaciones"
@@ -232,6 +361,14 @@ function CreateQuotationPage() {
         error={createCustomerFailed}
       />
 
+      <CreateSellerDialog
+        open={createSellerDialogOpen}
+        onClose={handleCreateSellerDialogClose}
+        onCreated={handleCreateSeller}
+        submitting={creatingSeller}
+        error={createSellerFailed}
+      />
+
       <Snackbar
         open={customerCreatedOpen}
         autoHideDuration={4000}
@@ -244,6 +381,21 @@ function CreateQuotationPage() {
           onClose={() => setCustomerCreatedOpen(false)}
         >
           Cliente creado correctamente.
+        </Alert>
+      </Snackbar>
+
+      <Snackbar
+        open={sellerCreatedOpen}
+        autoHideDuration={4000}
+        onClose={() => setSellerCreatedOpen(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          severity="success"
+          variant="filled"
+          onClose={() => setSellerCreatedOpen(false)}
+        >
+          Vendedor creado correctamente.
         </Alert>
       </Snackbar>
     </>

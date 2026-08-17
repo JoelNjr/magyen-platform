@@ -7,7 +7,7 @@ public record UpdateOrderItemProductSpecificationRequest(
         String garmentType,
         String collarType,
         String sleeveType,
-        String garmentVariant,
+        Boolean cuffRequired,
         Boolean sublimationRequired,
         Boolean embroideryRequired,
         Boolean dtfRequired,

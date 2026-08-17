@@ -20,10 +20,15 @@ import {
 } from '@mui/material'
 import { Link as RouterLink, useLocation, useNavigate, useParams } from 'react-router-dom'
 import CreateProductionOrderDialog from '../components/CreateProductionOrderDialog'
+import RegisterOrderPaymentDialog from '../components/RegisterOrderPaymentDialog'
 import ManageOrderItemProductSpecificationDialog from '../components/ManageOrderItemProductSpecificationDialog'
 import ManageOrderItemSizesDialog from '../components/ManageOrderItemSizesDialog'
 import { formatDisplayDate } from '../presentation/formatDisplayDate'
 import { getOrderStatusChipProps } from '../presentation/orderStatusPresentation'
+import {
+  formatCuffRequired,
+  formatQuotationNumberDisplay,
+} from '../presentation/commercialCatalogs'
 import {
   buildCustomerNameMap,
   resolveCustomerName,
@@ -32,6 +37,8 @@ import {
   getCustomers,
   getOrder,
   getOrderProfitability,
+  getPaymentsByOrder,
+  registerOrderPayment,
 } from '../services/commercialService'
 import {
   createProductionOrderFromOrder,
@@ -183,8 +190,8 @@ function ProductSpecificationSection({ item, onEdit }) {
             </DetailField>
           </Grid>
           <Grid size={{ xs: 12, md: 6 }}>
-            <DetailField label="Variante">
-              <Typography>{specification.garmentVariant || '—'}</Typography>
+            <DetailField label="Lleva puño">
+              <Typography>{formatCuffRequired(specification.cuffRequired)}</Typography>
             </DetailField>
           </Grid>
           <Grid size={{ xs: 12, md: 4 }}>
@@ -353,6 +360,13 @@ function OrderDetailPage() {
   const [profitabilityLoading, setProfitabilityLoading] = useState(true)
   const [profitabilityFailed, setProfitabilityFailed] = useState(false)
   const [profitabilityError, setProfitabilityError] = useState('')
+  const [payments, setPayments] = useState([])
+  const [paymentsTotalPaid, setPaymentsTotalPaid] = useState(null)
+  const [paymentsRemainingBalance, setPaymentsRemainingBalance] = useState(null)
+  const [paymentsFailed, setPaymentsFailed] = useState(false)
+  const [registerPaymentOpen, setRegisterPaymentOpen] = useState(false)
+  const [registeringPayment, setRegisteringPayment] = useState(false)
+  const [registerPaymentError, setRegisterPaymentError] = useState('')
 
   async function loadProfitability(commercialOrderId) {
     setProfitabilityLoading(true)
@@ -421,6 +435,7 @@ function OrderDetailPage() {
 
     loadLinkedProductionOrder(orderId)
     loadProfitability(orderId)
+    loadPayments(orderId)
 
     getCustomers()
       .then((data) => {
@@ -446,11 +461,27 @@ function OrderDetailPage() {
     navigate(location.pathname, { replace: true, state: {} })
   }, [location.state, location.pathname, navigate])
 
+  async function loadPayments(commercialOrderId) {
+    setPaymentsFailed(false)
+    try {
+      const data = await getPaymentsByOrder(commercialOrderId)
+      setPayments(Array.isArray(data?.payments) ? data.payments : [])
+      setPaymentsTotalPaid(data?.totalPaid ?? null)
+      setPaymentsRemainingBalance(data?.remainingBalance ?? null)
+    } catch {
+      setPayments([])
+      setPaymentsTotalPaid(null)
+      setPaymentsRemainingBalance(null)
+      setPaymentsFailed(true)
+    }
+  }
+
   async function refreshOrderAfterSave(successMessageText) {
     try {
       const refreshedOrder = await getOrder(orderId)
       setOrder(refreshedOrder)
       await loadProfitability(orderId)
+      await loadPayments(orderId)
       setSuccessMessage(successMessageText)
       setSuccessOpen(true)
     } catch {
@@ -532,6 +563,32 @@ function OrderDetailPage() {
     }
   }
 
+  async function handleRegisterPayment({ amount, paymentDate, observations }) {
+    if (registeringPayment) {
+      return
+    }
+
+    setRegisterPaymentError('')
+    setRegisteringPayment(true)
+
+    try {
+      await registerOrderPayment({
+        orderId,
+        amount,
+        paymentDate,
+        observations,
+      })
+      setRegisterPaymentOpen(false)
+      await refreshOrderAfterSave('Pago comercial registrado correctamente.')
+    } catch (error) {
+      setRegisterPaymentError(
+        resolveApiErrorMessage(error, 'No fue posible registrar el pago.')
+      )
+    } finally {
+      setRegisteringPayment(false)
+    }
+  }
+
   const statusChip = order ? getOrderStatusChipProps(order.status) : null
   const items = order?.items ?? []
   const deliveryCommitment = order?.deliveryCommitment
@@ -586,8 +643,8 @@ function OrderDetailPage() {
                 size="small"
               />
             </Stack>
-            <Typography variant="body2" color="text.secondary">
-              ID: {order.orderId}
+            <Typography variant="body1">
+              {order.description || 'Sin descripción del pedido'}
             </Typography>
           </Stack>
 
@@ -596,7 +653,8 @@ function OrderDetailPage() {
               <Grid size={{ xs: 12, md: 6 }}>
                 <DetailField label="Cliente">
                   <Typography>
-                    {resolveCustomerName(order.customerId, customerNameById)}
+                    {order.customerName ||
+                      resolveCustomerName(order.customerId, customerNameById)}
                   </Typography>
                 </DetailField>
               </Grid>
@@ -604,11 +662,18 @@ function OrderDetailPage() {
               <Grid size={{ xs: 12, md: 6 }}>
                 <DetailField label="Cotización de origen">
                   <Typography>
-                    <RouterLink
-                      to={`/commercial/quotations/${order.quotationId}`}
-                    >
-                      {order.quotationId}
-                    </RouterLink>
+                    {order.quotationId ? (
+                      <RouterLink
+                        to={`/commercial/quotations/${order.quotationId}`}
+                      >
+                        {formatQuotationNumberDisplay(
+                          order.quotationNumber,
+                          order.quotationNumberDisplay
+                        ) || 'Ver cotización'}
+                      </RouterLink>
+                    ) : (
+                      '—'
+                    )}
                   </Typography>
                 </DetailField>
               </Grid>
@@ -633,7 +698,13 @@ function OrderDetailPage() {
 
               <Grid size={{ xs: 12, md: 6 }}>
                 <DetailField label="Vendedor">
-                  <Typography>{order.salesperson}</Typography>
+                  <Typography>{order.sellerName || '—'}</Typography>
+                </DetailField>
+              </Grid>
+
+              <Grid size={{ xs: 12, md: 6 }}>
+                <DetailField label="Descripción del pedido">
+                  <Typography>{order.description || '—'}</Typography>
                 </DetailField>
               </Grid>
 
@@ -652,59 +723,6 @@ function OrderDetailPage() {
               </Grid>
             </Grid>
           </Paper>
-
-          {showProductionSection && (
-            <Paper sx={{ p: 3 }}>
-              <Stack spacing={2}>
-                <Typography variant="h5">Producción</Typography>
-
-                {linkedProductionOrderId ? (
-                  <>
-                    <Typography>
-                      Orden de producción creada
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Esta orden comercial ya tiene una orden de producción
-                      asociada.
-                    </Typography>
-                    <Button
-                      type="button"
-                      variant="contained"
-                      onClick={() =>
-                        navigate(`/production/orders/${linkedProductionOrderId}`)
-                      }
-                      sx={{ alignSelf: 'flex-start' }}
-                    >
-                      Ver producción
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Typography variant="body2" color="text.secondary">
-                      La información de productos, especificaciones y tallas se
-                      tomará de esta orden al momento de crear producción.
-                    </Typography>
-                    {productionLookupFailed && (
-                      <Alert severity="warning">
-                        No fue posible verificar si ya existe una orden de
-                        producción asociada.
-                      </Alert>
-                    )}
-                    {canCreateProductionOrder && (
-                      <Button
-                        type="button"
-                        variant="contained"
-                        onClick={openCreateProductionDialog}
-                        sx={{ alignSelf: 'flex-start' }}
-                      >
-                        Crear orden de producción
-                      </Button>
-                    )}
-                  </>
-                )}
-              </Stack>
-            </Paper>
-          )}
 
           <Paper sx={{ p: 3 }}>
             <Stack spacing={3}>
@@ -738,11 +756,67 @@ function OrderDetailPage() {
                 <Grid size={{ xs: 12, md: 6 }}>
                   <DetailField label="Saldo restante">
                     <Typography>
-                      {formatCurrency(paymentSummary?.remainingBalance)}
+                      {formatCurrency(
+                        paymentsRemainingBalance ??
+                          paymentSummary?.remainingBalance
+                      )}
                     </Typography>
                   </DetailField>
                 </Grid>
               </Grid>
+
+              {paymentsFailed ? (
+                <Alert severity="warning">
+                  No fue posible cargar los pagos registrados.
+                </Alert>
+              ) : null}
+
+              {payments.length === 0 ? (
+                <Typography color="text.secondary">
+                  No hay pagos comerciales registrados.
+                </Typography>
+              ) : (
+                <TableContainer>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell sx={{ fontWeight: 'bold' }}>Fecha</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold' }}>Monto</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold' }}>
+                          Observación
+                        </TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {payments.map((payment) => (
+                        <TableRow key={payment.paymentId}>
+                          <TableCell>
+                            {formatDisplayDate(payment.paymentDate)}
+                          </TableCell>
+                          <TableCell>{formatCurrency(payment.amount)}</TableCell>
+                          <TableCell>{payment.observations || '—'}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
+
+              <Typography variant="body2" color="text.secondary">
+                Total pagado: {formatCurrency(paymentsTotalPaid)}
+              </Typography>
+
+              <Button
+                type="button"
+                variant="contained"
+                onClick={() => {
+                  setRegisterPaymentError('')
+                  setRegisterPaymentOpen(true)
+                }}
+                sx={{ alignSelf: 'flex-start' }}
+              >
+                Registrar pago
+              </Button>
             </Stack>
           </Paper>
 
@@ -887,7 +961,7 @@ function OrderDetailPage() {
                         <TableRow>
                           <TableCell sx={headerCellSx}>Producto</TableCell>
                           <TableCell sx={headerCellSx}>Tela</TableCell>
-                          <TableCell sx={headerCellSx}>Color</TableCell>
+                          <TableCell sx={headerCellSx}>Color de tela / base</TableCell>
                           <TableCell align="right" sx={headerCellSx}>
                             Cantidad
                           </TableCell>
@@ -973,6 +1047,59 @@ function OrderDetailPage() {
               </Stack>
             </Stack>
           </Paper>
+
+          {showProductionSection && (
+            <Paper sx={{ p: 3 }}>
+              <Stack spacing={2}>
+                <Typography variant="h5">Producción</Typography>
+
+                {linkedProductionOrderId ? (
+                  <>
+                    <Typography>
+                      Orden de producción creada
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Esta orden comercial ya tiene una orden de producción
+                      asociada.
+                    </Typography>
+                    <Button
+                      type="button"
+                      variant="contained"
+                      onClick={() =>
+                        navigate(`/production/orders/${linkedProductionOrderId}`)
+                      }
+                      sx={{ alignSelf: 'flex-start' }}
+                    >
+                      Ver producción
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Typography variant="body2" color="text.secondary">
+                      La información de productos, especificaciones y tallas se
+                      tomará de esta orden al momento de crear producción.
+                    </Typography>
+                    {productionLookupFailed && (
+                      <Alert severity="warning">
+                        No fue posible verificar si ya existe una orden de
+                        producción asociada.
+                      </Alert>
+                    )}
+                    {canCreateProductionOrder && (
+                      <Button
+                        type="button"
+                        variant="contained"
+                        onClick={openCreateProductionDialog}
+                        sx={{ alignSelf: 'flex-start' }}
+                      >
+                        Crear orden de producción
+                      </Button>
+                    )}
+                  </>
+                )}
+              </Stack>
+            </Paper>
+          )}
         </>
       )}
 
@@ -990,6 +1117,23 @@ function OrderDetailPage() {
         orderId={orderId}
         orderItem={specificationDialogItem}
         onSaved={handleSpecificationSaved}
+      />
+
+      <RegisterOrderPaymentDialog
+        open={registerPaymentOpen}
+        remainingBalance={
+          paymentsRemainingBalance ?? order?.paymentSummary?.remainingBalance
+        }
+        formatCurrency={formatCurrency}
+        onClose={() => {
+          if (!registeringPayment) {
+            setRegisterPaymentOpen(false)
+            setRegisterPaymentError('')
+          }
+        }}
+        onSubmit={handleRegisterPayment}
+        submitting={registeringPayment}
+        errorMessage={registerPaymentError}
       />
 
       <CreateProductionOrderDialog

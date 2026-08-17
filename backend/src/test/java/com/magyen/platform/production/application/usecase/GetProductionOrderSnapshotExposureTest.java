@@ -107,8 +107,8 @@ class GetProductionOrderSnapshotExposureTest {
         assertEquals(20, item.quantity());
         assertEquals("Camiseta", item.productSpecification().garmentType());
         assertEquals("Redondo", item.productSpecification().collarType());
-        assertEquals("Corta", item.productSpecification().sleeveType());
-        assertEquals("Dry-fit", item.productSpecification().garmentVariant());
+        assertEquals("Manga corta sisa", item.productSpecification().sleeveType());
+        assertEquals(Boolean.TRUE, item.productSpecification().cuffRequired());
         assertTrue(item.productSpecification().sublimationRequired());
         assertEquals("Full print", item.productSpecification().decorationNotes());
         assertTrue(item.productSpecification().includesNames());
@@ -154,10 +154,10 @@ class GetProductionOrderSnapshotExposureTest {
                         commercialOrder.getId(),
                         commercialItemId,
                         new ProductSpecificationCommand(
-                                "Polo",
-                                "Mao",
-                                "Larga",
-                                "Premium",
+                                "Camiseta tipo polo",
+                                "En V recto",
+                                "Manga larga sisa",
+                                false,
                                 false,
                                 true,
                                 false,
@@ -230,8 +230,8 @@ class GetProductionOrderSnapshotExposureTest {
                 ProductSpecification.of(
                         "Camiseta",
                         "Redondo",
-                        "Corta",
-                        "Dry-fit",
+                        "Manga corta sisa",
+                        true,
                         true,
                         false,
                         true,
@@ -257,7 +257,7 @@ class GetProductionOrderSnapshotExposureTest {
                 UUID.randomUUID(),
                 today,
                 DeliveryCommitment.of(today.plusDays(10)),
-                "Exposure Tester",
+                UUID.randomUUID(),
                 "Snapshot exposure order",
                 List.of(item)
         );

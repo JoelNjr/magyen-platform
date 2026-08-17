@@ -18,7 +18,7 @@ import {
   Typography,
 } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
-import { getCustomers } from '../../commercial/services/commercialService'
+import { getCustomers, getOrders } from '../../commercial/services/commercialService'
 import { getInventoryItems, getPlotterPaperRolls } from '../../inventory/services/inventoryService'
 import CreatePlotterJobDialog from '../components/CreatePlotterJobDialog'
 import {
@@ -61,6 +61,7 @@ function PlotterJobsPage() {
   const navigate = useNavigate()
   const [jobs, setJobs] = useState([])
   const [customers, setCustomers] = useState([])
+  const [orders, setOrders] = useState([])
   const [paperRolls, setPaperRolls] = useState([])
   const [inventoryLookup, setInventoryLookup] = useState([])
   const [loading, setLoading] = useState(true)
@@ -114,20 +115,23 @@ function PlotterJobsPage() {
     setLoadingLookups(true)
 
     try {
-      const [customersData, rollsData, inventoryData] = await Promise.all([
+      const [customersData, ordersData, rollsData, inventoryData] = await Promise.all([
         getCustomers(),
+        getOrders(),
         getPlotterPaperRolls(),
         getInventoryItems(),
       ])
       setCustomers(
         Array.isArray(customersData?.customers) ? customersData.customers : []
       )
+      setOrders(Array.isArray(ordersData?.orders) ? ordersData.orders : [])
       setPaperRolls(Array.isArray(rollsData?.items) ? rollsData.items : [])
       setInventoryLookup(
         Array.isArray(inventoryData?.items) ? inventoryData.items : []
       )
     } catch {
       setCustomers([])
+      setOrders([])
       setPaperRolls([])
       setInventoryLookup([])
     } finally {
@@ -294,6 +298,10 @@ function PlotterJobsPage() {
         submitting={creating}
         errorMessage={createError}
         customers={customers}
+        orders={orders.map((order) => ({
+          ...order,
+          customerName: customerNameById.get(order.customerId) || '',
+        }))}
         paperRolls={paperRolls}
         loadingLookups={loadingLookups}
       />

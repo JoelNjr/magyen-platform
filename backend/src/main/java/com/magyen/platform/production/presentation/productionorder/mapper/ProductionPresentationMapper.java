@@ -47,7 +47,9 @@ import com.magyen.platform.production.presentation.productionorder.request.AddPr
 import com.magyen.platform.production.presentation.productionorder.request.AssignProductionOperationOperatorRequest;
 import com.magyen.platform.production.presentation.productionorder.request.CreateProductionOrderRequest;
 import com.magyen.platform.production.presentation.productionorder.request.PayProductionLaborWorkRequest;
+import com.magyen.platform.production.presentation.productionorder.request.CompleteProductionOrderRequest;
 import com.magyen.platform.production.presentation.productionorder.request.PlanProductionOrderRequest;
+import com.magyen.platform.production.presentation.productionorder.request.StartProductionOrderRequest;
 import com.magyen.platform.production.presentation.productionorder.request.RegisterProductionLaborWorkRequest;
 import com.magyen.platform.production.presentation.productionorder.request.RegisterProductionMaterialConsumptionRequest;
 import com.magyen.platform.production.presentation.productionorder.response.AddProductionOperationResponse;
@@ -76,6 +78,7 @@ import com.magyen.platform.production.presentation.productionorder.response.Regi
 import com.magyen.platform.production.presentation.productionorder.response.StartProductionOperationResponse;
 import com.magyen.platform.production.presentation.productionorder.response.StartProductionOrderResponse;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -143,6 +146,7 @@ public class ProductionPresentationMapper {
                 result.productionOrderId(),
                 result.orderId(),
                 result.orderNumber(),
+                result.orderDescription(),
                 result.customerId(),
                 result.customerName(),
                 result.creationDate(),
@@ -150,6 +154,8 @@ public class ProductionPresentationMapper {
                 result.priority().name(),
                 result.plannedStartDate(),
                 result.plannedEndDate(),
+                result.actualStartDate(),
+                result.actualCompletionDate(),
                 result.observations(),
                 items,
                 operations,
@@ -186,9 +192,13 @@ public class ProductionPresentationMapper {
         );
     }
 
-    public StartProductionOrderCommand toStartOrderCommand(UUID productionOrderId) {
+    public StartProductionOrderCommand toStartOrderCommand(
+            UUID productionOrderId,
+            StartProductionOrderRequest request
+    ) {
         Objects.requireNonNull(productionOrderId, "Production order id must not be null");
-        return new StartProductionOrderCommand(productionOrderId);
+        LocalDate actualStartDate = request == null ? null : request.actualStartDate();
+        return new StartProductionOrderCommand(productionOrderId, actualStartDate);
     }
 
     public StartProductionOrderResponse toStartOrderResponse(StartProductionOrderResult result) {
@@ -200,9 +210,13 @@ public class ProductionPresentationMapper {
         );
     }
 
-    public CompleteProductionOrderCommand toCompleteOrderCommand(UUID productionOrderId) {
+    public CompleteProductionOrderCommand toCompleteOrderCommand(
+            UUID productionOrderId,
+            CompleteProductionOrderRequest request
+    ) {
         Objects.requireNonNull(productionOrderId, "Production order id must not be null");
-        return new CompleteProductionOrderCommand(productionOrderId);
+        LocalDate actualCompletionDate = request == null ? null : request.actualCompletionDate();
+        return new CompleteProductionOrderCommand(productionOrderId, actualCompletionDate);
     }
 
     public CompleteProductionOrderResponse toCompleteOrderResponse(CompleteProductionOrderResult result) {
@@ -312,6 +326,7 @@ public class ProductionPresentationMapper {
                 result.productionOrderId(),
                 result.orderId(),
                 result.orderNumber(),
+                result.orderDescription(),
                 result.customerId(),
                 result.customerName(),
                 result.creationDate(),
@@ -319,6 +334,8 @@ public class ProductionPresentationMapper {
                 result.priority().name(),
                 result.plannedStartDate(),
                 result.plannedEndDate(),
+                result.actualStartDate(),
+                result.actualCompletionDate(),
                 result.observations()
         );
     }
@@ -366,7 +383,7 @@ public class ProductionPresentationMapper {
                 result.garmentType(),
                 result.collarType(),
                 result.sleeveType(),
-                result.garmentVariant(),
+                result.cuffRequired(),
                 result.sublimationRequired(),
                 result.embroideryRequired(),
                 result.dtfRequired(),

@@ -1,5 +1,7 @@
 package com.magyen.platform.commercial.infrastructure.configuration;
 
+import com.magyen.platform.commercial.application.CustomerNameResolver;
+import com.magyen.platform.commercial.application.SellerNameResolver;
 import com.magyen.platform.commercial.application.port.OrderPaymentCollectionPort;
 import com.magyen.platform.commercial.application.port.ProductionOrderCostPort;
 import com.magyen.platform.commercial.application.usecase.AddQuotationItemUseCase;
@@ -7,7 +9,10 @@ import com.magyen.platform.commercial.application.usecase.ApproveQuotationUseCas
 import com.magyen.platform.commercial.application.usecase.CreateCustomerUseCase;
 import com.magyen.platform.commercial.application.usecase.CreateOrderFromQuotationUseCase;
 import com.magyen.platform.commercial.application.usecase.CreateQuotationUseCase;
+import com.magyen.platform.commercial.application.usecase.CreateSellerUseCase;
+import com.magyen.platform.commercial.application.usecase.GetCommercialCatalogsUseCase;
 import com.magyen.platform.commercial.application.usecase.GetCustomersUseCase;
+import com.magyen.platform.commercial.application.usecase.GetSellersUseCase;
 import com.magyen.platform.commercial.application.usecase.GetOrderProfitabilityUseCase;
 import com.magyen.platform.commercial.application.usecase.GetOrderUseCase;
 import com.magyen.platform.commercial.application.usecase.GetOrdersUseCase;
@@ -20,14 +25,18 @@ import com.magyen.platform.commercial.domain.CustomerRepository;
 import com.magyen.platform.commercial.domain.OrderRepository;
 import com.magyen.platform.commercial.domain.QuotationNumberGenerator;
 import com.magyen.platform.commercial.domain.QuotationRepository;
+import com.magyen.platform.commercial.domain.SellerRepository;
 import com.magyen.platform.commercial.infrastructure.finance.OrderPaymentCollectionAdapter;
 import com.magyen.platform.commercial.infrastructure.persistence.mapper.CustomerPersistenceMapper;
 import com.magyen.platform.commercial.infrastructure.persistence.mapper.OrderPersistenceMapper;
 import com.magyen.platform.commercial.infrastructure.persistence.mapper.QuotationPersistenceMapper;
+import com.magyen.platform.commercial.infrastructure.persistence.mapper.SellerPersistenceMapper;
 import com.magyen.platform.commercial.infrastructure.production.ProductionOrderCostAdapter;
+import com.magyen.platform.commercial.presentation.catalog.mapper.CommercialCatalogPresentationMapper;
 import com.magyen.platform.commercial.presentation.customer.mapper.CustomerPresentationMapper;
 import com.magyen.platform.commercial.presentation.order.mapper.OrderPresentationMapper;
 import com.magyen.platform.commercial.presentation.quotation.mapper.QuotationPresentationMapper;
+import com.magyen.platform.commercial.presentation.seller.mapper.SellerPresentationMapper;
 import com.magyen.platform.finance.application.usecase.GetPaymentsByOrderUseCase;
 import com.magyen.platform.production.application.usecase.GetProductionCostsByCommercialOrderUseCase;
 import org.springframework.context.annotation.Bean;
@@ -50,8 +59,23 @@ public class CommercialConfiguration {
     }
 
     @Bean
+    public CommercialCatalogPresentationMapper commercialCatalogPresentationMapper() {
+        return new CommercialCatalogPresentationMapper();
+    }
+
+    @Bean
+    public GetCommercialCatalogsUseCase getCommercialCatalogsUseCase() {
+        return new GetCommercialCatalogsUseCase();
+    }
+
+    @Bean
     public CustomerPresentationMapper customerPresentationMapper() {
         return new CustomerPresentationMapper();
+    }
+
+    @Bean
+    public SellerPresentationMapper sellerPresentationMapper() {
+        return new SellerPresentationMapper();
     }
 
     @Bean
@@ -70,11 +94,41 @@ public class CommercialConfiguration {
     }
 
     @Bean
+    public SellerPersistenceMapper sellerPersistenceMapper() {
+        return new SellerPersistenceMapper();
+    }
+
+    @Bean
+    public SellerNameResolver sellerNameResolver(SellerRepository sellerRepository) {
+        return new SellerNameResolver(sellerRepository);
+    }
+
+    @Bean
+    public CustomerNameResolver customerNameResolver(CustomerRepository customerRepository) {
+        return new CustomerNameResolver(customerRepository);
+    }
+
+    @Bean
+    public CreateSellerUseCase createSellerUseCase(SellerRepository sellerRepository) {
+        return new CreateSellerUseCase(sellerRepository);
+    }
+
+    @Bean
+    public GetSellersUseCase getSellersUseCase(SellerRepository sellerRepository) {
+        return new GetSellersUseCase(sellerRepository);
+    }
+
+    @Bean
     public CreateQuotationUseCase createQuotationUseCase(
             QuotationRepository quotationRepository,
-            QuotationNumberGenerator quotationNumberGenerator
+            QuotationNumberGenerator quotationNumberGenerator,
+            SellerNameResolver sellerNameResolver
     ) {
-        return new CreateQuotationUseCase(quotationRepository, quotationNumberGenerator);
+        return new CreateQuotationUseCase(
+                quotationRepository,
+                quotationNumberGenerator,
+                sellerNameResolver
+        );
     }
 
     @Bean
@@ -88,8 +142,11 @@ public class CommercialConfiguration {
     }
 
     @Bean
-    public GetQuotationsUseCase getQuotationsUseCase(QuotationRepository quotationRepository) {
-        return new GetQuotationsUseCase(quotationRepository);
+    public GetQuotationsUseCase getQuotationsUseCase(
+            QuotationRepository quotationRepository,
+            SellerNameResolver sellerNameResolver
+    ) {
+        return new GetQuotationsUseCase(quotationRepository, sellerNameResolver);
     }
 
     @Bean
@@ -110,9 +167,10 @@ public class CommercialConfiguration {
     @Bean
     public GetQuotationUseCase getQuotationUseCase(
             QuotationRepository quotationRepository,
-            OrderRepository orderRepository
+            OrderRepository orderRepository,
+            SellerNameResolver sellerNameResolver
     ) {
-        return new GetQuotationUseCase(quotationRepository, orderRepository);
+        return new GetQuotationUseCase(quotationRepository, orderRepository, sellerNameResolver);
     }
 
     @Bean
@@ -124,13 +182,33 @@ public class CommercialConfiguration {
     }
 
     @Bean
-    public GetOrdersUseCase getOrdersUseCase(OrderRepository orderRepository) {
-        return new GetOrdersUseCase(orderRepository);
+    public GetOrdersUseCase getOrdersUseCase(
+            OrderRepository orderRepository,
+            QuotationRepository quotationRepository,
+            SellerNameResolver sellerNameResolver,
+            CustomerNameResolver customerNameResolver
+    ) {
+        return new GetOrdersUseCase(
+                orderRepository,
+                quotationRepository,
+                sellerNameResolver,
+                customerNameResolver
+        );
     }
 
     @Bean
-    public GetOrderUseCase getOrderUseCase(OrderRepository orderRepository) {
-        return new GetOrderUseCase(orderRepository);
+    public GetOrderUseCase getOrderUseCase(
+            OrderRepository orderRepository,
+            QuotationRepository quotationRepository,
+            SellerNameResolver sellerNameResolver,
+            CustomerNameResolver customerNameResolver
+    ) {
+        return new GetOrderUseCase(
+                orderRepository,
+                quotationRepository,
+                sellerNameResolver,
+                customerNameResolver
+        );
     }
 
     @Bean

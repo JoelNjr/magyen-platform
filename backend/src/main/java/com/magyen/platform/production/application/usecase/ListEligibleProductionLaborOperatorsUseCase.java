@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Lista operarios activos PRODUCTION_BASED para el selector de mano de obra.
+ * Lista operarios de producción activos para el selector de mano de obra.
  */
 public class ListEligibleProductionLaborOperatorsUseCase {
 

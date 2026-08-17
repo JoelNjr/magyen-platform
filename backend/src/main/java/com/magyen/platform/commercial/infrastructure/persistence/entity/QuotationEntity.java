@@ -46,8 +46,8 @@ public class QuotationEntity {
     @Column(name = "status", nullable = false, length = 20)
     private QuotationStatus status;
 
-    @Column(name = "salesperson", nullable = false, length = 255)
-    private String salesperson;
+    @Column(name = "seller_id", nullable = false, updatable = false)
+    private UUID sellerId;
 
     @Column(name = "observations", length = 2000)
     private String observations;
@@ -109,12 +109,12 @@ public class QuotationEntity {
         this.status = status;
     }
 
-    public String getSalesperson() {
-        return salesperson;
+    public UUID getSellerId() {
+        return sellerId;
     }
 
-    public void setSalesperson(String salesperson) {
-        this.salesperson = salesperson;
+    public void setSellerId(UUID sellerId) {
+        this.sellerId = sellerId;
     }
 
     public String getObservations() {

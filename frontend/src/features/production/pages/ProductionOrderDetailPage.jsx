@@ -26,8 +26,11 @@ import AssignProductionOperatorDialog from '../components/AssignProductionOperat
 import ConfirmProductionLifecycleDialog from '../components/ConfirmProductionLifecycleDialog'
 import PlanProductionOrderDialog from '../components/PlanProductionOrderDialog'
 import RegisterProductionLaborDialog from '../components/RegisterProductionLaborDialog'
+import RegisterProductionMaterialConsumptionDialog from '../components/RegisterProductionMaterialConsumptionDialog'
+import { getInventoryItems } from '../../inventory/services/inventoryService'
 import { formatDisplayDate } from '../presentation/formatDisplayDate'
 import { resolveProductionBusinessLabel } from '../presentation/resolveProductionBusinessLabel'
+import { formatCuffRequired } from '../../commercial/presentation/commercialCatalogs'
 import {
   formatProductionOperationType,
   getProductionOperationStatusChipProps,
@@ -51,6 +54,7 @@ import {
   payProductionLaborWork,
   planProductionOrder,
   registerProductionLaborWork,
+  registerProductionMaterialConsumption,
   startProductionOperation,
   startProductionOrder,
 } from '../services/productionService'
@@ -70,6 +74,13 @@ function getLaborStatusColor(status) {
 }
 
 const headerCellSx = { fontWeight: 'bold' }
+
+function toIsoDate(date = new Date()) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
 
 function formatYesNo(value) {
   return value ? 'Sí' : 'No'
@@ -125,8 +136,8 @@ function ProductionItemSpecificationSection({ specification }) {
           </DetailField>
         </Grid>
         <Grid size={{ xs: 12, md: 6 }}>
-          <DetailField label="Variante">
-            <Typography>{specification.garmentVariant || '—'}</Typography>
+          <DetailField label="Lleva puño">
+            <Typography>{formatCuffRequired(specification.cuffRequired)}</Typography>
           </DetailField>
         </Grid>
         <Grid size={{ xs: 12, md: 4 }}>
@@ -273,6 +284,14 @@ function ProductionOrderDetailPage() {
   const [planError, setPlanError] = useState('')
   const [startError, setStartError] = useState('')
   const [completeError, setCompleteError] = useState('')
+  const [startDate, setStartDate] = useState('')
+  const [completeDate, setCompleteDate] = useState('')
+  const [payLaborDate, setPayLaborDate] = useState('')
+  const [consumeDialogOpen, setConsumeDialogOpen] = useState(false)
+  const [consumingMaterial, setConsumingMaterial] = useState(false)
+  const [consumeError, setConsumeError] = useState('')
+  const [inventoryItems, setInventoryItems] = useState([])
+  const [inventoryItemsLoading, setInventoryItemsLoading] = useState(false)
 
   const [addOperationDialogOpen, setAddOperationDialogOpen] = useState(false)
   const [assignOperatorDialogOpen, setAssignOperatorDialogOpen] = useState(false)
@@ -409,6 +428,7 @@ function ProductionOrderDetailPage() {
     }
 
     setStartError('')
+    setStartDate(productionOrder?.plannedStartDate || toIsoDate())
     setStartDialogOpen(true)
   }
 
@@ -427,6 +447,7 @@ function ProductionOrderDetailPage() {
     }
 
     setCompleteError('')
+    setCompleteDate(productionOrder?.plannedEndDate || toIsoDate())
     setCompleteDialogOpen(true)
   }
 
@@ -552,7 +573,9 @@ function ProductionOrderDetailPage() {
     setStarting(true)
 
     try {
-      await startProductionOrder(productionOrder.productionOrderId)
+      await startProductionOrder(productionOrder.productionOrderId, {
+        actualStartDate: startDate,
+      })
       await refreshProductionOrder()
       setStartDialogOpen(false)
       setSuccessMessage('Orden de producción iniciada correctamente.')
@@ -578,7 +601,9 @@ function ProductionOrderDetailPage() {
     setCompleting(true)
 
     try {
-      await completeProductionOrder(productionOrder.productionOrderId)
+      await completeProductionOrder(productionOrder.productionOrderId, {
+        actualCompletionDate: completeDate,
+      })
       await refreshProductionOrder()
       setCompleteDialogOpen(false)
       setSuccessMessage('Orden de producción completada correctamente.')
@@ -639,6 +664,52 @@ function ProductionOrderDetailPage() {
     }
   }
 
+  async function openConsumeDialog() {
+    if (pageBusy || status !== 'IN_PROGRESS') {
+      return
+    }
+
+    setConsumeError('')
+    setConsumeDialogOpen(true)
+    setInventoryItemsLoading(true)
+    try {
+      const data = await getInventoryItems()
+      setInventoryItems(Array.isArray(data?.items) ? data.items : [])
+    } catch {
+      setInventoryItems([])
+    } finally {
+      setInventoryItemsLoading(false)
+    }
+  }
+
+  async function handleConsumeSubmit(payload) {
+    if (consumingMaterial) {
+      return
+    }
+
+    setConsumeError('')
+    setConsumingMaterial(true)
+    try {
+      await registerProductionMaterialConsumption(
+        productionOrder.productionOrderId,
+        payload
+      )
+      setConsumeDialogOpen(false)
+      await refreshProductionOrder()
+      setSuccessMessage('Consumo de material registrado correctamente.')
+      setSuccessOpen(true)
+    } catch (error) {
+      setConsumeError(
+        resolveApiErrorMessage(
+          error,
+          'No fue posible registrar el consumo de material.'
+        )
+      )
+    } finally {
+      setConsumingMaterial(false)
+    }
+  }
+
   async function handlePayLaborConfirm() {
     if (!payLaborTarget || payingLabor) {
       return
@@ -649,7 +720,8 @@ function ProductionOrderDetailPage() {
     try {
       await payProductionLaborWork(
         productionOrder.productionOrderId,
-        payLaborTarget.laborWorkId
+        payLaborTarget.laborWorkId,
+        { paymentDate: payLaborDate }
       )
       setPayLaborTarget(null)
       await refreshProductionOrder()
@@ -876,7 +948,7 @@ function ProductionOrderDetailPage() {
                   />
                 </Stack>
                 <Typography variant="body2" color="text.secondary">
-                  ID de producción: {productionOrder.productionOrderId}
+                  {productionOrder.orderDescription || 'Sin descripción del pedido'}
                 </Typography>
               </Stack>
 
@@ -942,6 +1014,14 @@ function ProductionOrderDetailPage() {
                 </Grid>
 
                 <Grid size={{ xs: 12, md: 6 }}>
+                  <DetailField label="Descripción del pedido">
+                    <Typography>
+                      {productionOrder.orderDescription || '—'}
+                    </Typography>
+                  </DetailField>
+                </Grid>
+
+                <Grid size={{ xs: 12, md: 6 }}>
                   <DetailField label="Fecha creación">
                     <Typography>
                       {formatDisplayDate(productionOrder.creationDate)}
@@ -994,6 +1074,23 @@ function ProductionOrderDetailPage() {
                   <DetailField label="Fin planificado">
                     <Typography>
                       {formatDisplayDate(productionOrder.plannedEndDate) || '—'}
+                    </Typography>
+                  </DetailField>
+                </Grid>
+
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <DetailField label="Inicio real">
+                    <Typography>
+                      {formatDisplayDate(productionOrder.actualStartDate) || '—'}
+                    </Typography>
+                  </DetailField>
+                </Grid>
+
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <DetailField label="Cierre real">
+                    <Typography>
+                      {formatDisplayDate(productionOrder.actualCompletionDate) ||
+                        '—'}
                     </Typography>
                   </DetailField>
                 </Grid>
@@ -1108,6 +1205,17 @@ function ProductionOrderDetailPage() {
                     </DetailField>
                   </Grid>
                 </Grid>
+
+                {status === 'IN_PROGRESS' ? (
+                  <Button
+                    type="button"
+                    variant="outlined"
+                    onClick={openConsumeDialog}
+                    sx={{ alignSelf: 'flex-start' }}
+                  >
+                    Registrar consumo
+                  </Button>
+                ) : null}
 
                 {materialConsumptions.length === 0 ? (
                   <Typography color="text.secondary">
@@ -1272,6 +1380,7 @@ function ProductionOrderDetailPage() {
                                     disabled={pageBusy}
                                     onClick={() => {
                                       setPayLaborError('')
+                                      setPayLaborDate(toIsoDate())
                                       setPayLaborTarget(labor)
                                     }}
                                   >
@@ -1474,6 +1583,21 @@ function ProductionOrderDetailPage() {
               </Stack>
             </Paper>
 
+            <RegisterProductionMaterialConsumptionDialog
+              open={consumeDialogOpen}
+              inventoryItems={inventoryItems}
+              itemsLoading={inventoryItemsLoading}
+              onClose={() => {
+                if (!consumingMaterial) {
+                  setConsumeDialogOpen(false)
+                  setConsumeError('')
+                }
+              }}
+              onSubmit={handleConsumeSubmit}
+              submitting={consumingMaterial}
+              errorMessage={consumeError}
+            />
+
             <RegisterProductionLaborDialog
               open={registerLaborOpen}
               operators={laborOperators}
@@ -1507,6 +1631,9 @@ function ProductionOrderDetailPage() {
               onConfirm={handlePayLaborConfirm}
               submitting={payingLabor}
               errorMessage={payLaborError}
+              dateLabel="Fecha de pago"
+              dateValue={payLaborDate}
+              onDateChange={setPayLaborDate}
             />
 
             <ConfirmProductionLifecycleDialog
@@ -1553,6 +1680,9 @@ function ProductionOrderDetailPage() {
               onConfirm={handleStartConfirm}
               submitting={starting}
               errorMessage={startError}
+              dateLabel="Fecha de inicio"
+              dateValue={startDate}
+              onDateChange={setStartDate}
             />
 
             <ConfirmProductionLifecycleDialog
@@ -1565,6 +1695,9 @@ function ProductionOrderDetailPage() {
               onConfirm={handleCompleteConfirm}
               submitting={completing}
               errorMessage={completeError}
+              dateLabel="Fecha de cierre"
+              dateValue={completeDate}
+              onDateChange={setCompleteDate}
             />
 
             <AddProductionOperationDialog
