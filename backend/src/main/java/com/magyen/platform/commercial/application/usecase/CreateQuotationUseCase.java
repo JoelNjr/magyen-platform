@@ -1,13 +1,13 @@
 package com.magyen.platform.commercial.application.usecase;
 
 import com.magyen.platform.commercial.application.SellerNameResolver;
+import com.magyen.platform.commercial.application.port.CommercialSellerEmployeeInfo;
 import com.magyen.platform.commercial.application.dto.CreateQuotationCommand;
 import com.magyen.platform.commercial.application.dto.CreateQuotationResult;
 import com.magyen.platform.commercial.domain.Quotation;
 import com.magyen.platform.commercial.domain.QuotationNumber;
 import com.magyen.platform.commercial.domain.QuotationNumberGenerator;
 import com.magyen.platform.commercial.domain.QuotationRepository;
-import com.magyen.platform.commercial.domain.Seller;
 
 import java.time.LocalDate;
 import java.util.Objects;
@@ -41,7 +41,7 @@ public class CreateQuotationUseCase {
         Objects.requireNonNull(command, "Command must not be null");
         validateCommand(command);
 
-        Seller seller = sellerNameResolver.requireActiveSeller(command.sellerId());
+        CommercialSellerEmployeeInfo seller = sellerNameResolver.requireEligibleSeller(command.sellerId());
         LocalDate creationDate = command.quotationDate() != null
                 ? command.quotationDate()
                 : LocalDate.now();
@@ -52,7 +52,7 @@ public class CreateQuotationUseCase {
                 command.customerId(),
                 creationDate,
                 command.deliveryDate(),
-                seller.getId(),
+                seller.employeeId(),
                 command.observations()
         );
 

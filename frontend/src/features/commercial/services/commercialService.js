@@ -30,11 +30,6 @@ export async function getCommercialCatalogs() {
   return response.data
 }
 
-export async function createSeller(payload) {
-  const response = await httpClient.post('/sellers', payload)
-  return response.data
-}
-
 export function createQuotation(payload) {
   return httpClient.post('/quotations', payload).then((response) => response.data)
 }

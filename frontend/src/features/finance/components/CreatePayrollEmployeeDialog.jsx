@@ -139,6 +139,10 @@ function CreatePayrollEmployeeDialog({
           </Stack>
           {isFixed ? (
             <>
+              <Alert severity="info">
+                Este empleado podrá seleccionarse como vendedor en cotizaciones.
+                No puede registrarse en Mano de obra.
+              </Alert>
               <TextField
                 label="Valor fijo"
                 value={form.fixedAmount}

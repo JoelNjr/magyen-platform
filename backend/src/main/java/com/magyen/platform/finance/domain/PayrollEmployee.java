@@ -137,6 +137,30 @@ public class PayrollEmployee {
         this.active = false;
     }
 
+    /**
+     * Capacidad derivada de {@link PayrollCompensationType#FIXED_PAYROLL}.
+     * No es un permiso configurable. La selección nueva también exige {@link #isActive()}.
+     */
+    public boolean canSell() {
+        return compensationType == PayrollCompensationType.FIXED_PAYROLL;
+    }
+
+    /**
+     * Capacidad derivada de {@link PayrollCompensationType#PRODUCTION_BASED}.
+     * No es un permiso configurable. La selección nueva también exige {@link #isActive()}.
+     */
+    public boolean canDoProduction() {
+        return compensationType == PayrollCompensationType.PRODUCTION_BASED;
+    }
+
+    public boolean isEligibleAsSeller() {
+        return active && canSell();
+    }
+
+    public boolean isEligibleForProductionLabor() {
+        return active && canDoProduction();
+    }
+
     public boolean participatesInFixedPayrollGeneration() {
         return active
                 && compensationType == PayrollCompensationType.FIXED_PAYROLL

@@ -5,6 +5,8 @@ import com.magyen.platform.finance.application.port.EmployeeProductionEarningsPo
 import com.magyen.platform.finance.application.usecase.ActivatePayrollEmployeeUseCase;
 import com.magyen.platform.finance.application.usecase.CancelPayrollPeriodUseCase;
 import com.magyen.platform.finance.application.usecase.CancelRecurringFinancialObligationOccurrenceUseCase;
+import com.magyen.platform.finance.application.usecase.CancelPayrollDeductionUseCase;
+import com.magyen.platform.finance.application.usecase.CreatePayrollDeductionUseCase;
 import com.magyen.platform.finance.application.usecase.CreatePayrollEmployeeUseCase;
 import com.magyen.platform.finance.application.usecase.CreateRecurringFinancialObligationOccurrenceUseCase;
 import com.magyen.platform.finance.application.usecase.CreateRecurringFinancialObligationUseCase;
@@ -18,6 +20,7 @@ import com.magyen.platform.finance.application.usecase.GetFinancialTransactionsU
 import com.magyen.platform.finance.application.usecase.GetOverdueFinancialObligationOccurrencesUseCase;
 import com.magyen.platform.finance.application.usecase.GetPaymentUseCase;
 import com.magyen.platform.finance.application.usecase.GetPaymentsByOrderUseCase;
+import com.magyen.platform.finance.application.usecase.GetPayrollDeductionsUseCase;
 import com.magyen.platform.finance.application.usecase.GetPayrollEmployeeProductionEarningsUseCase;
 import com.magyen.platform.finance.application.usecase.GetPayrollEmployeeUseCase;
 import com.magyen.platform.finance.application.usecase.GetPayrollEmployeesUseCase;
@@ -42,12 +45,14 @@ import com.magyen.platform.finance.application.usecase.UpdatePayrollEmployeeComp
 import com.magyen.platform.finance.application.usecase.UpdateRecurringFinancialObligationUseCase;
 import com.magyen.platform.finance.domain.FinancialTransactionRepository;
 import com.magyen.platform.finance.domain.PaymentRepository;
+import com.magyen.platform.finance.domain.PayrollDeductionRepository;
 import com.magyen.platform.finance.domain.PayrollEmployeeRepository;
 import com.magyen.platform.finance.domain.PayrollPeriodRepository;
 import com.magyen.platform.finance.domain.RecurringFinancialObligationOccurrenceRepository;
 import com.magyen.platform.finance.domain.RecurringFinancialObligationRepository;
 import com.magyen.platform.finance.infrastructure.persistence.mapper.FinancialTransactionPersistenceMapper;
 import com.magyen.platform.finance.infrastructure.persistence.mapper.PaymentPersistenceMapper;
+import com.magyen.platform.finance.infrastructure.persistence.mapper.PayrollDeductionPersistenceMapper;
 import com.magyen.platform.finance.infrastructure.persistence.mapper.PayrollEmployeePersistenceMapper;
 import com.magyen.platform.finance.infrastructure.persistence.mapper.PayrollPeriodPersistenceMapper;
 import com.magyen.platform.finance.infrastructure.production.PayrollEmployeeProductionEarningsAdapter;
@@ -56,6 +61,7 @@ import com.magyen.platform.finance.infrastructure.persistence.mapper.RecurringFi
 import com.magyen.platform.finance.presentation.obligation.mapper.RecurringFinancialObligationPresentationMapper;
 import com.magyen.platform.finance.presentation.occurrence.mapper.RecurringFinancialObligationOccurrencePresentationMapper;
 import com.magyen.platform.finance.presentation.payment.mapper.PaymentPresentationMapper;
+import com.magyen.platform.finance.presentation.payroll.mapper.PayrollDeductionPresentationMapper;
 import com.magyen.platform.finance.presentation.payroll.mapper.PayrollEmployeePresentationMapper;
 import com.magyen.platform.finance.presentation.payroll.mapper.PayrollPeriodPresentationMapper;
 import com.magyen.platform.finance.presentation.summary.mapper.FinancialPeriodSummaryPresentationMapper;
@@ -343,6 +349,16 @@ public class FinanceConfiguration {
     }
 
     @Bean
+    public PayrollDeductionPresentationMapper payrollDeductionPresentationMapper() {
+        return new PayrollDeductionPresentationMapper();
+    }
+
+    @Bean
+    public PayrollDeductionPersistenceMapper payrollDeductionPersistenceMapper() {
+        return new PayrollDeductionPersistenceMapper();
+    }
+
+    @Bean
     public PayrollPeriodPresentationMapper payrollPeriodPresentationMapper() {
         return new PayrollPeriodPresentationMapper();
     }
@@ -392,6 +408,37 @@ public class FinanceConfiguration {
             PayrollEmployeeRepository payrollEmployeeRepository
     ) {
         return new DeactivatePayrollEmployeeUseCase(payrollEmployeeRepository);
+    }
+
+    @Bean
+    public CreatePayrollDeductionUseCase createPayrollDeductionUseCase(
+            PayrollEmployeeRepository payrollEmployeeRepository,
+            PayrollDeductionRepository payrollDeductionRepository,
+            Clock clock
+    ) {
+        return new CreatePayrollDeductionUseCase(
+                payrollEmployeeRepository,
+                payrollDeductionRepository,
+                clock
+        );
+    }
+
+    @Bean
+    public GetPayrollDeductionsUseCase getPayrollDeductionsUseCase(
+            PayrollEmployeeRepository payrollEmployeeRepository,
+            PayrollDeductionRepository payrollDeductionRepository
+    ) {
+        return new GetPayrollDeductionsUseCase(
+                payrollEmployeeRepository,
+                payrollDeductionRepository
+        );
+    }
+
+    @Bean
+    public CancelPayrollDeductionUseCase cancelPayrollDeductionUseCase(
+            PayrollDeductionRepository payrollDeductionRepository
+    ) {
+        return new CancelPayrollDeductionUseCase(payrollDeductionRepository);
     }
 
     @Bean

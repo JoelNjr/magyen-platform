@@ -15,6 +15,8 @@ public record PayrollEmployeeResponse(
         BigDecimal fixedAmount,
         String frequency,
         LocalDate effectiveFrom,
-        LocalDate effectiveTo
+        LocalDate effectiveTo,
+        boolean canSell,
+        boolean canDoProduction
 ) {
 }

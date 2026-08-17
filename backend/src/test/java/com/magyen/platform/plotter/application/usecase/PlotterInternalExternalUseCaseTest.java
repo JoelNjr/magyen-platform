@@ -6,13 +6,12 @@ import com.magyen.platform.commercial.application.dto.CreateCustomerCommand;
 import com.magyen.platform.commercial.application.dto.CreateOrderFromQuotationCommand;
 import com.magyen.platform.commercial.application.dto.CreateOrderFromQuotationResult;
 import com.magyen.platform.commercial.application.dto.CreateQuotationCommand;
-import com.magyen.platform.commercial.application.dto.CreateSellerCommand;
 import com.magyen.platform.commercial.application.usecase.AddQuotationItemUseCase;
 import com.magyen.platform.commercial.application.usecase.ApproveQuotationUseCase;
 import com.magyen.platform.commercial.application.usecase.CreateCustomerUseCase;
 import com.magyen.platform.commercial.application.usecase.CreateOrderFromQuotationUseCase;
 import com.magyen.platform.commercial.application.usecase.CreateQuotationUseCase;
-import com.magyen.platform.commercial.application.usecase.CreateSellerUseCase;
+import com.magyen.platform.finance.application.usecase.CreatePayrollEmployeeUseCase;
 import com.magyen.platform.finance.domain.FinancialTransactionRepository;
 import com.magyen.platform.finance.domain.FinancialTransactionSourceType;
 import com.magyen.platform.finance.domain.FinancialTransactionType;
@@ -28,6 +27,7 @@ import com.magyen.platform.plotter.application.dto.RegisterPlotterPaymentCommand
 import com.magyen.platform.plotter.domain.PlotterJobRepository;
 import com.magyen.platform.plotter.domain.PlotterJobType;
 import com.magyen.platform.plotter.domain.exception.PlotterDomainException;
+import com.magyen.platform.shared.testsupport.FixedSellerEmployeeFixture;
 import com.magyen.platform.production.application.dto.PlanProductionOrderCommand;
 import com.magyen.platform.production.application.dto.RegisterProductionMaterialConsumptionCommand;
 import com.magyen.platform.production.application.dto.StartProductionOrderCommand;
@@ -57,7 +57,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class PlotterInternalExternalUseCaseTest {
 
     @Autowired
-    private CreateSellerUseCase createSellerUseCase;
+    private CreatePayrollEmployeeUseCase createPayrollEmployeeUseCase;
 
     @Autowired
     private CreateCustomerUseCase createCustomerUseCase;
@@ -338,9 +338,10 @@ class PlotterInternalExternalUseCaseTest {
     }
 
     private CommercialOrderFixture createCommercialOrder(String customerName) {
-        UUID sellerId = createSellerUseCase.execute(
-                new CreateSellerCommand("Seller-IncD-" + UUID.randomUUID().toString().substring(0, 8))
-        ).sellerId();
+        UUID sellerId = FixedSellerEmployeeFixture.create(
+                createPayrollEmployeeUseCase,
+                "Seller-IncD-" + UUID.randomUUID().toString().substring(0, 8)
+        );
         UUID customerId = createCustomerUseCase.execute(new CreateCustomerCommand(customerName)).customerId();
 
         var quotation = createQuotationUseCase.execute(new CreateQuotationCommand(

@@ -176,6 +176,8 @@ public class PayrollEmployeePresentationMapper {
             java.time.LocalDate effectiveFrom,
             java.time.LocalDate effectiveTo
     ) {
+        boolean canSell = "FIXED_PAYROLL".equals(compensationType);
+        boolean canDoProduction = "PRODUCTION_BASED".equals(compensationType);
         return new PayrollEmployeeResponse(
                 employeeId,
                 displayName,
@@ -184,7 +186,9 @@ public class PayrollEmployeePresentationMapper {
                 fixedAmount,
                 frequency,
                 effectiveFrom,
-                effectiveTo
+                effectiveTo,
+                canSell,
+                canDoProduction
         );
     }
 

@@ -6,7 +6,6 @@ import com.magyen.platform.commercial.application.dto.CreateCustomerCommand;
 import com.magyen.platform.commercial.application.dto.CreateOrderFromQuotationCommand;
 import com.magyen.platform.commercial.application.dto.CreateOrderFromQuotationResult;
 import com.magyen.platform.commercial.application.dto.CreateQuotationCommand;
-import com.magyen.platform.commercial.application.dto.CreateSellerCommand;
 import com.magyen.platform.commercial.application.dto.GetOrderCommand;
 import com.magyen.platform.commercial.application.dto.GetOrderResult;
 import com.magyen.platform.commercial.application.usecase.AddQuotationItemUseCase;
@@ -14,10 +13,11 @@ import com.magyen.platform.commercial.application.usecase.ApproveQuotationUseCas
 import com.magyen.platform.commercial.application.usecase.CreateCustomerUseCase;
 import com.magyen.platform.commercial.application.usecase.CreateOrderFromQuotationUseCase;
 import com.magyen.platform.commercial.application.usecase.CreateQuotationUseCase;
-import com.magyen.platform.commercial.application.usecase.CreateSellerUseCase;
 import com.magyen.platform.commercial.application.usecase.GetOrderUseCase;
+import com.magyen.platform.finance.application.usecase.CreatePayrollEmployeeUseCase;
 import com.magyen.platform.production.application.dto.CreateProductionOrderCommand;
 import com.magyen.platform.production.application.dto.CreateProductionOrderResult;
+import com.magyen.platform.shared.testsupport.FixedSellerEmployeeFixture;
 import com.magyen.platform.production.application.dto.GetProductionOrderCommand;
 import com.magyen.platform.production.application.dto.GetProductionOrderResult;
 import com.magyen.platform.production.application.dto.PlanProductionOrderCommand;
@@ -43,7 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class HistoricalBusinessDateUseCaseTest {
 
     @Autowired
-    private CreateSellerUseCase createSellerUseCase;
+    private CreatePayrollEmployeeUseCase createPayrollEmployeeUseCase;
 
     @Autowired
     private CreateCustomerUseCase createCustomerUseCase;
@@ -136,9 +136,10 @@ class HistoricalBusinessDateUseCaseTest {
     }
 
     private HistoricalCase createHistoricalCommercialCase() {
-        UUID sellerId = createSellerUseCase.execute(
-                new CreateSellerCommand("Seller-Hist-" + UUID.randomUUID().toString().substring(0, 8))
-        ).sellerId();
+        UUID sellerId = FixedSellerEmployeeFixture.create(
+                createPayrollEmployeeUseCase,
+                "Seller-Hist-" + UUID.randomUUID().toString().substring(0, 8)
+        );
         UUID customerId = createCustomerUseCase.execute(
                 new CreateCustomerCommand("Customer-Hist-" + UUID.randomUUID().toString().substring(0, 8))
         ).customerId();

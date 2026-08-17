@@ -131,6 +131,23 @@ export function getPayrollCompensationTypeLabel(type) {
   return type || '—'
 }
 
+export const PAYROLL_DEDUCTION_TYPE_OPTIONS = [
+  { value: 'LOAN', label: 'Préstamo' },
+  { value: 'ADVANCE', label: 'Anticipo' },
+  { value: 'OTHER', label: 'Otro descuento' },
+]
+
+export function getPayrollDeductionTypeLabel(type) {
+  const found = PAYROLL_DEDUCTION_TYPE_OPTIONS.find((option) => option.value === type)
+  return found?.label || type || '—'
+}
+
+export function getPayrollDeductionStatusLabel(status) {
+  if (status === 'ACTIVE') return 'Activo'
+  if (status === 'CANCELLED') return 'Cancelado'
+  return status || '—'
+}
+
 export function formatPayrollPeriodRange(periodStart, periodEnd) {
   return `${formatFinanceDate(periodStart)} – ${formatFinanceDate(periodEnd)}`
 }

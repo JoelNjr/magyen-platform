@@ -4,7 +4,7 @@
 **Estado:** Implemented  
 **Fecha:** 16 de agosto de 2026
 
-Este documento cubre únicamente el Incremento A. No describe autenticación (ver `SPR-038-Auth-Security.md`) ni los incrementos B/C/D.
+Este documento cubre únicamente el Incremento A. No describe autenticación (ver `SPR-038-Auth-Security.md`) ni los incrementos B/C/D/E.
 
 ---
 

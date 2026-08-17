@@ -5,9 +5,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Port de persistencia para el agregado {@link Seller}.
+ * Port leftover para resolver nombres históricos de vendedores.
  * <p>
- * La implementación concreta vivirá en la capa de infraestructura.
+ * No es la fuente de verdad. Los vendedores nuevos son {@code PayrollEmployee}.
  */
 public interface SellerRepository {
 

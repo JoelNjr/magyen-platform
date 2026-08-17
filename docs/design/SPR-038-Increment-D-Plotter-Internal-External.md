@@ -1,10 +1,10 @@
 # SPR-038 — Incremento D: Plotter interno / externo y atribución de costo
 
-**Incremento:** D (último de SPR-038)  
+**Incremento:** D  
 **Estado:** Implemented  
 **Fecha:** 17 de agosto de 2026
 
-Este documento cubre únicamente el Incremento D. No describe autenticación, catálogos comerciales, costos de inventario genéricos ni unificación de empleados. No inicia SPR-039.
+Este documento cubre únicamente el Incremento D. No describe autenticación, catálogos comerciales, costos de inventario genéricos ni unificación de empleados. La unificación de vendedores y descuentos quedó en `SPR-038-Increment-E-Employees-Sellers-Deductions.md`. No inicia SPR-039.
 
 ---
 

@@ -2,8 +2,8 @@ package com.magyen.platform.commercial.presentation;
 
 import com.magyen.platform.commercial.domain.Customer;
 import com.magyen.platform.commercial.domain.CustomerRepository;
-import com.magyen.platform.commercial.domain.Seller;
-import com.magyen.platform.commercial.domain.SellerRepository;
+import com.magyen.platform.finance.application.usecase.CreatePayrollEmployeeUseCase;
+import com.magyen.platform.shared.testsupport.FixedSellerEmployeeFixture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,7 +48,7 @@ class OneOrderPerQuotationApiContractTest {
     private CustomerRepository customerRepository;
 
     @Autowired
-    private SellerRepository sellerRepository;
+    private CreatePayrollEmployeeUseCase createPayrollEmployeeUseCase;
 
     private MockMvc mockMvc;
 
@@ -96,7 +96,10 @@ class OneOrderPerQuotationApiContractTest {
     @Test
     void rejectsOrderCreationFromDraftQuotation() throws Exception {
         Customer customer = customerRepository.save(Customer.create("Cliente Draft Order"));
-        Seller seller = sellerRepository.save(Seller.create("Draft Guard " + UUID.randomUUID()));
+        UUID sellerId = FixedSellerEmployeeFixture.create(
+                createPayrollEmployeeUseCase,
+                "Draft Guard " + UUID.randomUUID()
+        );
 
         MvcResult quotationResult = mockMvc.perform(
                         post("/api/v1/quotations")
@@ -108,7 +111,7 @@ class OneOrderPerQuotationApiContractTest {
                                           "sellerId": "%s",
                                           "observations": "Draft cannot create order"
                                         }
-                                        """.formatted(customer.getId(), LocalDate.now().plusDays(12), seller.getId()))
+                                        """.formatted(customer.getId(), LocalDate.now().plusDays(12), sellerId))
                 )
                 .andExpect(status().isCreated())
                 .andReturn();
@@ -143,7 +146,10 @@ class OneOrderPerQuotationApiContractTest {
 
     private UUID createApprovedQuotationWithItem() throws Exception {
         Customer customer = customerRepository.save(Customer.create("Cliente One Order"));
-        Seller seller = sellerRepository.save(Seller.create("One Order Guard " + UUID.randomUUID()));
+        UUID sellerId = FixedSellerEmployeeFixture.create(
+                createPayrollEmployeeUseCase,
+                "One Order Guard " + UUID.randomUUID()
+        );
 
         MvcResult quotationResult = mockMvc.perform(
                         post("/api/v1/quotations")
@@ -155,7 +161,7 @@ class OneOrderPerQuotationApiContractTest {
                                           "sellerId": "%s",
                                           "observations": "One order per quotation"
                                         }
-                                        """.formatted(customer.getId(), LocalDate.now().plusDays(14), seller.getId()))
+                                        """.formatted(customer.getId(), LocalDate.now().plusDays(14), sellerId))
                 )
                 .andExpect(status().isCreated())
                 .andReturn();

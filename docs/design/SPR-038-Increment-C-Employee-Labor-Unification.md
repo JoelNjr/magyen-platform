@@ -4,7 +4,7 @@
 **Estado:** Implemented  
 **Fecha:** 17 de agosto de 2026
 
-Este documento cubre únicamente el Incremento C. No describe autenticación (`SPR-038-Auth-Security.md`), el Incremento A (catálogos comerciales), el Incremento B (costos de inventario) ni el Incremento D (`SPR-038-Increment-D-Plotter-Internal-External.md`).
+Este documento cubre únicamente el Incremento C. No describe autenticación (`SPR-038-Auth-Security.md`), el Incremento A (catálogos comerciales), el Incremento B (costos de inventario), el Incremento D (`SPR-038-Increment-D-Plotter-Internal-External.md`) ni el Incremento E (`SPR-038-Increment-E-Employees-Sellers-Deductions.md`).
 
 ---
 
@@ -39,7 +39,7 @@ Production **no** mantiene un segundo catálogo de personas.
 
 `AuthenticationUser` permanece separado. No hay vínculo entre login y empleado en este incremento.
 
-Vendedores y clientes no son empleados automáticamente.
+Vendedores y clientes no eran empleados automáticamente en este incremento. La unificación de vendedores comerciales con `PayrollEmployee` FIXED quedó en `SPR-038-Increment-E-Employees-Sellers-Deductions.md`.
 
 ---
 
@@ -203,3 +203,5 @@ Hibernate `ddl-auto` permanece `validate`. No se resetea, trunca ni recrea la ba
 * PDF, notificaciones, Intelligence
 
 Los trabajos internos de Plotter quedaron en `SPR-038-Increment-D-Plotter-Internal-External.md`.
+
+La unificación de vendedores y la fundación de descuentos de nómina quedaron en `SPR-038-Increment-E-Employees-Sellers-Deductions.md`.

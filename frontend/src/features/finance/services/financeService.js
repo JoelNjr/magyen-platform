@@ -122,6 +122,29 @@ export async function getPayrollEmployeeProductionEarnings(employeeId, params) {
   return response.data
 }
 
+export async function getPayrollEmployeeDeductions(employeeId, params = {}) {
+  const response = await httpClient.get(
+    `/finance/payroll/employees/${employeeId}/deductions`,
+    { params }
+  )
+  return response.data
+}
+
+export async function createPayrollDeduction(employeeId, payload) {
+  const response = await httpClient.post(
+    `/finance/payroll/employees/${employeeId}/deductions`,
+    payload
+  )
+  return response.data
+}
+
+export async function cancelPayrollDeduction(employeeId, deductionId) {
+  const response = await httpClient.patch(
+    `/finance/payroll/employees/${employeeId}/deductions/${deductionId}/cancel`
+  )
+  return response.data
+}
+
 export async function getPayrollPeriods() {
   const response = await httpClient.get('/finance/payroll/periods')
   return response.data

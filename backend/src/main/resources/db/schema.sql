@@ -9,8 +9,10 @@ CREATE TABLE customers (
     CONSTRAINT customers_pkey PRIMARY KEY (id)
 );
 
--- Internal Magyen sellers. Commercial-owned person identity for quotations/orders.
--- Not an authentication user. Historical rows keep seller_id even if later deactivated.
+-- Leftover Commercial seller catalog. Not the source of truth.
+-- New quotations/orders store seller_id as payroll_employees.id (FIXED_PAYROLL).
+-- Historical rows may still reference leftover sellers.id; names are resolved at read time.
+-- Retained so the live V1 database is not dropped. Do not recreate as a catalog.
 CREATE TABLE sellers (
     id      uuid            NOT NULL,
     name    varchar(255)    NOT NULL,
@@ -35,7 +37,7 @@ CREATE TABLE quotations (
     creation_date       date            NOT NULL,
     delivery_date       date            NOT NULL,
     status              varchar(20)     NOT NULL,
-    seller_id           uuid            NOT NULL,
+    seller_id           uuid            NOT NULL, -- soft UUID: payroll_employees.id for new rows; leftover sellers.id possible historically
     observations        varchar(2000)   NULL,
     total_amount        numeric(19, 2)  NOT NULL,
     CONSTRAINT quotations_pkey PRIMARY KEY (id),
@@ -97,7 +99,7 @@ CREATE TABLE orders (
     final_payment_acknowledged  boolean         NOT NULL,
     committed_total             numeric(19, 2)  NOT NULL,
     remaining_balance           numeric(19, 2)  NOT NULL,
-    seller_id                   uuid            NOT NULL,
+    seller_id                   uuid            NOT NULL, -- soft UUID: payroll_employees.id for new rows; leftover sellers.id possible historically
     observations                varchar(2000)   NULL,
     description                 varchar(2000)   NULL,
     total_amount                numeric(19, 2)  NOT NULL,
@@ -566,6 +568,25 @@ CREATE TABLE payroll_employees (
 
 CREATE INDEX idx_payroll_employees_active ON payroll_employees (active);
 CREATE INDEX idx_payroll_employees_compensation_type ON payroll_employees (compensation_type);
+
+-- Aggregate: PayrollDeduction (descuento de nómina — SPR-038 Increment E)
+-- employee_id is a soft UUID to payroll_employees.id (no FK).
+-- Registering a deduction does not create a financial_transactions row.
+CREATE TABLE payroll_deductions (
+    id              uuid            NOT NULL,
+    employee_id     uuid            NOT NULL,
+    type            varchar(30)     NOT NULL,
+    amount          numeric(19, 2)  NOT NULL,
+    deduction_date  date            NOT NULL,
+    description     varchar(2000)   NULL,
+    status          varchar(30)     NOT NULL,
+    created_at      timestamp       NOT NULL,
+    CONSTRAINT payroll_deductions_pkey PRIMARY KEY (id)
+);
+
+CREATE INDEX idx_payroll_deductions_employee_id ON payroll_deductions (employee_id);
+CREATE INDEX idx_payroll_deductions_status ON payroll_deductions (status);
+CREATE INDEX idx_payroll_deductions_employee_status ON payroll_deductions (employee_id, status);
 
 -- Aggregate: PayrollPeriod (período/pago — soft ref employee_id, no FK)
 CREATE TABLE payroll_periods (

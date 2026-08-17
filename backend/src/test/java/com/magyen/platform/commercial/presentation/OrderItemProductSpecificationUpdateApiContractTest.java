@@ -2,8 +2,8 @@ package com.magyen.platform.commercial.presentation;
 
 import com.magyen.platform.commercial.domain.Customer;
 import com.magyen.platform.commercial.domain.CustomerRepository;
-import com.magyen.platform.commercial.domain.Seller;
-import com.magyen.platform.commercial.domain.SellerRepository;
+import com.magyen.platform.finance.application.usecase.CreatePayrollEmployeeUseCase;
+import com.magyen.platform.shared.testsupport.FixedSellerEmployeeFixture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,7 +51,7 @@ class OrderItemProductSpecificationUpdateApiContractTest {
     private CustomerRepository customerRepository;
 
     @Autowired
-    private SellerRepository sellerRepository;
+    private CreatePayrollEmployeeUseCase createPayrollEmployeeUseCase;
 
     private MockMvc mockMvc;
 
@@ -147,7 +147,10 @@ class OrderItemProductSpecificationUpdateApiContractTest {
 
     private PreparedOrder createOrderWithItem() throws Exception {
         Customer customer = customerRepository.save(Customer.create("Cliente Spec Update"));
-        Seller seller = sellerRepository.save(Seller.create("Spec Updater " + UUID.randomUUID()));
+        UUID sellerId = FixedSellerEmployeeFixture.create(
+                createPayrollEmployeeUseCase,
+                "Spec Updater " + UUID.randomUUID()
+        );
 
         MvcResult quotationResult = mockMvc.perform(
                         post("/api/v1/quotations")
@@ -159,7 +162,7 @@ class OrderItemProductSpecificationUpdateApiContractTest {
                                           "sellerId": "%s",
                                           "observations": "Update specification"
                                         }
-                                        """.formatted(customer.getId(), LocalDate.now().plusDays(14), seller.getId()))
+                                        """.formatted(customer.getId(), LocalDate.now().plusDays(14), sellerId))
                 )
                 .andExpect(status().isCreated())
                 .andReturn();

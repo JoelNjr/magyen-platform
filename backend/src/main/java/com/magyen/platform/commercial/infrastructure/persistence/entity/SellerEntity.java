@@ -8,7 +8,8 @@ import jakarta.persistence.Table;
 import java.util.UUID;
 
 /**
- * Modelo relacional del agregado {@link com.magyen.platform.commercial.domain.Seller}.
+ * Leftover relational model for historical seller name resolution.
+ * Not a catalog. New seller identity is payroll_employees.id.
  */
 @Entity
 @Table(name = "sellers")

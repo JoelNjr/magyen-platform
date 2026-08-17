@@ -19,6 +19,7 @@ import {
 import ConfirmFinanceActionDialog from './ConfirmFinanceActionDialog'
 import CreatePayrollEmployeeDialog from './CreatePayrollEmployeeDialog'
 import GeneratePayrollPeriodsDialog from './GeneratePayrollPeriodsDialog'
+import PayrollEmployeeDeductionsDialog from './PayrollEmployeeDeductionsDialog'
 import PayrollEmployeeProductionEarningsDialog from './PayrollEmployeeProductionEarningsDialog'
 import UpdatePayrollEmployeeCompensationDialog from './UpdatePayrollEmployeeCompensationDialog'
 import {
@@ -110,6 +111,7 @@ function PayrollFinanceSection({
 
   const [togglingEmployeeId, setTogglingEmployeeId] = useState(null)
   const [earningsEmployee, setEarningsEmployee] = useState(null)
+  const [deductionsEmployee, setDeductionsEmployee] = useState(null)
 
   const loadEmployees = useCallback(async () => {
     setEmployeesLoading(true)
@@ -308,8 +310,10 @@ function PayrollFinanceSection({
               <TableHead>
                 <TableRow>
                   <TableCell sx={headerCellSx}>Nombre</TableCell>
-                  <TableCell sx={headerCellSx}>Tipo de pago</TableCell>
+                  <TableCell sx={headerCellSx}>Tipo de compensación</TableCell>
                   <TableCell sx={headerCellSx}>Valor fijo</TableCell>
+                  <TableCell sx={headerCellSx}>Puede vender</TableCell>
+                  <TableCell sx={headerCellSx}>Puede hacer producción</TableCell>
                   <TableCell sx={headerCellSx}>Estado</TableCell>
                   <TableCell align="right" sx={headerCellSx}>
                     Acciones
@@ -318,10 +322,10 @@ function PayrollFinanceSection({
               </TableHead>
               <TableBody>
                 {employeesLoading ? (
-                  <LoadingRows columns={5} />
+                  <LoadingRows columns={7} />
                 ) : employees.length === 0 ? (
                   <EmptyRow
-                    columns={5}
+                    columns={7}
                     message="No hay empleados de nómina registrados."
                   />
                 ) : (
@@ -339,17 +343,22 @@ function PayrollFinanceSection({
                               employee.compensationType
                             )}
                           </Typography>
-                          {employee.compensationType === 'PRODUCTION_BASED' ? (
-                            <Typography variant="caption" color="text.secondary">
-                              Puede seleccionarse en Mano de obra
-                            </Typography>
-                          ) : null}
                         </Stack>
                       </TableCell>
                       <TableCell>
                         {employee.compensationType === 'FIXED_PAYROLL'
                           ? formatFinanceMoney(employee.fixedAmount)
                           : '—'}
+                      </TableCell>
+                      <TableCell>
+                        {employee.compensationType === 'FIXED_PAYROLL'
+                          ? 'Sí'
+                          : 'No'}
+                      </TableCell>
+                      <TableCell>
+                        {employee.compensationType === 'PRODUCTION_BASED'
+                          ? 'Sí'
+                          : 'No'}
                       </TableCell>
                       <TableCell>
                         <Chip
@@ -364,6 +373,12 @@ function PayrollFinanceSection({
                           spacing={1}
                           justifyContent="flex-end"
                         >
+                          <Button
+                            size="small"
+                            onClick={() => setDeductionsEmployee(employee)}
+                          >
+                            Deducciones
+                          </Button>
                           <Button
                             size="small"
                             onClick={() => setEarningsEmployee(employee)}
@@ -534,6 +549,13 @@ function PayrollFinanceSection({
         open={Boolean(earningsEmployee)}
         employee={earningsEmployee}
         onClose={() => setEarningsEmployee(null)}
+      />
+
+      <PayrollEmployeeDeductionsDialog
+        open={Boolean(deductionsEmployee)}
+        employee={deductionsEmployee}
+        onClose={() => setDeductionsEmployee(null)}
+        showSuccess={showSuccess}
       />
 
       <UpdatePayrollEmployeeCompensationDialog

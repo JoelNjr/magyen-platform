@@ -5,13 +5,13 @@ import com.magyen.platform.commercial.application.dto.ApproveQuotationCommand;
 import com.magyen.platform.commercial.application.dto.CreateCustomerCommand;
 import com.magyen.platform.commercial.application.dto.CreateOrderFromQuotationCommand;
 import com.magyen.platform.commercial.application.dto.CreateQuotationCommand;
-import com.magyen.platform.commercial.application.dto.CreateSellerCommand;
 import com.magyen.platform.commercial.application.usecase.AddQuotationItemUseCase;
 import com.magyen.platform.commercial.application.usecase.ApproveQuotationUseCase;
 import com.magyen.platform.commercial.application.usecase.CreateCustomerUseCase;
 import com.magyen.platform.commercial.application.usecase.CreateOrderFromQuotationUseCase;
 import com.magyen.platform.commercial.application.usecase.CreateQuotationUseCase;
-import com.magyen.platform.commercial.application.usecase.CreateSellerUseCase;
+import com.magyen.platform.finance.application.usecase.CreatePayrollEmployeeUseCase;
+import com.magyen.platform.shared.testsupport.FixedSellerEmployeeFixture;
 import com.magyen.platform.inventory.application.dto.CreateInventoryItemCommand;
 import com.magyen.platform.inventory.application.dto.CreateInventoryItemResult;
 import com.magyen.platform.inventory.application.usecase.CreateInventoryItemUseCase;
@@ -47,7 +47,7 @@ class PlotterJobApiContractTest {
     private CreateInventoryItemUseCase createInventoryItemUseCase;
 
     @Autowired
-    private CreateSellerUseCase createSellerUseCase;
+    private CreatePayrollEmployeeUseCase createPayrollEmployeeUseCase;
 
     @Autowired
     private CreateCustomerUseCase createCustomerUseCase;
@@ -257,9 +257,10 @@ class PlotterJobApiContractTest {
 
     @Test
     void createsInternalMagyenJobWithOrderIdentityAndRejectsPayment() throws Exception {
-        UUID sellerId = createSellerUseCase.execute(
-                new CreateSellerCommand("Seller-API-" + UUID.randomUUID().toString().substring(0, 8))
-        ).sellerId();
+        UUID sellerId = FixedSellerEmployeeFixture.create(
+                createPayrollEmployeeUseCase,
+                "Seller-API-" + UUID.randomUUID().toString().substring(0, 8)
+        );
         String customerName = "Sofia Vergara API";
         UUID customerId = createCustomerUseCase.execute(new CreateCustomerCommand(customerName)).customerId();
 

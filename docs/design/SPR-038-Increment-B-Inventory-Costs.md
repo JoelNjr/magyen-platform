@@ -216,3 +216,5 @@ Tras aplicar el SQL, refrescar en DBeaver el nodo de índices de `financial_tran
 La unificación de empleados / operarios quedó en `SPR-038-Increment-C-Employee-Labor-Unification.md`.
 
 Los trabajos internos de Plotter quedaron en `SPR-038-Increment-D-Plotter-Internal-External.md`.
+
+La unificación de vendedores y la fundación de descuentos de nómina quedaron en `SPR-038-Increment-E-Employees-Sellers-Deductions.md`.

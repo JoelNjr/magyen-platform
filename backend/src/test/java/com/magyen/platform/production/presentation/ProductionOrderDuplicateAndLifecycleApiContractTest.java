@@ -2,9 +2,9 @@ package com.magyen.platform.production.presentation;
 
 import com.magyen.platform.commercial.domain.Customer;
 import com.magyen.platform.commercial.domain.CustomerRepository;
-import com.magyen.platform.commercial.domain.Seller;
-import com.magyen.platform.commercial.domain.SellerRepository;
+import com.magyen.platform.finance.application.usecase.CreatePayrollEmployeeUseCase;
 import com.magyen.platform.production.domain.exception.ProductionOrderAlreadyExistsException;
+import com.magyen.platform.shared.testsupport.FixedSellerEmployeeFixture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,7 +58,7 @@ class ProductionOrderDuplicateAndLifecycleApiContractTest {
     private CustomerRepository customerRepository;
 
     @Autowired
-    private SellerRepository sellerRepository;
+    private CreatePayrollEmployeeUseCase createPayrollEmployeeUseCase;
 
     private MockMvc mockMvc;
 
@@ -391,7 +391,10 @@ class ProductionOrderDuplicateAndLifecycleApiContractTest {
 
     private ConfirmedOrderFixture createConfirmedOrderWithSpecificationAndSizes() throws Exception {
         Customer customer = customerRepository.save(Customer.create("Cliente Prod E2E"));
-        Seller seller = sellerRepository.save(Seller.create("Production Guard " + UUID.randomUUID()));
+        UUID sellerId = FixedSellerEmployeeFixture.create(
+                createPayrollEmployeeUseCase,
+                "Production Guard " + UUID.randomUUID()
+        );
 
         MvcResult quotationResult = mockMvc.perform(
                         post("/api/v1/quotations")
@@ -403,7 +406,7 @@ class ProductionOrderDuplicateAndLifecycleApiContractTest {
                                           "sellerId": "%s",
                                           "observations": "E2E production source"
                                         }
-                                        """.formatted(customer.getId(), LocalDate.now().plusDays(14), seller.getId()))
+                                        """.formatted(customer.getId(), LocalDate.now().plusDays(14), sellerId))
                 )
                 .andExpect(status().isCreated())
                 .andReturn();

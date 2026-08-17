@@ -1,39 +1,45 @@
 package com.magyen.platform.commercial.application;
 
+import com.magyen.platform.commercial.application.port.CommercialSellerEmployeeInfo;
+import com.magyen.platform.commercial.application.port.CommercialSellerEmployeePort;
 import com.magyen.platform.commercial.domain.Seller;
 import com.magyen.platform.commercial.domain.SellerRepository;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
  * Resuelve el nombre legible de un vendedor a partir de su identidad estable.
  * <p>
- * No es un caso de uso; solo evita acoplar lecturas comerciales al texto libre.
+ * La fuente de verdad para selección nueva es Finance {@code PayrollEmployee}.
+ * La tabla leftover {@code sellers} solo cubre lecturas históricas.
  */
 public class SellerNameResolver {
 
-    private final SellerRepository sellerRepository;
+    private final CommercialSellerEmployeePort commercialSellerEmployeePort;
+    private final SellerRepository leftoverSellerRepository;
 
-    public SellerNameResolver(SellerRepository sellerRepository) {
-        this.sellerRepository = Objects.requireNonNull(sellerRepository, "Seller repository must not be null");
+    public SellerNameResolver(
+            CommercialSellerEmployeePort commercialSellerEmployeePort,
+            SellerRepository leftoverSellerRepository
+    ) {
+        this.commercialSellerEmployeePort = Objects.requireNonNull(
+                commercialSellerEmployeePort,
+                "Commercial seller employee port must not be null"
+        );
+        this.leftoverSellerRepository = Objects.requireNonNull(
+                leftoverSellerRepository,
+                "Leftover seller repository must not be null"
+        );
     }
 
-    public Seller requireActiveSeller(UUID sellerId) {
+    public CommercialSellerEmployeeInfo requireEligibleSeller(UUID sellerId) {
         Objects.requireNonNull(sellerId, "Seller id must not be null");
-
-        Seller seller = sellerRepository.findById(sellerId)
-                .orElseThrow(() -> new IllegalArgumentException("Seller not found: " + sellerId));
-
-        if (!seller.isActive()) {
-            throw new IllegalArgumentException("Seller is not active: " + sellerId);
-        }
-
-        return seller;
+        return commercialSellerEmployeePort.requireEligibleSeller(sellerId);
     }
 
     public String resolveName(UUID sellerId) {
@@ -41,8 +47,8 @@ public class SellerNameResolver {
             return null;
         }
 
-        return sellerRepository.findById(sellerId)
-                .map(Seller::getName)
+        return commercialSellerEmployeePort.findEmployeeDisplayName(sellerId)
+                .or(() -> leftoverSellerRepository.findById(sellerId).map(Seller::getName))
                 .orElse(null);
     }
 
@@ -51,9 +57,11 @@ public class SellerNameResolver {
             return Map.of();
         }
 
-        return sellerRepository.findAll().stream()
+        Map<UUID, String> names = new HashMap<>(commercialSellerEmployeePort.findEmployeeDisplayNames(sellerIds));
+        leftoverSellerRepository.findAll().stream()
                 .filter(seller -> sellerIds.contains(seller.getId()))
-                .collect(Collectors.toMap(Seller::getId, Seller::getName, (left, right) -> left));
+                .forEach(seller -> names.putIfAbsent(seller.getId(), seller.getName()));
+        return Map.copyOf(names);
     }
 
     public Function<UUID, String> nameLookup(Collection<UUID> sellerIds) {

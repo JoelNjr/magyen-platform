@@ -82,6 +82,8 @@ class AuthorizationApiContractTest {
         mockMvc.perform(authorized(get("/api/v1/plotter/jobs"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/finance/transactions"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/finance/payroll/employees"), accessToken)).andExpect(status().isOk());
+        mockMvc.perform(authorized(get("/api/v1/finance/payroll/employees/" + UNKNOWN_ID + "/deductions"), accessToken))
+                .andExpect(status().isBadRequest());
         mockMvc.perform(authorized(get("/api/v1/finance/summary"), accessToken)
                         .param("fromDate", "2026-08-01")
                         .param("toDate", "2026-08-31"))
@@ -151,6 +153,18 @@ class AuthorizationApiContractTest {
                                 {
                                   "displayName": "No autorizado",
                                   "compensationType": "PRODUCTION_BASED"
+                                }
+                                """))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(authorized(get("/api/v1/finance/payroll/employees/" + UNKNOWN_ID + "/deductions"), accessToken))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(authorized(post("/api/v1/finance/payroll/employees/" + UNKNOWN_ID + "/deductions"), accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "type": "LOAN",
+                                  "amount": 10000,
+                                  "deductionDate": "2026-08-17"
                                 }
                                 """))
                 .andExpect(status().isForbidden());

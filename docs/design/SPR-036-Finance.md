@@ -405,6 +405,8 @@ NO deben modelarse como nómina fija.
 
 En V1 (SPR-038 Incremento C) los operarios de producción **son** empleados de Finance `PayrollEmployee` con tipo de compensación `PRODUCTION_BASED`. Production no mantiene un segundo catálogo de personas.
 
+En V1 (SPR-038 Incremento E) los vendedores comerciales **son** empleados de Finance `PayrollEmployee` con tipo de compensación `FIXED_PAYROLL`. Commercial no mantiene un segundo catálogo de personas. Ver `SPR-038-Increment-E-Employees-Sellers-Deductions.md`.
+
 Su pago corresponde a producción:
 
 Producción

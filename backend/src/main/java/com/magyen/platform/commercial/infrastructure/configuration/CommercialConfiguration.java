@@ -2,6 +2,7 @@ package com.magyen.platform.commercial.infrastructure.configuration;
 
 import com.magyen.platform.commercial.application.CustomerNameResolver;
 import com.magyen.platform.commercial.application.SellerNameResolver;
+import com.magyen.platform.commercial.application.port.CommercialSellerEmployeePort;
 import com.magyen.platform.commercial.application.port.OrderPaymentCollectionPort;
 import com.magyen.platform.commercial.application.port.PlotterOrderCostPort;
 import com.magyen.platform.commercial.application.port.ProductionOrderCostPort;
@@ -10,7 +11,6 @@ import com.magyen.platform.commercial.application.usecase.ApproveQuotationUseCas
 import com.magyen.platform.commercial.application.usecase.CreateCustomerUseCase;
 import com.magyen.platform.commercial.application.usecase.CreateOrderFromQuotationUseCase;
 import com.magyen.platform.commercial.application.usecase.CreateQuotationUseCase;
-import com.magyen.platform.commercial.application.usecase.CreateSellerUseCase;
 import com.magyen.platform.commercial.application.usecase.GetCommercialCatalogsUseCase;
 import com.magyen.platform.commercial.application.usecase.GetCustomersUseCase;
 import com.magyen.platform.commercial.application.usecase.GetSellersUseCase;
@@ -27,6 +27,7 @@ import com.magyen.platform.commercial.domain.OrderRepository;
 import com.magyen.platform.commercial.domain.QuotationNumberGenerator;
 import com.magyen.platform.commercial.domain.QuotationRepository;
 import com.magyen.platform.commercial.domain.SellerRepository;
+import com.magyen.platform.commercial.infrastructure.finance.CommercialSellerEmployeeAdapter;
 import com.magyen.platform.commercial.infrastructure.finance.OrderPaymentCollectionAdapter;
 import com.magyen.platform.commercial.infrastructure.plotter.PlotterOrderCostAdapter;
 import com.magyen.platform.commercial.infrastructure.persistence.mapper.CustomerPersistenceMapper;
@@ -39,6 +40,8 @@ import com.magyen.platform.commercial.presentation.customer.mapper.CustomerPrese
 import com.magyen.platform.commercial.presentation.order.mapper.OrderPresentationMapper;
 import com.magyen.platform.commercial.presentation.quotation.mapper.QuotationPresentationMapper;
 import com.magyen.platform.commercial.presentation.seller.mapper.SellerPresentationMapper;
+import com.magyen.platform.finance.application.usecase.GetPayrollEmployeeUseCase;
+import com.magyen.platform.finance.application.usecase.GetPayrollEmployeesUseCase;
 import com.magyen.platform.finance.application.usecase.GetPaymentsByOrderUseCase;
 import com.magyen.platform.plotter.application.usecase.GetInternalPlotterOrderCostsUseCase;
 import com.magyen.platform.production.application.usecase.GetProductionCostsByCommercialOrderUseCase;
@@ -102,8 +105,22 @@ public class CommercialConfiguration {
     }
 
     @Bean
-    public SellerNameResolver sellerNameResolver(SellerRepository sellerRepository) {
-        return new SellerNameResolver(sellerRepository);
+    public CommercialSellerEmployeePort commercialSellerEmployeePort(
+            GetPayrollEmployeeUseCase getPayrollEmployeeUseCase,
+            GetPayrollEmployeesUseCase getPayrollEmployeesUseCase
+    ) {
+        return new CommercialSellerEmployeeAdapter(
+                getPayrollEmployeeUseCase,
+                getPayrollEmployeesUseCase
+        );
+    }
+
+    @Bean
+    public SellerNameResolver sellerNameResolver(
+            CommercialSellerEmployeePort commercialSellerEmployeePort,
+            SellerRepository leftoverSellerRepository
+    ) {
+        return new SellerNameResolver(commercialSellerEmployeePort, leftoverSellerRepository);
     }
 
     @Bean
@@ -112,13 +129,8 @@ public class CommercialConfiguration {
     }
 
     @Bean
-    public CreateSellerUseCase createSellerUseCase(SellerRepository sellerRepository) {
-        return new CreateSellerUseCase(sellerRepository);
-    }
-
-    @Bean
-    public GetSellersUseCase getSellersUseCase(SellerRepository sellerRepository) {
-        return new GetSellersUseCase(sellerRepository);
+    public GetSellersUseCase getSellersUseCase(CommercialSellerEmployeePort commercialSellerEmployeePort) {
+        return new GetSellersUseCase(commercialSellerEmployeePort);
     }
 
     @Bean

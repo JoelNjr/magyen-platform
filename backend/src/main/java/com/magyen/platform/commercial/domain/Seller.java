@@ -4,10 +4,10 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * Aggregate Root que representa un vendedor interno de Magyen.
+ * Leftover identity used only to resolve historical quotation/order seller names.
  * <p>
- * Identifica de forma estable a la persona que vendió una cotización u orden.
- * No es una identidad de autenticación y no calcula comisiones.
+ * New sellers are Finance {@code PayrollEmployee} with compensation {@code FIXED_PAYROLL}.
+ * This aggregate is not a catalog and must not be used for new selection.
  */
 public class Seller {
 

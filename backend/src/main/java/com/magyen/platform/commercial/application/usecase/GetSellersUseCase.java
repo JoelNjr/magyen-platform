@@ -2,36 +2,39 @@ package com.magyen.platform.commercial.application.usecase;
 
 import com.magyen.platform.commercial.application.dto.GetSellersResult;
 import com.magyen.platform.commercial.application.dto.SellerResult;
-import com.magyen.platform.commercial.domain.Seller;
-import com.magyen.platform.commercial.domain.SellerRepository;
+import com.magyen.platform.commercial.application.port.CommercialSellerEmployeeInfo;
+import com.magyen.platform.commercial.application.port.CommercialSellerEmployeePort;
 
 import java.util.List;
 import java.util.Objects;
 
 /**
- * Caso de uso que consulta los vendedores internos existentes.
+ * Consulta vendedores elegibles: empleados Finance activos con pago fijo.
  */
 public class GetSellersUseCase {
 
-    private final SellerRepository sellerRepository;
+    private final CommercialSellerEmployeePort commercialSellerEmployeePort;
 
-    public GetSellersUseCase(SellerRepository sellerRepository) {
-        this.sellerRepository = Objects.requireNonNull(sellerRepository, "Seller repository must not be null");
+    public GetSellersUseCase(CommercialSellerEmployeePort commercialSellerEmployeePort) {
+        this.commercialSellerEmployeePort = Objects.requireNonNull(
+                commercialSellerEmployeePort,
+                "Commercial seller employee port must not be null"
+        );
     }
 
     public GetSellersResult execute() {
-        List<SellerResult> sellers = sellerRepository.findAll().stream()
+        List<SellerResult> sellers = commercialSellerEmployeePort.listActiveFixedSellers().stream()
                 .map(this::toSellerResult)
                 .toList();
 
         return new GetSellersResult(sellers);
     }
 
-    private SellerResult toSellerResult(Seller seller) {
+    private SellerResult toSellerResult(CommercialSellerEmployeeInfo seller) {
         return new SellerResult(
-                seller.getId(),
-                seller.getName(),
-                seller.isActive()
+                seller.employeeId(),
+                seller.displayName(),
+                seller.active()
         );
     }
 }
