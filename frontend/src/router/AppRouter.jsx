@@ -8,6 +8,8 @@ import AdminUsersPage from '../features/auth/pages/AdminUsersPage'
 import CreateQuotationPage from '../features/commercial/pages/CreateQuotationPage'
 import CustomersPage from '../features/commercial/pages/CustomersPage'
 import OrderDetailPage from '../features/commercial/pages/OrderDetailPage'
+import OrderProfitabilityDetailPage from '../features/commercial/pages/OrderProfitabilityDetailPage'
+import OrderProfitabilityPage from '../features/commercial/pages/OrderProfitabilityPage'
 import OrdersPage from '../features/commercial/pages/OrdersPage'
 import QuotationDetailPage from '../features/commercial/pages/QuotationDetailPage'
 import QuotationsPage from '../features/commercial/pages/QuotationsPage'
@@ -19,6 +21,7 @@ import InventoryDetailPage from '../features/inventory/pages/InventoryDetailPage
 import InventoryPage from '../features/inventory/pages/InventoryPage'
 import PlotterJobDetailPage from '../features/plotter/pages/PlotterJobDetailPage'
 import PlotterJobsPage from '../features/plotter/pages/PlotterJobsPage'
+import PlotterProfitabilityPage from '../features/plotter/pages/PlotterProfitabilityPage'
 import ProductionOrderDetailPage from '../features/production/pages/ProductionOrderDetailPage'
 import ProductionOrdersPage from '../features/production/pages/ProductionOrdersPage'
 import MainLayout from '../layout/MainLayout'
@@ -43,6 +46,14 @@ function AppRouter() {
             <Route path="commercial/customers" element={<CustomersPage />} />
             <Route path="commercial/sellers" element={<SellersPage />} />
             <Route
+              path="commercial/orders/profitability"
+              element={<OrderProfitabilityPage />}
+            />
+            <Route
+              path="commercial/orders/:orderId/profitability"
+              element={<OrderProfitabilityDetailPage />}
+            />
+            <Route
               path="commercial/orders/:orderId"
               element={<OrderDetailPage />}
             />
@@ -62,6 +73,10 @@ function AppRouter() {
               element={<InventoryDetailPage />}
             />
             <Route path="inventory" element={<InventoryPage />} />
+            <Route
+              path="plotter/profitability"
+              element={<PlotterProfitabilityPage />}
+            />
             <Route
               path="plotter/jobs/:plotterJobId"
               element={<PlotterJobDetailPage />}

@@ -80,6 +80,8 @@ class AuthorizationApiContractTest {
         mockMvc.perform(authorized(get("/api/v1/production-orders"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/inventory"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/plotter/jobs"), accessToken)).andExpect(status().isOk());
+        mockMvc.perform(authorized(get("/api/v1/orders/profitability"), accessToken)).andExpect(status().isOk());
+        mockMvc.perform(authorized(get("/api/v1/plotter/profitability"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/finance/transactions"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/finance/payroll/employees"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/finance/payroll/employees/" + UNKNOWN_ID + "/deductions"), accessToken))
@@ -106,6 +108,8 @@ class AuthorizationApiContractTest {
         mockMvc.perform(authorized(get("/api/v1/production/labor-operators"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/inventory"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/plotter/jobs"), accessToken)).andExpect(status().isOk());
+        mockMvc.perform(authorized(get("/api/v1/orders/profitability"), accessToken)).andExpect(status().isOk());
+        mockMvc.perform(authorized(get("/api/v1/plotter/profitability"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/commercial-catalogs"), accessToken)).andExpect(status().isOk());
     }
 

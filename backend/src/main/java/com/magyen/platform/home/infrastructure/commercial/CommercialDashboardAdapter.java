@@ -1,17 +1,18 @@
 package com.magyen.platform.home.infrastructure.commercial;
 
+import com.magyen.platform.commercial.application.OrderProfitabilityAggregator;
 import com.magyen.platform.commercial.application.dto.GetOrderProfitabilityQuery;
 import com.magyen.platform.commercial.application.dto.GetOrderProfitabilityResult;
+import com.magyen.platform.commercial.application.dto.OrderProfitabilitySummary;
 import com.magyen.platform.commercial.application.dto.OrderResult;
 import com.magyen.platform.commercial.application.port.OrderPaymentCollectionPort;
 import com.magyen.platform.commercial.application.usecase.GetOrderProfitabilityUseCase;
 import com.magyen.platform.commercial.application.usecase.GetOrdersUseCase;
-import com.magyen.platform.commercial.domain.OrderProfitabilityStatus;
+import com.magyen.platform.commercial.domain.OrderProfitabilityEligibility;
 import com.magyen.platform.commercial.domain.OrderStatus;
 import com.magyen.platform.home.application.port.CommercialDashboardPort;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
@@ -29,13 +30,6 @@ import java.util.Set;
  * (excluye CLOSED). No existe DRAFT en el dominio de Order.
  */
 public class CommercialDashboardAdapter implements CommercialDashboardPort {
-
-    private static final Set<OrderStatus> PROFITABILITY_ELIGIBLE_STATUSES = EnumSet.of(
-            OrderStatus.CONFIRMED,
-            OrderStatus.IN_PRODUCTION,
-            OrderStatus.READY_FOR_DELIVERY,
-            OrderStatus.DELIVERED
-    );
 
     private static final Set<OrderStatus> COMPLETED_RECEIVABLE_STATUSES = EnumSet.of(
             OrderStatus.DELIVERED,
@@ -106,56 +100,22 @@ public class CommercialDashboardAdapter implements CommercialDashboardPort {
 
     @Override
     public HomeProfitabilitySummarySnapshot getCurrentProfitabilitySummary() {
-        List<OrderResult> eligibleOrders = getOrdersUseCase.execute().orders().stream()
-                .filter(order -> order.status() != null
-                        && PROFITABILITY_ELIGIBLE_STATUSES.contains(order.status()))
+        List<GetOrderProfitabilityResult> results = getOrdersUseCase.execute().orders().stream()
+                .filter(order -> OrderProfitabilityEligibility.includes(order.status()))
+                .map(order -> getOrderProfitabilityUseCase.execute(new GetOrderProfitabilityQuery(order.orderId())))
                 .toList();
 
-        int completeCount = 0;
-        int partiallyUnvaluedCount = 0;
-        int noCostDataCount = 0;
-        int unvaluedCostCount = 0;
-        BigDecimal totalOrderValue = BigDecimal.ZERO;
-        BigDecimal totalDirectCost = BigDecimal.ZERO;
-        BigDecimal totalDirectProfit = BigDecimal.ZERO;
-
-        for (OrderResult order : eligibleOrders) {
-            GetOrderProfitabilityResult profitability = getOrderProfitabilityUseCase.execute(
-                    new GetOrderProfitabilityQuery(order.orderId())
-            );
-            unvaluedCostCount += Math.max(0, profitability.unvaluedMaterialConsumptionCount());
-
-            OrderProfitabilityStatus status = profitability.profitabilityStatus();
-            if (status == OrderProfitabilityStatus.COMPLETE) {
-                completeCount++;
-                totalOrderValue = totalOrderValue.add(nullToZero(profitability.orderValue()));
-                totalDirectCost = totalDirectCost.add(nullToZero(profitability.totalDirectCost()));
-                totalDirectProfit = totalDirectProfit.add(nullToZero(profitability.directProfit()));
-            } else if (status == OrderProfitabilityStatus.PARTIALLY_UNVALUED) {
-                partiallyUnvaluedCount++;
-            } else if (status == OrderProfitabilityStatus.NO_COST_DATA) {
-                noCostDataCount++;
-            }
-        }
-
-        BigDecimal averageMargin = null;
-        if (totalOrderValue.compareTo(BigDecimal.ZERO) > 0) {
-            averageMargin = totalDirectProfit
-                    .divide(totalOrderValue, 4, RoundingMode.HALF_UP)
-                    .multiply(new BigDecimal("100"))
-                    .setScale(2, RoundingMode.HALF_UP);
-        }
-
+        OrderProfitabilitySummary summary = OrderProfitabilityAggregator.summarize(results);
         return new HomeProfitabilitySummarySnapshot(
-                eligibleOrders.size(),
-                completeCount,
-                partiallyUnvaluedCount,
-                noCostDataCount,
-                totalOrderValue,
-                totalDirectCost,
-                totalDirectProfit,
-                averageMargin,
-                unvaluedCostCount
+                summary.evaluatedOrderCount(),
+                summary.completeOrderCount(),
+                summary.partiallyUnvaluedOrderCount(),
+                summary.noCostDataOrderCount(),
+                summary.totalOrderValue(),
+                summary.totalDirectCost(),
+                summary.totalDirectProfit(),
+                summary.weightedMarginPercentage(),
+                summary.unvaluedCostCount()
         );
     }
 
@@ -179,9 +139,5 @@ public class CommercialDashboardAdapter implements CommercialDashboardPort {
                 outstandingAmount,
                 order.promisedDeliveryDate()
         ));
-    }
-
-    private static BigDecimal nullToZero(BigDecimal value) {
-        return value == null ? BigDecimal.ZERO : value;
     }
 }

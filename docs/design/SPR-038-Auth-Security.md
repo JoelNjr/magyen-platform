@@ -498,6 +498,7 @@ Cambiar el costo unitario altera valoración. Queda restringido a ADMIN.
 | Operación | A | O | P |
 |-----------|---|---|---|
 | Lectura y creación de jobs | sí | sí | — |
+| Lectura analítica `GET /api/v1/plotter/profitability` | sí | sí | — |
 | Pagos de Plotter | sí | sí | — |
 
 No hay endpoint separado de consumo de papel; forma parte del flujo de job / inventario operativo.
@@ -512,7 +513,7 @@ No hay endpoint separado de consumo de papel; forma parte del flujo de job / inv
 | Nómina (empleados, periodos, pay/cancel) | sí | — | — |
 | Resumen financiero | sí | — | — |
 
-OPERATOR no administra contabilidad. La rentabilidad operativa de pedido (`GET /orders/{id}/profitability`) permanece accesible porque es flujo Commercial.
+OPERATOR no administra contabilidad. La rentabilidad operativa de pedido (`GET /orders/profitability` y `GET /orders/{id}/profitability`) permanece accesible porque es flujo Commercial.
 
 ### Administration
 

@@ -24,6 +24,15 @@ import RegisterOrderPaymentDialog from '../components/RegisterOrderPaymentDialog
 import ManageOrderItemProductSpecificationDialog from '../components/ManageOrderItemProductSpecificationDialog'
 import ManageOrderItemSizesDialog from '../components/ManageOrderItemSizesDialog'
 import { formatDisplayDate } from '../presentation/formatDisplayDate'
+import {
+  formatLaborProductionCost,
+  formatMaterialProductionCost,
+  formatPlotterProductionCost,
+  formatProfitabilityResultMargin,
+  formatProfitabilityResultMoney,
+  getOrderProfitabilityStatusAlertSeverity,
+  getOrderProfitabilityStatusChipProps,
+} from '../presentation/orderProfitabilityPresentation'
 import { getOrderStatusChipProps } from '../presentation/orderStatusPresentation'
 import {
   formatCuffRequired,
@@ -57,36 +66,6 @@ function formatCurrency(amount) {
     return '—'
   }
   return currencyFormatter.format(amount)
-}
-
-function formatMarginPercentage(value) {
-  if (value === null || value === undefined || value === '') {
-    return '—'
-  }
-  const amount = Number(value)
-  if (Number.isNaN(amount)) {
-    return '—'
-  }
-  return `${amount.toLocaleString('es-CO', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  })} %`
-}
-
-function getProfitabilityStatusLabel(status) {
-  if (status === 'COMPLETE') return 'Costos directos completos'
-  if (status === 'PARTIALLY_UNVALUED') {
-    return 'Hay consumos de materiales sin costo configurado'
-  }
-  if (status === 'NO_COST_DATA') return 'Sin costos registrados'
-  return status || '—'
-}
-
-function getProfitabilityStatusSeverity(status) {
-  if (status === 'COMPLETE') return 'success'
-  if (status === 'PARTIALLY_UNVALUED') return 'warning'
-  if (status === 'NO_COST_DATA') return 'info'
-  return 'info'
 }
 
 function formatAcknowledgment(value) {
@@ -850,13 +829,15 @@ function OrderDetailPage() {
               {!profitabilityLoading && !profitabilityFailed && profitability ? (
                 <>
                   <Alert
-                    severity={getProfitabilityStatusSeverity(
+                    severity={getOrderProfitabilityStatusAlertSeverity(
                       profitability.profitabilityStatus
                     )}
                   >
-                    {getProfitabilityStatusLabel(
-                      profitability.profitabilityStatus
-                    )}
+                    {
+                      getOrderProfitabilityStatusChipProps(
+                        profitability.profitabilityStatus
+                      ).label
+                    }
                   </Alert>
 
                   <Grid container spacing={3}>
@@ -890,22 +871,21 @@ function OrderDetailPage() {
                       Costos directos
                     </Typography>
                     <Typography>
-                      Materiales: {formatCurrency(profitability.materialCost)}
+                      Materiales: {formatMaterialProductionCost(profitability)}
                     </Typography>
                     <Typography>
-                      Mano de obra: {formatCurrency(profitability.laborCost)}
+                      Mano de obra: {formatLaborProductionCost(profitability)}
                     </Typography>
                     <Typography>
-                      Papel Plotter interno:{' '}
-                      {profitability.plotterCostAttributable
-                        ? formatCurrency(profitability.plotterMaterialCost)
-                        : Number(profitability.plotterMaterialCost) > 0
-                          ? `${formatCurrency(profitability.plotterMaterialCost)} (parcialmente sin valorizar)`
-                          : 'Sin trabajo interno'}
+                      Papel / Plotter:{' '}
+                      {formatPlotterProductionCost(profitability)}
                     </Typography>
                     <Typography sx={{ fontWeight: 600 }}>
-                      Total costos directos:{' '}
-                      {formatCurrency(profitability.totalDirectCost)}
+                      Costo total de producción:{' '}
+                      {formatProfitabilityResultMoney(
+                        profitability.totalDirectCost,
+                        profitability.profitabilityStatus
+                      )}
                     </Typography>
                     {profitability.unvaluedMaterialConsumptionCount > 0 ? (
                       <Typography variant="body2" color="warning.main">
@@ -921,15 +901,19 @@ function OrderDetailPage() {
                     <Grid size={{ xs: 12, md: 6 }}>
                       <DetailField label="Resultado directo">
                         <Typography variant="h5">
-                          {formatCurrency(profitability.directProfit)}
+                          {formatProfitabilityResultMoney(
+                            profitability.directProfit,
+                            profitability.profitabilityStatus
+                          )}
                         </Typography>
                       </DetailField>
                     </Grid>
                     <Grid size={{ xs: 12, md: 6 }}>
                       <DetailField label="Margen directo">
                         <Typography variant="h5">
-                          {formatMarginPercentage(
-                            profitability.directMarginPercentage
+                          {formatProfitabilityResultMargin(
+                            profitability.directMarginPercentage,
+                            profitability.profitabilityStatus
                           )}
                         </Typography>
                       </DetailField>

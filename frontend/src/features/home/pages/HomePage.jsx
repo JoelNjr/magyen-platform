@@ -366,8 +366,8 @@ function HomePage() {
           priority="secondary"
           subtitle="Rentabilidad directa de órdenes. Incluye tela, mano de obra y papel de Plotter interno cuando existe. No es ganancia neta."
           actions={
-            <Button component={RouterLink} to="/commercial/orders" size="small">
-              Ver órdenes
+            <Button component={RouterLink} to="/commercial/orders/profitability" size="small">
+              Ver rentabilidad individual
             </Button>
           }
         />

@@ -160,6 +160,7 @@ class OrderProfitabilityUseCaseTest {
 
         assertEquals(financeCountBefore, countAllFinancialTransactions());
         assertEquals(order.getId(), result.orderId());
+        assertEquals(order.getOrderNumber().getValue(), result.orderNumber());
         assertEquals(new BigDecimal("1000000.00"), result.orderValue());
         assertEquals(new BigDecimal("500000.00"), result.collectedAmount());
         assertEquals(new BigDecimal("500000.00"), result.outstandingAmount());

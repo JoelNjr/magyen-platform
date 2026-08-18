@@ -211,7 +211,9 @@ Sin permisos nuevos. Sin cambios JWT.
 
 ## 11. Home
 
-Home no agrega una sección nueva. La rentabilidad del dashboard ya consume `GetOrderProfitabilityUseCase`, que ahora incluye papel de Plotter interno. El subtítulo operacional aclara esa inclusión.
+Home no agrega una sección nueva de Plotter. La rentabilidad del dashboard ya consume `GetOrderProfitabilityUseCase`, que incluye papel de Plotter interno.
+
+Desde el Incremento G, Home enlaza «Ver rentabilidad individual» a `GET /api/v1/orders/profitability` / vista individual. Ver `SPR-038-Increment-G-Profitability-Plotter-Analytics.md`.
 
 ---
 

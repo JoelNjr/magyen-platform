@@ -200,15 +200,27 @@ function PlotterJobsPage() {
           alignItems={{ xs: 'stretch', sm: 'center' }}
         >
           <Typography variant="h3">Plotter</Typography>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={openCreateDialog}
-            disabled={loading || creating}
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={1.5}
             sx={{ alignSelf: { xs: 'stretch', sm: 'center' } }}
           >
-            Nuevo trabajo
-          </Button>
+            <Button
+              variant="outlined"
+              onClick={() => navigate('/plotter/profitability')}
+              disabled={loading}
+            >
+              Ver rentabilidad
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={openCreateDialog}
+              disabled={loading || creating}
+            >
+              Nuevo trabajo
+            </Button>
+          </Stack>
         </Stack>
 
         {loading && (

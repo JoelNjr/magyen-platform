@@ -16,6 +16,7 @@ import com.magyen.platform.commercial.application.usecase.CreateQuotationUseCase
 import com.magyen.platform.commercial.application.usecase.GetCommercialCatalogsUseCase;
 import com.magyen.platform.commercial.application.usecase.GetCustomersUseCase;
 import com.magyen.platform.commercial.application.usecase.GetSellersUseCase;
+import com.magyen.platform.commercial.application.usecase.GetOrderProfitabilityListUseCase;
 import com.magyen.platform.commercial.application.usecase.GetOrderProfitabilityUseCase;
 import com.magyen.platform.commercial.application.usecase.GetOrderUseCase;
 import com.magyen.platform.commercial.application.usecase.GetOrdersUseCase;
@@ -269,16 +270,26 @@ public class CommercialConfiguration {
     @Bean
     public GetOrderProfitabilityUseCase getOrderProfitabilityUseCase(
             OrderRepository orderRepository,
+            CustomerNameResolver customerNameResolver,
             OrderPaymentCollectionPort orderPaymentCollectionPort,
             ProductionOrderCostPort productionOrderCostPort,
             PlotterOrderCostPort plotterOrderCostPort
     ) {
         return new GetOrderProfitabilityUseCase(
                 orderRepository,
+                customerNameResolver,
                 orderPaymentCollectionPort,
                 productionOrderCostPort,
                 plotterOrderCostPort
         );
+    }
+
+    @Bean
+    public GetOrderProfitabilityListUseCase getOrderProfitabilityListUseCase(
+            GetOrdersUseCase getOrdersUseCase,
+            GetOrderProfitabilityUseCase getOrderProfitabilityUseCase
+    ) {
+        return new GetOrderProfitabilityListUseCase(getOrdersUseCase, getOrderProfitabilityUseCase);
     }
 
     @Bean

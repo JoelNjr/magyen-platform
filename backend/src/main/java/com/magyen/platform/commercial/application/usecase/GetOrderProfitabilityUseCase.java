@@ -1,5 +1,6 @@
 package com.magyen.platform.commercial.application.usecase;
 
+import com.magyen.platform.commercial.application.CustomerNameResolver;
 import com.magyen.platform.commercial.application.dto.GetOrderProfitabilityQuery;
 import com.magyen.platform.commercial.application.dto.GetOrderProfitabilityResult;
 import com.magyen.platform.commercial.application.port.OrderPaymentCollectionPort;
@@ -31,17 +32,23 @@ public class GetOrderProfitabilityUseCase {
     private static final BigDecimal HUNDRED = new BigDecimal("100");
 
     private final OrderRepository orderRepository;
+    private final CustomerNameResolver customerNameResolver;
     private final OrderPaymentCollectionPort orderPaymentCollectionPort;
     private final ProductionOrderCostPort productionOrderCostPort;
     private final PlotterOrderCostPort plotterOrderCostPort;
 
     public GetOrderProfitabilityUseCase(
             OrderRepository orderRepository,
+            CustomerNameResolver customerNameResolver,
             OrderPaymentCollectionPort orderPaymentCollectionPort,
             ProductionOrderCostPort productionOrderCostPort,
             PlotterOrderCostPort plotterOrderCostPort
     ) {
         this.orderRepository = Objects.requireNonNull(orderRepository, "Order repository must not be null");
+        this.customerNameResolver = Objects.requireNonNull(
+                customerNameResolver,
+                "Customer name resolver must not be null"
+        );
         this.orderPaymentCollectionPort = Objects.requireNonNull(
                 orderPaymentCollectionPort,
                 "Order payment collection port must not be null"
@@ -100,7 +107,11 @@ public class GetOrderProfitabilityUseCase {
                 directProfit,
                 directMarginPercentage,
                 unvaluedCount,
-                status
+                status,
+                order.getOrderNumber().getValue(),
+                order.getDescription(),
+                customerNameResolver.resolveName(order.getCustomerId()),
+                order.getDeliveryCommitment().getPromisedDeliveryDate()
         );
     }
 

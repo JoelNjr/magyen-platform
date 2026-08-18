@@ -7,6 +7,8 @@ import com.magyen.platform.plotter.application.dto.GetPlotterJobResult;
 import com.magyen.platform.plotter.application.dto.GetPlotterJobsResult;
 import com.magyen.platform.plotter.application.dto.GetPlotterPaymentsQuery;
 import com.magyen.platform.plotter.application.dto.GetPlotterPaymentsResult;
+import com.magyen.platform.plotter.application.dto.GetPlotterProfitabilityResult;
+import com.magyen.platform.plotter.application.dto.PlotterInternalOrderCostItem;
 import com.magyen.platform.plotter.application.dto.RegisterPlotterPaymentCommand;
 import com.magyen.platform.plotter.application.dto.RegisterPlotterPaymentResult;
 import com.magyen.platform.plotter.domain.PlotterJobType;
@@ -17,6 +19,8 @@ import com.magyen.platform.plotter.presentation.plotterjob.response.GetPlotterJo
 import com.magyen.platform.plotter.presentation.plotterjob.response.GetPlotterJobsResponse;
 import com.magyen.platform.plotter.presentation.plotterjob.response.GetPlotterPaymentResponse;
 import com.magyen.platform.plotter.presentation.plotterjob.response.GetPlotterPaymentsResponse;
+import com.magyen.platform.plotter.presentation.plotterjob.response.GetPlotterProfitabilityResponse;
+import com.magyen.platform.plotter.presentation.plotterjob.response.PlotterInternalOrderCostItemResponse;
 import com.magyen.platform.plotter.presentation.plotterjob.response.RegisterPlotterPaymentResponse;
 
 import java.util.Objects;
@@ -153,6 +157,44 @@ public class PlotterPresentationMapper {
                 result.totalAmount(),
                 result.paidAmount(),
                 result.outstandingAmount()
+        );
+    }
+
+    public GetPlotterProfitabilityResponse toProfitabilityResponse(GetPlotterProfitabilityResult result) {
+        Objects.requireNonNull(result, "GetPlotterProfitabilityResult must not be null");
+        return new GetPlotterProfitabilityResponse(
+                result.fromDate(),
+                result.toDate(),
+                result.scope().name(),
+                result.jobCount(),
+                result.externalJobCount(),
+                result.internalJobCount(),
+                result.totalPaperPrintedMeters(),
+                result.externalRevenue(),
+                result.externalPaperCost(),
+                result.internalPaperCost(),
+                result.totalPaperCost(),
+                result.internalPaperPrintedMeters(),
+                result.unvaluedPaperJobCount(),
+                result.paperCostComplete(),
+                result.inkCostRecorded(),
+                result.inkCost(),
+                result.analyticalPlotterResult(),
+                result.internalOrders().stream().map(this::toInternalOrderResponse).toList()
+        );
+    }
+
+    private PlotterInternalOrderCostItemResponse toInternalOrderResponse(PlotterInternalOrderCostItem item) {
+        return new PlotterInternalOrderCostItemResponse(
+                item.plotterJobId(),
+                item.jobDate(),
+                item.printedMeters(),
+                item.paperCost(),
+                item.paperCostValued(),
+                item.orderId(),
+                item.orderNumber(),
+                item.orderDescription(),
+                item.customerName()
         );
     }
 }

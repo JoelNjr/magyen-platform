@@ -116,6 +116,7 @@ class OrderProfitabilityApiContractTest {
                 )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.orderId").value(order.getId().toString()))
+                .andExpect(jsonPath("$.orderNumber").value(order.getOrderNumber().getValue()))
                 .andExpect(jsonPath("$.orderValue").value(1000000.00))
                 .andExpect(jsonPath("$.collectedAmount").value(300000.00))
                 .andExpect(jsonPath("$.outstandingAmount").value(700000.00))
@@ -146,6 +147,45 @@ class OrderProfitabilityApiContractTest {
                 .andExpect(jsonPath("$.plotterCostAttributable").value(false))
                 .andExpect(jsonPath("$.directProfit").value(200000.00))
                 .andExpect(jsonPath("$.profitabilityStatus").value("NO_COST_DATA"));
+    }
+
+    @Test
+    void listsEligibleOrderProfitabilityWithLabelsAndWeightedMargin() throws Exception {
+        Order complete = createOrderWithTotal("1000000.00");
+        UUID productionOrderId = createInProgressProductionOrder(complete.getId());
+        InventoryItem fabric = inventoryItemRepository.save(InventoryItem.create(
+                MaterialCode.of("APFL-" + UUID.randomUUID().toString().substring(0, 8)),
+                "Tela listado",
+                "FABRIC",
+                "METER",
+                new BigDecimal("100.0000"),
+                null,
+                null,
+                new BigDecimal("15000.00")
+        ));
+        registerProductionMaterialConsumptionUseCase.execute(
+                new RegisterProductionMaterialConsumptionCommand(
+                        productionOrderId,
+                        fabric.getId(),
+                        new BigDecimal("10.0000"),
+                        "METER",
+                        null
+                )
+        );
+        Order noCost = createOrderWithTotal("200000.00");
+
+        mockMvc.perform(get("/api/v1/orders/profitability").accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.evaluatedOrderCount").value(org.hamcrest.Matchers.greaterThanOrEqualTo(2)))
+                .andExpect(jsonPath("$.completeOrderCount").value(org.hamcrest.Matchers.greaterThanOrEqualTo(1)))
+                .andExpect(jsonPath("$.noCostDataOrderCount").value(org.hamcrest.Matchers.greaterThanOrEqualTo(1)))
+                .andExpect(jsonPath("$.orders[*].orderNumber", org.hamcrest.Matchers.hasItem(complete.getOrderNumber().getValue())))
+                .andExpect(jsonPath("$.orders[*].orderNumber", org.hamcrest.Matchers.hasItem(noCost.getOrderNumber().getValue())))
+                .andExpect(jsonPath("$.orders[?(@.orderNumber=='" + complete.getOrderNumber().getValue() + "')].materialCost")
+                        .value(org.hamcrest.Matchers.hasItem(150000.00)))
+                .andExpect(jsonPath("$.orders[?(@.orderNumber=='" + complete.getOrderNumber().getValue() + "')].profitabilityStatus")
+                        .value(org.hamcrest.Matchers.hasItem("COMPLETE")))
+                .andExpect(jsonPath("$.weightedMarginPercentage").isNumber());
     }
 
     @Test

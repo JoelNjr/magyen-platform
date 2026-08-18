@@ -4,7 +4,7 @@
 **Estado:** Implemented  
 **Fecha:** 17 de agosto de 2026
 
-Este documento cubre únicamente el Incremento F. No inicia el Incremento G ni SPR-039.
+Este documento cubre únicamente el Incremento F. El Incremento G está en `SPR-038-Increment-G-Profitability-Plotter-Analytics.md`. No inicia el Incremento H ni SPR-039.
 
 ---
 

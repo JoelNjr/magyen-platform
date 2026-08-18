@@ -16,6 +16,7 @@ import com.magyen.platform.plotter.application.usecase.GetInternalPlotterOrderCo
 import com.magyen.platform.plotter.application.usecase.GetPlotterJobUseCase;
 import com.magyen.platform.plotter.application.usecase.GetPlotterJobsUseCase;
 import com.magyen.platform.plotter.application.usecase.GetPlotterPaymentsUseCase;
+import com.magyen.platform.plotter.application.usecase.GetPlotterProfitabilityUseCase;
 import com.magyen.platform.plotter.application.usecase.RegisterPlotterPaymentUseCase;
 import com.magyen.platform.plotter.domain.PlotterJobRepository;
 import com.magyen.platform.plotter.domain.PlotterPaymentRepository;
@@ -27,6 +28,8 @@ import com.magyen.platform.plotter.infrastructure.persistence.mapper.PlotterPers
 import com.magyen.platform.plotter.presentation.plotterjob.mapper.PlotterPresentationMapper;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import java.time.Clock;
 
 /**
  * Ensambla los beans del módulo de Plotter que no se registran por estereotipos Spring.
@@ -148,5 +151,20 @@ public class PlotterConfiguration {
             PlotterPaymentRepository plotterPaymentRepository
     ) {
         return new GetPlotterPaymentsUseCase(plotterJobRepository, plotterPaymentRepository);
+    }
+
+    @Bean
+    public GetPlotterProfitabilityUseCase getPlotterProfitabilityUseCase(
+            PlotterJobRepository plotterJobRepository,
+            PlotterInventoryCostPort plotterInventoryCostPort,
+            PlotterCommercialOrderPort plotterCommercialOrderPort,
+            Clock clock
+    ) {
+        return new GetPlotterProfitabilityUseCase(
+                plotterJobRepository,
+                plotterInventoryCostPort,
+                plotterCommercialOrderPort,
+                clock
+        );
     }
 }

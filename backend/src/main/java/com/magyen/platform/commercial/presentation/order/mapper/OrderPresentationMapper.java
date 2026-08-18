@@ -3,6 +3,7 @@ package com.magyen.platform.commercial.presentation.order.mapper;
 import com.magyen.platform.commercial.application.dto.CreateOrderFromQuotationCommand;
 import com.magyen.platform.commercial.application.dto.CreateOrderFromQuotationResult;
 import com.magyen.platform.commercial.application.dto.GetOrderCommand;
+import com.magyen.platform.commercial.application.dto.GetOrderProfitabilityListResult;
 import com.magyen.platform.commercial.application.dto.GetOrderProfitabilityQuery;
 import com.magyen.platform.commercial.application.dto.GetOrderProfitabilityResult;
 import com.magyen.platform.commercial.application.dto.GetOrderResult;
@@ -22,6 +23,7 @@ import com.magyen.platform.commercial.presentation.order.request.ReplaceOrderIte
 import com.magyen.platform.commercial.presentation.order.request.SizeBreakdownRequest;
 import com.magyen.platform.commercial.presentation.order.request.UpdateOrderItemProductSpecificationRequest;
 import com.magyen.platform.commercial.presentation.order.response.CreateOrderResponse;
+import com.magyen.platform.commercial.presentation.order.response.GetOrderProfitabilityListResponse;
 import com.magyen.platform.commercial.presentation.order.response.GetOrderProfitabilityResponse;
 import com.magyen.platform.commercial.presentation.order.response.GetOrderResponse;
 import com.magyen.platform.commercial.presentation.order.response.GetOrderResponse.DeliveryCommitmentResponse;
@@ -97,6 +99,10 @@ public class OrderPresentationMapper {
 
         return new GetOrderProfitabilityResponse(
                 result.orderId(),
+                result.orderNumber(),
+                result.description(),
+                result.customerName(),
+                result.promisedDeliveryDate(),
                 result.orderValue(),
                 result.collectedAmount(),
                 result.outstandingAmount(),
@@ -109,6 +115,23 @@ public class OrderPresentationMapper {
                 result.directMarginPercentage(),
                 result.unvaluedMaterialConsumptionCount(),
                 result.profitabilityStatus().name()
+        );
+    }
+
+    public GetOrderProfitabilityListResponse toResponse(GetOrderProfitabilityListResult result) {
+        Objects.requireNonNull(result, "GetOrderProfitabilityListResult must not be null");
+        var summary = result.summary();
+        return new GetOrderProfitabilityListResponse(
+                result.orders().stream().map(this::toResponse).toList(),
+                summary.evaluatedOrderCount(),
+                summary.completeOrderCount(),
+                summary.partiallyUnvaluedOrderCount(),
+                summary.noCostDataOrderCount(),
+                summary.totalOrderValue(),
+                summary.totalDirectCost(),
+                summary.totalDirectProfit(),
+                summary.weightedMarginPercentage(),
+                summary.unvaluedCostCount()
         );
     }
 

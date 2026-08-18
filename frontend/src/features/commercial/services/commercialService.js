@@ -64,6 +64,11 @@ export async function getOrder(orderId) {
   return response.data
 }
 
+export async function getOrderProfitabilityList() {
+  const response = await httpClient.get('/orders/profitability')
+  return response.data
+}
+
 export async function getOrderProfitability(orderId) {
   const response = await httpClient.get(`/orders/${orderId}/profitability`)
   return response.data

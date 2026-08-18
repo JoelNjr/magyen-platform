@@ -5,6 +5,17 @@ export async function getPlotterJobs() {
   return response.data
 }
 
+export async function getPlotterProfitability({ fromDate, toDate, scope } = {}) {
+  const response = await httpClient.get('/plotter/profitability', {
+    params: {
+      fromDate: fromDate || undefined,
+      toDate: toDate || undefined,
+      scope: scope || undefined,
+    },
+  })
+  return response.data
+}
+
 export async function getPlotterJob(plotterJobId) {
   const response = await httpClient.get(`/plotter/jobs/${plotterJobId}`)
   return response.data
