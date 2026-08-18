@@ -4,6 +4,9 @@ import java.math.BigDecimal;
 
 /**
  * Entrada del caso de uso para crear un material de inventario.
+ * <p>
+ * {@code code} se ignora: el código lo genera la aplicación.
+ * {@code acquisition} registra la compra inicial (tela u otro no-papel).
  */
 public record CreateInventoryItemCommand(
         String code,
@@ -15,7 +18,8 @@ public record CreateInventoryItemCommand(
         String description,
         BigDecimal unitCost,
         String materialType,
-        boolean plotterPaperRoll
+        boolean plotterPaperRoll,
+        InventoryAcquisitionCommand acquisition
 ) {
     public CreateInventoryItemCommand(
             String code,
@@ -25,7 +29,7 @@ public record CreateInventoryItemCommand(
             BigDecimal stock,
             BigDecimal minimumStock
     ) {
-        this(code, name, category, unitOfMeasure, stock, minimumStock, null, null, null, false);
+        this(code, name, category, unitOfMeasure, stock, minimumStock, null, null, null, false, null);
     }
 
     public CreateInventoryItemCommand(
@@ -37,7 +41,7 @@ public record CreateInventoryItemCommand(
             BigDecimal minimumStock,
             String description
     ) {
-        this(code, name, category, unitOfMeasure, stock, minimumStock, description, null, null, false);
+        this(code, name, category, unitOfMeasure, stock, minimumStock, description, null, null, false, null);
     }
 
     public CreateInventoryItemCommand(
@@ -50,6 +54,33 @@ public record CreateInventoryItemCommand(
             String description,
             BigDecimal unitCost
     ) {
-        this(code, name, category, unitOfMeasure, stock, minimumStock, description, unitCost, null, false);
+        this(code, name, category, unitOfMeasure, stock, minimumStock, description, unitCost, null, false, null);
+    }
+
+    public CreateInventoryItemCommand(
+            String code,
+            String name,
+            String category,
+            String unitOfMeasure,
+            BigDecimal stock,
+            BigDecimal minimumStock,
+            String description,
+            BigDecimal unitCost,
+            String materialType,
+            boolean plotterPaperRoll
+    ) {
+        this(
+                code,
+                name,
+                category,
+                unitOfMeasure,
+                stock,
+                minimumStock,
+                description,
+                unitCost,
+                materialType,
+                plotterPaperRoll,
+                null
+        );
     }
 }

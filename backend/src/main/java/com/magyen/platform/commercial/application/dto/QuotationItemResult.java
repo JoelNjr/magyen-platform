@@ -11,9 +11,22 @@ public record QuotationItemResult(
         String productName,
         int quantity,
         String fabric,
+        String secondaryFabric,
         String color,
         BigDecimal unitPrice,
         BigDecimal subtotal,
         ProductSpecificationResult productSpecification
 ) {
+    public QuotationItemResult(
+            UUID itemId,
+            String productName,
+            int quantity,
+            String fabric,
+            String color,
+            BigDecimal unitPrice,
+            BigDecimal subtotal,
+            ProductSpecificationResult productSpecification
+    ) {
+        this(itemId, productName, quantity, fabric, null, color, unitPrice, subtotal, productSpecification);
+    }
 }

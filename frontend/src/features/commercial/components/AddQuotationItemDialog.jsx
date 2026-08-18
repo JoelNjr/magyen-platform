@@ -17,6 +17,7 @@ function AddQuotationItemDialog({ open, onClose, onSubmit, submitting, error }) 
     useCommercialCatalogs()
   const [productName, setProductName] = useState('')
   const [fabric, setFabric] = useState('')
+  const [secondaryFabric, setSecondaryFabric] = useState('')
   const [color, setColor] = useState('')
   const [quantity, setQuantity] = useState('')
   const [unitPrice, setUnitPrice] = useState('')
@@ -29,6 +30,7 @@ function AddQuotationItemDialog({ open, onClose, onSubmit, submitting, error }) 
     if (!open) {
       setProductName('')
       setFabric('')
+      setSecondaryFabric('')
       setColor('')
       setQuantity('')
       setUnitPrice('')
@@ -62,6 +64,7 @@ function AddQuotationItemDialog({ open, onClose, onSubmit, submitting, error }) 
     onSubmit({
       productName,
       fabric,
+      secondaryFabric: secondaryFabric || null,
       color,
       quantity: Number(quantity),
       unitPrice: Number(unitPrice),
@@ -97,12 +100,20 @@ function AddQuotationItemDialog({ open, onClose, onSubmit, submitting, error }) 
           />
 
           <CatalogSelect
-            label="Tela"
+            label="Tela principal"
             value={fabric}
             onChange={setFabric}
             options={catalogs.fabrics}
             disabled={fieldsDisabled}
             required
+          />
+
+          <CatalogSelect
+            label="Tela secundaria (opcional)"
+            value={secondaryFabric}
+            onChange={setSecondaryFabric}
+            options={catalogs.fabrics}
+            disabled={fieldsDisabled}
           />
 
           <TextField

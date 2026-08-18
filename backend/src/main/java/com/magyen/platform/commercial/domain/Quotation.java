@@ -123,6 +123,18 @@ public class Quotation {
             Money unitPrice,
             ProductSpecification productSpecification
     ) {
+        addItem(productName, quantity, fabric, null, color, unitPrice, productSpecification);
+    }
+
+    public void addItem(
+            String productName,
+            int quantity,
+            String fabric,
+            String secondaryFabric,
+            String color,
+            Money unitPrice,
+            ProductSpecification productSpecification
+    ) {
         if (status != QuotationStatus.DRAFT) {
             throw new QuotationDomainException(
                     "Items can only be added while the quotation is draft. Current status: " + status
@@ -136,6 +148,7 @@ public class Quotation {
                 productName,
                 quantity,
                 fabric,
+                secondaryFabric,
                 color,
                 unitPrice,
                 productSpecification

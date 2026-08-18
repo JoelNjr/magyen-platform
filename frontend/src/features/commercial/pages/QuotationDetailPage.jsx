@@ -506,7 +506,8 @@ function QuotationDetailPage() {
                     <TableHead>
                       <TableRow>
                         <TableCell sx={headerCellSx}>Producto</TableCell>
-                        <TableCell sx={headerCellSx}>Tela</TableCell>
+                        <TableCell sx={headerCellSx}>Tela principal</TableCell>
+                        <TableCell sx={headerCellSx}>Tela secundaria</TableCell>
                         <TableCell sx={headerCellSx}>Color de tela / base</TableCell>
                         <TableCell align="right" sx={headerCellSx}>
                           Cantidad
@@ -524,6 +525,7 @@ function QuotationDetailPage() {
                         <TableRow key={item.itemId} hover>
                           <TableCell>{item.productName}</TableCell>
                           <TableCell>{item.fabric}</TableCell>
+                          <TableCell>{item.secondaryFabric || '—'}</TableCell>
                           <TableCell>{item.color}</TableCell>
                           <TableCell align="right">{item.quantity}</TableCell>
                           <TableCell align="right">

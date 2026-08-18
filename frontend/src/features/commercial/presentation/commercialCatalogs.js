@@ -1,19 +1,11 @@
 import { getCommercialCatalogs } from '../services/commercialService'
 
-let catalogsPromise = null
-
 /**
- * Carga única de catálogos comerciales desde el backend.
- * Las etiquetas de negocio viven en el API, no duplicadas en el frontend.
+ * Carga catálogos comerciales activos desde el backend.
+ * Las etiquetas de negocio viven en Administración, no duplicadas en el frontend.
  */
 export function loadCommercialCatalogs() {
-  if (!catalogsPromise) {
-    catalogsPromise = getCommercialCatalogs().catch((error) => {
-      catalogsPromise = null
-      throw error
-    })
-  }
-  return catalogsPromise
+  return getCommercialCatalogs()
 }
 
 export function formatCuffRequired(value) {

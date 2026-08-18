@@ -25,6 +25,7 @@ public class OrderItem {
     private final String productName;
     private final int quantity;
     private final String fabric;
+    private final String secondaryFabric;
     private final String color;
     private final Money unitPrice;
     private final Money subtotal;
@@ -36,6 +37,7 @@ public class OrderItem {
             String productName,
             int quantity,
             String fabric,
+            String secondaryFabric,
             String color,
             Money unitPrice,
             ProductSpecification productSpecification,
@@ -45,6 +47,7 @@ public class OrderItem {
         this.productName = requireNonBlank(productName, "Product name must not be blank");
         this.quantity = quantity;
         this.fabric = requireNonBlank(fabric, "Fabric must not be blank");
+        this.secondaryFabric = blankToNull(secondaryFabric);
         this.color = requireNonBlank(color, "Color must not be blank");
         this.unitPrice = Objects.requireNonNull(unitPrice, "Unit price must not be null");
         this.subtotal = unitPrice.multiply(quantity);
@@ -68,6 +71,7 @@ public class OrderItem {
                 productName,
                 quantity,
                 fabric,
+                null,
                 color,
                 unitPrice,
                 ProductSpecification.empty(),
@@ -87,6 +91,7 @@ public class OrderItem {
                 productName,
                 quantity,
                 fabric,
+                null,
                 color,
                 unitPrice,
                 productSpecification,
@@ -103,11 +108,34 @@ public class OrderItem {
             ProductSpecification productSpecification,
             List<SizeBreakdown> sizeBreakdowns
     ) {
+        return create(
+                productName,
+                quantity,
+                fabric,
+                null,
+                color,
+                unitPrice,
+                productSpecification,
+                sizeBreakdowns
+        );
+    }
+
+    static OrderItem create(
+            String productName,
+            int quantity,
+            String fabric,
+            String secondaryFabric,
+            String color,
+            Money unitPrice,
+            ProductSpecification productSpecification,
+            List<SizeBreakdown> sizeBreakdowns
+    ) {
         return new OrderItem(
                 UUID.randomUUID(),
                 productName,
                 quantity,
-                CommercialFabric.canonicalize(fabric),
+                fabric,
+                secondaryFabric,
                 color,
                 unitPrice,
                 productSpecification,
@@ -128,11 +156,36 @@ public class OrderItem {
             ProductSpecification productSpecification,
             List<SizeBreakdown> sizeBreakdowns
     ) {
+        return reconstitute(
+                id,
+                productName,
+                quantity,
+                fabric,
+                null,
+                color,
+                unitPrice,
+                productSpecification,
+                sizeBreakdowns
+        );
+    }
+
+    public static OrderItem reconstitute(
+            UUID id,
+            String productName,
+            int quantity,
+            String fabric,
+            String secondaryFabric,
+            String color,
+            Money unitPrice,
+            ProductSpecification productSpecification,
+            List<SizeBreakdown> sizeBreakdowns
+    ) {
         return new OrderItem(
                 id,
                 productName,
                 quantity,
                 fabric,
+                secondaryFabric,
                 color,
                 unitPrice,
                 productSpecification,
@@ -176,6 +229,10 @@ public class OrderItem {
 
     public String getFabric() {
         return fabric;
+    }
+
+    public String getSecondaryFabric() {
+        return secondaryFabric;
     }
 
     public String getColor() {
@@ -251,5 +308,12 @@ public class OrderItem {
             throw new IllegalArgumentException(message);
         }
         return value;
+    }
+
+    private static String blankToNull(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
     }
 }

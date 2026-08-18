@@ -45,6 +45,7 @@ class PaperRollInventoryUseCaseTest {
         assertTrue(first.paperRollNumber().matches("RP-\\d{3,}"));
         assertNotNull(second.paperRollNumber());
         assertFalse(first.paperRollNumber().equals(second.paperRollNumber()));
+        assertEquals(first.materialCode(), second.materialCode());
     }
 
     @Test

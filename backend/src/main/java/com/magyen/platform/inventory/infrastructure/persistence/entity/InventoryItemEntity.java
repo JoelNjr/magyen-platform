@@ -23,7 +23,7 @@ public class InventoryItemEntity {
     @Column(name = "id", nullable = false, updatable = false)
     private UUID id;
 
-    @Column(name = "material_code", nullable = false, unique = true, length = 100)
+    @Column(name = "material_code", nullable = false, length = 100)
     private String materialCode;
 
     @Column(name = "name", nullable = false, length = 255)

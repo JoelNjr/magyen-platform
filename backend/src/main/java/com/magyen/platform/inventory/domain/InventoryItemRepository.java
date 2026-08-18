@@ -22,5 +22,9 @@ public interface InventoryItemRepository {
 
     Optional<InventoryItem> findByCode(MaterialCode materialCode);
 
+    Optional<InventoryItem> findFirstByMaterialType(InventoryMaterialType materialType);
+
+    boolean existsNonPaperWithCode(MaterialCode materialCode);
+
     List<InventoryItem> findAll();
 }

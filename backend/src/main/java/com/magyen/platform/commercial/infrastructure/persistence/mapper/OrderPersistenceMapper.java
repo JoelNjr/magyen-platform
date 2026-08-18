@@ -85,6 +85,7 @@ public class OrderPersistenceMapper {
         itemEntity.setProductName(item.getProductName());
         itemEntity.setQuantity(item.getQuantity());
         itemEntity.setFabric(item.getFabric());
+        itemEntity.setSecondaryFabric(item.getSecondaryFabric());
         itemEntity.setColor(item.getColor());
         itemEntity.setUnitPrice(toAmount(item.getUnitPrice()));
         itemEntity.setSubtotal(toAmount(item.getSubtotal()));
@@ -114,6 +115,7 @@ public class OrderPersistenceMapper {
                 itemEntity.getProductName(),
                 itemEntity.getQuantity(),
                 itemEntity.getFabric(),
+                itemEntity.getSecondaryFabric(),
                 itemEntity.getColor(),
                 toMoney(itemEntity.getUnitPrice()),
                 toProductSpecification(itemEntity),

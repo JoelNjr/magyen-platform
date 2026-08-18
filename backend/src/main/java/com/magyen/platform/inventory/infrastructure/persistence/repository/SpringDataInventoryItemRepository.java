@@ -6,6 +6,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.magyen.platform.inventory.domain.InventoryMaterialType;
+
 /**
  * Repositorio Spring Data JPA para {@link InventoryItemEntity}.
  * <p>
@@ -13,5 +15,11 @@ import java.util.UUID;
  */
 public interface SpringDataInventoryItemRepository extends JpaRepository<InventoryItemEntity, UUID> {
 
-    Optional<InventoryItemEntity> findByMaterialCode(String materialCode);
+    Optional<InventoryItemEntity> findFirstByMaterialCode(String materialCode);
+
+    Optional<InventoryItemEntity> findFirstByMaterialTypeOrderByPaperRollNumberAsc(
+            InventoryMaterialType materialType
+    );
+
+    boolean existsByMaterialCodeAndPaperRollNumberIsNull(String materialCode);
 }

@@ -3,6 +3,7 @@ package com.magyen.platform.shared.presentation;
 import com.magyen.platform.administration.domain.exception.AdministrationDomainException;
 import com.magyen.platform.administration.domain.exception.AuthenticationFailedException;
 import com.magyen.platform.administration.domain.exception.AuthenticationUsernameAlreadyExistsException;
+import com.magyen.platform.administration.domain.exception.CatalogNameAlreadyExistsException;
 import com.magyen.platform.commercial.domain.exception.OrderAlreadyExistsForQuotationException;
 import com.magyen.platform.commercial.domain.exception.OrderDomainException;
 import com.magyen.platform.commercial.domain.exception.QuotationDomainException;
@@ -70,6 +71,22 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AuthenticationUsernameAlreadyExistsException.class)
     public ResponseEntity<ErrorResponse> handleAuthenticationUsernameAlreadyExistsException(
             AuthenticationUsernameAlreadyExistsException exception,
+            HttpServletRequest request
+    ) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.CONFLICT.value(),
+                HttpStatus.CONFLICT.getReasonPhrase(),
+                exception.getMessage(),
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+    }
+
+    @ExceptionHandler(CatalogNameAlreadyExistsException.class)
+    public ResponseEntity<ErrorResponse> handleCatalogNameAlreadyExistsException(
+            CatalogNameAlreadyExistsException exception,
             HttpServletRequest request
     ) {
         ErrorResponse errorResponse = new ErrorResponse(

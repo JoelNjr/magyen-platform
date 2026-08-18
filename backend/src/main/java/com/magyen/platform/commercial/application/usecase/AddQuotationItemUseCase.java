@@ -1,9 +1,8 @@
 package com.magyen.platform.commercial.application.usecase;
 
+import com.magyen.platform.commercial.application.CommercialCatalogValidator;
 import com.magyen.platform.commercial.application.dto.AddQuotationItemCommand;
 import com.magyen.platform.commercial.application.dto.AddQuotationItemResult;
-import com.magyen.platform.commercial.application.dto.ProductSpecificationCommand;
-import com.magyen.platform.commercial.domain.ProductSpecification;
 import com.magyen.platform.commercial.domain.Quotation;
 import com.magyen.platform.commercial.domain.QuotationItem;
 import com.magyen.platform.commercial.domain.QuotationRepository;
@@ -19,9 +18,17 @@ import java.util.UUID;
 public class AddQuotationItemUseCase {
 
     private final QuotationRepository quotationRepository;
+    private final CommercialCatalogValidator commercialCatalogValidator;
 
-    public AddQuotationItemUseCase(QuotationRepository quotationRepository) {
+    public AddQuotationItemUseCase(
+            QuotationRepository quotationRepository,
+            CommercialCatalogValidator commercialCatalogValidator
+    ) {
         this.quotationRepository = Objects.requireNonNull(quotationRepository, "Quotation repository must not be null");
+        this.commercialCatalogValidator = Objects.requireNonNull(
+                commercialCatalogValidator,
+                "Commercial catalog validator must not be null"
+        );
     }
 
     public AddQuotationItemResult execute(AddQuotationItemCommand command) {
@@ -33,16 +40,17 @@ public class AddQuotationItemUseCase {
                         "Quotation not found: " + command.quotationId()
                 ));
 
-        Money unitPrice = Money.of(command.unitPrice());
-        ProductSpecification productSpecification = toProductSpecification(command.productSpecification());
+        String fabric = commercialCatalogValidator.requirePrimaryFabric(command.fabric());
+        String secondaryFabric = commercialCatalogValidator.requireSecondaryFabric(command.secondaryFabric());
 
         quotation.addItem(
                 command.productName(),
                 command.quantity(),
-                command.fabric(),
+                fabric,
+                secondaryFabric,
                 command.color(),
-                unitPrice,
-                productSpecification
+                Money.of(command.unitPrice()),
+                commercialCatalogValidator.requireProductSpecification(command.productSpecification())
         );
 
         UUID itemId = lastCreatedItemId(quotation);
@@ -58,28 +66,6 @@ public class AddQuotationItemUseCase {
 
     private void validateCommand(AddQuotationItemCommand command) {
         Objects.requireNonNull(command.quotationId(), "Quotation id must not be null");
-    }
-
-    private ProductSpecification toProductSpecification(ProductSpecificationCommand command) {
-        if (command == null) {
-            return ProductSpecification.empty();
-        }
-
-        return ProductSpecification.of(
-                command.garmentType(),
-                command.collarType(),
-                command.sleeveType(),
-                command.cuffRequired(),
-                command.sublimationRequired(),
-                command.embroideryRequired(),
-                command.dtfRequired(),
-                command.decorationNotes(),
-                command.includesNames(),
-                command.includesNumbers(),
-                command.includesLogos(),
-                command.personalizationNotes(),
-                command.itemObservations()
-        );
     }
 
     private UUID lastCreatedItemId(Quotation quotation) {

@@ -105,6 +105,7 @@ public class GetOrderUseCase {
                 item.getProductName(),
                 item.getQuantity(),
                 item.getFabric(),
+                item.getSecondaryFabric(),
                 item.getColor(),
                 item.getUnitPrice().getAmount(),
                 item.getSubtotal().getAmount(),

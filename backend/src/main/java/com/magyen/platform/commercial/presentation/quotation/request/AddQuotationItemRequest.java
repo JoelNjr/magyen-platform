@@ -9,6 +9,7 @@ public record AddQuotationItemRequest(
         String productName,
         int quantity,
         String fabric,
+        String secondaryFabric,
         String color,
         BigDecimal unitPrice,
         ProductSpecificationRequest productSpecification

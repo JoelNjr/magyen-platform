@@ -6,8 +6,9 @@ import java.util.Objects;
  * Especificación comercial tipada del producto comprometido o cotizado.
  * <p>
  * Value Object inmutable. No modela ejecución de producción, consumo de materiales ni costos.
- * Tipo de prenda, cuello, manga y puño son catálogos cerrados. {@code color} de tela/base
- * permanece como texto del ítem, no de esta especificación.
+ * Tipo de prenda, cuello y manga se validan en Application contra Administración.
+ * Esta clase solo almacena las etiquetas. {@code color} de tela/base permanece como texto
+ * del ítem, no de esta especificación.
  */
 public final class ProductSpecification {
 
@@ -77,7 +78,8 @@ public final class ProductSpecification {
     }
 
     /**
-     * Crea una especificación validando los catálogos comerciales cerrados.
+     * Crea una especificación con las etiquetas ya validadas por Application.
+     * No consulta catálogos: eso vive en el puerto hacia Administración.
      */
     public static ProductSpecification of(
             String garmentType,
@@ -95,9 +97,9 @@ public final class ProductSpecification {
             String itemObservations
     ) {
         return new ProductSpecification(
-                GarmentType.canonicalize(garmentType),
-                CollarType.canonicalize(collarType),
-                SleeveType.canonicalize(sleeveType),
+                blankToNull(garmentType),
+                blankToNull(collarType),
+                blankToNull(sleeveType),
                 cuffRequired,
                 sublimationRequired,
                 embroideryRequired,

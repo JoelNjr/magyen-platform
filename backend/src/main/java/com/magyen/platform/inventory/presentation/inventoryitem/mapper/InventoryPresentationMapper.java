@@ -13,6 +13,7 @@ import com.magyen.platform.inventory.application.dto.GetInventoryMovementsQuery;
 import com.magyen.platform.inventory.application.dto.GetInventoryMovementsResult;
 import com.magyen.platform.inventory.application.dto.IncreaseInventoryStockCommand;
 import com.magyen.platform.inventory.application.dto.IncreaseInventoryStockResult;
+import com.magyen.platform.inventory.application.dto.InventoryAcquisitionCommand;
 import com.magyen.platform.inventory.application.dto.RegisterInventoryMovementCommand;
 import com.magyen.platform.inventory.application.dto.RegisterInventoryMovementResult;
 import com.magyen.platform.inventory.application.dto.RegisterInventoryPurchaseCommand;
@@ -25,6 +26,7 @@ import com.magyen.platform.inventory.domain.exception.InventoryDomainException;
 import com.magyen.platform.inventory.presentation.inventoryitem.request.CreateInventoryItemRequest;
 import com.magyen.platform.inventory.presentation.inventoryitem.request.DecreaseInventoryStockRequest;
 import com.magyen.platform.inventory.presentation.inventoryitem.request.IncreaseInventoryStockRequest;
+import com.magyen.platform.inventory.presentation.inventoryitem.request.InventoryAcquisitionRequest;
 import com.magyen.platform.inventory.presentation.inventoryitem.request.RegisterInventoryMovementRequest;
 import com.magyen.platform.inventory.presentation.inventoryitem.request.RegisterInventoryPurchaseRequest;
 import com.magyen.platform.inventory.presentation.inventoryitem.request.UpdateInventoryMinimumStockRequest;
@@ -61,7 +63,22 @@ public class InventoryPresentationMapper {
                 request.description(),
                 request.unitCost(),
                 request.materialType(),
-                Boolean.TRUE.equals(request.plotterPaperRoll())
+                Boolean.TRUE.equals(request.plotterPaperRoll()),
+                toAcquisitionCommand(request.acquisition())
+        );
+    }
+
+    private InventoryAcquisitionCommand toAcquisitionCommand(InventoryAcquisitionRequest request) {
+        if (request == null) {
+            return null;
+        }
+        return new InventoryAcquisitionCommand(
+                request.purchaseId(),
+                request.quantity(),
+                request.unitCost(),
+                request.totalCost(),
+                request.purchaseDate(),
+                request.observation()
         );
     }
 

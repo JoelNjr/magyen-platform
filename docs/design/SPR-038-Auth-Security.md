@@ -804,7 +804,7 @@ OPERATOR → 403. Sin token → 401.
 
 ### Frontend
 
-Ruta `/admin/users`. Entrada de sidebar **Usuarios** solo para ADMIN. OPERATOR que navega directo ve «Sin permisos»; la API sigue respondiendo 403.
+Ruta `/admin/users`. Desde Incremento F vive bajo **Administración → Usuarios** (solo ADMIN). OPERATOR que navega directo ve «Sin permisos»; la API sigue respondiendo 403. Catálogos: ver `SPR-038-Increment-F-Administration-Catalogs-Inventory-Identity.md`.
 
 La página lista usuarios, crea con diálogo (usuario / contraseña / rol), cambia rol y activa/desactiva (confirmación al desactivar). No muestra passwords ni hashes.
 

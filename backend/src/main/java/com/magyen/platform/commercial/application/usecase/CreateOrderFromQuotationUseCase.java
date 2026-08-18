@@ -110,6 +110,7 @@ public class CreateOrderFromQuotationUseCase {
                 quotationItem.getProductName(),
                 quotationItem.getQuantity(),
                 quotationItem.getFabric(),
+                quotationItem.getSecondaryFabric(),
                 quotationItem.getColor(),
                 quotationItem.getUnitPrice(),
                 quotationItem.getProductSpecification(),

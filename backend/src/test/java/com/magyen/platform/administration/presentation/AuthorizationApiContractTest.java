@@ -90,6 +90,7 @@ class AuthorizationApiContractTest {
                 .andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/reports/sales"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/admin/users"), accessToken)).andExpect(status().isOk());
+        mockMvc.perform(authorized(get("/api/v1/admin/catalogs"), accessToken)).andExpect(status().isOk());
     }
 
     @Test
@@ -105,6 +106,7 @@ class AuthorizationApiContractTest {
         mockMvc.perform(authorized(get("/api/v1/production/labor-operators"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/inventory"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/plotter/jobs"), accessToken)).andExpect(status().isOk());
+        mockMvc.perform(authorized(get("/api/v1/commercial-catalogs"), accessToken)).andExpect(status().isOk());
     }
 
     @Test
@@ -120,6 +122,8 @@ class AuthorizationApiContractTest {
                         .content("{}"))
                 .andExpect(status().isForbidden());
         mockMvc.perform(authorized(get("/api/v1/finance/summary"), accessToken))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(authorized(get("/api/v1/admin/catalogs"), accessToken))
                 .andExpect(status().isForbidden());
         mockMvc.perform(authorized(patch("/api/v1/finance/obligation-occurrences/" + UNKNOWN_ID + "/cancel"), accessToken))
                 .andExpect(status().isForbidden());

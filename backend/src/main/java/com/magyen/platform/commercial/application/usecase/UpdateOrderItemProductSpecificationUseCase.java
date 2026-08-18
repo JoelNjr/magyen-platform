@@ -1,6 +1,6 @@
 package com.magyen.platform.commercial.application.usecase;
 
-import com.magyen.platform.commercial.application.dto.ProductSpecificationCommand;
+import com.magyen.platform.commercial.application.CommercialCatalogValidator;
 import com.magyen.platform.commercial.application.dto.ProductSpecificationResult;
 import com.magyen.platform.commercial.application.dto.UpdateOrderItemProductSpecificationCommand;
 import com.magyen.platform.commercial.application.dto.UpdateOrderItemProductSpecificationResult;
@@ -17,9 +17,17 @@ import java.util.Objects;
 public class UpdateOrderItemProductSpecificationUseCase {
 
     private final OrderRepository orderRepository;
+    private final CommercialCatalogValidator commercialCatalogValidator;
 
-    public UpdateOrderItemProductSpecificationUseCase(OrderRepository orderRepository) {
+    public UpdateOrderItemProductSpecificationUseCase(
+            OrderRepository orderRepository,
+            CommercialCatalogValidator commercialCatalogValidator
+    ) {
         this.orderRepository = Objects.requireNonNull(orderRepository, "Order repository must not be null");
+        this.commercialCatalogValidator = Objects.requireNonNull(
+                commercialCatalogValidator,
+                "Commercial catalog validator must not be null"
+        );
     }
 
     public UpdateOrderItemProductSpecificationResult execute(UpdateOrderItemProductSpecificationCommand command) {
@@ -38,7 +46,8 @@ public class UpdateOrderItemProductSpecificationUseCase {
                         "Order item not found in order: " + command.orderItemId()
                 ));
 
-        ProductSpecification productSpecification = toProductSpecification(command.productSpecification());
+        ProductSpecification productSpecification =
+                commercialCatalogValidator.requireProductSpecification(command.productSpecification());
         orderItem.assignProductSpecification(productSpecification);
 
         Order savedOrder = orderRepository.save(order);
@@ -60,24 +69,6 @@ public class UpdateOrderItemProductSpecificationUseCase {
         Objects.requireNonNull(command.orderId(), "Order id must not be null");
         Objects.requireNonNull(command.orderItemId(), "Order item id must not be null");
         Objects.requireNonNull(command.productSpecification(), "Product specification must not be null");
-    }
-
-    private ProductSpecification toProductSpecification(ProductSpecificationCommand command) {
-        return ProductSpecification.of(
-                command.garmentType(),
-                command.collarType(),
-                command.sleeveType(),
-                command.cuffRequired(),
-                command.sublimationRequired(),
-                command.embroideryRequired(),
-                command.dtfRequired(),
-                command.decorationNotes(),
-                command.includesNames(),
-                command.includesNumbers(),
-                command.includesLogos(),
-                command.personalizationNotes(),
-                command.itemObservations()
-        );
     }
 
     private ProductSpecificationResult toProductSpecificationResult(ProductSpecification specification) {

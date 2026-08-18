@@ -2,6 +2,7 @@ package com.magyen.platform.inventory.infrastructure.persistence.repository;
 
 import com.magyen.platform.inventory.domain.InventoryItem;
 import com.magyen.platform.inventory.domain.InventoryItemRepository;
+import com.magyen.platform.inventory.domain.InventoryMaterialType;
 import com.magyen.platform.inventory.domain.InventoryMovement;
 import com.magyen.platform.inventory.domain.MaterialCode;
 import com.magyen.platform.inventory.infrastructure.persistence.entity.InventoryItemEntity;
@@ -91,8 +92,22 @@ public class JpaInventoryItemRepository implements InventoryItemRepository {
     public Optional<InventoryItem> findByCode(MaterialCode materialCode) {
         Objects.requireNonNull(materialCode, "Material code must not be null");
 
-        return springDataInventoryItemRepository.findByMaterialCode(materialCode.getValue())
+        return springDataInventoryItemRepository.findFirstByMaterialCode(materialCode.getValue())
                 .map(inventoryPersistenceMapper::toDomain);
+    }
+
+    @Override
+    public Optional<InventoryItem> findFirstByMaterialType(InventoryMaterialType materialType) {
+        Objects.requireNonNull(materialType, "Material type must not be null");
+
+        return springDataInventoryItemRepository.findFirstByMaterialTypeOrderByPaperRollNumberAsc(materialType)
+                .map(inventoryPersistenceMapper::toDomain);
+    }
+
+    @Override
+    public boolean existsNonPaperWithCode(MaterialCode materialCode) {
+        Objects.requireNonNull(materialCode, "Material code must not be null");
+        return springDataInventoryItemRepository.existsByMaterialCodeAndPaperRollNumberIsNull(materialCode.getValue());
     }
 
     @Override

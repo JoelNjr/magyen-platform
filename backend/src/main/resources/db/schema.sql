@@ -50,6 +50,7 @@ CREATE TABLE quotation_items (
     product_name            varchar(255)    NOT NULL,
     quantity                integer         NOT NULL,
     fabric                  varchar(255)    NOT NULL,
+    secondary_fabric        varchar(255)    NULL,
     color                   varchar(100)    NOT NULL,
     unit_price              numeric(19, 2)  NOT NULL,
     subtotal                numeric(19, 2)  NOT NULL,
@@ -113,6 +114,7 @@ CREATE TABLE order_items (
     product_name            varchar(255)    NOT NULL,
     quantity                integer         NOT NULL,
     fabric                  varchar(255)    NOT NULL,
+    secondary_fabric        varchar(255)    NULL,
     color                   varchar(100)    NOT NULL,
     unit_price              numeric(19, 2)  NOT NULL,
     subtotal                numeric(19, 2)  NOT NULL,
@@ -336,9 +338,14 @@ CREATE TABLE inventory_items (
     unit_cost           numeric(19, 2)  NULL,
     status              varchar(30)     NOT NULL,
     CONSTRAINT inventory_items_pkey PRIMARY KEY (id),
-    CONSTRAINT inventory_items_material_code_key UNIQUE (material_code),
     CONSTRAINT inventory_items_paper_roll_number_key UNIQUE (paper_roll_number)
 );
+
+-- Material code is unique for non-paper items. All paper rolls share one material code;
+-- RP-### remains the physical roll identity.
+CREATE UNIQUE INDEX uq_inventory_items_material_code_non_paper
+    ON inventory_items (material_code)
+    WHERE paper_roll_number IS NULL;
 
 CREATE INDEX idx_inventory_items_material_code
     ON inventory_items (material_code);
@@ -352,6 +359,9 @@ CREATE INDEX idx_inventory_items_material_type
 -- Numeración operacional de rollos de papel Plotter (RP-001, RP-002, ...).
 -- Los huecos son aceptables si una transacción falla tras reservar el valor.
 CREATE SEQUENCE paper_roll_number_seq START WITH 1 INCREMENT BY 1;
+
+-- Códigos de material consecutivos (MAT-001, MAT-002, ...). Independiente de RP-###.
+CREATE SEQUENCE material_code_seq START WITH 1 INCREMENT BY 1;
 
 CREATE TABLE inventory_movements (
     id                  uuid            NOT NULL,
@@ -635,3 +645,22 @@ CREATE TABLE users (
     CONSTRAINT users_pkey PRIMARY KEY (id),
     CONSTRAINT users_username_key UNIQUE (username)
 );
+
+-- Aggregate: AdministrationCatalogEntry (catálogos configurables — SPR-038 Increment F)
+-- Independiente de Inventario y Finanzas. Comercial consume vía puerto, no vía JPA cruzado.
+CREATE TABLE administration_catalog_entries (
+    id              uuid            NOT NULL,
+    catalog_kind    varchar(30)     NOT NULL,
+    name            varchar(100)    NOT NULL,
+    active          boolean         NOT NULL,
+    CONSTRAINT administration_catalog_entries_pkey PRIMARY KEY (id)
+);
+
+CREATE UNIQUE INDEX uq_administration_catalog_entries_kind_name
+    ON administration_catalog_entries (catalog_kind, lower(name));
+
+CREATE INDEX idx_administration_catalog_entries_kind
+    ON administration_catalog_entries (catalog_kind);
+
+CREATE INDEX idx_administration_catalog_entries_kind_active
+    ON administration_catalog_entries (catalog_kind, active);

@@ -81,6 +81,7 @@ public class QuotationPresentationMapper {
                 request.productName(),
                 request.quantity(),
                 request.fabric(),
+                request.secondaryFabric(),
                 request.color(),
                 request.unitPrice(),
                 toProductSpecificationCommand(request.productSpecification())
@@ -133,6 +134,7 @@ public class QuotationPresentationMapper {
                         item.productName(),
                         item.quantity(),
                         item.fabric(),
+                        item.secondaryFabric(),
                         item.color(),
                         item.unitPrice(),
                         item.subtotal(),

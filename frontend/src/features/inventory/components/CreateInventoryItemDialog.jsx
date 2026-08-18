@@ -6,10 +6,8 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  FormControlLabel,
   MenuItem,
   Stack,
-  Switch,
   TextField,
   Typography,
 } from '@mui/material'
@@ -19,16 +17,28 @@ import {
 } from '../presentation/inventoryStatusPresentation'
 
 const EMPTY_FORM = {
-  code: '',
+  materialType: '',
   name: '',
   category: '',
   description: '',
-  materialType: 'OTHER',
-  plotterPaperRoll: false,
   unitOfMeasure: 'METER',
   stock: '',
   minimumStock: '',
-  unitCost: '',
+  purchaseQuantity: '',
+  purchaseUnitCost: '',
+  purchaseTotalCost: '',
+  purchaseDate: '',
+}
+
+function todayIsoDate() {
+  return new Date().toISOString().slice(0, 10)
+}
+
+function createPurchaseId() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+  return undefined
 }
 
 function CreateInventoryItemDialog({
@@ -45,6 +55,11 @@ function CreateInventoryItemDialog({
     if (!open) {
       setForm(EMPTY_FORM)
       setValidationError('')
+    } else {
+      setForm((current) => ({
+        ...current,
+        purchaseDate: current.purchaseDate || todayIsoDate(),
+      }))
     }
   }, [open])
 
@@ -52,7 +67,6 @@ function CreateInventoryItemDialog({
     if (submitting) {
       return
     }
-
     onClose()
   }
 
@@ -60,15 +74,17 @@ function CreateInventoryItemDialog({
     setForm((current) => {
       const next = { ...current, [field]: value }
 
-      if (field === 'materialType' && value !== 'PAPER') {
-        next.plotterPaperRoll = false
-      }
-
-      if (field === 'plotterPaperRoll' && value) {
-        next.materialType = 'PAPER'
-        next.unitOfMeasure = 'METER'
-        if (!next.category.trim()) {
-          next.category = 'PAPER'
+      if (field === 'materialType') {
+        if (value === 'PAPER') {
+          next.unitOfMeasure = 'METER'
+          if (!next.category.trim()) {
+            next.category = 'PAPER'
+          }
+        } else if (value === 'FABRIC') {
+          next.unitOfMeasure = 'METER'
+          if (!next.category.trim()) {
+            next.category = 'FABRIC'
+          }
         }
       }
 
@@ -82,89 +98,132 @@ function CreateInventoryItemDialog({
       return
     }
 
-    const code = form.code.trim()
+    const materialType = form.materialType
+    if (!materialType) {
+      setValidationError('El tipo de material es obligatorio.')
+      return
+    }
+
+    const isPaper = materialType === 'PAPER'
+    const isFabric = materialType === 'FABRIC'
     const name = form.name.trim()
     const category = form.category.trim()
     const description = form.description.trim()
-    const materialType = form.materialType
-    const plotterPaperRoll = Boolean(form.plotterPaperRoll)
-    const unitOfMeasure = plotterPaperRoll ? 'METER' : form.unitOfMeasure
-    const stockRaw = form.stock.trim()
+    const unitOfMeasure = isPaper || isFabric ? 'METER' : form.unitOfMeasure
     const minimumStockRaw = form.minimumStock.trim()
-    const unitCostRaw = form.unitCost.trim()
 
-    if (!code || !name || !category || !unitOfMeasure || !stockRaw || !materialType) {
-      setValidationError(
-        'Código, nombre, categoría, tipo, unidad y stock inicial son obligatorios.'
-      )
+    if (!isPaper && !name) {
+      setValidationError('El nombre del material es obligatorio.')
       return
     }
 
-    if (plotterPaperRoll && materialType !== 'PAPER') {
-      setValidationError('Un rollo de papel para Plotter debe ser tipo Papel.')
-      return
-    }
-
-    const stock = Number(stockRaw)
-
-    if (Number.isNaN(stock)) {
-      setValidationError('El stock inicial debe ser un número válido.')
-      return
-    }
-
-    if (stock < 0) {
-      setValidationError('El stock inicial no puede ser negativo.')
+    if (!isPaper && (!category || !unitOfMeasure)) {
+      setValidationError('La categoría y la unidad de medida son obligatorias.')
       return
     }
 
     let minimumStock = null
-
     if (minimumStockRaw !== '') {
       minimumStock = Number(minimumStockRaw)
-
-      if (Number.isNaN(minimumStock)) {
-        setValidationError('El stock mínimo debe ser un número válido.')
-        return
-      }
-
-      if (minimumStock < 0) {
-        setValidationError('El stock mínimo no puede ser negativo.')
+      if (Number.isNaN(minimumStock) || minimumStock < 0) {
+        setValidationError('El stock mínimo debe ser un número válido no negativo.')
         return
       }
     }
 
-    let unitCost = null
-
-    if (unitCostRaw !== '') {
-      unitCost = Number(unitCostRaw)
-
-      if (Number.isNaN(unitCost)) {
-        setValidationError('El costo unitario debe ser un número válido.')
+    if (isPaper) {
+      const stockRaw = form.stock.trim()
+      if (!stockRaw) {
+        setValidationError('Los metros iniciales del rollo son obligatorios.')
+        return
+      }
+      const stock = Number(stockRaw)
+      if (Number.isNaN(stock) || stock < 0) {
+        setValidationError('Los metros iniciales deben ser un número válido no negativo.')
         return
       }
 
-      if (unitCost < 0) {
-        setValidationError('El costo unitario no puede ser negativo.')
+      setValidationError('')
+      onSubmit({
+        name: name || null,
+        category: category || 'PAPER',
+        unitOfMeasure: 'METER',
+        stock,
+        minimumStock,
+        description: description || null,
+        materialType,
+        plotterPaperRoll: true,
+      })
+      return
+    }
+
+    const quantityRaw = form.purchaseQuantity.trim()
+    const purchaseDate = form.purchaseDate.trim()
+    if (!quantityRaw || !purchaseDate) {
+      setValidationError('La cantidad adquirida y la fecha de compra son obligatorias.')
+      return
+    }
+    const quantity = Number(quantityRaw)
+    if (Number.isNaN(quantity) || quantity <= 0) {
+      setValidationError('La cantidad adquirida debe ser un número mayor que cero.')
+      return
+    }
+
+    let acquisition
+    if (isFabric) {
+      const unitCostRaw = form.purchaseUnitCost.trim()
+      if (!unitCostRaw) {
+        setValidationError('El costo de compra por metro es obligatorio.')
         return
+      }
+      const unitCost = Number(unitCostRaw)
+      if (Number.isNaN(unitCost) || unitCost <= 0) {
+        setValidationError('El costo por metro debe ser un número mayor que cero.')
+        return
+      }
+      acquisition = {
+        purchaseId: createPurchaseId(),
+        quantity,
+        unitCost,
+        purchaseDate,
+      }
+    } else {
+      const totalCostRaw = form.purchaseTotalCost.trim()
+      if (!totalCostRaw) {
+        setValidationError('El costo total de adquisición es obligatorio.')
+        return
+      }
+      const totalCost = Number(totalCostRaw)
+      if (Number.isNaN(totalCost) || totalCost <= 0) {
+        setValidationError('El costo total de adquisición debe ser un número mayor que cero.')
+        return
+      }
+      acquisition = {
+        purchaseId: createPurchaseId(),
+        quantity,
+        totalCost,
+        purchaseDate,
       }
     }
 
     setValidationError('')
     onSubmit({
-      code,
       name,
       category,
       unitOfMeasure,
-      stock,
+      stock: 0,
       minimumStock,
       description: description || null,
-      unitCost,
       materialType,
-      plotterPaperRoll,
+      plotterPaperRoll: false,
+      acquisition,
     })
   }
 
-  const isPlotterPaperRoll = Boolean(form.plotterPaperRoll)
+  const isPaper = form.materialType === 'PAPER'
+  const isFabric = form.materialType === 'FABRIC'
+  const isOtherMaterial = Boolean(form.materialType) && !isPaper
+  const typeSelected = Boolean(form.materialType)
 
   return (
     <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
@@ -177,30 +236,18 @@ function CreateInventoryItemDialog({
           )}
 
           <TextField
-            label="Código"
-            value={form.code}
-            onChange={(event) => updateField('code', event.target.value)}
-            fullWidth
-            disabled={submitting}
-            autoFocus
-          />
-
-          <TextField
-            label="Nombre"
-            value={form.name}
-            onChange={(event) => updateField('name', event.target.value)}
-            fullWidth
-            disabled={submitting}
-          />
-
-          <TextField
             select
             label="Tipo de material"
             value={form.materialType}
             onChange={(event) => updateField('materialType', event.target.value)}
             fullWidth
             disabled={submitting}
+            autoFocus
+            required
           >
+            <MenuItem value="" disabled>
+              Seleccione un tipo
+            </MenuItem>
             {INVENTORY_MATERIAL_TYPE_OPTIONS.map((option) => (
               <MenuItem key={option.value} value={option.value}>
                 {option.label}
@@ -208,97 +255,149 @@ function CreateInventoryItemDialog({
             ))}
           </TextField>
 
-          {form.materialType === 'PAPER' && (
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={isPlotterPaperRoll}
-                  onChange={(event) =>
-                    updateField('plotterPaperRoll', event.target.checked)
-                  }
-                  disabled={submitting}
-                />
-              }
-              label="Rollo de papel para Plotter"
-            />
-          )}
-
-          {isPlotterPaperRoll && (
+          {isPaper && (
             <Alert severity="info">
-              El número de rollo (RP-XXX) se genera automáticamente. La unidad queda
-              fijada en metros.
+              El código de material es compartido por todos los rollos de papel. El número de
+              rollo (RP-XXX) se genera automáticamente. No se pide nombre ni precio de venta.
             </Alert>
           )}
 
-          <TextField
-            label="Categoría"
-            value={form.category}
-            onChange={(event) => updateField('category', event.target.value)}
-            fullWidth
-            disabled={submitting}
-          />
+          {typeSelected && !isPaper && (
+            <TextField
+              label={isFabric ? 'Identidad de la tela' : 'Nombre'}
+              value={form.name}
+              onChange={(event) => updateField('name', event.target.value)}
+              fullWidth
+              disabled={submitting}
+              required
+            />
+          )}
 
-          <TextField
-            label="Descripción"
-            value={form.description}
-            onChange={(event) => updateField('description', event.target.value)}
-            fullWidth
-            disabled={submitting}
-            multiline
-            minRows={2}
-          />
+          {typeSelected && (
+            <TextField
+              label="Categoría"
+              value={form.category}
+              onChange={(event) => updateField('category', event.target.value)}
+              fullWidth
+              disabled={submitting}
+            />
+          )}
 
-          <TextField
-            select
-            label="Unidad de medida"
-            value={isPlotterPaperRoll ? 'METER' : form.unitOfMeasure}
-            onChange={(event) => updateField('unitOfMeasure', event.target.value)}
-            fullWidth
-            disabled={submitting || isPlotterPaperRoll}
-          >
-            {INVENTORY_UNIT_OPTIONS.map((option) => (
-              <MenuItem key={option.value} value={option.value}>
-                {option.label}
-              </MenuItem>
-            ))}
-          </TextField>
+          {typeSelected && (
+            <TextField
+              label="Descripción"
+              value={form.description}
+              onChange={(event) => updateField('description', event.target.value)}
+              fullWidth
+              disabled={submitting}
+              multiline
+              minRows={2}
+            />
+          )}
 
-          <TextField
-            label={isPlotterPaperRoll ? 'Metros iniciales' : 'Stock inicial'}
-            value={form.stock}
-            onChange={(event) => updateField('stock', event.target.value)}
-            fullWidth
-            disabled={submitting}
-            inputProps={{ inputMode: 'decimal' }}
-          />
+          {isOtherMaterial && !isFabric && (
+            <TextField
+              select
+              label="Unidad de medida"
+              value={form.unitOfMeasure}
+              onChange={(event) => updateField('unitOfMeasure', event.target.value)}
+              fullWidth
+              disabled={submitting}
+            >
+              {INVENTORY_UNIT_OPTIONS.map((option) => (
+                <MenuItem key={option.value} value={option.value}>
+                  {option.label}
+                </MenuItem>
+              ))}
+            </TextField>
+          )}
 
-          <TextField
-            label="Stock mínimo (opcional)"
-            value={form.minimumStock}
-            onChange={(event) => updateField('minimumStock', event.target.value)}
-            fullWidth
-            disabled={submitting}
-            helperText="Dejar vacío deshabilita el monitoreo de stock bajo."
-            inputProps={{ inputMode: 'decimal' }}
-          />
+          {isPaper && (
+            <TextField
+              label="Metros iniciales del rollo"
+              value={form.stock}
+              onChange={(event) => updateField('stock', event.target.value)}
+              fullWidth
+              disabled={submitting}
+              inputProps={{ inputMode: 'decimal' }}
+            />
+          )}
 
-          <TextField
-            label={
-              isPlotterPaperRoll
-                ? 'Costo por metro (opcional)'
-                : 'Costo unitario (opcional)'
-            }
-            value={form.unitCost}
-            onChange={(event) => updateField('unitCost', event.target.value)}
-            fullWidth
-            disabled={submitting}
-            helperText="Valoración interna del material. No es precio de venta."
-            inputProps={{ inputMode: 'decimal' }}
-          />
+          {isFabric && (
+            <>
+              <TextField
+                label="Metros adquiridos"
+                value={form.purchaseQuantity}
+                onChange={(event) => updateField('purchaseQuantity', event.target.value)}
+                fullWidth
+                disabled={submitting}
+                required
+                inputProps={{ inputMode: 'decimal' }}
+              />
+              <TextField
+                label="Costo de compra por metro"
+                value={form.purchaseUnitCost}
+                onChange={(event) => updateField('purchaseUnitCost', event.target.value)}
+                fullWidth
+                disabled={submitting}
+                required
+                inputProps={{ inputMode: 'decimal' }}
+              />
+            </>
+          )}
 
-          {isPlotterPaperRoll && (
+          {isOtherMaterial && !isFabric && (
+            <>
+              <TextField
+                label="Cantidad adquirida"
+                value={form.purchaseQuantity}
+                onChange={(event) => updateField('purchaseQuantity', event.target.value)}
+                fullWidth
+                disabled={submitting}
+                required
+                inputProps={{ inputMode: 'decimal' }}
+              />
+              <TextField
+                label="Costo total de adquisición"
+                value={form.purchaseTotalCost}
+                onChange={(event) => updateField('purchaseTotalCost', event.target.value)}
+                fullWidth
+                disabled={submitting}
+                required
+                helperText="Desembolso pagado por Magyen. No es un costo por metro."
+                inputProps={{ inputMode: 'decimal' }}
+              />
+            </>
+          )}
+
+          {isOtherMaterial && (
+            <TextField
+              label="Fecha de compra"
+              type="date"
+              value={form.purchaseDate}
+              onChange={(event) => updateField('purchaseDate', event.target.value)}
+              fullWidth
+              disabled={submitting}
+              InputLabelProps={{ shrink: true }}
+              required
+            />
+          )}
+
+          {typeSelected && (
+            <TextField
+              label="Stock mínimo (opcional)"
+              value={form.minimumStock}
+              onChange={(event) => updateField('minimumStock', event.target.value)}
+              fullWidth
+              disabled={submitting}
+              helperText="Dejar vacío deshabilita el monitoreo de stock bajo."
+              inputProps={{ inputMode: 'decimal' }}
+            />
+          )}
+
+          {isPaper && (
             <Typography variant="caption" color="text.secondary">
-              El número de rollo no se ingresa manualmente.
+              El valor de venta de Plotter se registra al crear el trabajo, no aquí.
             </Typography>
           )}
         </Stack>
@@ -312,7 +411,7 @@ function CreateInventoryItemDialog({
           type="button"
           variant="contained"
           onClick={handleSubmit}
-          disabled={submitting}
+          disabled={submitting || !typeSelected}
         >
           {submitting ? 'Creando...' : 'Crear material'}
         </Button>

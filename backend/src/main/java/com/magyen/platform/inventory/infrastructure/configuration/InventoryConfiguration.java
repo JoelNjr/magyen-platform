@@ -14,6 +14,7 @@ import com.magyen.platform.inventory.application.usecase.UpdateInventoryMinimumS
 import com.magyen.platform.inventory.application.usecase.UpdateInventoryUnitCostUseCase;
 import com.magyen.platform.inventory.domain.InventoryItemRepository;
 import com.magyen.platform.inventory.domain.InventoryMovementRepository;
+import com.magyen.platform.inventory.domain.MaterialCodeGenerator;
 import com.magyen.platform.inventory.domain.PaperRollNumberGenerator;
 import com.magyen.platform.inventory.infrastructure.finance.InventoryPurchaseFinanceAdapter;
 import com.magyen.platform.inventory.application.port.InventoryPurchaseFinancePort;
@@ -42,9 +43,16 @@ public class InventoryConfiguration {
     @Bean
     public CreateInventoryItemUseCase createInventoryItemUseCase(
             InventoryItemRepository inventoryItemRepository,
-            PaperRollNumberGenerator paperRollNumberGenerator
+            PaperRollNumberGenerator paperRollNumberGenerator,
+            MaterialCodeGenerator materialCodeGenerator,
+            RegisterInventoryPurchaseUseCase registerInventoryPurchaseUseCase
     ) {
-        return new CreateInventoryItemUseCase(inventoryItemRepository, paperRollNumberGenerator);
+        return new CreateInventoryItemUseCase(
+                inventoryItemRepository,
+                paperRollNumberGenerator,
+                materialCodeGenerator,
+                registerInventoryPurchaseUseCase
+        );
     }
 
     @Bean

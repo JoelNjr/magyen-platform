@@ -50,7 +50,16 @@ const navigationItems = [
   { label: 'Inventario', path: '/inventory' },
   { label: 'Plotter', path: '/plotter' },
   { label: 'Finanzas', path: '/finance', adminOnly: true },
-  { label: 'Usuarios', path: '/admin/users', adminOnly: true },
+  {
+    label: 'Administración',
+    path: '/admin/users',
+    adminOnly: true,
+    selectedWhen: (pathname) => pathname.startsWith('/admin'),
+    children: [
+      { label: 'Usuarios', path: '/admin/users' },
+      { label: 'Catálogos', path: '/admin/catalogs' },
+    ],
+  },
 ]
 
 function isNavigationItemSelected(pathname, item) {

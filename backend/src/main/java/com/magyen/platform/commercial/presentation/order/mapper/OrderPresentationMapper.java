@@ -253,6 +253,7 @@ public class OrderPresentationMapper {
                 item.productName(),
                 item.quantity(),
                 item.fabric(),
+                item.secondaryFabric(),
                 item.color(),
                 item.unitPrice(),
                 item.subtotal(),

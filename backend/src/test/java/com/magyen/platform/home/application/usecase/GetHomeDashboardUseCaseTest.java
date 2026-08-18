@@ -938,10 +938,10 @@ class GetHomeDashboardUseCaseTest {
                 "20.0000",
                 true
         );
-        CreateInventoryItemResult paperWithoutRp = createMaterial(
-                "HOME-MP-" + suffix(),
-                "PAPER",
-                "METER",
+        CreateInventoryItemResult thread = createMaterial(
+                "HOME-MT-" + suffix(),
+                "THREAD",
+                "UNIT",
                 "3.0000",
                 "15.0000",
                 false
@@ -954,7 +954,7 @@ class GetHomeDashboardUseCaseTest {
         requireInventoryAlert(result, fabric.inventoryItemId());
         requireInventoryAlert(result, ink.inventoryItemId());
         requireInventoryAlert(result, roll.inventoryItemId());
-        requireInventoryAlert(result, paperWithoutRp.inventoryItemId());
+        requireInventoryAlert(result, thread.inventoryItemId());
         assertTrue(result.inventoryAlerts().lowStockCount() >= 4);
 
         HomePaperRollAlertItem paperAlert = requirePaperRollAlert(result, roll.inventoryItemId());
@@ -964,7 +964,7 @@ class GetHomeDashboardUseCaseTest {
         assertTrue(result.paperRollAlerts().items().stream()
                 .noneMatch(item -> item.inventoryItemId().equals(ink.inventoryItemId())));
         assertTrue(result.paperRollAlerts().items().stream()
-                .noneMatch(item -> item.inventoryItemId().equals(paperWithoutRp.inventoryItemId())));
+                .noneMatch(item -> item.inventoryItemId().equals(thread.inventoryItemId())));
     }
 
     @Test

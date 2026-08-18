@@ -2,6 +2,8 @@ package com.magyen.platform.commercial.infrastructure.configuration;
 
 import com.magyen.platform.commercial.application.CustomerNameResolver;
 import com.magyen.platform.commercial.application.SellerNameResolver;
+import com.magyen.platform.commercial.application.CommercialCatalogValidator;
+import com.magyen.platform.commercial.application.port.CommercialCatalogPort;
 import com.magyen.platform.commercial.application.port.CommercialSellerEmployeePort;
 import com.magyen.platform.commercial.application.port.OrderPaymentCollectionPort;
 import com.magyen.platform.commercial.application.port.PlotterOrderCostPort;
@@ -27,6 +29,7 @@ import com.magyen.platform.commercial.domain.OrderRepository;
 import com.magyen.platform.commercial.domain.QuotationNumberGenerator;
 import com.magyen.platform.commercial.domain.QuotationRepository;
 import com.magyen.platform.commercial.domain.SellerRepository;
+import com.magyen.platform.commercial.infrastructure.administration.CommercialCatalogAdapter;
 import com.magyen.platform.commercial.infrastructure.finance.CommercialSellerEmployeeAdapter;
 import com.magyen.platform.commercial.infrastructure.finance.OrderPaymentCollectionAdapter;
 import com.magyen.platform.commercial.infrastructure.plotter.PlotterOrderCostAdapter;
@@ -40,6 +43,7 @@ import com.magyen.platform.commercial.presentation.customer.mapper.CustomerPrese
 import com.magyen.platform.commercial.presentation.order.mapper.OrderPresentationMapper;
 import com.magyen.platform.commercial.presentation.quotation.mapper.QuotationPresentationMapper;
 import com.magyen.platform.commercial.presentation.seller.mapper.SellerPresentationMapper;
+import com.magyen.platform.administration.application.usecase.ListAdministrationCatalogEntriesUseCase;
 import com.magyen.platform.finance.application.usecase.GetPayrollEmployeeUseCase;
 import com.magyen.platform.finance.application.usecase.GetPayrollEmployeesUseCase;
 import com.magyen.platform.finance.application.usecase.GetPaymentsByOrderUseCase;
@@ -70,8 +74,8 @@ public class CommercialConfiguration {
     }
 
     @Bean
-    public GetCommercialCatalogsUseCase getCommercialCatalogsUseCase() {
-        return new GetCommercialCatalogsUseCase();
+    public GetCommercialCatalogsUseCase getCommercialCatalogsUseCase(CommercialCatalogPort commercialCatalogPort) {
+        return new GetCommercialCatalogsUseCase(commercialCatalogPort);
     }
 
     @Bean
@@ -102,6 +106,18 @@ public class CommercialConfiguration {
     @Bean
     public SellerPersistenceMapper sellerPersistenceMapper() {
         return new SellerPersistenceMapper();
+    }
+
+    @Bean
+    public CommercialCatalogPort commercialCatalogPort(
+            ListAdministrationCatalogEntriesUseCase listAdministrationCatalogEntriesUseCase
+    ) {
+        return new CommercialCatalogAdapter(listAdministrationCatalogEntriesUseCase);
+    }
+
+    @Bean
+    public CommercialCatalogValidator commercialCatalogValidator(CommercialCatalogPort commercialCatalogPort) {
+        return new CommercialCatalogValidator(commercialCatalogPort);
     }
 
     @Bean
@@ -152,8 +168,11 @@ public class CommercialConfiguration {
     }
 
     @Bean
-    public AddQuotationItemUseCase addQuotationItemUseCase(QuotationRepository quotationRepository) {
-        return new AddQuotationItemUseCase(quotationRepository);
+    public AddQuotationItemUseCase addQuotationItemUseCase(
+            QuotationRepository quotationRepository,
+            CommercialCatalogValidator commercialCatalogValidator
+    ) {
+        return new AddQuotationItemUseCase(quotationRepository, commercialCatalogValidator);
     }
 
     @Bean
@@ -269,8 +288,9 @@ public class CommercialConfiguration {
 
     @Bean
     public UpdateOrderItemProductSpecificationUseCase updateOrderItemProductSpecificationUseCase(
-            OrderRepository orderRepository
+            OrderRepository orderRepository,
+            CommercialCatalogValidator commercialCatalogValidator
     ) {
-        return new UpdateOrderItemProductSpecificationUseCase(orderRepository);
+        return new UpdateOrderItemProductSpecificationUseCase(orderRepository, commercialCatalogValidator);
     }
 }

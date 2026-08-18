@@ -12,10 +12,35 @@ public record OrderItemResult(
         String productName,
         int quantity,
         String fabric,
+        String secondaryFabric,
         String color,
         BigDecimal unitPrice,
         BigDecimal subtotal,
         ProductSpecificationResult productSpecification,
         List<SizeBreakdownResult> sizes
 ) {
+    public OrderItemResult(
+            UUID itemId,
+            String productName,
+            int quantity,
+            String fabric,
+            String color,
+            BigDecimal unitPrice,
+            BigDecimal subtotal,
+            ProductSpecificationResult productSpecification,
+            List<SizeBreakdownResult> sizes
+    ) {
+        this(
+                itemId,
+                productName,
+                quantity,
+                fabric,
+                null,
+                color,
+                unitPrice,
+                subtotal,
+                productSpecification,
+                sizes
+        );
+    }
 }

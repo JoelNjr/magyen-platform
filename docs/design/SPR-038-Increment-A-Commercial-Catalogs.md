@@ -4,7 +4,7 @@
 **Estado:** Implemented  
 **Fecha:** 16 de agosto de 2026
 
-Este documento cubre únicamente el Incremento A. No describe autenticación (ver `SPR-038-Auth-Security.md`) ni los incrementos B/C/D/E.
+Este documento cubre únicamente el Incremento A. No describe autenticación (ver `SPR-038-Auth-Security.md`) ni los incrementos B/C/D/E/F.
 
 ---
 
@@ -24,11 +24,11 @@ No implementa consumo de inventario, compras, unificación de nómina, ni atribu
 
 ## 2. Catálogos comerciales
 
-Los catálogos viven en el dominio Commercial como enums con etiqueta canónica en español (`LabeledCatalog`). Se persiste la etiqueta de negocio, no el nombre técnico del enum.
+En el Incremento A los catálogos vivían en el dominio Commercial como enums. Desde el Incremento F la fuente autoritativa es Administración → Catálogos (prendas, telas, cuellos, mangas). Comercial consume valores activos vía puerto. El puño sigue siendo boolean. Ver `SPR-038-Increment-F-Administration-Catalogs-Inventory-Identity.md`.
 
-La escritura valida el catálogo (`ProductSpecification.of`, `CommercialFabric.canonicalize`). La reconstitución histórica no valida, para no romper pedidos anteriores.
+Se persiste la etiqueta de negocio, no un UUID de catálogo. La reconstitución histórica no valida, para no romper pedidos anteriores.
 
-| Catálogo | Valores |
+| Catálogo | Valores iniciales V1 |
 |---|---|
 | Tipo de prenda | Camiseta, Camiseta tipo polo, Conjunto deportivo, Conjunto de presentación, Pantaloneta, Otro |
 | Tipo de cuello | Redondo, En V recto, En V cruzado, Tejido |
@@ -78,9 +78,9 @@ Estructura V1:
 * Inventario
 * Plotter
 * Finanzas
-* Usuarios (ADMIN)
+* Administración (ADMIN): Usuarios y Catálogos
 
-`/commercial/orders` no se marca como Cotizaciones. Las rutas existentes se conservan.
+`/commercial/orders` no se marca como Cotizaciones. Las rutas existentes se conservan. Intelligence no está en el sidebar. Desde Incremento F, Usuarios deja de ser un ítem de primer nivel.
 
 ---
 

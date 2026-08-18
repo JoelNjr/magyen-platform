@@ -19,6 +19,7 @@ public class QuotationItem {
     private final String productName;
     private final int quantity;
     private final String fabric;
+    private final String secondaryFabric;
     private final String color;
     private final Money unitPrice;
     private final Money subtotal;
@@ -29,6 +30,7 @@ public class QuotationItem {
             String productName,
             int quantity,
             String fabric,
+            String secondaryFabric,
             String color,
             Money unitPrice,
             ProductSpecification productSpecification
@@ -37,6 +39,7 @@ public class QuotationItem {
         this.productName = requireNonBlank(productName, "Product name must not be blank");
         this.quantity = quantity;
         this.fabric = requireNonBlank(fabric, "Fabric must not be blank");
+        this.secondaryFabric = blankToNull(secondaryFabric);
         this.color = requireNonBlank(color, "Color must not be blank");
         this.unitPrice = Objects.requireNonNull(unitPrice, "Unit price must not be null");
         this.subtotal = unitPrice.multiply(quantity);
@@ -63,11 +66,24 @@ public class QuotationItem {
             Money unitPrice,
             ProductSpecification productSpecification
     ) {
+        return create(productName, quantity, fabric, null, color, unitPrice, productSpecification);
+    }
+
+    static QuotationItem create(
+            String productName,
+            int quantity,
+            String fabric,
+            String secondaryFabric,
+            String color,
+            Money unitPrice,
+            ProductSpecification productSpecification
+    ) {
         return new QuotationItem(
                 UUID.randomUUID(),
                 productName,
                 quantity,
-                CommercialFabric.canonicalize(fabric),
+                fabric,
+                secondaryFabric,
                 color,
                 unitPrice,
                 productSpecification
@@ -86,11 +102,34 @@ public class QuotationItem {
             Money unitPrice,
             ProductSpecification productSpecification
     ) {
+        return reconstitute(
+                id,
+                productName,
+                quantity,
+                fabric,
+                null,
+                color,
+                unitPrice,
+                productSpecification
+        );
+    }
+
+    public static QuotationItem reconstitute(
+            UUID id,
+            String productName,
+            int quantity,
+            String fabric,
+            String secondaryFabric,
+            String color,
+            Money unitPrice,
+            ProductSpecification productSpecification
+    ) {
         return new QuotationItem(
                 id,
                 productName,
                 quantity,
                 fabric,
+                secondaryFabric,
                 color,
                 unitPrice,
                 productSpecification
@@ -111,6 +150,10 @@ public class QuotationItem {
 
     public String getFabric() {
         return fabric;
+    }
+
+    public String getSecondaryFabric() {
+        return secondaryFabric;
     }
 
     public String getColor() {
@@ -152,5 +195,12 @@ public class QuotationItem {
             throw new IllegalArgumentException(message);
         }
         return value;
+    }
+
+    private static String blankToNull(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
     }
 }

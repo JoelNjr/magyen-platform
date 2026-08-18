@@ -4,16 +4,25 @@ import com.magyen.platform.administration.application.port.AuthenticatedPrincipa
 import com.magyen.platform.administration.application.port.AuthenticationTokenIssuer;
 import com.magyen.platform.administration.application.port.AuthenticationTokenValidator;
 import com.magyen.platform.administration.application.port.PasswordHasher;
+import com.magyen.platform.administration.application.usecase.ActivateAdministrationCatalogEntryUseCase;
 import com.magyen.platform.administration.application.usecase.ActivateAuthenticationUserUseCase;
 import com.magyen.platform.administration.application.usecase.AuthenticateUserUseCase;
 import com.magyen.platform.administration.application.usecase.ChangeAuthenticationUserRoleUseCase;
+import com.magyen.platform.administration.application.usecase.CreateAdministrationCatalogEntryUseCase;
 import com.magyen.platform.administration.application.usecase.CreateAuthenticationUserUseCase;
+import com.magyen.platform.administration.application.usecase.DeactivateAdministrationCatalogEntryUseCase;
 import com.magyen.platform.administration.application.usecase.DeactivateAuthenticationUserUseCase;
+import com.magyen.platform.administration.application.usecase.GetAdministrationCatalogsUseCase;
 import com.magyen.platform.administration.application.usecase.GetAuthenticatedUserUseCase;
+import com.magyen.platform.administration.application.usecase.ListAdministrationCatalogEntriesUseCase;
 import com.magyen.platform.administration.application.usecase.ListAuthenticationUsersUseCase;
 import com.magyen.platform.administration.application.usecase.ReconcileAuthenticatedPrincipalUseCase;
+import com.magyen.platform.administration.domain.AdministrationCatalogEntryRepository;
 import com.magyen.platform.administration.domain.AuthenticationUserRepository;
+import com.magyen.platform.administration.infrastructure.catalog.AdministrationCatalogBootstrap;
+import com.magyen.platform.administration.infrastructure.persistence.mapper.AdministrationCatalogEntryPersistenceMapper;
 import com.magyen.platform.administration.infrastructure.persistence.mapper.AuthenticationUserPersistenceMapper;
+import com.magyen.platform.administration.presentation.catalog.mapper.AdministrationCatalogPresentationMapper;
 import com.magyen.platform.administration.infrastructure.security.AuthenticationBootstrapProperties;
 import com.magyen.platform.administration.infrastructure.security.AuthenticationUserBootstrap;
 import com.magyen.platform.administration.infrastructure.security.BcryptPasswordHasher;
@@ -51,6 +60,16 @@ public class AdministrationConfiguration {
     @Bean
     public AuthenticationUserPersistenceMapper authenticationUserPersistenceMapper() {
         return new AuthenticationUserPersistenceMapper();
+    }
+
+    @Bean
+    public AdministrationCatalogEntryPersistenceMapper administrationCatalogEntryPersistenceMapper() {
+        return new AdministrationCatalogEntryPersistenceMapper();
+    }
+
+    @Bean
+    public AdministrationCatalogPresentationMapper administrationCatalogPresentationMapper() {
+        return new AdministrationCatalogPresentationMapper();
     }
 
     @Bean
@@ -142,6 +161,52 @@ public class AdministrationConfiguration {
             AuthenticationUserRepository authenticationUserRepository
     ) {
         return new ChangeAuthenticationUserRoleUseCase(authenticationUserRepository);
+    }
+
+    @Bean
+    public CreateAdministrationCatalogEntryUseCase createAdministrationCatalogEntryUseCase(
+            AdministrationCatalogEntryRepository administrationCatalogEntryRepository
+    ) {
+        return new CreateAdministrationCatalogEntryUseCase(administrationCatalogEntryRepository);
+    }
+
+    @Bean
+    public ListAdministrationCatalogEntriesUseCase listAdministrationCatalogEntriesUseCase(
+            AdministrationCatalogEntryRepository administrationCatalogEntryRepository
+    ) {
+        return new ListAdministrationCatalogEntriesUseCase(administrationCatalogEntryRepository);
+    }
+
+    @Bean
+    public GetAdministrationCatalogsUseCase getAdministrationCatalogsUseCase(
+            AdministrationCatalogEntryRepository administrationCatalogEntryRepository
+    ) {
+        return new GetAdministrationCatalogsUseCase(administrationCatalogEntryRepository);
+    }
+
+    @Bean
+    public ActivateAdministrationCatalogEntryUseCase activateAdministrationCatalogEntryUseCase(
+            AdministrationCatalogEntryRepository administrationCatalogEntryRepository
+    ) {
+        return new ActivateAdministrationCatalogEntryUseCase(administrationCatalogEntryRepository);
+    }
+
+    @Bean
+    public DeactivateAdministrationCatalogEntryUseCase deactivateAdministrationCatalogEntryUseCase(
+            AdministrationCatalogEntryRepository administrationCatalogEntryRepository
+    ) {
+        return new DeactivateAdministrationCatalogEntryUseCase(administrationCatalogEntryRepository);
+    }
+
+    @Bean
+    public AdministrationCatalogBootstrap administrationCatalogBootstrap(
+            AdministrationCatalogEntryRepository administrationCatalogEntryRepository,
+            PlatformTransactionManager transactionManager
+    ) {
+        return new AdministrationCatalogBootstrap(
+                administrationCatalogEntryRepository,
+                transactionManager
+        );
     }
 
     @Bean

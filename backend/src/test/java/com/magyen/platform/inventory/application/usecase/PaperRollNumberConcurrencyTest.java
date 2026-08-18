@@ -2,9 +2,11 @@ package com.magyen.platform.inventory.application.usecase;
 
 import com.magyen.platform.inventory.application.dto.CreateInventoryItemCommand;
 import com.magyen.platform.inventory.application.dto.CreateInventoryItemResult;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -25,6 +27,20 @@ class PaperRollNumberConcurrencyTest {
 
     @Autowired
     private CreateInventoryItemUseCase createInventoryItemUseCase;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    private final List<UUID> createdItemIds = new ArrayList<>();
+
+    @AfterEach
+    void deleteSyntheticPaperRolls() {
+        for (UUID inventoryItemId : createdItemIds) {
+            jdbcTemplate.update("DELETE FROM inventory_movements WHERE inventory_item_id = ?", inventoryItemId);
+            jdbcTemplate.update("DELETE FROM inventory_items WHERE id = ?", inventoryItemId);
+        }
+        createdItemIds.clear();
+    }
 
     @Test
     void concurrentPaperRollCreationProducesUniqueRpNumbers() throws Exception {
@@ -53,6 +69,7 @@ class PaperRollNumberConcurrencyTest {
         Set<String> rollNumbers = new HashSet<>();
         for (Future<CreateInventoryItemResult> future : futures) {
             CreateInventoryItemResult result = future.get();
+            createdItemIds.add(result.inventoryItemId());
             assertTrue(result.plotterPaperRoll());
             assertTrue(rollNumbers.add(result.paperRollNumber()),
                     "Duplicate RP number: " + result.paperRollNumber());

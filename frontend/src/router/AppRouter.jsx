@@ -3,6 +3,7 @@ import { AuthProvider } from '../features/auth/AuthProvider'
 import AdminOnlyPage from '../features/auth/components/AdminOnlyPage'
 import ProtectedRoute from '../features/auth/components/ProtectedRoute'
 import PublicLoginRoute from '../features/auth/components/PublicLoginRoute'
+import AdminCatalogsPage from '../features/auth/pages/AdminCatalogsPage'
 import AdminUsersPage from '../features/auth/pages/AdminUsersPage'
 import CreateQuotationPage from '../features/commercial/pages/CreateQuotationPage'
 import CustomersPage from '../features/commercial/pages/CustomersPage'
@@ -79,6 +80,14 @@ function AppRouter() {
               element={
                 <AdminOnlyPage>
                   <AdminUsersPage />
+                </AdminOnlyPage>
+              }
+            />
+            <Route
+              path="admin/catalogs"
+              element={
+                <AdminOnlyPage>
+                  <AdminCatalogsPage />
                 </AdminOnlyPage>
               }
             />

@@ -201,7 +201,9 @@ V1 de este incremento:
 * selector de vendedor sobre empleados fijos activos
 * fundación de descuentos
 
-Diferido (Incremento F / posterior):
+Los catálogos de Administración y la identidad de material de Inventario quedaron en `SPR-038-Increment-F-Administration-Catalogs-Inventory-Identity.md`.
+
+Diferido (Incremento G / posterior):
 
 * comisión del 5% del vendedor
 * reportes de comisión

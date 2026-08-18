@@ -6,9 +6,11 @@ import com.magyen.platform.inventory.domain.InventoryItemRepository;
 import com.magyen.platform.inventory.domain.InventoryMovementRepository;
 import com.magyen.platform.inventory.domain.InventoryMovementSourceType;
 import com.magyen.platform.inventory.domain.MaterialCode;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -38,6 +40,27 @@ class ConsumeInventoryMaterialConcurrencyTest {
     @Autowired
     private InventoryMovementRepository inventoryMovementRepository;
 
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    private UUID createdInventoryItemId;
+    private UUID consumptionId;
+
+    @AfterEach
+    void deleteSyntheticRaceRows() {
+        if (consumptionId != null) {
+            jdbcTemplate.update(
+                    "DELETE FROM inventory_movements WHERE source_type = ? AND source_id = ?",
+                    InventoryMovementSourceType.PRODUCTION.name(),
+                    consumptionId
+            );
+        }
+        if (createdInventoryItemId != null) {
+            jdbcTemplate.update("DELETE FROM inventory_movements WHERE inventory_item_id = ?", createdInventoryItemId);
+            jdbcTemplate.update("DELETE FROM inventory_items WHERE id = ?", createdInventoryItemId);
+        }
+    }
+
     @Test
     void concurrentDuplicateSourceCreatesOnlyOneMovement() throws Exception {
         InventoryItem inventoryItem = inventoryItemRepository.save(InventoryItem.create(
@@ -50,8 +73,9 @@ class ConsumeInventoryMaterialConcurrencyTest {
                 null,
                 new BigDecimal("1000.00")
         ));
+        createdInventoryItemId = inventoryItem.getId();
 
-        UUID consumptionId = UUID.randomUUID();
+        consumptionId = UUID.randomUUID();
         ConsumeInventoryMaterialCommand command = new ConsumeInventoryMaterialCommand(
                 inventoryItem.getId(),
                 new BigDecimal("1.0000"),

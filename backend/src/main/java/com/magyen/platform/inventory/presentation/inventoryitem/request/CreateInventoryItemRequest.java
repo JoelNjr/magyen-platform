@@ -15,6 +15,7 @@ public record CreateInventoryItemRequest(
         String description,
         BigDecimal unitCost,
         String materialType,
-        Boolean plotterPaperRoll
+        Boolean plotterPaperRoll,
+        InventoryAcquisitionRequest acquisition
 ) {
 }

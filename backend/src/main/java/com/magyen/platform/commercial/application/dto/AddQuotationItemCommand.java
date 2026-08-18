@@ -11,8 +11,20 @@ public record AddQuotationItemCommand(
         String productName,
         int quantity,
         String fabric,
+        String secondaryFabric,
         String color,
         BigDecimal unitPrice,
         ProductSpecificationCommand productSpecification
 ) {
+    public AddQuotationItemCommand(
+            UUID quotationId,
+            String productName,
+            int quantity,
+            String fabric,
+            String color,
+            BigDecimal unitPrice,
+            ProductSpecificationCommand productSpecification
+    ) {
+        this(quotationId, productName, quantity, fabric, null, color, unitPrice, productSpecification);
+    }
 }

@@ -14,6 +14,7 @@ public record OrderItemResponse(
         String productName,
         int quantity,
         String fabric,
+        String secondaryFabric,
         String color,
         BigDecimal unitPrice,
         BigDecimal subtotal,

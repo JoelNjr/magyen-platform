@@ -35,6 +35,9 @@ public class QuotationItemEntity {
     @Column(name = "fabric", nullable = false, length = 255)
     private String fabric;
 
+    @Column(name = "secondary_fabric", length = 255)
+    private String secondaryFabric;
+
     @Column(name = "color", nullable = false, length = 100)
     private String color;
 
@@ -124,6 +127,14 @@ public class QuotationItemEntity {
 
     public void setFabric(String fabric) {
         this.fabric = fabric;
+    }
+
+    public String getSecondaryFabric() {
+        return secondaryFabric;
+    }
+
+    public void setSecondaryFabric(String secondaryFabric) {
+        this.secondaryFabric = secondaryFabric;
     }
 
     public String getColor() {
