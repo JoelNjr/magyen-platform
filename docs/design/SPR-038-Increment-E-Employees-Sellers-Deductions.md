@@ -218,10 +218,10 @@ Diferido (Incremento G / posterior):
 
 ## 13. Fuera de alcance
 
-No se implementó:
+No se implementó en E:
 
-* comisiones
-* motor de nómina
+* comisiones (quedaron en el Incremento H: `SPR-038-Increment-H-Employee-Compensation-Readiness.md`)
+* motor de liquidación de nómina
 * vínculo de autenticación
 * auditoría
 * PDFs / notificaciones / Intelligence

@@ -198,6 +198,7 @@ Hibernate `ddl-auto=validate`.
 
 * Incremento H
 * SPR-039 y siguientes
+* Liquidación de nómina y comisión como gasto (Incremento H deja la comisión analítica; ver `SPR-038-Increment-H-Employee-Compensation-Readiness.md`)
 * Rediseño visual
 * Cualquier reset de base de datos
 * Datos reales de negocio Magyen

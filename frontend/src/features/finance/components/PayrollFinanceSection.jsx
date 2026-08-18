@@ -20,6 +20,7 @@ import ConfirmFinanceActionDialog from './ConfirmFinanceActionDialog'
 import CreatePayrollEmployeeDialog from './CreatePayrollEmployeeDialog'
 import GeneratePayrollPeriodsDialog from './GeneratePayrollPeriodsDialog'
 import PayrollEmployeeDeductionsDialog from './PayrollEmployeeDeductionsDialog'
+import PayrollEmployeeFinancialSummaryDialog from './PayrollEmployeeFinancialSummaryDialog'
 import PayrollEmployeeProductionEarningsDialog from './PayrollEmployeeProductionEarningsDialog'
 import UpdatePayrollEmployeeCompensationDialog from './UpdatePayrollEmployeeCompensationDialog'
 import {
@@ -38,6 +39,7 @@ import {
   deactivatePayrollEmployee,
   generatePayrollPeriods,
   getPayrollEmployees,
+  getPayrollEmployeePerformance,
   getPayrollPeriods,
   payPayrollPeriod,
   updatePayrollEmployeeCompensation,
@@ -112,6 +114,10 @@ function PayrollFinanceSection({
   const [togglingEmployeeId, setTogglingEmployeeId] = useState(null)
   const [earningsEmployee, setEarningsEmployee] = useState(null)
   const [deductionsEmployee, setDeductionsEmployee] = useState(null)
+  const [summaryEmployee, setSummaryEmployee] = useState(null)
+  const [sellerPerformance, setSellerPerformance] = useState([])
+  const [performanceLoading, setPerformanceLoading] = useState(true)
+  const [performanceFailed, setPerformanceFailed] = useState(false)
 
   const loadEmployees = useCallback(async () => {
     setEmployeesLoading(true)
@@ -124,6 +130,20 @@ function PayrollFinanceSection({
       setEmployeesFailed(true)
     } finally {
       setEmployeesLoading(false)
+    }
+  }, [])
+
+  const loadPerformance = useCallback(async () => {
+    setPerformanceLoading(true)
+    setPerformanceFailed(false)
+    try {
+      const data = await getPayrollEmployeePerformance()
+      setSellerPerformance(Array.isArray(data?.sellers) ? data.sellers : [])
+    } catch {
+      setSellerPerformance([])
+      setPerformanceFailed(true)
+    } finally {
+      setPerformanceLoading(false)
     }
   }, [])
 
@@ -143,8 +163,9 @@ function PayrollFinanceSection({
 
   useEffect(() => {
     loadEmployees()
+    loadPerformance()
     loadPeriods()
-  }, [loadEmployees, loadPeriods])
+  }, [loadEmployees, loadPerformance, loadPeriods])
 
   async function handleCreateEmployee(payload) {
     if (creating) {
@@ -157,6 +178,7 @@ function PayrollFinanceSection({
       await createPayrollEmployee(payload)
       setCreateOpen(false)
       await loadEmployees()
+      await loadPerformance()
       showSuccess('Empleado de nómina creado.')
     } catch (error) {
       setCreateError(
@@ -203,6 +225,7 @@ function PayrollFinanceSection({
         showSuccess(`Empleado activado: ${employee.displayName}.`)
       }
       await loadEmployees()
+      await loadPerformance()
     } catch (error) {
       showError(
         resolveApiErrorMessage(
@@ -375,6 +398,12 @@ function PayrollFinanceSection({
                         >
                           <Button
                             size="small"
+                            onClick={() => setSummaryEmployee(employee)}
+                          >
+                            Resumen
+                          </Button>
+                          <Button
+                            size="small"
                             onClick={() => setDeductionsEmployee(employee)}
                           >
                             Deducciones
@@ -404,6 +433,83 @@ function PayrollFinanceSection({
                             {employee.active ? 'Desactivar' : 'Activar'}
                           </Button>
                         </Stack>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
+      </Stack>
+
+      <Stack spacing={2}>
+        <Typography variant="h5">Desempeño de vendedores</Typography>
+        <Typography variant="body2" color="text.secondary">
+          Comisión del 5% sobre pedidos entregados o cerrados. Es acumulado /
+          pendiente de liquidación: no crea un gasto de Finanzas.
+        </Typography>
+        {performanceFailed ? (
+          <Alert
+            severity="error"
+            action={
+              <Button color="inherit" size="small" onClick={loadPerformance}>
+                Reintentar
+              </Button>
+            }
+          >
+            No fue posible cargar el desempeño de vendedores.
+          </Alert>
+        ) : null}
+        {!performanceFailed && (
+          <TableContainer component={Paper} variant="outlined" sx={{ overflowX: 'auto' }}>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={headerCellSx}>Vendedor</TableCell>
+                  <TableCell sx={headerCellSx}>Estado</TableCell>
+                  <TableCell align="right" sx={headerCellSx}>
+                    Ventas
+                  </TableCell>
+                  <TableCell align="right" sx={headerCellSx}>
+                    Total vendido
+                  </TableCell>
+                  <TableCell align="right" sx={headerCellSx}>
+                    Comisión 5%
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {performanceLoading ? (
+                  <LoadingRows columns={5} />
+                ) : sellerPerformance.length === 0 ? (
+                  <EmptyRow
+                    columns={5}
+                    message="No hay empleados de sueldo fijo para evaluar comisión."
+                  />
+                ) : (
+                  sellerPerformance.map((seller) => (
+                    <TableRow key={seller.employeeId}>
+                      <TableCell>
+                        <Typography fontWeight={600}>
+                          {seller.displayName || '—'}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          size="small"
+                          color={seller.active ? 'success' : 'default'}
+                          label={seller.active ? 'Activo' : 'Inactivo'}
+                        />
+                      </TableCell>
+                      <TableCell align="right">
+                        {seller.numberOfEligibleOrders ?? 0}
+                      </TableCell>
+                      <TableCell align="right">
+                        {formatFinanceMoney(seller.totalSales)}
+                      </TableCell>
+                      <TableCell align="right">
+                        {formatFinanceMoney(seller.accumulatedCommission)}
                       </TableCell>
                     </TableRow>
                   ))
@@ -543,6 +649,12 @@ function PayrollFinanceSection({
         onSubmit={handleCreateEmployee}
         submitting={creating}
         errorMessage={createError}
+      />
+
+      <PayrollEmployeeFinancialSummaryDialog
+        open={Boolean(summaryEmployee)}
+        employee={summaryEmployee}
+        onClose={() => setSummaryEmployee(null)}
       />
 
       <PayrollEmployeeProductionEarningsDialog

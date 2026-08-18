@@ -6,6 +6,12 @@ import com.magyen.platform.finance.application.dto.CreatePayrollEmployeeCommand;
 import com.magyen.platform.finance.application.dto.CreatePayrollEmployeeResult;
 import com.magyen.platform.finance.application.dto.DeactivatePayrollEmployeeCommand;
 import com.magyen.platform.finance.application.dto.DeactivatePayrollEmployeeResult;
+import com.magyen.platform.finance.application.dto.GetPayrollEmployeeCommissionsQuery;
+import com.magyen.platform.finance.application.dto.GetPayrollEmployeeCommissionsResult;
+import com.magyen.platform.finance.application.dto.GetPayrollEmployeeFinancialSummaryQuery;
+import com.magyen.platform.finance.application.dto.GetPayrollEmployeeFinancialSummaryResult;
+import com.magyen.platform.finance.application.dto.GetPayrollEmployeePerformanceQuery;
+import com.magyen.platform.finance.application.dto.GetPayrollEmployeePerformanceResult;
 import com.magyen.platform.finance.application.dto.GetPayrollEmployeeProductionEarningsQuery;
 import com.magyen.platform.finance.application.dto.GetPayrollEmployeeProductionEarningsResult;
 import com.magyen.platform.finance.application.dto.GetPayrollEmployeeQuery;
@@ -21,6 +27,9 @@ import com.magyen.platform.finance.presentation.payroll.request.UpdatePayrollEmp
 import com.magyen.platform.finance.presentation.payroll.response.ActivatePayrollEmployeeResponse;
 import com.magyen.platform.finance.presentation.payroll.response.DeactivatePayrollEmployeeResponse;
 import com.magyen.platform.finance.presentation.payroll.response.GetPayrollEmployeesResponse;
+import com.magyen.platform.finance.presentation.payroll.response.PayrollEmployeeCommissionsResponse;
+import com.magyen.platform.finance.presentation.payroll.response.PayrollEmployeeFinancialSummaryResponse;
+import com.magyen.platform.finance.presentation.payroll.response.PayrollEmployeePerformanceResponse;
 import com.magyen.platform.finance.presentation.payroll.response.PayrollEmployeeProductionEarningsResponse;
 import com.magyen.platform.finance.presentation.payroll.response.PayrollEmployeeResponse;
 
@@ -78,6 +87,31 @@ public class PayrollEmployeePresentationMapper {
         return new GetPayrollEmployeeProductionEarningsQuery(employeeId, fromDate, toDate);
     }
 
+    public GetPayrollEmployeeCommissionsQuery toCommissionsQuery(
+            UUID employeeId,
+            java.time.LocalDate fromDate,
+            java.time.LocalDate toDate
+    ) {
+        Objects.requireNonNull(employeeId, "Employee id must not be null");
+        return new GetPayrollEmployeeCommissionsQuery(employeeId, fromDate, toDate);
+    }
+
+    public GetPayrollEmployeePerformanceQuery toPerformanceQuery(
+            java.time.LocalDate fromDate,
+            java.time.LocalDate toDate
+    ) {
+        return new GetPayrollEmployeePerformanceQuery(fromDate, toDate);
+    }
+
+    public GetPayrollEmployeeFinancialSummaryQuery toSummaryQuery(
+            UUID employeeId,
+            java.time.LocalDate fromDate,
+            java.time.LocalDate toDate
+    ) {
+        Objects.requireNonNull(employeeId, "Employee id must not be null");
+        return new GetPayrollEmployeeFinancialSummaryQuery(employeeId, fromDate, toDate);
+    }
+
     public PayrollEmployeeProductionEarningsResponse toResponse(
             GetPayrollEmployeeProductionEarningsResult result
     ) {
@@ -94,6 +128,57 @@ public class PayrollEmployeePresentationMapper {
                 result.totalCalculatedAmount(),
                 result.totalPaidAmount(),
                 result.totalPendingAmount()
+        );
+    }
+
+    public PayrollEmployeeCommissionsResponse toResponse(GetPayrollEmployeeCommissionsResult result) {
+        Objects.requireNonNull(result, "GetPayrollEmployeeCommissionsResult must not be null");
+        return new PayrollEmployeeCommissionsResponse(
+                result.employeeId(),
+                result.displayName(),
+                result.compensationType().name(),
+                result.sellerCommissionApplicable(),
+                result.active(),
+                result.eligibleForNewQuotations(),
+                result.fromDate(),
+                result.toDate(),
+                result.numberOfEligibleOrders(),
+                result.totalSales(),
+                result.commissionRate(),
+                result.accumulatedCommission()
+        );
+    }
+
+    public PayrollEmployeePerformanceResponse toResponse(GetPayrollEmployeePerformanceResult result) {
+        Objects.requireNonNull(result, "GetPayrollEmployeePerformanceResult must not be null");
+        return new PayrollEmployeePerformanceResponse(
+                result.sellers().stream().map(this::toResponse).toList()
+        );
+    }
+
+    public PayrollEmployeeFinancialSummaryResponse toResponse(GetPayrollEmployeeFinancialSummaryResult result) {
+        Objects.requireNonNull(result, "GetPayrollEmployeeFinancialSummaryResult must not be null");
+        return new PayrollEmployeeFinancialSummaryResponse(
+                result.employeeId(),
+                result.displayName(),
+                result.active(),
+                result.compensationType().name(),
+                result.fixedAmount(),
+                result.sellerCommissionApplicable(),
+                result.productionLaborApplicable(),
+                result.eligibleForNewQuotations(),
+                result.fromDate(),
+                result.toDate(),
+                result.numberOfEligibleOrders(),
+                result.totalSales(),
+                result.commissionRate(),
+                result.accumulatedCommission(),
+                result.laborWorkCount(),
+                result.productionGenerated(),
+                result.productionPaid(),
+                result.productionPending(),
+                result.activeDeductionCount(),
+                result.activeDeductionTotal()
         );
     }
 

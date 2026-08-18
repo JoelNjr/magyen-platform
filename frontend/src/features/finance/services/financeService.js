@@ -122,6 +122,29 @@ export async function getPayrollEmployeeProductionEarnings(employeeId, params) {
   return response.data
 }
 
+export async function getPayrollEmployeeCommissions(employeeId, params = {}) {
+  const response = await httpClient.get(
+    `/finance/payroll/employees/${employeeId}/commissions`,
+    { params }
+  )
+  return response.data
+}
+
+export async function getPayrollEmployeeFinancialSummary(employeeId, params = {}) {
+  const response = await httpClient.get(
+    `/finance/payroll/employees/${employeeId}/summary`,
+    { params }
+  )
+  return response.data
+}
+
+export async function getPayrollEmployeePerformance(params = {}) {
+  const response = await httpClient.get('/finance/payroll/employees/performance', {
+    params,
+  })
+  return response.data
+}
+
 export async function getPayrollEmployeeDeductions(employeeId, params = {}) {
   const response = await httpClient.get(
     `/finance/payroll/employees/${employeeId}/deductions`,

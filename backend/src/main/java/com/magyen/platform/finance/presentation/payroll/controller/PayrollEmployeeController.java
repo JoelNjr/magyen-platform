@@ -6,6 +6,12 @@ import com.magyen.platform.finance.application.dto.CreatePayrollEmployeeCommand;
 import com.magyen.platform.finance.application.dto.CreatePayrollEmployeeResult;
 import com.magyen.platform.finance.application.dto.DeactivatePayrollEmployeeCommand;
 import com.magyen.platform.finance.application.dto.DeactivatePayrollEmployeeResult;
+import com.magyen.platform.finance.application.dto.GetPayrollEmployeeCommissionsQuery;
+import com.magyen.platform.finance.application.dto.GetPayrollEmployeeCommissionsResult;
+import com.magyen.platform.finance.application.dto.GetPayrollEmployeeFinancialSummaryQuery;
+import com.magyen.platform.finance.application.dto.GetPayrollEmployeeFinancialSummaryResult;
+import com.magyen.platform.finance.application.dto.GetPayrollEmployeePerformanceQuery;
+import com.magyen.platform.finance.application.dto.GetPayrollEmployeePerformanceResult;
 import com.magyen.platform.finance.application.dto.GetPayrollEmployeeProductionEarningsQuery;
 import com.magyen.platform.finance.application.dto.GetPayrollEmployeeProductionEarningsResult;
 import com.magyen.platform.finance.application.dto.GetPayrollEmployeeQuery;
@@ -17,6 +23,9 @@ import com.magyen.platform.finance.application.dto.UpdatePayrollEmployeeCompensa
 import com.magyen.platform.finance.application.usecase.ActivatePayrollEmployeeUseCase;
 import com.magyen.platform.finance.application.usecase.CreatePayrollEmployeeUseCase;
 import com.magyen.platform.finance.application.usecase.DeactivatePayrollEmployeeUseCase;
+import com.magyen.platform.finance.application.usecase.GetPayrollEmployeeCommissionsUseCase;
+import com.magyen.platform.finance.application.usecase.GetPayrollEmployeeFinancialSummaryUseCase;
+import com.magyen.platform.finance.application.usecase.GetPayrollEmployeePerformanceUseCase;
 import com.magyen.platform.finance.application.usecase.GetPayrollEmployeeProductionEarningsUseCase;
 import com.magyen.platform.finance.application.usecase.GetPayrollEmployeeUseCase;
 import com.magyen.platform.finance.application.usecase.GetPayrollEmployeesUseCase;
@@ -27,8 +36,12 @@ import com.magyen.platform.finance.presentation.payroll.request.UpdatePayrollEmp
 import com.magyen.platform.finance.presentation.payroll.response.ActivatePayrollEmployeeResponse;
 import com.magyen.platform.finance.presentation.payroll.response.DeactivatePayrollEmployeeResponse;
 import com.magyen.platform.finance.presentation.payroll.response.GetPayrollEmployeesResponse;
+import com.magyen.platform.finance.presentation.payroll.response.PayrollEmployeeCommissionsResponse;
+import com.magyen.platform.finance.presentation.payroll.response.PayrollEmployeeFinancialSummaryResponse;
+import com.magyen.platform.finance.presentation.payroll.response.PayrollEmployeePerformanceResponse;
 import com.magyen.platform.finance.presentation.payroll.response.PayrollEmployeeProductionEarningsResponse;
 import com.magyen.platform.finance.presentation.payroll.response.PayrollEmployeeResponse;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -58,6 +71,9 @@ public class PayrollEmployeeController {
     private final GetPayrollEmployeeUseCase getPayrollEmployeeUseCase;
     private final GetPayrollEmployeesUseCase getPayrollEmployeesUseCase;
     private final GetPayrollEmployeeProductionEarningsUseCase getPayrollEmployeeProductionEarningsUseCase;
+    private final GetPayrollEmployeeCommissionsUseCase getPayrollEmployeeCommissionsUseCase;
+    private final GetPayrollEmployeePerformanceUseCase getPayrollEmployeePerformanceUseCase;
+    private final GetPayrollEmployeeFinancialSummaryUseCase getPayrollEmployeeFinancialSummaryUseCase;
     private final UpdatePayrollEmployeeCompensationUseCase updatePayrollEmployeeCompensationUseCase;
     private final ActivatePayrollEmployeeUseCase activatePayrollEmployeeUseCase;
     private final DeactivatePayrollEmployeeUseCase deactivatePayrollEmployeeUseCase;
@@ -68,6 +84,9 @@ public class PayrollEmployeeController {
             GetPayrollEmployeeUseCase getPayrollEmployeeUseCase,
             GetPayrollEmployeesUseCase getPayrollEmployeesUseCase,
             GetPayrollEmployeeProductionEarningsUseCase getPayrollEmployeeProductionEarningsUseCase,
+            GetPayrollEmployeeCommissionsUseCase getPayrollEmployeeCommissionsUseCase,
+            GetPayrollEmployeePerformanceUseCase getPayrollEmployeePerformanceUseCase,
+            GetPayrollEmployeeFinancialSummaryUseCase getPayrollEmployeeFinancialSummaryUseCase,
             UpdatePayrollEmployeeCompensationUseCase updatePayrollEmployeeCompensationUseCase,
             ActivatePayrollEmployeeUseCase activatePayrollEmployeeUseCase,
             DeactivatePayrollEmployeeUseCase deactivatePayrollEmployeeUseCase,
@@ -77,6 +96,9 @@ public class PayrollEmployeeController {
         this.getPayrollEmployeeUseCase = getPayrollEmployeeUseCase;
         this.getPayrollEmployeesUseCase = getPayrollEmployeesUseCase;
         this.getPayrollEmployeeProductionEarningsUseCase = getPayrollEmployeeProductionEarningsUseCase;
+        this.getPayrollEmployeeCommissionsUseCase = getPayrollEmployeeCommissionsUseCase;
+        this.getPayrollEmployeePerformanceUseCase = getPayrollEmployeePerformanceUseCase;
+        this.getPayrollEmployeeFinancialSummaryUseCase = getPayrollEmployeeFinancialSummaryUseCase;
         this.updatePayrollEmployeeCompensationUseCase = updatePayrollEmployeeCompensationUseCase;
         this.activatePayrollEmployeeUseCase = activatePayrollEmployeeUseCase;
         this.deactivatePayrollEmployeeUseCase = deactivatePayrollEmployeeUseCase;
@@ -102,6 +124,17 @@ public class PayrollEmployeeController {
         return ResponseEntity.ok(payrollEmployeePresentationMapper.toResponse(result));
     }
 
+    @GetMapping("/performance")
+    public ResponseEntity<PayrollEmployeePerformanceResponse> getSellerPerformance(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate
+    ) {
+        GetPayrollEmployeePerformanceQuery query =
+                payrollEmployeePresentationMapper.toPerformanceQuery(fromDate, toDate);
+        GetPayrollEmployeePerformanceResult result = getPayrollEmployeePerformanceUseCase.execute(query);
+        return ResponseEntity.ok(payrollEmployeePresentationMapper.toResponse(result));
+    }
+
     @GetMapping("/{employeeId}")
     public ResponseEntity<PayrollEmployeeResponse> getEmployee(@PathVariable UUID employeeId) {
         GetPayrollEmployeeQuery query = payrollEmployeePresentationMapper.toGetQuery(employeeId);
@@ -119,6 +152,30 @@ public class PayrollEmployeeController {
                 payrollEmployeePresentationMapper.toEarningsQuery(employeeId, fromDate, toDate);
         GetPayrollEmployeeProductionEarningsResult result =
                 getPayrollEmployeeProductionEarningsUseCase.execute(query);
+        return ResponseEntity.ok(payrollEmployeePresentationMapper.toResponse(result));
+    }
+
+    @GetMapping("/{employeeId}/commissions")
+    public ResponseEntity<PayrollEmployeeCommissionsResponse> getCommissions(
+            @PathVariable UUID employeeId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate
+    ) {
+        GetPayrollEmployeeCommissionsQuery query =
+                payrollEmployeePresentationMapper.toCommissionsQuery(employeeId, fromDate, toDate);
+        GetPayrollEmployeeCommissionsResult result = getPayrollEmployeeCommissionsUseCase.execute(query);
+        return ResponseEntity.ok(payrollEmployeePresentationMapper.toResponse(result));
+    }
+
+    @GetMapping("/{employeeId}/summary")
+    public ResponseEntity<PayrollEmployeeFinancialSummaryResponse> getFinancialSummary(
+            @PathVariable UUID employeeId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate
+    ) {
+        GetPayrollEmployeeFinancialSummaryQuery query =
+                payrollEmployeePresentationMapper.toSummaryQuery(employeeId, fromDate, toDate);
+        GetPayrollEmployeeFinancialSummaryResult result = getPayrollEmployeeFinancialSummaryUseCase.execute(query);
         return ResponseEntity.ok(payrollEmployeePresentationMapper.toResponse(result));
     }
 

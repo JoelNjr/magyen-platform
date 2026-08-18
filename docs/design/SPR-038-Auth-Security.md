@@ -511,6 +511,7 @@ No hay endpoint separado de consumo de papel; forma parte del flujo de job / inv
 | Obligaciones recurrentes (CRUD / deactivate) | sí | — | — |
 | Generación / pago / cancelación de ocurrencias | sí | — | — |
 | Nómina (empleados, periodos, pay/cancel) | sí | — | — |
+| Comisión / desempeño / resumen de empleado (lecturas analíticas) | sí | — | — |
 | Resumen financiero | sí | — | — |
 
 OPERATOR no administra contabilidad. La rentabilidad operativa de pedido (`GET /orders/profitability` y `GET /orders/{id}/profitability`) permanece accesible porque es flujo Commercial.
@@ -543,7 +544,7 @@ Ningún API de negocio queda pública.
 
 **ADMIN only**
 
-- `/api/v1/finance/**` (transactions, obligations, obligation-occurrences, payroll employees/periods, summary)
+- `/api/v1/finance/**` (transactions, obligations, obligation-occurrences, payroll employees/periods/performance/commissions/summary)
 - `PATCH /api/v1/inventory/{inventoryItemId}/unit-cost`
 - `/api/v1/reports/**`
 - `/api/v1/notifications`

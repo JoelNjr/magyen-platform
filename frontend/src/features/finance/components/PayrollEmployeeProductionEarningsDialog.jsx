@@ -154,6 +154,10 @@ function PayrollEmployeeProductionEarningsDialog({
                   <Typography>
                     Pendiente: {formatFinanceMoney(earnings.totalPendingAmount)}
                   </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Acumulado / pendiente de liquidación. El gasto de Finanzas
+                    solo se crea cuando la mano de obra se paga.
+                  </Typography>
                 </Stack>
               ) : null}
             </>

@@ -15,6 +15,7 @@ import com.magyen.platform.commercial.application.usecase.CreateOrderFromQuotati
 import com.magyen.platform.commercial.application.usecase.CreateQuotationUseCase;
 import com.magyen.platform.commercial.application.usecase.GetCommercialCatalogsUseCase;
 import com.magyen.platform.commercial.application.usecase.GetCustomersUseCase;
+import com.magyen.platform.commercial.application.usecase.GetSellerCommissionPerformanceUseCase;
 import com.magyen.platform.commercial.application.usecase.GetSellersUseCase;
 import com.magyen.platform.commercial.application.usecase.GetOrderProfitabilityListUseCase;
 import com.magyen.platform.commercial.application.usecase.GetOrderProfitabilityUseCase;
@@ -290,6 +291,13 @@ public class CommercialConfiguration {
             GetOrderProfitabilityUseCase getOrderProfitabilityUseCase
     ) {
         return new GetOrderProfitabilityListUseCase(getOrdersUseCase, getOrderProfitabilityUseCase);
+    }
+
+    @Bean
+    public GetSellerCommissionPerformanceUseCase getSellerCommissionPerformanceUseCase(
+            OrderRepository orderRepository
+    ) {
+        return new GetSellerCommissionPerformanceUseCase(orderRepository);
     }
 
     @Bean

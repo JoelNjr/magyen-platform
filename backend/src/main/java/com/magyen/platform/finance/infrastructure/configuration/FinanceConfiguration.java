@@ -1,7 +1,9 @@
 package com.magyen.platform.finance.infrastructure.configuration;
 
+import com.magyen.platform.commercial.application.usecase.GetSellerCommissionPerformanceUseCase;
 import com.magyen.platform.commercial.domain.OrderRepository;
 import com.magyen.platform.finance.application.port.EmployeeProductionEarningsPort;
+import com.magyen.platform.finance.application.port.EmployeeSellerCommissionsPort;
 import com.magyen.platform.finance.application.usecase.ActivatePayrollEmployeeUseCase;
 import com.magyen.platform.finance.application.usecase.CancelPayrollPeriodUseCase;
 import com.magyen.platform.finance.application.usecase.CancelRecurringFinancialObligationOccurrenceUseCase;
@@ -21,6 +23,9 @@ import com.magyen.platform.finance.application.usecase.GetOverdueFinancialObliga
 import com.magyen.platform.finance.application.usecase.GetPaymentUseCase;
 import com.magyen.platform.finance.application.usecase.GetPaymentsByOrderUseCase;
 import com.magyen.platform.finance.application.usecase.GetPayrollDeductionsUseCase;
+import com.magyen.platform.finance.application.usecase.GetPayrollEmployeeCommissionsUseCase;
+import com.magyen.platform.finance.application.usecase.GetPayrollEmployeeFinancialSummaryUseCase;
+import com.magyen.platform.finance.application.usecase.GetPayrollEmployeePerformanceUseCase;
 import com.magyen.platform.finance.application.usecase.GetPayrollEmployeeProductionEarningsUseCase;
 import com.magyen.platform.finance.application.usecase.GetPayrollEmployeeUseCase;
 import com.magyen.platform.finance.application.usecase.GetPayrollEmployeesUseCase;
@@ -56,6 +61,7 @@ import com.magyen.platform.finance.infrastructure.persistence.mapper.PayrollDedu
 import com.magyen.platform.finance.infrastructure.persistence.mapper.PayrollEmployeePersistenceMapper;
 import com.magyen.platform.finance.infrastructure.persistence.mapper.PayrollPeriodPersistenceMapper;
 import com.magyen.platform.finance.infrastructure.production.PayrollEmployeeProductionEarningsAdapter;
+import com.magyen.platform.finance.infrastructure.commercial.PayrollEmployeeSellerCommissionsAdapter;
 import com.magyen.platform.finance.infrastructure.persistence.mapper.RecurringFinancialObligationOccurrencePersistenceMapper;
 import com.magyen.platform.finance.infrastructure.persistence.mapper.RecurringFinancialObligationPersistenceMapper;
 import com.magyen.platform.finance.presentation.obligation.mapper.RecurringFinancialObligationPresentationMapper;
@@ -514,6 +520,52 @@ public class FinanceConfiguration {
         return new GetPayrollEmployeeProductionEarningsUseCase(
                 payrollEmployeeRepository,
                 employeeProductionEarningsPort
+        );
+    }
+
+    @Bean
+    public EmployeeSellerCommissionsPort employeeSellerCommissionsPort(
+            GetSellerCommissionPerformanceUseCase getSellerCommissionPerformanceUseCase
+    ) {
+        return new PayrollEmployeeSellerCommissionsAdapter(getSellerCommissionPerformanceUseCase);
+    }
+
+    @Bean
+    public GetPayrollEmployeeCommissionsUseCase getPayrollEmployeeCommissionsUseCase(
+            PayrollEmployeeRepository payrollEmployeeRepository,
+            EmployeeSellerCommissionsPort employeeSellerCommissionsPort
+    ) {
+        return new GetPayrollEmployeeCommissionsUseCase(
+                payrollEmployeeRepository,
+                employeeSellerCommissionsPort
+        );
+    }
+
+    @Bean
+    public GetPayrollEmployeePerformanceUseCase getPayrollEmployeePerformanceUseCase(
+            PayrollEmployeeRepository payrollEmployeeRepository,
+            GetPayrollEmployeeCommissionsUseCase getPayrollEmployeeCommissionsUseCase
+    ) {
+        return new GetPayrollEmployeePerformanceUseCase(
+                payrollEmployeeRepository,
+                getPayrollEmployeeCommissionsUseCase
+        );
+    }
+
+    @Bean
+    public GetPayrollEmployeeFinancialSummaryUseCase getPayrollEmployeeFinancialSummaryUseCase(
+            PayrollEmployeeRepository payrollEmployeeRepository,
+            GetPayrollEmployeeCommissionsUseCase getPayrollEmployeeCommissionsUseCase,
+            GetPayrollEmployeeProductionEarningsUseCase getPayrollEmployeeProductionEarningsUseCase,
+            GetPayrollDeductionsUseCase getPayrollDeductionsUseCase,
+            Clock clock
+    ) {
+        return new GetPayrollEmployeeFinancialSummaryUseCase(
+                payrollEmployeeRepository,
+                getPayrollEmployeeCommissionsUseCase,
+                getPayrollEmployeeProductionEarningsUseCase,
+                getPayrollDeductionsUseCase,
+                clock
         );
     }
 
