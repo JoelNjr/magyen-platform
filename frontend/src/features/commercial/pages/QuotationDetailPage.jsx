@@ -33,9 +33,14 @@ import {
   addQuotationItem,
   approveQuotation,
   createOrder,
+  downloadQuotationPdf,
   getCustomers,
   getQuotation,
 } from '../services/commercialService'
+import {
+  QUOTATION_PDF_ACTION_LABEL,
+  resolveBlobApiErrorMessage,
+} from '../presentation/commercialDocumentDownload'
 
 const currencyFormatter = new Intl.NumberFormat('es-CO', {
   style: 'currency',
@@ -143,8 +148,10 @@ function QuotationDetailPage() {
 
   const [successOpen, setSuccessOpen] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
+  const [generatingPdf, setGeneratingPdf] = useState(false)
+  const [pdfError, setPdfError] = useState('')
 
-  const pageBusy = submittingItem || approving || creatingOrder
+  const pageBusy = submittingItem || approving || creatingOrder || generatingPdf
 
   useEffect(() => {
     setLoading(true)
@@ -319,6 +326,28 @@ function QuotationDetailPage() {
     }
   }
 
+  async function handleGeneratePdf() {
+    if (pageBusy || !quotation) {
+      return
+    }
+
+    setPdfError('')
+    setGeneratingPdf(true)
+
+    try {
+      await downloadQuotationPdf(quotation.quotationId)
+    } catch (error) {
+      setPdfError(
+        await resolveBlobApiErrorMessage(
+          error,
+          'No fue posible generar el PDF de la cotización.'
+        )
+      )
+    } finally {
+      setGeneratingPdf(false)
+    }
+  }
+
   return (
     <Stack spacing={3}>
       <Button
@@ -347,6 +376,11 @@ function QuotationDetailPage() {
 
       {!loading && !failed && quotation && (
         <>
+          {pdfError ? (
+            <Alert severity="error" onClose={() => setPdfError('')}>
+              {pdfError}
+            </Alert>
+          ) : null}
           <Stack
             direction={{ xs: 'column', md: 'row' }}
             spacing={1.5}
@@ -378,6 +412,13 @@ function QuotationDetailPage() {
               spacing={1.5}
               alignItems={{ xs: 'stretch', sm: 'center' }}
             >
+              <Button
+                variant="outlined"
+                disabled={pageBusy}
+                onClick={handleGeneratePdf}
+              >
+                {generatingPdf ? 'Generando PDF…' : QUOTATION_PDF_ACTION_LABEL}
+              </Button>
               {quotation.status === 'DRAFT' && (
                 <Button
                   variant="contained"

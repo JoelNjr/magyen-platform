@@ -9,6 +9,7 @@ import com.magyen.platform.commercial.application.dto.GetOrderProfitabilityResul
 import com.magyen.platform.commercial.application.dto.GetOrderResult;
 import com.magyen.platform.commercial.application.dto.GetOrdersQuery;
 import com.magyen.platform.commercial.application.dto.GetOrdersResult;
+import com.magyen.platform.commercial.application.dto.CommercialDocumentPdfResult;
 import com.magyen.platform.commercial.application.dto.ReplaceOrderItemSizesCommand;
 import com.magyen.platform.commercial.application.dto.ReplaceOrderItemSizesResult;
 import com.magyen.platform.commercial.application.dto.UpdateOrderItemProductSpecificationCommand;
@@ -18,6 +19,7 @@ import com.magyen.platform.commercial.application.usecase.GetOrderProfitabilityL
 import com.magyen.platform.commercial.application.usecase.GetOrderProfitabilityUseCase;
 import com.magyen.platform.commercial.application.usecase.GetOrderUseCase;
 import com.magyen.platform.commercial.application.usecase.GetOrdersUseCase;
+import com.magyen.platform.commercial.application.usecase.GenerateOrderRemissionPdfUseCase;
 import com.magyen.platform.commercial.application.usecase.ReplaceOrderItemSizesUseCase;
 import com.magyen.platform.commercial.application.usecase.UpdateOrderItemProductSpecificationUseCase;
 import com.magyen.platform.commercial.presentation.order.mapper.OrderPresentationMapper;
@@ -31,7 +33,9 @@ import com.magyen.platform.commercial.presentation.order.response.GetOrderRespon
 import com.magyen.platform.commercial.presentation.order.response.GetOrdersResponse;
 import com.magyen.platform.commercial.presentation.order.response.ReplaceOrderItemSizesResponse;
 import com.magyen.platform.commercial.presentation.order.response.UpdateOrderItemProductSpecificationResponse;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -58,6 +62,7 @@ public class OrderController {
     private final CreateOrderFromQuotationUseCase createOrderFromQuotationUseCase;
     private final GetOrdersUseCase getOrdersUseCase;
     private final GetOrderUseCase getOrderUseCase;
+    private final GenerateOrderRemissionPdfUseCase generateOrderRemissionPdfUseCase;
     private final GetOrderProfitabilityUseCase getOrderProfitabilityUseCase;
     private final GetOrderProfitabilityListUseCase getOrderProfitabilityListUseCase;
     private final ReplaceOrderItemSizesUseCase replaceOrderItemSizesUseCase;
@@ -68,6 +73,7 @@ public class OrderController {
             CreateOrderFromQuotationUseCase createOrderFromQuotationUseCase,
             GetOrdersUseCase getOrdersUseCase,
             GetOrderUseCase getOrderUseCase,
+            GenerateOrderRemissionPdfUseCase generateOrderRemissionPdfUseCase,
             GetOrderProfitabilityUseCase getOrderProfitabilityUseCase,
             GetOrderProfitabilityListUseCase getOrderProfitabilityListUseCase,
             ReplaceOrderItemSizesUseCase replaceOrderItemSizesUseCase,
@@ -77,6 +83,7 @@ public class OrderController {
         this.createOrderFromQuotationUseCase = createOrderFromQuotationUseCase;
         this.getOrdersUseCase = getOrdersUseCase;
         this.getOrderUseCase = getOrderUseCase;
+        this.generateOrderRemissionPdfUseCase = generateOrderRemissionPdfUseCase;
         this.getOrderProfitabilityUseCase = getOrderProfitabilityUseCase;
         this.getOrderProfitabilityListUseCase = getOrderProfitabilityListUseCase;
         this.replaceOrderItemSizesUseCase = replaceOrderItemSizesUseCase;
@@ -109,6 +116,16 @@ public class OrderController {
         GetOrderResponse response = orderPresentationMapper.toResponse(result);
 
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping(value = "/{orderId}/remission/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    public ResponseEntity<byte[]> getOrderRemissionPdf(@PathVariable UUID orderId) {
+        GetOrderCommand command = orderPresentationMapper.toGetOrderCommand(orderId);
+        CommercialDocumentPdfResult result = generateOrderRemissionPdfUseCase.execute(command);
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition(result.filename()))
+                .body(result.content());
     }
 
     @GetMapping("/{orderId}/profitability")
@@ -167,5 +184,9 @@ public class OrderController {
         UpdateOrderItemProductSpecificationResponse response = orderPresentationMapper.toResponse(result);
 
         return ResponseEntity.ok(response);
+    }
+
+    private static String contentDisposition(String filename) {
+        return "attachment; filename=\"" + filename + "\"";
     }
 }

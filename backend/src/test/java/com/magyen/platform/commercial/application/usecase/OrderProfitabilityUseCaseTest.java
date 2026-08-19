@@ -350,6 +350,7 @@ class OrderProfitabilityUseCaseTest {
         assertEquals(PlotterJobType.INTERNAL_MAGYEN, job.jobType());
         assertEquals(new BigDecimal("48000.00"), job.totalAmount());
 
+        long plotterIncomeBefore = countPlotterIncome();
         long financeCountBefore = countAllFinancialTransactions();
         GetOrderProfitabilityResult result = getOrderProfitabilityUseCase.execute(
                 new GetOrderProfitabilityQuery(order.getId())
@@ -365,7 +366,7 @@ class OrderProfitabilityUseCaseTest {
         assertEquals(new BigDecimal("48000.00"), result.totalDirectCost());
         assertEquals(new BigDecimal("352000.00"), result.directProfit());
         assertEquals(OrderProfitabilityStatus.COMPLETE, result.profitabilityStatus());
-        assertEquals(0, countPlotterIncome());
+        assertEquals(plotterIncomeBefore, countPlotterIncome());
     }
 
     @Test
@@ -373,6 +374,7 @@ class OrderProfitabilityUseCaseTest {
         Order order = createOrderWithTotal("400000.00");
         CreateInventoryItemResult paperRoll = createPaperRoll("0.0000", null);
 
+        long plotterIncomeBefore = countPlotterIncome();
         long purchaseExpensesBefore = countInventoryPurchaseExpenses();
         registerInventoryPurchaseUseCase.execute(new RegisterInventoryPurchaseCommand(
                 paperRoll.inventoryItemId(),
@@ -399,7 +401,7 @@ class OrderProfitabilityUseCaseTest {
         ));
 
         assertEquals(purchaseExpensesAfterBuy, countInventoryPurchaseExpenses());
-        assertEquals(0, countPlotterIncome());
+        assertEquals(plotterIncomeBefore, countPlotterIncome());
 
         GetOrderProfitabilityResult result = getOrderProfitabilityUseCase.execute(
                 new GetOrderProfitabilityQuery(order.getId())

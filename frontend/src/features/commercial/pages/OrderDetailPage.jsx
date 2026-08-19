@@ -43,12 +43,17 @@ import {
   resolveCustomerName,
 } from '../presentation/resolveCustomerName'
 import {
+  downloadOrderRemissionPdf,
   getCustomers,
   getOrder,
   getOrderProfitability,
   getPaymentsByOrder,
   registerOrderPayment,
 } from '../services/commercialService'
+import {
+  ORDER_REMISSION_ACTION_LABEL,
+  resolveBlobApiErrorMessage,
+} from '../presentation/commercialDocumentDownload'
 import {
   createProductionOrderFromOrder,
   getProductionOrders,
@@ -346,6 +351,8 @@ function OrderDetailPage() {
   const [registerPaymentOpen, setRegisterPaymentOpen] = useState(false)
   const [registeringPayment, setRegisteringPayment] = useState(false)
   const [registerPaymentError, setRegisterPaymentError] = useState('')
+  const [generatingRemission, setGeneratingRemission] = useState(false)
+  const [remissionError, setRemissionError] = useState('')
 
   async function loadProfitability(commercialOrderId) {
     setProfitabilityLoading(true)
@@ -568,6 +575,28 @@ function OrderDetailPage() {
     }
   }
 
+  async function handleGenerateRemission() {
+    if (generatingRemission || registeringPayment || creatingProductionOrder || !order) {
+      return
+    }
+
+    setRemissionError('')
+    setGeneratingRemission(true)
+
+    try {
+      await downloadOrderRemissionPdf(order.orderId)
+    } catch (error) {
+      setRemissionError(
+        await resolveBlobApiErrorMessage(
+          error,
+          'No fue posible generar la remisión.'
+        )
+      )
+    } finally {
+      setGeneratingRemission(false)
+    }
+  }
+
   const statusChip = order ? getOrderStatusChipProps(order.status) : null
   const items = order?.items ?? []
   const deliveryCommitment = order?.deliveryCommitment
@@ -606,25 +635,47 @@ function OrderDetailPage() {
 
       {!loading && !failed && order && (
         <>
-          <Stack spacing={1}>
-            <Typography variant="body2" color="text.secondary">
-              Detalle de Orden
-            </Typography>
-            <Stack
-              direction={{ xs: 'column', sm: 'row' }}
-              spacing={1.5}
-              alignItems={{ xs: 'flex-start', sm: 'center' }}
-            >
-              <Typography variant="h4">{order.orderNumber}</Typography>
-              <Chip
-                label={statusChip.label}
-                color={statusChip.color}
-                size="small"
-              />
+          {remissionError ? (
+            <Alert severity="error" onClose={() => setRemissionError('')}>
+              {remissionError}
+            </Alert>
+          ) : null}
+
+          <Stack
+            direction={{ xs: 'column', md: 'row' }}
+            spacing={1.5}
+            justifyContent="space-between"
+            alignItems={{ xs: 'stretch', md: 'flex-start' }}
+          >
+            <Stack spacing={1}>
+              <Typography variant="body2" color="text.secondary">
+                Detalle de Orden
+              </Typography>
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                spacing={1.5}
+                alignItems={{ xs: 'flex-start', sm: 'center' }}
+              >
+                <Typography variant="h4">{order.orderNumber}</Typography>
+                <Chip
+                  label={statusChip.label}
+                  color={statusChip.color}
+                  size="small"
+                />
+              </Stack>
+              <Typography variant="body1">
+                {order.description || 'Sin descripción del pedido'}
+              </Typography>
             </Stack>
-            <Typography variant="body1">
-              {order.description || 'Sin descripción del pedido'}
-            </Typography>
+            <Button
+              variant="outlined"
+              disabled={generatingRemission || registeringPayment || creatingProductionOrder}
+              onClick={handleGenerateRemission}
+            >
+              {generatingRemission
+                ? 'Generando remisión…'
+                : ORDER_REMISSION_ACTION_LABEL}
+            </Button>
           </Stack>
 
           <Paper sx={{ p: 3 }}>
@@ -788,6 +839,7 @@ function OrderDetailPage() {
               <Button
                 type="button"
                 variant="contained"
+                disabled={generatingRemission}
                 onClick={() => {
                   setRegisterPaymentError('')
                   setRegisterPaymentOpen(true)
@@ -1077,6 +1129,7 @@ function OrderDetailPage() {
                       <Button
                         type="button"
                         variant="contained"
+                        disabled={generatingRemission}
                         onClick={openCreateProductionDialog}
                         sx={{ alignSelf: 'flex-start' }}
                       >

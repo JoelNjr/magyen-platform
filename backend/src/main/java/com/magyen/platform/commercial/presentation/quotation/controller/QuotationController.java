@@ -10,11 +10,13 @@ import com.magyen.platform.commercial.application.dto.GetQuotationCommand;
 import com.magyen.platform.commercial.application.dto.GetQuotationResult;
 import com.magyen.platform.commercial.application.dto.GetQuotationsQuery;
 import com.magyen.platform.commercial.application.dto.GetQuotationsResult;
+import com.magyen.platform.commercial.application.dto.CommercialDocumentPdfResult;
 import com.magyen.platform.commercial.application.usecase.AddQuotationItemUseCase;
 import com.magyen.platform.commercial.application.usecase.ApproveQuotationUseCase;
 import com.magyen.platform.commercial.application.usecase.CreateQuotationUseCase;
 import com.magyen.platform.commercial.application.usecase.GetQuotationUseCase;
 import com.magyen.platform.commercial.application.usecase.GetQuotationsUseCase;
+import com.magyen.platform.commercial.application.usecase.GenerateQuotationPdfUseCase;
 import com.magyen.platform.commercial.presentation.quotation.mapper.QuotationPresentationMapper;
 import com.magyen.platform.commercial.presentation.quotation.request.AddQuotationItemRequest;
 import com.magyen.platform.commercial.presentation.quotation.request.CreateQuotationRequest;
@@ -23,7 +25,9 @@ import com.magyen.platform.commercial.presentation.quotation.response.ApproveQuo
 import com.magyen.platform.commercial.presentation.quotation.response.CreateQuotationResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.GetQuotationResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.GetQuotationsResponse;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -52,6 +56,7 @@ public class QuotationController {
     private final AddQuotationItemUseCase addQuotationItemUseCase;
     private final GetQuotationsUseCase getQuotationsUseCase;
     private final GetQuotationUseCase getQuotationUseCase;
+    private final GenerateQuotationPdfUseCase generateQuotationPdfUseCase;
     private final QuotationPresentationMapper quotationPresentationMapper;
 
     public QuotationController(
@@ -60,6 +65,7 @@ public class QuotationController {
             AddQuotationItemUseCase addQuotationItemUseCase,
             GetQuotationsUseCase getQuotationsUseCase,
             GetQuotationUseCase getQuotationUseCase,
+            GenerateQuotationPdfUseCase generateQuotationPdfUseCase,
             QuotationPresentationMapper quotationPresentationMapper
     ) {
         this.createQuotationUseCase = createQuotationUseCase;
@@ -67,6 +73,7 @@ public class QuotationController {
         this.addQuotationItemUseCase = addQuotationItemUseCase;
         this.getQuotationsUseCase = getQuotationsUseCase;
         this.getQuotationUseCase = getQuotationUseCase;
+        this.generateQuotationPdfUseCase = generateQuotationPdfUseCase;
         this.quotationPresentationMapper = quotationPresentationMapper;
     }
 
@@ -89,6 +96,16 @@ public class QuotationController {
         GetQuotationResponse response = quotationPresentationMapper.toResponse(result);
 
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping(value = "/{quotationId}/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    public ResponseEntity<byte[]> getQuotationPdf(@PathVariable UUID quotationId) {
+        GetQuotationCommand command = quotationPresentationMapper.toGetQuotationCommand(quotationId);
+        CommercialDocumentPdfResult result = generateQuotationPdfUseCase.execute(command);
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition(result.filename()))
+                .body(result.content());
     }
 
     @PostMapping
@@ -123,5 +140,9 @@ public class QuotationController {
         ApproveQuotationResponse response = quotationPresentationMapper.toApproveResponse(result);
 
         return ResponseEntity.ok(response);
+    }
+
+    private static String contentDisposition(String filename) {
+        return "attachment; filename=\"" + filename + "\"";
     }
 }

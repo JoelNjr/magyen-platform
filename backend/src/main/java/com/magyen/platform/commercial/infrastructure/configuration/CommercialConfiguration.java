@@ -4,6 +4,7 @@ import com.magyen.platform.commercial.application.CustomerNameResolver;
 import com.magyen.platform.commercial.application.SellerNameResolver;
 import com.magyen.platform.commercial.application.CommercialCatalogValidator;
 import com.magyen.platform.commercial.application.port.CommercialCatalogPort;
+import com.magyen.platform.commercial.application.port.CommercialDocumentPdfPort;
 import com.magyen.platform.commercial.application.port.CommercialSellerEmployeePort;
 import com.magyen.platform.commercial.application.port.OrderPaymentCollectionPort;
 import com.magyen.platform.commercial.application.port.PlotterOrderCostPort;
@@ -23,6 +24,8 @@ import com.magyen.platform.commercial.application.usecase.GetOrderUseCase;
 import com.magyen.platform.commercial.application.usecase.GetOrdersUseCase;
 import com.magyen.platform.commercial.application.usecase.GetQuotationUseCase;
 import com.magyen.platform.commercial.application.usecase.GetQuotationsUseCase;
+import com.magyen.platform.commercial.application.usecase.GenerateOrderRemissionPdfUseCase;
+import com.magyen.platform.commercial.application.usecase.GenerateQuotationPdfUseCase;
 import com.magyen.platform.commercial.application.usecase.ReplaceOrderItemSizesUseCase;
 import com.magyen.platform.commercial.application.usecase.UpdateCustomerUseCase;
 import com.magyen.platform.commercial.application.usecase.UpdateOrderItemProductSpecificationUseCase;
@@ -34,6 +37,7 @@ import com.magyen.platform.commercial.domain.SellerRepository;
 import com.magyen.platform.commercial.infrastructure.administration.CommercialCatalogAdapter;
 import com.magyen.platform.commercial.infrastructure.finance.CommercialSellerEmployeeAdapter;
 import com.magyen.platform.commercial.infrastructure.finance.OrderPaymentCollectionAdapter;
+import com.magyen.platform.commercial.infrastructure.pdf.OpenPdfCommercialDocumentAdapter;
 import com.magyen.platform.commercial.infrastructure.plotter.PlotterOrderCostAdapter;
 import com.magyen.platform.commercial.infrastructure.persistence.mapper.CustomerPersistenceMapper;
 import com.magyen.platform.commercial.infrastructure.persistence.mapper.OrderPersistenceMapper;
@@ -207,6 +211,37 @@ public class CommercialConfiguration {
             SellerNameResolver sellerNameResolver
     ) {
         return new GetQuotationUseCase(quotationRepository, orderRepository, sellerNameResolver);
+    }
+
+    @Bean
+    public CommercialDocumentPdfPort commercialDocumentPdfPort() {
+        return new OpenPdfCommercialDocumentAdapter();
+    }
+
+    @Bean
+    public GenerateQuotationPdfUseCase generateQuotationPdfUseCase(
+            GetQuotationUseCase getQuotationUseCase,
+            CustomerNameResolver customerNameResolver,
+            CommercialDocumentPdfPort commercialDocumentPdfPort
+    ) {
+        return new GenerateQuotationPdfUseCase(
+                getQuotationUseCase,
+                customerNameResolver,
+                commercialDocumentPdfPort
+        );
+    }
+
+    @Bean
+    public GenerateOrderRemissionPdfUseCase generateOrderRemissionPdfUseCase(
+            GetOrderUseCase getOrderUseCase,
+            OrderPaymentCollectionPort orderPaymentCollectionPort,
+            CommercialDocumentPdfPort commercialDocumentPdfPort
+    ) {
+        return new GenerateOrderRemissionPdfUseCase(
+                getOrderUseCase,
+                orderPaymentCollectionPort,
+                commercialDocumentPdfPort
+        );
     }
 
     @Bean

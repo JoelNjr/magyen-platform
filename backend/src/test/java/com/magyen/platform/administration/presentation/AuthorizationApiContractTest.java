@@ -76,7 +76,11 @@ class AuthorizationApiContractTest {
         mockMvc.perform(authorized(get("/api/v1/home/dashboard"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/customers"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/quotations"), accessToken)).andExpect(status().isOk());
+        mockMvc.perform(authorized(get("/api/v1/quotations/" + UNKNOWN_ID + "/pdf"), accessToken))
+                .andExpect(status().isBadRequest());
         mockMvc.perform(authorized(get("/api/v1/orders"), accessToken)).andExpect(status().isOk());
+        mockMvc.perform(authorized(get("/api/v1/orders/" + UNKNOWN_ID + "/remission/pdf"), accessToken))
+                .andExpect(status().isBadRequest());
         mockMvc.perform(authorized(get("/api/v1/production-orders"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/inventory"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/plotter/jobs"), accessToken)).andExpect(status().isOk());
@@ -104,7 +108,11 @@ class AuthorizationApiContractTest {
         mockMvc.perform(authorized(get("/api/v1/auth/me"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/customers"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/quotations"), accessToken)).andExpect(status().isOk());
+        mockMvc.perform(authorized(get("/api/v1/quotations/" + UNKNOWN_ID + "/pdf"), accessToken))
+                .andExpect(status().isBadRequest());
         mockMvc.perform(authorized(get("/api/v1/orders"), accessToken)).andExpect(status().isOk());
+        mockMvc.perform(authorized(get("/api/v1/orders/" + UNKNOWN_ID + "/remission/pdf"), accessToken))
+                .andExpect(status().isBadRequest());
         mockMvc.perform(authorized(get("/api/v1/production-orders"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/production/labor-operators"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/inventory"), accessToken)).andExpect(status().isOk());
@@ -221,6 +229,12 @@ class AuthorizationApiContractTest {
     @Test
     void unauthenticatedRequestIsUnauthorized() throws Exception {
         mockMvc.perform(get("/api/v1/home/dashboard"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401));
+        mockMvc.perform(get("/api/v1/quotations/" + UNKNOWN_ID + "/pdf"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401));
+        mockMvc.perform(get("/api/v1/orders/" + UNKNOWN_ID + "/remission/pdf"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.status").value(401));
     }

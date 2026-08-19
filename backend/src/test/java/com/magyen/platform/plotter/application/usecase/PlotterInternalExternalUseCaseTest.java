@@ -108,6 +108,7 @@ class PlotterInternalExternalUseCaseTest {
     void createsInternalJobWithVariablePriceAndMatchingExpenseIncomePair() {
         CommercialOrderFixture order = createCommercialOrder("Cliente interno IncI");
         CreateInventoryItemResult roll = createPaperRoll("80.0000", "8000.00");
+        long plotterIncomeBefore = countPlotterIncome();
 
         CreatePlotterJobResult created = createPlotterJobUseCase.execute(new CreatePlotterJobCommand(
                 null,
@@ -136,7 +137,7 @@ class PlotterInternalExternalUseCaseTest {
         assertEquals(new BigDecimal("8000.00"), movement.getUnitCost());
         assertEquals(new BigDecimal("48000.00"), movement.getTotalCost());
         assertEquals(1, countPlotterOuts(created.plotterJobId()));
-        assertEquals(0, countPlotterIncome());
+        assertEquals(plotterIncomeBefore, countPlotterIncome());
 
         var expense = financialTransactionRepository.findBySourceTypeAndSourceId(
                 FinancialTransactionSourceType.PLOTTER_INTERNAL_EXPENSE,
@@ -162,7 +163,7 @@ class PlotterInternalExternalUseCaseTest {
                         null
                 ))
         );
-        assertEquals(0, countPlotterIncome());
+        assertEquals(plotterIncomeBefore, countPlotterIncome());
     }
 
     @Test
@@ -171,6 +172,7 @@ class PlotterInternalExternalUseCaseTest {
                 new CreateCustomerCommand("Cliente externo IncD-" + UUID.randomUUID().toString().substring(0, 8))
         ).customerId();
         CreateInventoryItemResult roll = createPaperRoll("80.0000", "8000.00");
+        long plotterIncomeBefore = countPlotterIncome();
 
         CreatePlotterJobResult created = createPlotterJobUseCase.execute(new CreatePlotterJobCommand(
                 customerId,
@@ -189,7 +191,7 @@ class PlotterInternalExternalUseCaseTest {
         assertNull(created.orderNumber());
         assertEquals(new BigDecimal("48000.00"), created.totalAmount());
         assertEquals(1, countPlotterOuts(created.plotterJobId()));
-        assertEquals(0, countPlotterIncome());
+        assertEquals(plotterIncomeBefore, countPlotterIncome());
     }
 
     @Test
@@ -231,6 +233,7 @@ class PlotterInternalExternalUseCaseTest {
     @Test
     void insufficientStockLeavesNoPartialPlotterOrInventoryState() {
         CreateInventoryItemResult roll = createPaperRoll("5.0000", "8000.00");
+        long plotterIncomeBefore = countPlotterIncome();
         long jobsBefore = plotterJobRepository.findAll().size();
         long movementsBefore = inventoryMovementRepository
                 .findByInventoryItemIdOrderByMovementDateDesc(roll.inventoryItemId())
@@ -257,7 +260,7 @@ class PlotterInternalExternalUseCaseTest {
                         .findByInventoryItemIdOrderByMovementDateDesc(roll.inventoryItemId())
                         .size()
         );
-        assertEquals(0, countPlotterIncome());
+        assertEquals(plotterIncomeBefore, countPlotterIncome());
     }
 
     @Test

@@ -1,4 +1,5 @@
 import httpClient from '../../../services/httpClient'
+import { triggerBrowserPdfDownload } from '../presentation/commercialDocumentDownload'
 
 export async function getQuotations(params = {}) {
   const response = await httpClient.get('/quotations', {
@@ -44,6 +45,14 @@ export async function getQuotation(quotationId) {
   return response.data
 }
 
+export async function downloadQuotationPdf(quotationId) {
+  const response = await httpClient.get(`/quotations/${quotationId}/pdf`, {
+    responseType: 'blob',
+    timeout: 30000,
+  })
+  triggerBrowserPdfDownload(response, 'Cotizacion.pdf')
+}
+
 export async function addQuotationItem(quotationId, payload) {
   const response = await httpClient.post(`/quotations/${quotationId}/items`, payload)
   return response.data
@@ -72,6 +81,14 @@ export async function getOrders(params = {}) {
 export async function getOrder(orderId) {
   const response = await httpClient.get(`/orders/${orderId}`)
   return response.data
+}
+
+export async function downloadOrderRemissionPdf(orderId) {
+  const response = await httpClient.get(`/orders/${orderId}/remission/pdf`, {
+    responseType: 'blob',
+    timeout: 30000,
+  })
+  triggerBrowserPdfDownload(response, 'Remision.pdf')
 }
 
 export async function getOrderProfitabilityList() {
