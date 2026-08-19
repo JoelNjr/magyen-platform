@@ -164,7 +164,8 @@ public class HomeDashboardPresentationMapper {
                 item.customerName(),
                 item.orderValue(),
                 item.collectedAmount(),
-                item.outstandingAmount()
+                item.outstandingAmount(),
+                item.promisedDeliveryDate()
         );
     }
 }

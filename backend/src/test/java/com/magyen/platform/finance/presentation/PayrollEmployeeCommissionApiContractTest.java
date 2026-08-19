@@ -87,7 +87,17 @@ class PayrollEmployeeCommissionApiContractTest {
 
         mockMvc.perform(get("/api/v1/finance/payroll/employees/performance").accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.sellers[*].employeeId", hasItem(seller.employeeId().toString())));
+                .andExpect(jsonPath("$.sellers[*].employeeId", hasItem(seller.employeeId().toString())))
+                .andExpect(jsonPath("$.sellers[?(@.employeeId=='" + seller.employeeId()
+                        + "')].displayName").value(hasItem(seller.displayName())))
+                .andExpect(jsonPath("$.sellers[?(@.employeeId=='" + seller.employeeId()
+                        + "')].numberOfEligibleOrders").value(hasItem(1)))
+                .andExpect(jsonPath("$.sellers[?(@.employeeId=='" + seller.employeeId()
+                        + "')].totalSales").value(hasItem(200000.00)))
+                .andExpect(jsonPath("$.sellers[?(@.employeeId=='" + seller.employeeId()
+                        + "')].accumulatedCommission").value(hasItem(10000.00)))
+                .andExpect(jsonPath("$.sellers[?(@.employeeId=='" + seller.employeeId()
+                        + "')].commissionRate").value(hasItem(5.00)));
     }
 
     @Test

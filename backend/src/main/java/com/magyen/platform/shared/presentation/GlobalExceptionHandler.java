@@ -272,6 +272,18 @@ public class GlobalExceptionHandler {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(conflictResponse);
         }
 
+        if (normalizedDetail.contains("uq_financial_transactions_plotter_internal_expense_source")
+                || normalizedDetail.contains("uq_financial_transactions_plotter_internal_income_source")) {
+            ErrorResponse conflictResponse = new ErrorResponse(
+                    LocalDateTime.now(),
+                    HttpStatus.CONFLICT.value(),
+                    HttpStatus.CONFLICT.getReasonPhrase(),
+                    "Ya existe el asiento del servicio Plotter interno para este trabajo.",
+                    request.getRequestURI()
+            );
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(conflictResponse);
+        }
+
         if (normalizedDetail.contains("uq_payroll_periods_employee_period_start")
                 || (normalizedDetail.contains("employee_id")
                 && normalizedDetail.contains("period_start")

@@ -69,11 +69,6 @@ public class CreateInventoryItemUseCase {
         if (paperRoll && materialType != InventoryMaterialType.PAPER) {
             throw new InventoryDomainException("Plotter paper rolls require material type PAPER");
         }
-        if (materialType == InventoryMaterialType.PAPER && acquisition != null) {
-            throw new InventoryDomainException(
-                    "Paper rolls do not register an inventory purchase at creation"
-            );
-        }
 
         String name = resolveName(command.name(), materialType);
         String category = resolveCategory(command.category(), materialType);
@@ -101,7 +96,7 @@ public class CreateInventoryItemUseCase {
         InventoryItem savedInventoryItem = inventoryItemRepository.save(inventoryItem);
 
         if (acquisition != null) {
-            registerInitialPurchase(savedInventoryItem, acquisition, materialType);
+            registerInitialPurchase(savedInventoryItem, acquisition, materialType, command.stock());
             savedInventoryItem = inventoryItemRepository.findById(savedInventoryItem.getId())
                     .orElse(savedInventoryItem);
         }
@@ -128,11 +123,37 @@ public class CreateInventoryItemUseCase {
     private void registerInitialPurchase(
             InventoryItem inventoryItem,
             InventoryAcquisitionCommand acquisition,
-            InventoryMaterialType materialType
+            InventoryMaterialType materialType,
+            BigDecimal stockMeters
     ) {
+        LocalDate purchaseDate = acquisition.purchaseDate() == null ? LocalDate.now() : acquisition.purchaseDate();
+
+        if (materialType == InventoryMaterialType.PAPER) {
+            BigDecimal rollQuantity = acquisition.quantity() == null
+                    ? BigDecimal.ONE
+                    : requirePositive(acquisition.quantity(), "Paper roll quantity must be greater than zero");
+            BigDecimal pricePerRoll = requirePositive(
+                    acquisition.unitCost(),
+                    "Paper purchase price per roll must be greater than zero"
+            );
+            BigDecimal meters = requirePositive(stockMeters, "Paper roll meters must be greater than zero");
+            BigDecimal totalExpense = rollQuantity.multiply(pricePerRoll).setScale(MONEY_SCALE, MONEY_ROUNDING);
+            BigDecimal unitCostPerMeter = totalExpense.divide(meters, MONEY_SCALE, MONEY_ROUNDING);
+
+            registerInventoryPurchaseUseCase.execute(new RegisterInventoryPurchaseCommand(
+                    inventoryItem.getId(),
+                    acquisition.purchaseId(),
+                    meters,
+                    unitCostPerMeter,
+                    purchaseDate,
+                    acquisition.observation(),
+                    totalExpense
+            ));
+            return;
+        }
+
         BigDecimal quantity = requirePositive(acquisition.quantity(), "Purchase quantity must be greater than zero");
         BigDecimal unitCost = resolvePurchaseUnitCost(acquisition, materialType, quantity);
-        LocalDate purchaseDate = acquisition.purchaseDate() == null ? LocalDate.now() : acquisition.purchaseDate();
 
         registerInventoryPurchaseUseCase.execute(new RegisterInventoryPurchaseCommand(
                 inventoryItem.getId(),
@@ -168,6 +189,16 @@ public class CreateInventoryItemUseCase {
     ) {
         if (acquisition == null) {
             return command.unitCost();
+        }
+        if (materialType == InventoryMaterialType.PAPER
+                && acquisition.unitCost() != null
+                && command.stock() != null
+                && command.stock().compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal rollQuantity = acquisition.quantity() == null ? BigDecimal.ONE : acquisition.quantity();
+            BigDecimal totalExpense = rollQuantity
+                    .multiply(acquisition.unitCost())
+                    .setScale(MONEY_SCALE, MONEY_ROUNDING);
+            return totalExpense.divide(command.stock(), MONEY_SCALE, MONEY_ROUNDING);
         }
         if (materialType == InventoryMaterialType.FABRIC) {
             return acquisition.unitCost();

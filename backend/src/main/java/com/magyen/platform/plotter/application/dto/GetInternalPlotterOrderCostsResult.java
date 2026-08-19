@@ -3,15 +3,20 @@ package com.magyen.platform.plotter.application.dto;
 import java.math.BigDecimal;
 
 /**
- * Acumulación de costo histórico de papel de Plotter interno.
+ * Costo de Plotter interno atribuible a una orden.
  * <p>
- * Los trabajos sin snapshot de costo no se tratan como cero: incrementan {@code unvaluedJobCount}.
+ * {@code plotterMaterialCost} es el snapshot físico de papel.
+ * {@code internalPlotterServiceCost} es el valor del servicio (metros × precio por metro).
+ * {@code attributablePlotterCost} evita doble conteo: prefiere el servicio y, si no hay,
+ * usa el papel físico (trabajos históricos sin valor de servicio).
  */
 public record GetInternalPlotterOrderCostsResult(
         BigDecimal plotterMaterialCost,
         int internalJobCount,
         int valuedJobCount,
         int unvaluedJobCount,
-        boolean plotterCostAttributable
+        boolean plotterCostAttributable,
+        BigDecimal internalPlotterServiceCost,
+        BigDecimal attributablePlotterCost
 ) {
 }

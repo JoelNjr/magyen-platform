@@ -110,6 +110,7 @@ public class OrderPresentationMapper {
                 result.laborCost(),
                 result.plotterMaterialCost(),
                 result.plotterCostAttributable(),
+                result.internalPlotterServiceCost(),
                 result.totalDirectCost(),
                 result.directProfit(),
                 result.directMarginPercentage(),

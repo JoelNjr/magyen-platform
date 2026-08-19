@@ -1,6 +1,7 @@
 package com.magyen.platform.home.presentation.dashboard.response;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.UUID;
 
 /**
@@ -14,6 +15,7 @@ public record HomeReceivableItemResponse(
         String customerName,
         BigDecimal orderValue,
         BigDecimal collectedAmount,
-        BigDecimal outstandingAmount
+        BigDecimal outstandingAmount,
+        LocalDate promisedDeliveryDate
 ) {
 }

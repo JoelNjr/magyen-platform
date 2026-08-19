@@ -4,6 +4,7 @@ import com.magyen.platform.plotter.application.dto.CreatePlotterJobCommand;
 import com.magyen.platform.plotter.application.dto.CreatePlotterJobResult;
 import com.magyen.platform.plotter.application.port.PlotterCommercialOrderPort;
 import com.magyen.platform.plotter.application.port.PlotterCommercialOrderView;
+import com.magyen.platform.plotter.application.port.PlotterInternalServiceFinancePort;
 import com.magyen.platform.plotter.application.port.PlotterJobInventoryPort;
 import com.magyen.platform.plotter.application.port.PlotterPaperRollView;
 import com.magyen.platform.plotter.domain.PlotterJob;
@@ -20,23 +21,26 @@ import java.util.UUID;
 /**
  * Registra un trabajo de Plotter y consume exactamente un OUT de Inventory.
  * <p>
- * INTERNAL_MAGYEN: operación de material de producción atribuible a una Orden comercial.
- * No crea EXPENSE ni INCOME. El papel se registra una sola vez (sourceId = plotterJobId).
+ * INTERNAL_MAGYEN: servicio interno atribuible a una Orden comercial.
+ * Crea un par Finance EXPENSE+INCOME del valor del servicio (neto 0).
+ * No crea un segundo gasto de compra de papel.
  * EXTERNAL: servicio a cliente; el cobro permanece en el flujo de pagos.
  * <p>
- * Atomicidad: PlotterJob y el OUT comparten transacción. Stock insuficiente no deja estado parcial.
- * Idempotencia: el mismo {@code plotterJobId} no consume papel dos veces.
+ * Atomicidad: PlotterJob, el OUT y los asientos internos comparten transacción.
+ * Idempotencia: el mismo {@code plotterJobId} no consume papel ni duplica asientos.
  */
 public class CreatePlotterJobUseCase {
 
     private final PlotterJobRepository plotterJobRepository;
     private final PlotterJobInventoryPort plotterJobInventoryPort;
     private final PlotterCommercialOrderPort plotterCommercialOrderPort;
+    private final PlotterInternalServiceFinancePort plotterInternalServiceFinancePort;
 
     public CreatePlotterJobUseCase(
             PlotterJobRepository plotterJobRepository,
             PlotterJobInventoryPort plotterJobInventoryPort,
-            PlotterCommercialOrderPort plotterCommercialOrderPort
+            PlotterCommercialOrderPort plotterCommercialOrderPort,
+            PlotterInternalServiceFinancePort plotterInternalServiceFinancePort
     ) {
         this.plotterJobRepository = Objects.requireNonNull(
                 plotterJobRepository,
@@ -49,6 +53,10 @@ public class CreatePlotterJobUseCase {
         this.plotterCommercialOrderPort = Objects.requireNonNull(
                 plotterCommercialOrderPort,
                 "Plotter commercial order port must not be null"
+        );
+        this.plotterInternalServiceFinancePort = Objects.requireNonNull(
+                plotterInternalServiceFinancePort,
+                "Plotter internal service finance port must not be null"
         );
     }
 
@@ -66,6 +74,7 @@ public class CreatePlotterJobUseCase {
                         existing.get().getId(),
                         existing.get().getObservations()
                 );
+                ensureInternalServiceLedger(existing.get());
                 return PlotterJobReadMapper.toCreateResult(existing.get(), plotterCommercialOrderPort);
             }
         }
@@ -113,7 +122,7 @@ public class CreatePlotterJobUseCase {
                 creationDate,
                 command.paperInventoryItemId(),
                 command.printedMeters(),
-                jobType.isInternal() ? BigDecimal.ZERO : command.pricePerMeter(),
+                command.pricePerMeter(),
                 command.observations()
         );
 
@@ -125,6 +134,7 @@ public class CreatePlotterJobUseCase {
                 savedPlotterJob.getId(),
                 savedPlotterJob.getObservations()
         );
+        ensureInternalServiceLedger(savedPlotterJob);
 
         return PlotterJobReadMapper.toCreateResult(savedPlotterJob, plotterCommercialOrderPort);
     }
@@ -173,5 +183,28 @@ public class CreatePlotterJobUseCase {
                 throw new PlotterDomainException("Price per meter must not be negative");
             }
         }
+        if (jobType.isInternal()) {
+            if (command.pricePerMeter() == null) {
+                throw new PlotterDomainException("Price per meter must not be null");
+            }
+            if (command.pricePerMeter().compareTo(BigDecimal.ZERO) <= 0) {
+                throw new PlotterDomainException("Internal Plotter price per meter must be greater than zero");
+            }
+        }
+    }
+
+    private void ensureInternalServiceLedger(PlotterJob plotterJob) {
+        if (!plotterJob.getJobType().isInternal()) {
+            return;
+        }
+        if (plotterJob.getTotalAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            return;
+        }
+        plotterInternalServiceFinancePort.ensureInternalServiceLedger(
+                plotterJob.getId(),
+                plotterJob.getTotalAmount(),
+                plotterJob.getCreationDate(),
+                plotterJob.getObservations()
+        );
     }
 }

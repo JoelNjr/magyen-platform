@@ -162,17 +162,23 @@ function CreatePlotterJobDialog({
     }
 
     let pricePerMeter = null
-    if (isExternal) {
-      const pricePerMeterRaw = form.pricePerMeter.trim()
-      if (!pricePerMeterRaw) {
-        setValidationError('El precio por metro es obligatorio para un cliente externo.')
-        return
-      }
-      pricePerMeter = Number(pricePerMeterRaw)
-      if (Number.isNaN(pricePerMeter) || pricePerMeter < 0) {
-        setValidationError('El precio por metro debe ser un número mayor o igual a cero.')
-        return
-      }
+    const pricePerMeterRaw = form.pricePerMeter.trim()
+    if (!pricePerMeterRaw) {
+      setValidationError(
+        isInternal
+          ? 'El precio por metro es obligatorio para el servicio Plotter interno Magyen.'
+          : 'El precio por metro es obligatorio para una venta Plotter externa.'
+      )
+      return
+    }
+    pricePerMeter = Number(pricePerMeterRaw)
+    if (Number.isNaN(pricePerMeter) || (isInternal ? pricePerMeter <= 0 : pricePerMeter < 0)) {
+      setValidationError(
+        isInternal
+          ? 'El precio por metro del servicio interno debe ser mayor que cero.'
+          : 'El precio por metro debe ser un número mayor o igual a cero.'
+      )
+      return
     }
 
     const available = Number(selectedRoll?.stock)
@@ -215,7 +221,7 @@ function CreatePlotterJobDialog({
             fullWidth
             disabled={submitting}
             autoFocus
-            helperText="Elige si este trabajo es para una orden de Magyen o para un cliente externo."
+            helperText="Elige si este trabajo es un servicio Plotter interno Magyen o una venta Plotter externa."
           >
             <MenuItem value="INTERNAL_MAGYEN">
               {formatPlotterJobTypeLabel('INTERNAL_MAGYEN')}
@@ -225,15 +231,14 @@ function CreatePlotterJobDialog({
 
           {isInternal && (
             <Alert severity="info">
-              Este trabajo es para una orden de Magyen. El papel se registra una sola vez
-              desde Plotter.
+              Servicio Plotter interno Magyen: no es una venta a cliente externo. Ingresa el
+              precio por metro; el valor del servicio es metros × precio.
             </Alert>
           )}
 
           {isExternal && (
             <Alert severity="info">
-              Este trabajo es para un cliente externo. No crea una orden comercial ni
-              producción.
+              Venta Plotter externa. No crea una orden comercial ni producción.
             </Alert>
           )}
 
@@ -326,29 +331,34 @@ function CreatePlotterJobDialog({
                 inputProps={{ inputMode: 'decimal' }}
               />
 
-              {isExternal && (
-                <TextField
-                  label="Precio por metro"
-                  value={form.pricePerMeter}
-                  onChange={(event) => updateField('pricePerMeter', event.target.value)}
-                  fullWidth
-                  disabled={submitting}
-                  inputProps={{ inputMode: 'decimal' }}
-                />
-              )}
+              <TextField
+                label="Precio por metro"
+                value={form.pricePerMeter}
+                onChange={(event) => updateField('pricePerMeter', event.target.value)}
+                fullWidth
+                disabled={submitting}
+                required
+                helperText={
+                  isInternal
+                    ? 'Precio variable del servicio interno Magyen. No es un precio de inventario.'
+                    : 'Precio de venta al cliente externo.'
+                }
+                inputProps={{ inputMode: 'decimal' }}
+              />
 
               {isInternal && (
                 <Stack spacing={0.5}>
                   <Typography variant="body2" color="text.secondary">
-                    Costo de material (inventario)
+                    Valor del servicio
                   </Typography>
                   <Typography variant="h6">
-                    {materialCostPreview === null
-                      ? 'Sin valoración histórica'
-                      : formatPlotterMoney(materialCostPreview)}
+                    {salePreview === null ? '—' : formatPlotterMoney(salePreview)}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    No es una venta. El costo lo toma el inventario al consumir el papel.
+                    Metros × precio por metro. El servidor calcula el valor definitivo.
+                    {materialCostPreview !== null
+                      ? ` Costo histórico del papel: ${formatPlotterMoney(materialCostPreview)} (no se duplica como compra).`
+                      : ''}
                   </Typography>
                 </Stack>
               )}

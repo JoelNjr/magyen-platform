@@ -62,7 +62,19 @@ public enum FinancialTransactionSourceType {
      * {@code sourceId} = purchaseId (no inventoryItemId; un material puede comprarse varias veces).
      * No representa consumo de producción.
      */
-    INVENTORY_PURCHASE;
+    INVENTORY_PURCHASE,
+
+    /**
+     * Gasto analítico del servicio Plotter interno Magyen.
+     * {@code sourceId} = plotterJobId. No es compra de papel ni consumo de inventario.
+     */
+    PLOTTER_INTERNAL_EXPENSE,
+
+    /**
+     * Ingreso analítico del servicio Plotter interno Magyen.
+     * {@code sourceId} = plotterJobId. No es una venta a cliente externo.
+     */
+    PLOTTER_INTERNAL_INCOME;
 
     /**
      * Interpreta un origen desde entrada de negocio.

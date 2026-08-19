@@ -31,7 +31,8 @@ public record GetOrderProfitabilityResult(
         String orderNumber,
         String description,
         String customerName,
-        LocalDate promisedDeliveryDate
+        LocalDate promisedDeliveryDate,
+        BigDecimal internalPlotterServiceCost
 ) {
     public GetOrderProfitabilityResult(
             UUID orderId,
@@ -65,7 +66,8 @@ public record GetOrderProfitabilityResult(
                 null,
                 null,
                 null,
-                null
+                null,
+                BigDecimal.ZERO.setScale(2)
         );
     }
 }

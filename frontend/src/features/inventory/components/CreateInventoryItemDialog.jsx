@@ -80,6 +80,9 @@ function CreateInventoryItemDialog({
           if (!next.category.trim()) {
             next.category = 'PAPER'
           }
+          if (!next.purchaseQuantity.trim()) {
+            next.purchaseQuantity = '1'
+          }
         } else if (value === 'FABRIC') {
           next.unitOfMeasure = 'METER'
           if (!next.category.trim()) {
@@ -133,13 +136,34 @@ function CreateInventoryItemDialog({
 
     if (isPaper) {
       const stockRaw = form.stock.trim()
+      const quantityRaw = form.purchaseQuantity.trim() || '1'
+      const pricePerRollRaw = form.purchaseUnitCost.trim()
+      const purchaseDate = form.purchaseDate.trim()
       if (!stockRaw) {
         setValidationError('Los metros iniciales del rollo son obligatorios.')
         return
       }
       const stock = Number(stockRaw)
-      if (Number.isNaN(stock) || stock < 0) {
-        setValidationError('Los metros iniciales deben ser un número válido no negativo.')
+      if (Number.isNaN(stock) || stock <= 0) {
+        setValidationError('Los metros iniciales deben ser un número mayor que cero.')
+        return
+      }
+      const quantity = Number(quantityRaw)
+      if (Number.isNaN(quantity) || quantity <= 0) {
+        setValidationError('La cantidad de rollos debe ser un número mayor que cero.')
+        return
+      }
+      if (!pricePerRollRaw) {
+        setValidationError('El precio de adquisición por rollo es obligatorio.')
+        return
+      }
+      const pricePerRoll = Number(pricePerRollRaw)
+      if (Number.isNaN(pricePerRoll) || pricePerRoll <= 0) {
+        setValidationError('El precio de adquisición por rollo debe ser mayor que cero.')
+        return
+      }
+      if (!purchaseDate) {
+        setValidationError('La fecha de compra es obligatoria.')
         return
       }
 
@@ -153,6 +177,12 @@ function CreateInventoryItemDialog({
         description: description || null,
         materialType,
         plotterPaperRoll: true,
+        acquisition: {
+          purchaseId: createPurchaseId(),
+          quantity,
+          unitCost: pricePerRoll,
+          purchaseDate,
+        },
       })
       return
     }
@@ -258,7 +288,8 @@ function CreateInventoryItemDialog({
           {isPaper && (
             <Alert severity="info">
               El código de material es compartido por todos los rollos de papel. El número de
-              rollo (RP-XXX) se genera automáticamente. No se pide nombre ni precio de venta.
+              rollo (RP-XXX) se genera automáticamente. Aquí se registra el precio de
+              adquisición por rollo, no un precio de venta de Plotter.
             </Alert>
           )}
 
@@ -313,14 +344,47 @@ function CreateInventoryItemDialog({
           )}
 
           {isPaper && (
-            <TextField
-              label="Metros iniciales del rollo"
-              value={form.stock}
-              onChange={(event) => updateField('stock', event.target.value)}
-              fullWidth
-              disabled={submitting}
-              inputProps={{ inputMode: 'decimal' }}
-            />
+            <>
+              <TextField
+                label="Metros iniciales del rollo"
+                value={form.stock}
+                onChange={(event) => updateField('stock', event.target.value)}
+                fullWidth
+                disabled={submitting}
+                required
+                inputProps={{ inputMode: 'decimal' }}
+              />
+              <TextField
+                label="Cantidad de rollos"
+                value={form.purchaseQuantity}
+                onChange={(event) => updateField('purchaseQuantity', event.target.value)}
+                fullWidth
+                disabled={submitting}
+                required
+                helperText="Cantidad de rollos de esta compra. El ítem creado es un rollo físico (RP-XXX)."
+                inputProps={{ inputMode: 'decimal' }}
+              />
+              <TextField
+                label="Precio de adquisición por rollo"
+                value={form.purchaseUnitCost}
+                onChange={(event) => updateField('purchaseUnitCost', event.target.value)}
+                fullWidth
+                disabled={submitting}
+                required
+                helperText="Precio pagado al proveedor por cada rollo. El gasto es cantidad × este precio."
+                inputProps={{ inputMode: 'decimal' }}
+              />
+              <TextField
+                label="Fecha de compra"
+                type="date"
+                value={form.purchaseDate}
+                onChange={(event) => updateField('purchaseDate', event.target.value)}
+                fullWidth
+                disabled={submitting}
+                InputLabelProps={{ shrink: true }}
+                required
+              />
+            </>
           )}
 
           {isFabric && (
@@ -397,7 +461,8 @@ function CreateInventoryItemDialog({
 
           {isPaper && (
             <Typography variant="caption" color="text.secondary">
-              El valor de venta de Plotter se registra al crear el trabajo, no aquí.
+              Precio de adquisición por rollo. El valor de venta o servicio de Plotter se
+              registra al crear el trabajo, no aquí.
             </Typography>
           )}
         </Stack>

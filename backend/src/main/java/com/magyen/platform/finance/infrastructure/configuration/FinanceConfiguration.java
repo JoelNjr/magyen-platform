@@ -44,6 +44,7 @@ import com.magyen.platform.finance.application.usecase.RegisterPaymentUseCase;
 import com.magyen.platform.finance.application.usecase.RegisterPlotterPaymentIncomeUseCase;
 import com.magyen.platform.finance.application.usecase.RegisterProductionLaborPaymentExpenseUseCase;
 import com.magyen.platform.finance.application.usecase.EnsureInventoryPurchaseExpenseUseCase;
+import com.magyen.platform.finance.application.usecase.EnsurePlotterInternalServiceLedgerUseCase;
 import com.magyen.platform.finance.application.usecase.ResolveProductionLaborOperatorUseCase;
 import com.magyen.platform.finance.application.usecase.SynchronizeCommercialPaymentFinancialTransactionUseCase;
 import com.magyen.platform.finance.application.usecase.UpdatePayrollEmployeeCompensationUseCase;
@@ -574,5 +575,12 @@ public class FinanceConfiguration {
             FinancialTransactionRepository financialTransactionRepository
     ) {
         return new EnsureInventoryPurchaseExpenseUseCase(financialTransactionRepository);
+    }
+
+    @Bean
+    public EnsurePlotterInternalServiceLedgerUseCase ensurePlotterInternalServiceLedgerUseCase(
+            FinancialTransactionRepository financialTransactionRepository
+    ) {
+        return new EnsurePlotterInternalServiceLedgerUseCase(financialTransactionRepository);
     }
 }

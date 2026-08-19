@@ -13,6 +13,7 @@ import com.magyen.platform.commercial.application.usecase.CreateQuotationUseCase
 import com.magyen.platform.finance.application.usecase.CreatePayrollEmployeeUseCase;
 import com.magyen.platform.inventory.application.dto.CreateInventoryItemCommand;
 import com.magyen.platform.inventory.application.dto.CreateInventoryItemResult;
+import com.magyen.platform.inventory.application.dto.InventoryAcquisitionCommand;
 import com.magyen.platform.inventory.application.usecase.CreateInventoryItemUseCase;
 import com.magyen.platform.plotter.application.dto.CreatePlotterJobCommand;
 import com.magyen.platform.plotter.application.usecase.CreatePlotterJobUseCase;
@@ -89,9 +90,17 @@ class PlotterProfitabilityApiContractTest {
                 new BigDecimal("80.0000"),
                 new BigDecimal("10.0000"),
                 null,
-                new BigDecimal("5000.00"),
+                null,
                 "PAPER",
-                true
+                true,
+                new InventoryAcquisitionCommand(
+                        UUID.randomUUID(),
+                        BigDecimal.ONE,
+                        new BigDecimal("200000.00"),
+                        null,
+                        JOB_DATE,
+                        "compra papel API"
+                )
         ));
         String customerName = "Cliente API plotter G " + UUID.randomUUID();
         var customer = createCustomerUseCase.execute(new CreateCustomerCommand(customerName));
@@ -142,7 +151,7 @@ class PlotterProfitabilityApiContractTest {
                 JOB_DATE,
                 roll.inventoryItemId(),
                 new BigDecimal("5.0000"),
-                BigDecimal.ZERO,
+                new BigDecimal("8000.00"),
                 "interno API G",
                 PlotterJobType.INTERNAL_MAGYEN,
                 null
@@ -162,14 +171,15 @@ class PlotterProfitabilityApiContractTest {
                 .andExpect(jsonPath("$.internalJobCount").value(1))
                 .andExpect(jsonPath("$.totalPaperPrintedMeters").value(13.0))
                 .andExpect(jsonPath("$.externalRevenue").value(120000.00))
-                .andExpect(jsonPath("$.externalPaperCost").value(40000.00))
-                .andExpect(jsonPath("$.internalPaperCost").value(25000.00))
-                .andExpect(jsonPath("$.totalPaperCost").value(65000.00))
-                .andExpect(jsonPath("$.analyticalPlotterResult").value(80000.00))
+                .andExpect(jsonPath("$.internalRevenue").value(40000.00))
+                .andExpect(jsonPath("$.combinedRevenue").value(160000.00))
+                .andExpect(jsonPath("$.totalPaperCost").value(200000.00))
+                .andExpect(jsonPath("$.analyticalPlotterResult").value(-40000.00))
                 .andExpect(jsonPath("$.inkCostRecorded").value(false))
                 .andExpect(jsonPath("$.paperCostComplete").value(true))
                 .andExpect(jsonPath("$.internalOrders[*].orderNumber", hasItem(order.orderNumber())))
-                .andExpect(jsonPath("$.internalOrders[*].customerName", hasItem(customerName)));
+                .andExpect(jsonPath("$.internalOrders[*].customerName", hasItem(customerName)))
+                .andExpect(jsonPath("$.internalOrders[*].serviceValue", hasItem(40000.00)));
 
         mockMvc.perform(
                         get("/api/v1/plotter/profitability")
@@ -181,7 +191,8 @@ class PlotterProfitabilityApiContractTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.externalRevenue").value(0.00))
                 .andExpect(jsonPath("$.internalJobCount").value(1))
-                .andExpect(jsonPath("$.analyticalPlotterResult").value(org.hamcrest.Matchers.nullValue()));
+                .andExpect(jsonPath("$.internalRevenue").value(40000.00))
+                .andExpect(jsonPath("$.analyticalPlotterResult").value(-160000.00));
     }
 
     @Test

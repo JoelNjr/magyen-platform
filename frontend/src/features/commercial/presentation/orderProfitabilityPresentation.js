@@ -86,6 +86,10 @@ export function formatPlotterProductionCost(profitability) {
   if (!profitability) {
     return '—'
   }
+  const serviceCost = Number(profitability.internalPlotterServiceCost)
+  if (!Number.isNaN(serviceCost) && serviceCost > 0) {
+    return formatProfitabilityMoney(profitability.internalPlotterServiceCost)
+  }
   if (profitability.plotterCostAttributable) {
     return formatProfitabilityMoney(profitability.plotterMaterialCost)
   }
@@ -96,6 +100,16 @@ export function formatPlotterProductionCost(profitability) {
     return 'Sin valorar'
   }
   return '—'
+}
+
+export function formatPlotterPhysicalPaperCost(profitability) {
+  if (!profitability) {
+    return '—'
+  }
+  if (profitability.plotterMaterialCost == null || profitability.plotterMaterialCost === '') {
+    return '—'
+  }
+  return formatProfitabilityMoney(profitability.plotterMaterialCost)
 }
 
 export function formatMaterialProductionCost(profitability) {

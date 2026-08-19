@@ -14,6 +14,7 @@ import { formatDisplayDate } from '../presentation/formatDisplayDate'
 import {
   formatLaborProductionCost,
   formatMaterialProductionCost,
+  formatPlotterPhysicalPaperCost,
   formatPlotterProductionCost,
   formatProfitabilityMoney,
   formatProfitabilityResultMargin,
@@ -206,8 +207,12 @@ function OrderProfitabilityDetailPage() {
                 value={formatLaborProductionCost(profitability)}
               />
               <ResultRow
-                label="Papel / Plotter"
+                label="Servicio Plotter interno"
                 value={formatPlotterProductionCost(profitability)}
+              />
+              <ResultRow
+                label="Papel físico (histórico, no se suma otra vez)"
+                value={formatPlotterPhysicalPaperCost(profitability)}
               />
             </Stack>
           </Paper>

@@ -121,7 +121,8 @@ public class GetHomeDashboardUseCase {
                                 item.customerName(),
                                 item.orderValue(),
                                 item.collectedAmount(),
-                                item.outstandingAmount()
+                                item.outstandingAmount(),
+                                item.promisedDeliveryDate()
                         ))
                         .toList()
         );

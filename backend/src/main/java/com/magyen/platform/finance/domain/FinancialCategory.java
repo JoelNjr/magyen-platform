@@ -17,6 +17,7 @@ public enum FinancialCategory {
 
     SALES(FinancialTransactionType.INCOME),
     PLOTTER_REVENUE(FinancialTransactionType.INCOME),
+    INTERNAL_PLOTTER_SERVICE_INCOME(FinancialTransactionType.INCOME),
     OTHER_INCOME(FinancialTransactionType.INCOME),
 
     MATERIALS(FinancialTransactionType.EXPENSE),
@@ -25,6 +26,7 @@ public enum FinancialCategory {
     DTF(FinancialTransactionType.EXPENSE),
     EMBROIDERY(FinancialTransactionType.EXPENSE),
     SERVICES(FinancialTransactionType.EXPENSE),
+    INTERNAL_PLOTTER_SERVICE_EXPENSE(FinancialTransactionType.EXPENSE),
     PAYROLL(FinancialTransactionType.EXPENSE),
     PRODUCTION_PAYMENT(FinancialTransactionType.EXPENSE),
     CREDIT_PAYMENT(FinancialTransactionType.EXPENSE),

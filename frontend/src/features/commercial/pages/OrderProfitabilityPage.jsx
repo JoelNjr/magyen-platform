@@ -51,7 +51,7 @@ function ProfitabilityTableHead() {
           Mano de obra
         </TableCell>
         <TableCell align="right" sx={headerCellSx}>
-          Plotter
+          Plotter interno
         </TableCell>
         <TableCell align="right" sx={headerCellSx}>
           Costo total

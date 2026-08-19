@@ -92,7 +92,7 @@ public class RegisterInventoryPurchaseUseCase {
             InventoryPurchaseFinanceRecord financeRecord = recordFinanceExpense(
                     inventoryItem,
                     purchaseId,
-                    movement.getTotalCost(),
+                    resolveFinanceAmount(command, movement),
                     command.purchaseDate(),
                     command.observation()
             );
@@ -125,7 +125,7 @@ public class RegisterInventoryPurchaseUseCase {
         InventoryPurchaseFinanceRecord financeRecord = recordFinanceExpense(
                 inventoryItem,
                 purchaseId,
-                existing.getTotalCost(),
+                resolveFinanceAmount(command, existing),
                 command.purchaseDate() == null ? existing.getMovementDate().toLocalDate() : command.purchaseDate(),
                 command.observation()
         );
@@ -170,6 +170,16 @@ public class RegisterInventoryPurchaseUseCase {
         if (command.unitCost().compareTo(BigDecimal.ZERO) <= 0) {
             throw new InventoryDomainException("Purchase unit cost must be greater than zero");
         }
+    }
+
+    private static BigDecimal resolveFinanceAmount(
+            RegisterInventoryPurchaseCommand command,
+            InventoryMovement movement
+    ) {
+        if (command.totalCost() != null) {
+            return command.totalCost();
+        }
+        return movement.getTotalCost();
     }
 
     static String expenseCategoryFor(InventoryMaterialType materialType) {

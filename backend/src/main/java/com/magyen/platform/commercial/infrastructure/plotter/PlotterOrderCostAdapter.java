@@ -32,7 +32,9 @@ public class PlotterOrderCostAdapter implements PlotterOrderCostPort {
                 result.internalJobCount(),
                 result.valuedJobCount(),
                 result.unvaluedJobCount(),
-                result.plotterCostAttributable()
+                result.plotterCostAttributable(),
+                result.internalPlotterServiceCost(),
+                result.attributablePlotterCost()
         );
     }
 }

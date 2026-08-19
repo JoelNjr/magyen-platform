@@ -6,7 +6,7 @@ import java.math.BigDecimal;
  * Entrada del caso de uso para crear un material de inventario.
  * <p>
  * {@code code} se ignora: el código lo genera la aplicación.
- * {@code acquisition} registra la compra inicial (tela u otro no-papel).
+ * {@code acquisition} registra la compra inicial (tela, papel u otro material).
  */
 public record CreateInventoryItemCommand(
         String code,

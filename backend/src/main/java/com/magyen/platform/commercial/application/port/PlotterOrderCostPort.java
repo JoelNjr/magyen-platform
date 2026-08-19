@@ -15,7 +15,9 @@ public interface PlotterOrderCostPort {
             int internalJobCount,
             int valuedJobCount,
             int unvaluedJobCount,
-            boolean plotterCostAttributable
+            boolean plotterCostAttributable,
+            BigDecimal internalPlotterServiceCost,
+            BigDecimal attributablePlotterCost
     ) {
     }
 }

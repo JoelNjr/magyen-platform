@@ -105,8 +105,8 @@ class PlotterInternalExternalUseCaseTest {
     private RegisterProductionMaterialConsumptionUseCase registerProductionMaterialConsumptionUseCase;
 
     @Test
-    void createsInternalJobWithSingleInventoryOutAndNoFinanceIncome() {
-        CommercialOrderFixture order = createCommercialOrder("Sofia Vergara IncD");
+    void createsInternalJobWithVariablePriceAndMatchingExpenseIncomePair() {
+        CommercialOrderFixture order = createCommercialOrder("Cliente interno IncI");
         CreateInventoryItemResult roll = createPaperRoll("80.0000", "8000.00");
 
         CreatePlotterJobResult created = createPlotterJobUseCase.execute(new CreatePlotterJobCommand(
@@ -115,7 +115,7 @@ class PlotterInternalExternalUseCaseTest {
                 LocalDate.of(2026, 8, 3),
                 roll.inventoryItemId(),
                 new BigDecimal("6.0000"),
-                BigDecimal.ZERO,
+                new BigDecimal("8000"),
                 "Producción Magyen",
                 PlotterJobType.INTERNAL_MAGYEN,
                 null
@@ -125,7 +125,8 @@ class PlotterInternalExternalUseCaseTest {
         assertEquals(order.orderId(), created.orderId());
         assertEquals(order.orderNumber(), created.orderNumber());
         assertEquals(order.customerName(), created.customerName());
-        assertEquals(new BigDecimal("0.00"), created.totalAmount());
+        assertEquals(new BigDecimal("8000.00"), created.pricePerMeter());
+        assertEquals(new BigDecimal("48000.00"), created.totalAmount());
 
         var movement = inventoryMovementRepository
                 .findBySourceTypeAndSourceId(InventoryMovementSourceType.PLOTTER, created.plotterJobId())
@@ -136,6 +137,22 @@ class PlotterInternalExternalUseCaseTest {
         assertEquals(new BigDecimal("48000.00"), movement.getTotalCost());
         assertEquals(1, countPlotterOuts(created.plotterJobId()));
         assertEquals(0, countPlotterIncome());
+
+        var expense = financialTransactionRepository.findBySourceTypeAndSourceId(
+                FinancialTransactionSourceType.PLOTTER_INTERNAL_EXPENSE,
+                created.plotterJobId()
+        ).orElseThrow();
+        var income = financialTransactionRepository.findBySourceTypeAndSourceId(
+                FinancialTransactionSourceType.PLOTTER_INTERNAL_INCOME,
+                created.plotterJobId()
+        ).orElseThrow();
+        assertEquals(FinancialTransactionType.EXPENSE, expense.getType());
+        assertEquals(FinancialTransactionType.INCOME, income.getType());
+        assertEquals(new BigDecimal("48000.00"), expense.getAmount().getValue());
+        assertEquals(new BigDecimal("48000.00"), income.getAmount().getValue());
+        assertEquals(0, expense.getAmount().getValue().compareTo(income.getAmount().getValue()));
+        assertEquals(1, countInternalExpenses(created.plotterJobId()));
+        assertEquals(1, countInternalIncomes(created.plotterJobId()));
 
         assertThrows(PlotterDomainException.class, () ->
                 registerPlotterPaymentUseCase.execute(new RegisterPlotterPaymentCommand(
@@ -187,7 +204,7 @@ class PlotterInternalExternalUseCaseTest {
                         LocalDate.of(2026, 8, 3),
                         roll.inventoryItemId(),
                         new BigDecimal("1.0000"),
-                        BigDecimal.ZERO,
+                        new BigDecimal("8000"),
                         null,
                         PlotterJobType.INTERNAL_MAGYEN,
                         null
@@ -255,7 +272,7 @@ class PlotterInternalExternalUseCaseTest {
                 LocalDate.of(2026, 8, 3),
                 internalRoll.inventoryItemId(),
                 new BigDecimal("6.0000"),
-                BigDecimal.ZERO,
+                new BigDecimal("8000"),
                 null,
                 PlotterJobType.INTERNAL_MAGYEN,
                 internalJobId
@@ -265,6 +282,8 @@ class PlotterInternalExternalUseCaseTest {
 
         assertEquals(firstInternal.plotterJobId(), retryInternal.plotterJobId());
         assertEquals(1, countPlotterOuts(internalJobId));
+        assertEquals(1, countInternalExpenses(internalJobId));
+        assertEquals(1, countInternalIncomes(internalJobId));
 
         UUID customerId = createCustomerUseCase.execute(
                 new CreateCustomerCommand("Retry externo-" + UUID.randomUUID().toString().substring(0, 8))
@@ -297,7 +316,7 @@ class PlotterInternalExternalUseCaseTest {
                 LocalDate.of(2026, 8, 3),
                 roll.inventoryItemId(),
                 new BigDecimal("6.0000"),
-                BigDecimal.ZERO,
+                new BigDecimal("8000"),
                 null,
                 PlotterJobType.INTERNAL_MAGYEN,
                 null
@@ -335,6 +354,26 @@ class PlotterInternalExternalUseCaseTest {
         assertEquals(1, inventoryMovementRepository
                 .findByInventoryItemIdOrderByMovementDateDesc(roll.inventoryItemId())
                 .size());
+    }
+
+    @Test
+    void internalJobRejectsZeroPricePerMeter() {
+        CommercialOrderFixture order = createCommercialOrder("Precio interno obligatorio");
+        CreateInventoryItemResult roll = createPaperRoll("20.0000", "8000.00");
+
+        assertThrows(PlotterDomainException.class, () ->
+                createPlotterJobUseCase.execute(new CreatePlotterJobCommand(
+                        null,
+                        order.orderId(),
+                        LocalDate.of(2026, 8, 3),
+                        roll.inventoryItemId(),
+                        new BigDecimal("6.0000"),
+                        BigDecimal.ZERO,
+                        null,
+                        PlotterJobType.INTERNAL_MAGYEN,
+                        null
+                ))
+        );
     }
 
     private CommercialOrderFixture createCommercialOrder(String customerName) {
@@ -398,6 +437,26 @@ class PlotterInternalExternalUseCaseTest {
     private long countPlotterIncome() {
         return financialTransactionRepository.findAllNewestFirst().stream()
                 .filter(transaction -> transaction.getSourceType() == FinancialTransactionSourceType.PLOTTER)
+                .filter(transaction -> transaction.getType() == FinancialTransactionType.INCOME)
+                .count();
+    }
+
+    private long countInternalExpenses(UUID plotterJobId) {
+        return financialTransactionRepository.findBySourceTypeAndSourceId(
+                        FinancialTransactionSourceType.PLOTTER_INTERNAL_EXPENSE,
+                        plotterJobId
+                )
+                .stream()
+                .filter(transaction -> transaction.getType() == FinancialTransactionType.EXPENSE)
+                .count();
+    }
+
+    private long countInternalIncomes(UUID plotterJobId) {
+        return financialTransactionRepository.findBySourceTypeAndSourceId(
+                        FinancialTransactionSourceType.PLOTTER_INTERNAL_INCOME,
+                        plotterJobId
+                )
+                .stream()
                 .filter(transaction -> transaction.getType() == FinancialTransactionType.INCOME)
                 .count();
     }

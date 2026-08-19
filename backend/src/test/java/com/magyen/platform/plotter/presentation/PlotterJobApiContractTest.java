@@ -300,6 +300,7 @@ class PlotterJobApiContractTest {
                                           "creationDate": "2026-08-03",
                                           "paperInventoryItemId": "%s",
                                           "printedMeters": 6,
+                                          "pricePerMeter": 8000,
                                           "observations": "Producción Magyen"
                                         }
                                         """.formatted(order.orderId(), paperRoll.inventoryItemId()))
@@ -309,7 +310,8 @@ class PlotterJobApiContractTest {
                 .andExpect(jsonPath("$.orderId").value(order.orderId().toString()))
                 .andExpect(jsonPath("$.orderNumber").value(order.orderNumber()))
                 .andExpect(jsonPath("$.customerName").value(customerName))
-                .andExpect(jsonPath("$.totalAmount").value(0.0))
+                .andExpect(jsonPath("$.pricePerMeter").value(8000.0))
+                .andExpect(jsonPath("$.totalAmount").value(48000.0))
                 .andReturn();
 
         String plotterJobId = com.jayway.jsonpath.JsonPath.read(

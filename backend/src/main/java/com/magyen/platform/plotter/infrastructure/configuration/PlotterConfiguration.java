@@ -2,13 +2,17 @@ package com.magyen.platform.plotter.infrastructure.configuration;
 
 import com.magyen.platform.commercial.application.usecase.GetCustomersUseCase;
 import com.magyen.platform.commercial.application.usecase.GetOrderUseCase;
+import com.magyen.platform.finance.application.usecase.EnsurePlotterInternalServiceLedgerUseCase;
 import com.magyen.platform.finance.application.usecase.RegisterPlotterPaymentIncomeUseCase;
 import com.magyen.platform.inventory.application.usecase.ConsumeInventoryMaterialUseCase;
 import com.magyen.platform.inventory.application.usecase.GetInventoryMovementBySourceUseCase;
+import com.magyen.platform.inventory.application.usecase.GetPaperAcquisitionsUseCase;
 import com.magyen.platform.inventory.domain.InventoryItemRepository;
 import com.magyen.platform.plotter.application.port.PlotterCommercialOrderPort;
+import com.magyen.platform.plotter.application.port.PlotterInternalServiceFinancePort;
 import com.magyen.platform.plotter.application.port.PlotterInventoryCostPort;
 import com.magyen.platform.plotter.application.port.PlotterJobInventoryPort;
+import com.magyen.platform.plotter.application.port.PlotterPaperAcquisitionPort;
 import com.magyen.platform.plotter.application.port.PlotterPaymentFinancePort;
 import com.magyen.platform.plotter.infrastructure.commercial.PlotterCommercialOrderAdapter;
 import com.magyen.platform.plotter.application.usecase.CreatePlotterJobUseCase;
@@ -20,9 +24,11 @@ import com.magyen.platform.plotter.application.usecase.GetPlotterProfitabilityUs
 import com.magyen.platform.plotter.application.usecase.RegisterPlotterPaymentUseCase;
 import com.magyen.platform.plotter.domain.PlotterJobRepository;
 import com.magyen.platform.plotter.domain.PlotterPaymentRepository;
+import com.magyen.platform.plotter.infrastructure.finance.PlotterInternalServiceFinanceAdapter;
 import com.magyen.platform.plotter.infrastructure.finance.PlotterPaymentFinanceAdapter;
 import com.magyen.platform.plotter.infrastructure.inventory.PlotterInventoryCostAdapter;
 import com.magyen.platform.plotter.infrastructure.inventory.PlotterJobInventoryAdapter;
+import com.magyen.platform.plotter.infrastructure.inventory.PlotterPaperAcquisitionAdapter;
 import com.magyen.platform.plotter.infrastructure.persistence.mapper.PlotterPaymentPersistenceMapper;
 import com.magyen.platform.plotter.infrastructure.persistence.mapper.PlotterPersistenceMapper;
 import com.magyen.platform.plotter.presentation.plotterjob.mapper.PlotterPresentationMapper;
@@ -71,6 +77,13 @@ public class PlotterConfiguration {
     }
 
     @Bean
+    public PlotterInternalServiceFinancePort plotterInternalServiceFinancePort(
+            EnsurePlotterInternalServiceLedgerUseCase ensurePlotterInternalServiceLedgerUseCase
+    ) {
+        return new PlotterInternalServiceFinanceAdapter(ensurePlotterInternalServiceLedgerUseCase);
+    }
+
+    @Bean
     public PlotterCommercialOrderPort plotterCommercialOrderPort(
             GetOrderUseCase getOrderUseCase,
             GetCustomersUseCase getCustomersUseCase
@@ -86,6 +99,13 @@ public class PlotterConfiguration {
     }
 
     @Bean
+    public PlotterPaperAcquisitionPort plotterPaperAcquisitionPort(
+            GetPaperAcquisitionsUseCase getPaperAcquisitionsUseCase
+    ) {
+        return new PlotterPaperAcquisitionAdapter(getPaperAcquisitionsUseCase);
+    }
+
+    @Bean
     public GetInternalPlotterOrderCostsUseCase getInternalPlotterOrderCostsUseCase(
             PlotterJobRepository plotterJobRepository,
             PlotterInventoryCostPort plotterInventoryCostPort
@@ -97,12 +117,14 @@ public class PlotterConfiguration {
     public CreatePlotterJobUseCase createPlotterJobUseCase(
             PlotterJobRepository plotterJobRepository,
             PlotterJobInventoryPort plotterJobInventoryPort,
-            PlotterCommercialOrderPort plotterCommercialOrderPort
+            PlotterCommercialOrderPort plotterCommercialOrderPort,
+            PlotterInternalServiceFinancePort plotterInternalServiceFinancePort
     ) {
         return new CreatePlotterJobUseCase(
                 plotterJobRepository,
                 plotterJobInventoryPort,
-                plotterCommercialOrderPort
+                plotterCommercialOrderPort,
+                plotterInternalServiceFinancePort
         );
     }
 
@@ -157,12 +179,14 @@ public class PlotterConfiguration {
     public GetPlotterProfitabilityUseCase getPlotterProfitabilityUseCase(
             PlotterJobRepository plotterJobRepository,
             PlotterInventoryCostPort plotterInventoryCostPort,
+            PlotterPaperAcquisitionPort plotterPaperAcquisitionPort,
             PlotterCommercialOrderPort plotterCommercialOrderPort,
             Clock clock
     ) {
         return new GetPlotterProfitabilityUseCase(
                 plotterJobRepository,
                 plotterInventoryCostPort,
+                plotterPaperAcquisitionPort,
                 plotterCommercialOrderPort,
                 clock
         );

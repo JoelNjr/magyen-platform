@@ -16,6 +16,8 @@ public record GetPlotterProfitabilityResponse(
         int internalJobCount,
         BigDecimal totalPaperPrintedMeters,
         BigDecimal externalRevenue,
+        BigDecimal internalRevenue,
+        BigDecimal combinedRevenue,
         BigDecimal externalPaperCost,
         BigDecimal internalPaperCost,
         BigDecimal totalPaperCost,

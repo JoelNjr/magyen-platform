@@ -243,6 +243,42 @@ class SellerCommissionUseCaseTest {
         ).activeCount());
     }
 
+    @Test
+    void performancePopulatesFixedPayrollSellersAndExcludesProductionBased() {
+        CreatePayrollEmployeeResult activeSeller = createFixed("Vendedor-I-act-" + suffix());
+        CreatePayrollEmployeeResult inactiveSeller = createFixed("Vendedor-I-inact-" + suffix());
+        CreatePayrollEmployeeResult operator = createProduction("Operario-I-perf-" + suffix());
+        saveOrder(activeSeller.employeeId(), OrderStatus.DELIVERED, "200000.00", LocalDate.of(2026, 8, 5));
+        saveOrder(inactiveSeller.employeeId(), OrderStatus.CLOSED, "400000.00", LocalDate.of(2026, 8, 6));
+        deactivatePayrollEmployeeUseCase.execute(new DeactivatePayrollEmployeeCommand(inactiveSeller.employeeId()));
+
+        long financeBefore = financialTransactionRepository.findAllNewestFirst().size();
+        var result = getPayrollEmployeePerformanceUseCase.execute(
+                new GetPayrollEmployeePerformanceQuery(null, null)
+        );
+        assertEquals(financeBefore, financialTransactionRepository.findAllNewestFirst().size());
+
+        var activeRow = result.sellers().stream()
+                .filter(item -> activeSeller.employeeId().equals(item.employeeId()))
+                .findFirst()
+                .orElseThrow();
+        assertEquals(activeSeller.displayName(), activeRow.displayName());
+        assertTrue(activeRow.active());
+        assertEquals(1, activeRow.numberOfEligibleOrders());
+        assertEquals(new BigDecimal("200000.00"), activeRow.totalSales());
+        assertEquals(new BigDecimal("10000.00"), activeRow.accumulatedCommission());
+
+        var inactiveRow = result.sellers().stream()
+                .filter(item -> inactiveSeller.employeeId().equals(item.employeeId()))
+                .findFirst()
+                .orElseThrow();
+        assertFalse(inactiveRow.active());
+        assertEquals(new BigDecimal("20000.00"), inactiveRow.accumulatedCommission());
+
+        assertTrue(result.sellers().stream()
+                .noneMatch(item -> operator.employeeId().equals(item.employeeId())));
+    }
+
     private Order saveOrder(UUID sellerId, OrderStatus status, String unitPrice, LocalDate confirmationDate) {
         OrderItem item = OrderItem.reconstitute(
                 UUID.randomUUID(),

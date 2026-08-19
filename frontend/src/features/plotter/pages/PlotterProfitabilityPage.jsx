@@ -34,11 +34,8 @@ function resolveApiErrorMessage(error, fallbackMessage) {
 }
 
 function formatInkCost(summary) {
-  if (!summary) {
-    return '—'
-  }
-  if (!summary.inkCostRecorded) {
-    return 'No registrado'
+  if (!summary || !summary.inkCostRecorded) {
+    return 'Sin registrar'
   }
   return formatPlotterMoney(summary.inkCost)
 }
@@ -111,8 +108,9 @@ function PlotterProfitabilityPage() {
         <Stack spacing={0.5}>
           <Typography variant="h3">Rentabilidad del Plotter</Typography>
           <Typography variant="body2" color="text.secondary">
-            Vista analítica. El trabajo interno de Magyen no es una venta ni un
-            ingreso de Finanzas. El consumo de papel sí es un costo de producción.
+            Vista analítica. El ingreso interno representa el servicio Plotter Magyen; no
+            es una venta a cliente externo. El gasto en papel son las compras de
+            inventario del período, no los consumos de producción.
           </Typography>
         </Stack>
         <Button
@@ -188,8 +186,18 @@ function PlotterProfitabilityPage() {
           loading={loading}
         />
         <MetricCard
-          title="Total generado (externo)"
+          title="Total generado — Externo"
           value={formatPlotterMoney(summary?.externalRevenue)}
+          loading={loading}
+        />
+        <MetricCard
+          title="Total generado — Interno Magyen"
+          value={formatPlotterMoney(summary?.internalRevenue)}
+          loading={loading}
+        />
+        <MetricCard
+          title="Total generado — Combinado"
+          value={formatPlotterMoney(summary?.combinedRevenue)}
           loading={loading}
         />
         <MetricCard
@@ -214,6 +222,16 @@ function PlotterProfitabilityPage() {
                 : undefined
           }
         />
+        <MetricCard
+          title="Trabajos internos"
+          value={summary?.internalJobCount ?? 0}
+          loading={loading}
+        />
+        <MetricCard
+          title="Trabajos externos"
+          value={summary?.externalJobCount ?? 0}
+          loading={loading}
+        />
       </BoxGrid>
 
       {!failed && !loading && summary ? (
@@ -227,8 +245,8 @@ function PlotterProfitabilityPage() {
         <Stack spacing={2}>
           <Typography variant="h5">Trabajos internos Magyen</Typography>
           <Typography variant="body2" color="text.secondary">
-            Consumo analítico de papel atribuido a pedidos. Magyen no se vende
-            papel a sí misma: no hay ingreso interno.
+            Valor del servicio interno Magyen atribuido a pedidos. El gasto en papel del
+            período son las compras de inventario, no estos consumos.
           </Typography>
 
           {loading ? (
@@ -256,7 +274,10 @@ function PlotterProfitabilityPage() {
                       Metros impresos
                     </TableCell>
                     <TableCell align="right" sx={headerCellSx}>
-                      Costo histórico del papel
+                      Valor del servicio
+                    </TableCell>
+                    <TableCell align="right" sx={headerCellSx}>
+                      Papel físico (histórico)
                     </TableCell>
                   </TableRow>
                 </TableHead>
@@ -268,6 +289,9 @@ function PlotterProfitabilityPage() {
                       <TableCell>{formatPlotterDate(item.jobDate)}</TableCell>
                       <TableCell align="right">
                         {formatPlotterNumber(item.printedMeters)} m
+                      </TableCell>
+                      <TableCell align="right">
+                        {formatPlotterMoney(item.serviceValue)}
                       </TableCell>
                       <TableCell align="right">
                         {item.paperCostValued

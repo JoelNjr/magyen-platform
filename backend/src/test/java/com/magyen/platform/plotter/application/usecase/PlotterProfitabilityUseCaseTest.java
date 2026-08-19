@@ -16,6 +16,7 @@ import com.magyen.platform.finance.domain.FinancialTransactionSourceType;
 import com.magyen.platform.finance.domain.FinancialTransactionType;
 import com.magyen.platform.inventory.application.dto.CreateInventoryItemCommand;
 import com.magyen.platform.inventory.application.dto.CreateInventoryItemResult;
+import com.magyen.platform.inventory.application.dto.InventoryAcquisitionCommand;
 import com.magyen.platform.inventory.application.usecase.CreateInventoryItemUseCase;
 import com.magyen.platform.inventory.domain.InventoryMovementRepository;
 import com.magyen.platform.inventory.domain.InventoryMovementSourceType;
@@ -86,8 +87,13 @@ class PlotterProfitabilityUseCaseTest {
     private InventoryMovementRepository inventoryMovementRepository;
 
     @Test
-    void distinguishesExternalRevenueFromInternalConsumptionAndUsesHistoricalPaperCost() {
-        CreateInventoryItemResult roll = createPaperRoll("8000.00");
+    void usesPaperAcquisitionsNotConsumptionOutsAndKeepsInternalServiceAnalytical() {
+        CreateInventoryItemResult roll = createPurchasedPaperRoll(
+                "1",
+                "200000.00",
+                "100.0000",
+                JOB_DATE
+        );
         CommercialOrderFixture order = createCommercialOrder();
 
         CreatePlotterJobResult external = createPlotterJobUseCase.execute(new CreatePlotterJobCommand(
@@ -107,7 +113,7 @@ class PlotterProfitabilityUseCaseTest {
                 JOB_DATE,
                 roll.inventoryItemId(),
                 new BigDecimal("6.0000"),
-                BigDecimal.ZERO,
+                new BigDecimal("8000.00"),
                 "interno G",
                 PlotterJobType.INTERNAL_MAGYEN,
                 null
@@ -129,25 +135,26 @@ class PlotterProfitabilityUseCaseTest {
         assertEquals(1, all.internalJobCount());
         assertEquals(new BigDecimal("16.0000"), all.totalPaperPrintedMeters());
         assertEquals(new BigDecimal("200000.00"), all.externalRevenue());
-        assertEquals(new BigDecimal("80000.00"), all.externalPaperCost());
-        assertEquals(new BigDecimal("48000.00"), all.internalPaperCost());
-        assertEquals(new BigDecimal("128000.00"), all.totalPaperCost());
+        assertEquals(new BigDecimal("48000.00"), all.internalRevenue());
+        assertEquals(new BigDecimal("248000.00"), all.combinedRevenue());
+        assertEquals(new BigDecimal("200000.00"), all.totalPaperCost());
         assertEquals(new BigDecimal("6.0000"), all.internalPaperPrintedMeters());
-        assertEquals(new BigDecimal("120000.00"), all.analyticalPlotterResult());
+        assertEquals(new BigDecimal("48000.00"), all.analyticalPlotterResult());
         assertFalse(all.inkCostRecorded());
         assertNull(all.inkCost());
         assertTrue(all.paperCostComplete());
         assertEquals(order.orderNumber(), all.internalOrders().getFirst().orderNumber());
         assertEquals(order.customerName(), all.internalOrders().getFirst().customerName());
-        assertEquals(new BigDecimal("48000.00"), all.internalOrders().getFirst().paperCost());
+        assertEquals(new BigDecimal("48000.00"), all.internalOrders().getFirst().serviceValue());
 
         GetPlotterProfitabilityResult internals = getPlotterProfitabilityUseCase.execute(
                 new GetPlotterProfitabilityQuery(PERIOD_START, PERIOD_END, PlotterProfitabilityScope.INTERNAL)
         );
         assertEquals(0, internals.externalJobCount());
         assertEquals(new BigDecimal("0.00"), internals.externalRevenue());
-        assertNull(internals.analyticalPlotterResult());
-        assertEquals(new BigDecimal("48000.00"), internals.internalPaperCost());
+        assertEquals(new BigDecimal("48000.00"), internals.internalRevenue());
+        assertEquals(new BigDecimal("200000.00"), internals.totalPaperCost());
+        assertEquals(new BigDecimal("-152000.00"), internals.analyticalPlotterResult());
 
         GetPlotterProfitabilityResult externals = getPlotterProfitabilityUseCase.execute(
                 new GetPlotterProfitabilityQuery(PERIOD_START, PERIOD_END, PlotterProfitabilityScope.EXTERNAL)
@@ -166,6 +173,24 @@ class PlotterProfitabilityUseCaseTest {
         assertEquals(incomeBeforePayment + 1, countPlotterIncome());
         assertEquals(1, countPaperOutsFor(external.plotterJobId()));
         assertEquals(1, countPaperOutsFor(internal.plotterJobId()));
+    }
+
+    @Test
+    void paperCostUsesPurchaseDateNotProductionOutDate() {
+        createPurchasedPaperRoll("3", "200000.00", "300.0000", LocalDate.of(2099, 8, 10));
+        GetPlotterProfitabilityResult august = getPlotterProfitabilityUseCase.execute(
+                new GetPlotterProfitabilityQuery(
+                        LocalDate.of(2099, 8, 1),
+                        LocalDate.of(2099, 8, 31),
+                        PlotterProfitabilityScope.ALL
+                )
+        );
+        assertEquals(new BigDecimal("600000.00"), august.totalPaperCost());
+
+        GetPlotterProfitabilityResult march = getPlotterProfitabilityUseCase.execute(
+                new GetPlotterProfitabilityQuery(PERIOD_START, PERIOD_END, PlotterProfitabilityScope.ALL)
+        );
+        assertEquals(new BigDecimal("0.00"), march.totalPaperCost());
     }
 
     @Test
@@ -188,6 +213,34 @@ class PlotterProfitabilityUseCaseTest {
         );
         assertEquals(0, result.jobCount());
         assertEquals(new BigDecimal("0.0000"), result.totalPaperPrintedMeters());
+    }
+
+    private CreateInventoryItemResult createPurchasedPaperRoll(
+            String rollQuantity,
+            String pricePerRoll,
+            String meters,
+            LocalDate purchaseDate
+    ) {
+        return createInventoryItemUseCase.execute(new CreateInventoryItemCommand(
+                "PLPR-" + UUID.randomUUID().toString().substring(0, 8),
+                "Papel analítica",
+                "PAPER",
+                "METER",
+                new BigDecimal(meters),
+                new BigDecimal("10.0000"),
+                null,
+                null,
+                "PAPER",
+                true,
+                new InventoryAcquisitionCommand(
+                        UUID.randomUUID(),
+                        new BigDecimal(rollQuantity),
+                        new BigDecimal(pricePerRoll),
+                        null,
+                        purchaseDate,
+                        "compra papel analítica"
+                )
+        ));
     }
 
     private CreateInventoryItemResult createPaperRoll(String unitCost) {

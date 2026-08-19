@@ -72,6 +72,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
@@ -479,9 +480,12 @@ class GetHomeDashboardUseCaseTest {
         assertEquals(delivered.getOrderNumber().getValue(), item.orderNumber());
         assertEquals("Camisetas de voleibol", item.description());
         assertEquals(customer.getName(), item.customerName());
+        assertNotEquals(customer.getId().toString(), item.customerName());
+        assertEquals(customer.getId(), item.customerId());
         assertEquals(0, item.orderValue().compareTo(new BigDecimal("400000.00")));
         assertEquals(0, item.collectedAmount().compareTo(new BigDecimal("200000.00")));
         assertEquals(0, item.outstandingAmount().compareTo(new BigDecimal("200000.00")));
+        assertEquals(delivered.getDeliveryCommitment().getPromisedDeliveryDate(), item.promisedDeliveryDate());
     }
 
     @Test

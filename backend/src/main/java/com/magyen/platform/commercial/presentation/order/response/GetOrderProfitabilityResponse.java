@@ -20,6 +20,7 @@ public record GetOrderProfitabilityResponse(
         BigDecimal laborCost,
         BigDecimal plotterMaterialCost,
         boolean plotterCostAttributable,
+        BigDecimal internalPlotterServiceCost,
         BigDecimal totalDirectCost,
         BigDecimal directProfit,
         BigDecimal directMarginPercentage,

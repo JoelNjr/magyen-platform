@@ -123,6 +123,7 @@ class OrderProfitabilityApiContractTest {
                 .andExpect(jsonPath("$.materialCost").value(150000.00))
                 .andExpect(jsonPath("$.laborCost").value(0.00))
                 .andExpect(jsonPath("$.plotterMaterialCost").value(0.00))
+                .andExpect(jsonPath("$.internalPlotterServiceCost").value(0.00))
                 .andExpect(jsonPath("$.plotterCostAttributable").value(false))
                 .andExpect(jsonPath("$.totalDirectCost").value(150000.00))
                 .andExpect(jsonPath("$.directProfit").value(850000.00))

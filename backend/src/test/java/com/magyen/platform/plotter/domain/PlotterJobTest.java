@@ -43,7 +43,7 @@ class PlotterJobTest {
     }
 
     @Test
-    void internalJobRequiresOrderAndDoesNotChargeASale() {
+    void internalJobRequiresOrderAndHasVariableServiceValue() {
         UUID orderId = UUID.randomUUID();
         PlotterJob plotterJob = PlotterJob.create(
                 UUID.randomUUID(),
@@ -57,7 +57,8 @@ class PlotterJobTest {
 
         assertEquals(orderId, plotterJob.getOrderId());
         assertEquals(PlotterJobType.INTERNAL_MAGYEN, plotterJob.getJobType());
-        assertEquals(new BigDecimal("0.00"), plotterJob.getTotalAmount());
+        assertEquals(new BigDecimal("8000.00"), plotterJob.getPricePerMeter());
+        assertEquals(new BigDecimal("48000.00"), plotterJob.getTotalAmount());
     }
 
     @Test

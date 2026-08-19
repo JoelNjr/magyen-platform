@@ -15,9 +15,10 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Acumula el costo histórico de papel de trabajos INTERNAL_MAGYEN de una orden.
+ * Acumula el costo de Plotter interno atribuible a una orden.
  * <p>
- * No crea gasto Finance. Un trabajo interno es operación de material, no venta.
+ * El valor del servicio interno entra a la rentabilidad del pedido.
+ * El snapshot físico de papel permanece disponible y no se suma encima del servicio.
  */
 public class GetInternalPlotterOrderCostsUseCase {
 
@@ -50,6 +51,8 @@ public class GetInternalPlotterOrderCostsUseCase {
                 .toList();
 
         BigDecimal plotterMaterialCost = ZERO_MONEY;
+        BigDecimal internalPlotterServiceCost = ZERO_MONEY;
+        BigDecimal attributablePlotterCost = ZERO_MONEY;
         int valuedJobCount = 0;
         int unvaluedJobCount = 0;
 
@@ -57,12 +60,23 @@ public class GetInternalPlotterOrderCostsUseCase {
             PlotterInventoryCostSnapshot snapshot = plotterInventoryCostPort
                     .findCostByPlotterJobId(job.getId())
                     .orElse(null);
-            if (snapshot == null || !snapshot.valued()) {
-                unvaluedJobCount++;
-                continue;
+            boolean paperValued = snapshot != null && snapshot.valued();
+            if (paperValued) {
+                plotterMaterialCost = plotterMaterialCost.add(snapshot.totalCost());
             }
-            valuedJobCount++;
-            plotterMaterialCost = plotterMaterialCost.add(snapshot.totalCost());
+
+            BigDecimal serviceValue = job.getTotalAmount() == null ? ZERO_MONEY : job.getTotalAmount();
+            boolean hasServiceValue = serviceValue.compareTo(BigDecimal.ZERO) > 0;
+            if (hasServiceValue) {
+                internalPlotterServiceCost = internalPlotterServiceCost.add(serviceValue);
+                attributablePlotterCost = attributablePlotterCost.add(serviceValue);
+                valuedJobCount++;
+            } else if (paperValued) {
+                attributablePlotterCost = attributablePlotterCost.add(snapshot.totalCost());
+                valuedJobCount++;
+            } else {
+                unvaluedJobCount++;
+            }
         }
 
         boolean attributable = !internalJobs.isEmpty() && unvaluedJobCount == 0;
@@ -71,7 +85,9 @@ public class GetInternalPlotterOrderCostsUseCase {
                 internalJobs.size(),
                 valuedJobCount,
                 unvaluedJobCount,
-                attributable
+                attributable,
+                internalPlotterServiceCost.setScale(2, RoundingMode.HALF_UP),
+                attributablePlotterCost.setScale(2, RoundingMode.HALF_UP)
         );
     }
 }

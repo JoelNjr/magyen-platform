@@ -7,6 +7,7 @@ import com.magyen.platform.inventory.application.usecase.GetInventoryItemUseCase
 import com.magyen.platform.inventory.application.usecase.GetInventoryItemsUseCase;
 import com.magyen.platform.inventory.application.usecase.GetInventoryMovementBySourceUseCase;
 import com.magyen.platform.inventory.application.usecase.GetInventoryMovementsUseCase;
+import com.magyen.platform.inventory.application.usecase.GetPaperAcquisitionsUseCase;
 import com.magyen.platform.inventory.application.usecase.IncreaseInventoryStockUseCase;
 import com.magyen.platform.inventory.application.usecase.RegisterInventoryMovementUseCase;
 import com.magyen.platform.inventory.application.usecase.RegisterInventoryPurchaseUseCase;
@@ -78,6 +79,14 @@ public class InventoryConfiguration {
             InventoryMovementRepository inventoryMovementRepository
     ) {
         return new GetInventoryMovementBySourceUseCase(inventoryMovementRepository);
+    }
+
+    @Bean
+    public GetPaperAcquisitionsUseCase getPaperAcquisitionsUseCase(
+            InventoryItemRepository inventoryItemRepository,
+            InventoryMovementRepository inventoryMovementRepository
+    ) {
+        return new GetPaperAcquisitionsUseCase(inventoryItemRepository, inventoryMovementRepository);
     }
 
     @Bean

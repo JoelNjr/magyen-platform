@@ -5,7 +5,7 @@ import com.magyen.platform.plotter.domain.exception.PlotterDomainException;
 /**
  * Modo de negocio de un trabajo de Plotter.
  * <p>
- * {@code INTERNAL_MAGYEN} es una operación de material de producción, no una venta.
+ * {@code INTERNAL_MAGYEN} es un servicio interno Magyen (valor por metro variable).
  * {@code EXTERNAL} es un servicio de impresión a un cliente externo.
  */
 public enum PlotterJobType {

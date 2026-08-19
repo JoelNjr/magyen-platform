@@ -25,4 +25,9 @@ public interface InventoryMovementRepository {
             InventoryMovementSourceType sourceType,
             UUID sourceId
     );
+
+    /**
+     * Movimientos de un origen de negocio, sin filtrar por material.
+     */
+    List<InventoryMovement> findBySourceType(InventoryMovementSourceType sourceType);
 }

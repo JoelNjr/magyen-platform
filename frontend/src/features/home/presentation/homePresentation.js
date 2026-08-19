@@ -126,10 +126,10 @@ export function getCommitmentUrgencyChipProps(item) {
   return { label: 'Pendiente', color: 'default' }
 }
 
-export function formatCustomerId(customerId) {
-  if (!customerId) {
-    return '—'
+export function formatCustomerLabel(item) {
+  const name = item?.customerName
+  if (typeof name === 'string' && name.trim()) {
+    return name.trim()
   }
-  const raw = String(customerId)
-  return raw.length > 8 ? `${raw.slice(0, 8)}…` : raw
+  return '—'
 }

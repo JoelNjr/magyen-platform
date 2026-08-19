@@ -29,7 +29,6 @@ import {
   formatPlotterNumber,
   formatPlotterOrderLabel,
   getPlotterStatusChipProps,
-  isInternalPlotterJob,
 } from '../presentation/plotterJobPresentation'
 import { createPlotterJob, getPlotterJobs } from '../services/plotterService'
 
@@ -275,7 +274,6 @@ function PlotterJobsPage() {
                   const paperLabel =
                     paperLabelById.get(job.paperInventoryItemId) ||
                     'Histórico / legado'
-                  const internal = isInternalPlotterJob(job.jobType)
 
                   return (
                     <TableRow key={job.plotterJobId} hover>
@@ -288,7 +286,7 @@ function PlotterJobsPage() {
                         {formatPlotterNumber(job.printedMeters)} m
                       </TableCell>
                       <TableCell>
-                        {internal ? 'Producción' : formatPlotterMoney(job.totalAmount)}
+                        {formatPlotterMoney(job.totalAmount)}
                       </TableCell>
                       <TableCell align="center">
                         <Chip size="small" {...statusChip} />

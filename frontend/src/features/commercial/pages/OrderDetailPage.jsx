@@ -877,7 +877,7 @@ function OrderDetailPage() {
                       Mano de obra: {formatLaborProductionCost(profitability)}
                     </Typography>
                     <Typography>
-                      Papel / Plotter:{' '}
+                      Servicio Plotter interno:{' '}
                       {formatPlotterProductionCost(profitability)}
                     </Typography>
                     <Typography sx={{ fontWeight: 600 }}>

@@ -475,7 +475,7 @@ function PayrollFinanceSection({
                     Total vendido
                   </TableCell>
                   <TableCell align="right" sx={headerCellSx}>
-                    Comisión 5%
+                  Comisión 5% acumulada
                   </TableCell>
                 </TableRow>
               </TableHead>

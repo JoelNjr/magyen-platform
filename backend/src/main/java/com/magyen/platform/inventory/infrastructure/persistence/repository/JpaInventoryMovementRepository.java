@@ -91,4 +91,12 @@ public class JpaInventoryMovementRepository implements InventoryMovementReposito
                 .findBySourceTypeAndSourceId(sourceType, sourceId)
                 .map(inventoryPersistenceMapper::toDomain);
     }
+
+    @Override
+    public List<InventoryMovement> findBySourceType(InventoryMovementSourceType sourceType) {
+        Objects.requireNonNull(sourceType, "Source type must not be null");
+        return springDataInventoryMovementRepository.findBySourceType(sourceType).stream()
+                .map(inventoryPersistenceMapper::toDomain)
+                .toList();
+    }
 }

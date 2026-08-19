@@ -15,6 +15,17 @@ public record RegisterInventoryPurchaseCommand(
         BigDecimal quantity,
         BigDecimal unitCost,
         LocalDate purchaseDate,
-        String observation
+        String observation,
+        BigDecimal totalCost
 ) {
+    public RegisterInventoryPurchaseCommand(
+            UUID inventoryItemId,
+            UUID purchaseId,
+            BigDecimal quantity,
+            BigDecimal unitCost,
+            LocalDate purchaseDate,
+            String observation
+    ) {
+        this(inventoryItemId, purchaseId, quantity, unitCost, purchaseDate, observation, null);
+    }
 }

@@ -7,6 +7,7 @@ import com.magyen.platform.plotter.application.port.PlotterCommercialOrderPort;
 import com.magyen.platform.plotter.application.port.PlotterCommercialOrderView;
 import com.magyen.platform.plotter.application.port.PlotterInventoryCostPort;
 import com.magyen.platform.plotter.application.port.PlotterInventoryCostPort.PlotterInventoryCostSnapshot;
+import com.magyen.platform.plotter.application.port.PlotterPaperAcquisitionPort;
 import com.magyen.platform.plotter.domain.PlotterJob;
 import com.magyen.platform.plotter.domain.PlotterJobRepository;
 import com.magyen.platform.plotter.domain.PlotterJobType;
@@ -24,6 +25,9 @@ import java.util.Objects;
 
 /**
  * Lectura analítica de Plotter. No crea INCOME ni EXPENSE.
+ * <p>
+ * El gasto en papel es la suma de adquisiciones de Inventario en el período,
+ * no de consumos OUT.
  */
 public class GetPlotterProfitabilityUseCase {
 
@@ -32,12 +36,14 @@ public class GetPlotterProfitabilityUseCase {
 
     private final PlotterJobRepository plotterJobRepository;
     private final PlotterInventoryCostPort plotterInventoryCostPort;
+    private final PlotterPaperAcquisitionPort plotterPaperAcquisitionPort;
     private final PlotterCommercialOrderPort plotterCommercialOrderPort;
     private final Clock clock;
 
     public GetPlotterProfitabilityUseCase(
             PlotterJobRepository plotterJobRepository,
             PlotterInventoryCostPort plotterInventoryCostPort,
+            PlotterPaperAcquisitionPort plotterPaperAcquisitionPort,
             PlotterCommercialOrderPort plotterCommercialOrderPort,
             Clock clock
     ) {
@@ -48,6 +54,10 @@ public class GetPlotterProfitabilityUseCase {
         this.plotterInventoryCostPort = Objects.requireNonNull(
                 plotterInventoryCostPort,
                 "Plotter inventory cost port must not be null"
+        );
+        this.plotterPaperAcquisitionPort = Objects.requireNonNull(
+                plotterPaperAcquisitionPort,
+                "Plotter paper acquisition port must not be null"
         );
         this.plotterCommercialOrderPort = Objects.requireNonNull(
                 plotterCommercialOrderPort,
@@ -74,12 +84,9 @@ public class GetPlotterProfitabilityUseCase {
         BigDecimal totalPaperPrintedMeters = ZERO_METERS;
         BigDecimal internalPaperPrintedMeters = ZERO_METERS;
         BigDecimal externalRevenue = ZERO_MONEY;
-        BigDecimal externalPaperCost = ZERO_MONEY;
-        BigDecimal internalPaperCost = ZERO_MONEY;
+        BigDecimal internalRevenue = ZERO_MONEY;
         int externalJobCount = 0;
         int internalJobCount = 0;
-        int unvaluedPaperJobCount = 0;
-        int unvaluedExternalPaperJobCount = 0;
         List<PlotterInternalOrderCostItem> internalOrders = new ArrayList<>();
 
         for (PlotterJob job : jobs) {
@@ -88,33 +95,26 @@ public class GetPlotterProfitabilityUseCase {
                     .findCostByPlotterJobId(job.getId())
                     .orElse(null);
             boolean valued = snapshot != null && snapshot.valued();
-            if (!valued) {
-                unvaluedPaperJobCount++;
-            }
 
             if (job.getJobType().isInternal()) {
                 internalJobCount++;
                 internalPaperPrintedMeters = internalPaperPrintedMeters.add(job.getPrintedMeters());
-                if (valued) {
-                    internalPaperCost = internalPaperCost.add(snapshot.totalCost());
-                }
+                internalRevenue = internalRevenue.add(job.getTotalAmount());
                 internalOrders.add(toInternalItem(job, snapshot, valued));
             } else {
                 externalJobCount++;
                 externalRevenue = externalRevenue.add(job.getTotalAmount());
-                if (valued) {
-                    externalPaperCost = externalPaperCost.add(snapshot.totalCost());
-                } else {
-                    unvaluedExternalPaperJobCount++;
-                }
             }
         }
 
-        boolean paperCostComplete = unvaluedPaperJobCount == 0;
-        BigDecimal analyticalPlotterResult = null;
-        if (scope != PlotterProfitabilityScope.INTERNAL && unvaluedExternalPaperJobCount == 0) {
-            analyticalPlotterResult = money(externalRevenue.subtract(externalPaperCost));
-        }
+        BigDecimal paperAcquisitionCost = plotterPaperAcquisitionPort
+                .findPaperAcquisitions(period.fromDate(), period.toDate())
+                .stream()
+                .map(acquisition -> acquisition.totalCost() == null ? ZERO_MONEY : acquisition.totalCost())
+                .reduce(ZERO_MONEY, BigDecimal::add);
+        BigDecimal combinedRevenue = money(externalRevenue.add(internalRevenue));
+        BigDecimal totalPaperCost = money(paperAcquisitionCost);
+        BigDecimal analyticalPlotterResult = money(combinedRevenue.subtract(totalPaperCost));
 
         return new GetPlotterProfitabilityResult(
                 period.fromDate(),
@@ -125,12 +125,14 @@ public class GetPlotterProfitabilityUseCase {
                 internalJobCount,
                 totalPaperPrintedMeters.setScale(4, RoundingMode.HALF_UP),
                 money(externalRevenue),
-                money(externalPaperCost),
-                money(internalPaperCost),
-                money(externalPaperCost.add(internalPaperCost)),
+                money(internalRevenue),
+                combinedRevenue,
+                ZERO_MONEY,
+                ZERO_MONEY,
+                totalPaperCost,
                 internalPaperPrintedMeters.setScale(4, RoundingMode.HALF_UP),
-                unvaluedPaperJobCount,
-                paperCostComplete,
+                0,
+                true,
                 false,
                 null,
                 analyticalPlotterResult,
@@ -156,6 +158,7 @@ public class GetPlotterProfitabilityUseCase {
                 job.getPrintedMeters(),
                 valued ? money(snapshot.totalCost()) : null,
                 valued,
+                money(job.getTotalAmount()),
                 job.getOrderId(),
                 orderView == null ? null : orderView.orderNumber(),
                 orderView == null ? null : orderView.description(),

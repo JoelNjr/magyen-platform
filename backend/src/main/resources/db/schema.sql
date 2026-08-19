@@ -631,6 +631,18 @@ CREATE UNIQUE INDEX uq_financial_transactions_inventory_purchase_source
     WHERE source_type = 'INVENTORY_PURCHASE'
       AND source_id IS NOT NULL;
 
+-- Un trabajo Plotter interno no puede generar dos gastos de servicio.
+CREATE UNIQUE INDEX uq_financial_transactions_plotter_internal_expense_source
+    ON financial_transactions (source_type, source_id)
+    WHERE source_type = 'PLOTTER_INTERNAL_EXPENSE'
+      AND source_id IS NOT NULL;
+
+-- Un trabajo Plotter interno no puede generar dos ingresos de servicio.
+CREATE UNIQUE INDEX uq_financial_transactions_plotter_internal_income_source
+    ON financial_transactions (source_type, source_id)
+    WHERE source_type = 'PLOTTER_INTERNAL_INCOME'
+      AND source_id IS NOT NULL;
+
 -- Administration module
 -- Aggregate: AuthenticationUser (identity de autenticación — SPR-038 Inc. 1)
 -- Independiente de Commercial / Production / Inventory / Plotter / Finance / Home.

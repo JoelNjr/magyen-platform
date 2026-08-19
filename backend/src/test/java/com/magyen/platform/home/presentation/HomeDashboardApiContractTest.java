@@ -1,10 +1,14 @@
 package com.magyen.platform.home.presentation;
 
+import com.magyen.platform.commercial.domain.Customer;
+import com.magyen.platform.commercial.domain.CustomerRepository;
 import com.magyen.platform.commercial.domain.DeliveryCommitment;
 import com.magyen.platform.commercial.domain.Order;
 import com.magyen.platform.commercial.domain.OrderItem;
 import com.magyen.platform.commercial.domain.OrderNumber;
 import com.magyen.platform.commercial.domain.OrderRepository;
+import com.magyen.platform.commercial.domain.OrderStatus;
+import com.magyen.platform.commercial.domain.PaymentSummary;
 import com.magyen.platform.commercial.domain.ProductSpecification;
 import com.magyen.platform.finance.application.dto.CreateRecurringFinancialObligationCommand;
 import com.magyen.platform.finance.application.dto.CreateRecurringFinancialObligationOccurrenceCommand;
@@ -43,6 +47,7 @@ import java.util.UUID;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.not;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -68,6 +73,9 @@ class HomeDashboardApiContractTest {
 
     @Autowired
     private OrderRepository orderRepository;
+
+    @Autowired
+    private CustomerRepository customerRepository;
 
     @Autowired
     private CreateRecurringFinancialObligationUseCase createObligationUseCase;
@@ -212,6 +220,46 @@ class HomeDashboardApiContractTest {
                         + "')].orderNumber").value(hasItem(order.getOrderNumber().getValue())))
                 .andExpect(jsonPath("$.receivables.items[?(@.orderId=='" + order.getId()
                         + "')].customerId").value(hasItem(order.getCustomerId().toString())));
+    }
+
+    @Test
+    void completedReceivablesExposeCustomerNameInsteadOfUuid() throws Exception {
+        String customerName = "Cliente Completado API " + suffix();
+        Customer customer = customerRepository.save(Customer.create(customerName));
+        Order delivered = createDeliveredOrder(
+                customer.getId(),
+                "ORD-HOME-API-DEL-",
+                "Camisetas de voleibol",
+                "400000.00"
+        );
+        registerPaymentUseCase.execute(new RegisterPaymentCommand(
+                delivered.getId(),
+                new BigDecimal("150000.00"),
+                LocalDate.of(2026, 8, 6),
+                "Abono API pedido completado"
+        ));
+
+        mockMvc.perform(get("/api/v1/home/dashboard")
+                        .param("fromDate", "2099-01-01")
+                        .param("toDate", "2099-01-31"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.completedReceivables.items[*].orderId").value(
+                        hasItem(delivered.getId().toString())
+                ))
+                .andExpect(jsonPath("$.completedReceivables.items[?(@.orderId=='" + delivered.getId()
+                        + "')].orderNumber").value(hasItem(delivered.getOrderNumber().getValue())))
+                .andExpect(jsonPath("$.completedReceivables.items[?(@.orderId=='" + delivered.getId()
+                        + "')].description").value(hasItem("Camisetas de voleibol")))
+                .andExpect(jsonPath("$.completedReceivables.items[?(@.orderId=='" + delivered.getId()
+                        + "')].customerName").value(hasItem(customerName)))
+                .andExpect(jsonPath("$.completedReceivables.items[?(@.orderId=='" + delivered.getId()
+                        + "')].customerName").value(not(hasItem(customer.getId().toString()))))
+                .andExpect(jsonPath("$.completedReceivables.items[?(@.orderId=='" + delivered.getId()
+                        + "')].orderValue").value(hasItem(400000.00)))
+                .andExpect(jsonPath("$.completedReceivables.items[?(@.orderId=='" + delivered.getId()
+                        + "')].collectedAmount").value(hasItem(150000.00)))
+                .andExpect(jsonPath("$.completedReceivables.items[?(@.orderId=='" + delivered.getId()
+                        + "')].outstandingAmount").value(hasItem(250000.00)));
     }
 
     @Test
@@ -373,6 +421,36 @@ class HomeDashboardApiContractTest {
                 List.of(item)
         );
 
+        return orderRepository.save(order);
+    }
+
+    private Order createDeliveredOrder(UUID customerId, String numberPrefix, String description, String unitPrice) {
+        LocalDate confirmationDate = LocalDate.of(2026, 8, 1);
+        OrderItem item = OrderItem.reconstitute(
+                UUID.randomUUID(),
+                "Producto Home API Completado",
+                1,
+                "Tela",
+                "Negro",
+                Money.of(new BigDecimal(unitPrice)),
+                ProductSpecification.empty(),
+                List.of()
+        );
+        Money total = item.getSubtotal();
+        Order order = Order.reconstitute(
+                UUID.randomUUID(),
+                OrderNumber.of(numberPrefix + suffix()),
+                customerId,
+                UUID.randomUUID(),
+                confirmationDate,
+                OrderStatus.DELIVERED,
+                DeliveryCommitment.of(confirmationDate.plusDays(7)),
+                PaymentSummary.forConfirmedOrder(total),
+                UUID.randomUUID(),
+                "Orden Home API completada",
+                description,
+                List.of(item)
+        );
         return orderRepository.save(order);
     }
 

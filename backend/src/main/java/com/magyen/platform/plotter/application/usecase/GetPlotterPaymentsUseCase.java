@@ -47,7 +47,7 @@ public class GetPlotterPaymentsUseCase {
                 plotterPaymentRepository.findByPlotterJobIdNewestFirst(job.getId());
         BigDecimal paidAmount = PlotterPaymentBalanceCalculator.sumPaid(payments);
         BigDecimal outstandingAmount =
-                PlotterPaymentBalanceCalculator.outstanding(job.getTotalAmount(), paidAmount);
+                PlotterPaymentBalanceCalculator.collectableOutstanding(job, paidAmount);
 
         List<GetPlotterPaymentResult> paymentResults = payments.stream()
                 .map(payment -> new GetPlotterPaymentResult(

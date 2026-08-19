@@ -13,6 +13,7 @@ public record PlotterInternalOrderCostItem(
         BigDecimal printedMeters,
         BigDecimal paperCost,
         boolean paperCostValued,
+        BigDecimal serviceValue,
         UUID orderId,
         String orderNumber,
         String orderDescription,

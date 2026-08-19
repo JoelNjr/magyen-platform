@@ -19,4 +19,6 @@ public interface SpringDataInventoryMovementRepository extends JpaRepository<Inv
             InventoryMovementSourceType sourceType,
             UUID sourceId
     );
+
+    List<InventoryMovementEntity> findBySourceType(InventoryMovementSourceType sourceType);
 }

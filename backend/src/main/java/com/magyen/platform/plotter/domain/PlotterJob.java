@@ -11,9 +11,9 @@ import java.util.UUID;
 /**
  * Aggregate Root del módulo de Plotter.
  * <p>
- * Un trabajo interno de Plotter es una operación de material de producción,
- * no una segunda compra ni una venta. El costo de papel lo posee Inventory
- * en el snapshot del OUT. Un trabajo externo cobra al cliente (ingreso).
+ * Un trabajo interno de Plotter es un servicio interno Magyen con valor por metro.
+ * El costo físico del papel lo posee Inventory. El servicio interno genera un par
+ * EXPENSE+INCOME de igual valor (impacto neto 0) y no es una venta a cliente externo.
  */
 public class PlotterJob {
 
@@ -101,7 +101,6 @@ public class PlotterJob {
             String observations
     ) {
         PlotterJobType jobType = orderId == null ? PlotterJobType.EXTERNAL : PlotterJobType.INTERNAL_MAGYEN;
-        BigDecimal chargedPrice = jobType.isInternal() ? BigDecimal.ZERO : pricePerMeter;
         return create(
                 UUID.randomUUID(),
                 jobType,
@@ -110,7 +109,7 @@ public class PlotterJob {
                 creationDate,
                 paperInventoryItemId,
                 printedMeters,
-                chargedPrice,
+                pricePerMeter,
                 observations
         );
     }
@@ -129,9 +128,7 @@ public class PlotterJob {
         UUID jobId = id == null ? UUID.randomUUID() : id;
         PlotterJobType resolvedType = Objects.requireNonNull(jobType, "Plotter job type must not be null");
         BigDecimal normalizedMeters = requirePositiveMeters(printedMeters);
-        BigDecimal normalizedPrice = requireValidPricePerMeter(
-                resolvedType.isInternal() ? BigDecimal.ZERO : pricePerMeter
-        );
+        BigDecimal normalizedPrice = requireValidPricePerMeter(pricePerMeter);
         BigDecimal totalAmount = calculateTotalAmount(normalizedMeters, normalizedPrice);
 
         return new PlotterJob(

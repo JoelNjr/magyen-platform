@@ -213,6 +213,7 @@ class OrderProfitabilityUseCaseTest {
                 null
         ));
 
+        long purchaseExpensesBefore = countInventoryPurchaseExpenses();
         registerInventoryPurchaseUseCase.execute(new RegisterInventoryPurchaseCommand(
                 fabric.getId(),
                 UUID.randomUUID(),
@@ -221,6 +222,7 @@ class OrderProfitabilityUseCaseTest {
                 LocalDate.of(2026, 8, 16),
                 "compra Sudáfrica"
         ));
+        assertEquals(purchaseExpensesBefore + 1, countInventoryPurchaseExpenses());
 
         registerMaterial(productionOrderId, fabric.getId(), "6.5000", "METER");
 
@@ -237,13 +239,6 @@ class OrderProfitabilityUseCaseTest {
         assertEquals(new BigDecimal("95000.00"), result.totalDirectCost());
         assertEquals(new BigDecimal("305000.00"), result.directProfit());
         assertEquals(0, result.unvaluedMaterialConsumptionCount());
-
-        long purchaseExpenses = financialTransactionRepository.findAllNewestFirst().stream()
-                .filter(transaction -> transaction.getSourceType()
-                        == FinancialTransactionSourceType.INVENTORY_PURCHASE)
-                .filter(transaction -> transaction.getType() == FinancialTransactionType.EXPENSE)
-                .count();
-        assertEquals(1, purchaseExpenses);
     }
 
     @Test
@@ -336,7 +331,7 @@ class OrderProfitabilityUseCaseTest {
     }
 
     @Test
-    void includesInternalPlotterPaperCostWithoutCreatingFinanceIncome() {
+    void includesInternalPlotterServiceCostWithoutDuplicatingPhysicalPaper() {
         Order order = createOrderWithTotal("400000.00");
         CreateInventoryItemResult paperRoll = createPaperRoll("80.0000", "8000.00");
 
@@ -346,14 +341,14 @@ class OrderProfitabilityUseCaseTest {
                 LocalDate.of(2026, 8, 3),
                 paperRoll.inventoryItemId(),
                 new BigDecimal("6.0000"),
-                BigDecimal.ZERO,
+                new BigDecimal("8000"),
                 "Papel sublimación interno",
                 PlotterJobType.INTERNAL_MAGYEN,
                 null
         ));
 
         assertEquals(PlotterJobType.INTERNAL_MAGYEN, job.jobType());
-        assertEquals(new BigDecimal("0.00"), job.totalAmount());
+        assertEquals(new BigDecimal("48000.00"), job.totalAmount());
 
         long financeCountBefore = countAllFinancialTransactions();
         GetOrderProfitabilityResult result = getOrderProfitabilityUseCase.execute(
@@ -365,6 +360,7 @@ class OrderProfitabilityUseCaseTest {
         assertEquals(new BigDecimal("0.00"), result.materialCost());
         assertEquals(new BigDecimal("0.00"), result.laborCost());
         assertEquals(new BigDecimal("48000.00"), result.plotterMaterialCost());
+        assertEquals(new BigDecimal("48000.00"), result.internalPlotterServiceCost());
         assertTrue(result.plotterCostAttributable());
         assertEquals(new BigDecimal("48000.00"), result.totalDirectCost());
         assertEquals(new BigDecimal("352000.00"), result.directProfit());
@@ -377,6 +373,7 @@ class OrderProfitabilityUseCaseTest {
         Order order = createOrderWithTotal("400000.00");
         CreateInventoryItemResult paperRoll = createPaperRoll("0.0000", null);
 
+        long purchaseExpensesBefore = countInventoryPurchaseExpenses();
         registerInventoryPurchaseUseCase.execute(new RegisterInventoryPurchaseCommand(
                 paperRoll.inventoryItemId(),
                 UUID.randomUUID(),
@@ -387,7 +384,7 @@ class OrderProfitabilityUseCaseTest {
         ));
 
         long purchaseExpensesAfterBuy = countInventoryPurchaseExpenses();
-        assertEquals(1, purchaseExpensesAfterBuy);
+        assertEquals(purchaseExpensesBefore + 1, purchaseExpensesAfterBuy);
 
         createPlotterJobUseCase.execute(new CreatePlotterJobCommand(
                 null,
@@ -395,7 +392,7 @@ class OrderProfitabilityUseCaseTest {
                 LocalDate.of(2026, 8, 3),
                 paperRoll.inventoryItemId(),
                 new BigDecimal("6.0000"),
-                BigDecimal.ZERO,
+                new BigDecimal("10000"),
                 null,
                 PlotterJobType.INTERNAL_MAGYEN,
                 null
@@ -408,7 +405,9 @@ class OrderProfitabilityUseCaseTest {
                 new GetOrderProfitabilityQuery(order.getId())
         );
         assertEquals(new BigDecimal("48000.00"), result.plotterMaterialCost());
-        assertEquals(new BigDecimal("352000.00"), result.directProfit());
+        assertEquals(new BigDecimal("60000.00"), result.internalPlotterServiceCost());
+        assertEquals(new BigDecimal("60000.00"), result.totalDirectCost());
+        assertEquals(new BigDecimal("340000.00"), result.directProfit());
         assertTrue(result.plotterCostAttributable());
     }
 

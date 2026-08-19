@@ -23,7 +23,7 @@ import java.util.Objects;
  *   <li>Cobrado = suma de Payments Finance por orderId</li>
  *   <li>Material = costo histórico Inventory vía atribución Production</li>
  *   <li>Mano de obra = suma PENDING+PAID (CANCELLED excluido)</li>
- *   <li>Plotter interno = snapshot histórico del OUT de papel (no el EXPENSE de compra)</li>
+ *   <li>Plotter interno = valor del servicio interno; el papel físico no se suma encima</li>
  * </ul>
  */
 public class GetOrderProfitabilityUseCase {
@@ -85,9 +85,11 @@ public class GetOrderProfitabilityUseCase {
         BigDecimal materialCost = money(costs.materialCost());
         BigDecimal laborCost = money(costs.laborCost());
         BigDecimal plotterMaterialCost = money(plotterCosts.plotterMaterialCost());
+        BigDecimal internalPlotterServiceCost = money(plotterCosts.internalPlotterServiceCost());
+        BigDecimal attributablePlotterCost = money(plotterCosts.attributablePlotterCost());
         BigDecimal collectedAmount = money(collection.collectedAmount());
         BigDecimal outstandingAmount = money(collection.outstandingAmount());
-        BigDecimal totalDirectCost = money(materialCost.add(laborCost).add(plotterMaterialCost));
+        BigDecimal totalDirectCost = money(materialCost.add(laborCost).add(attributablePlotterCost));
         BigDecimal directProfit = money(orderValue.subtract(totalDirectCost));
         BigDecimal directMarginPercentage = resolveMarginPercentage(orderValue, directProfit);
 
@@ -111,7 +113,8 @@ public class GetOrderProfitabilityUseCase {
                 order.getOrderNumber().getValue(),
                 order.getDescription(),
                 customerNameResolver.resolveName(order.getCustomerId()),
-                order.getDeliveryCommitment().getPromisedDeliveryDate()
+                order.getDeliveryCommitment().getPromisedDeliveryDate(),
+                internalPlotterServiceCost
         );
     }
 

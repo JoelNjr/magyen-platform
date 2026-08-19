@@ -10,8 +10,8 @@ import java.util.List;
  * Resumen analítico de Plotter. No crea transacciones Finance.
  * <p>
  * {@code inkCostRecorded} es false en V1: Plotter no registra consumo de tinta.
- * {@code analyticalPlotterResult} es ingreso externo menos costo de papel externo valorado;
- * queda null si falta valorizar papel de algún trabajo externo del período.
+ * {@code totalPaperCost} es la suma de adquisiciones de papel en el período, no de OUTs.
+ * {@code analyticalPlotterResult} es ingreso combinado menos adquisiciones de papel.
  */
 public record GetPlotterProfitabilityResult(
         LocalDate fromDate,
@@ -22,6 +22,8 @@ public record GetPlotterProfitabilityResult(
         int internalJobCount,
         BigDecimal totalPaperPrintedMeters,
         BigDecimal externalRevenue,
+        BigDecimal internalRevenue,
+        BigDecimal combinedRevenue,
         BigDecimal externalPaperCost,
         BigDecimal internalPaperCost,
         BigDecimal totalPaperCost,

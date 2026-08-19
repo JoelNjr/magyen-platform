@@ -79,9 +79,9 @@ export function formatPlotterDate(value) {
 export function formatPlotterJobTypeLabel(jobType) {
   switch (jobType) {
     case 'INTERNAL_MAGYEN':
-      return 'Producción Magyen'
+      return 'Servicio Plotter interno Magyen'
     case 'EXTERNAL':
-      return 'Cliente externo'
+      return 'Venta Plotter externa'
     default:
       return jobType || '—'
   }

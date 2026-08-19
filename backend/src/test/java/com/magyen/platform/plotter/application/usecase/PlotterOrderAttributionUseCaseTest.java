@@ -154,7 +154,7 @@ class PlotterOrderAttributionUseCaseTest {
         assertEquals(order.orderNumber(), created.orderNumber());
         assertEquals(customerName, created.customerName());
         assertEquals(LocalDate.of(2026, 8, 3), created.creationDate());
-        assertEquals(new BigDecimal("0.00"), created.totalAmount());
+        assertEquals(new BigDecimal("48000.00"), created.totalAmount());
 
         GetPlotterJobResult detail = getPlotterJobUseCase.execute(new GetPlotterJobQuery(created.plotterJobId()));
         assertEquals(order.orderId(), detail.orderId());
@@ -163,6 +163,7 @@ class PlotterOrderAttributionUseCaseTest {
         assertEquals(PlotterJobType.INTERNAL_MAGYEN, detail.jobType());
         assertEquals(new BigDecimal("0.00"), detail.outstandingAmount());
         assertEquals(new BigDecimal("0.00"), detail.paidAmount());
+        assertEquals(new BigDecimal("48000.00"), detail.totalAmount());
     }
 
     @Test

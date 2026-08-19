@@ -162,6 +162,9 @@ export function getSourceTypeLabel(sourceType) {
   if (sourceType === 'PAYROLL') return 'Pago de nómina'
   if (sourceType === 'SERVICE') return 'Servicio'
   if (sourceType === 'CREDIT') return 'Crédito'
+  if (sourceType === 'INVENTORY_PURCHASE') return 'Compra de inventario'
+  if (sourceType === 'PLOTTER_INTERNAL_EXPENSE') return 'Servicio Plotter interno (gasto)'
+  if (sourceType === 'PLOTTER_INTERNAL_INCOME') return 'Servicio Plotter interno (ingreso)'
   return sourceType
 }
 

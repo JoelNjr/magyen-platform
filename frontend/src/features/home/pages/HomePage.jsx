@@ -29,7 +29,7 @@ import SectionHeader from '../components/SectionHeader'
 import { getHomeDashboard } from '../services/homeService'
 import {
   filterGeneralInventoryAlertItems,
-  formatCustomerId,
+  formatCustomerLabel,
   formatFinanceDate,
   formatFinanceMoney,
   formatHomeMargin,
@@ -690,11 +690,11 @@ function HomePage() {
                         to={`/commercial/orders/${item.orderId}`}
                         underline="hover"
                       >
-                        {item.orderNumber || item.orderId}
+                        {item.orderNumber || '—'}
                       </Link>
                     </TableCell>
-                    <TableCell title={item.customerId}>
-                      {formatCustomerId(item.customerId)}
+                    <TableCell>
+                      {formatCustomerLabel(item)}
                     </TableCell>
                     <TableCell align="right">
                       {formatFinanceMoney(item.outstandingAmount)}
@@ -744,7 +744,7 @@ function HomePage() {
           <TableContainer component={Paper} variant="outlined">
             <Table size="small">
               <TableBody>
-                <LoadingRows columns={4} />
+                <LoadingRows columns={7} />
               </TableBody>
             </Table>
           </TableContainer>
@@ -759,8 +759,15 @@ function HomePage() {
               <TableHead>
                 <TableRow>
                   <TableCell sx={headerCellSx}>Orden</TableCell>
-                  <TableCell sx={headerCellSx}>Cliente</TableCell>
                   <TableCell sx={headerCellSx}>Descripción</TableCell>
+                  <TableCell sx={headerCellSx}>Cliente</TableCell>
+                  <TableCell sx={headerCellSx}>Entrega</TableCell>
+                  <TableCell sx={headerCellSx} align="right">
+                    Valor
+                  </TableCell>
+                  <TableCell sx={headerCellSx} align="right">
+                    Cobrado
+                  </TableCell>
                   <TableCell sx={headerCellSx} align="right">
                     Pendiente
                   </TableCell>
@@ -778,10 +785,17 @@ function HomePage() {
                         {item.orderNumber || '—'}
                       </Link>
                     </TableCell>
-                    <TableCell>
-                      {item.customerName || '—'}
-                    </TableCell>
                     <TableCell>{item.description || '—'}</TableCell>
+                    <TableCell>{formatCustomerLabel(item)}</TableCell>
+                    <TableCell>
+                      {formatFinanceDate(item.promisedDeliveryDate)}
+                    </TableCell>
+                    <TableCell align="right">
+                      {formatFinanceMoney(item.orderValue)}
+                    </TableCell>
+                    <TableCell align="right">
+                      {formatFinanceMoney(item.collectedAmount)}
+                    </TableCell>
                     <TableCell align="right">
                       {formatFinanceMoney(item.outstandingAmount)}
                     </TableCell>
