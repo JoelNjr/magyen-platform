@@ -47,7 +47,7 @@ public class PlotterJob {
     ) {
         this.id = Objects.requireNonNull(id, "Plotter job id must not be null");
         this.jobType = Objects.requireNonNull(jobType, "Plotter job type must not be null");
-        this.customerId = Objects.requireNonNull(customerId, "Customer id must not be null");
+        this.customerId = customerId;
         this.orderId = orderId;
         this.creationDate = Objects.requireNonNull(creationDate, "Creation date must not be null");
         this.paperInventoryItemId = Objects.requireNonNull(
@@ -59,9 +59,7 @@ public class PlotterJob {
         this.totalAmount = Objects.requireNonNull(totalAmount, "Total amount must not be null");
         this.status = Objects.requireNonNull(status, "Status must not be null");
         this.observations = normalizeObservations(observations);
-        if (jobType.isInternal() && orderId == null) {
-            throw new PlotterDomainException("Internal Magyen plotter jobs require a commercial order");
-        }
+        validateBusinessIdentity(jobType, customerId, orderId);
     }
 
     /**
@@ -275,6 +273,24 @@ public class PlotterJob {
 
     public String getObservations() {
         return observations;
+    }
+
+    private static void validateBusinessIdentity(PlotterJobType jobType, UUID customerId, UUID orderId) {
+        if (jobType.isWaste()) {
+            if (customerId != null) {
+                throw new PlotterDomainException("Waste plotter jobs must not reference a customer");
+            }
+            if (orderId != null) {
+                throw new PlotterDomainException("Waste plotter jobs must not reference a commercial order");
+            }
+            return;
+        }
+        if (customerId == null) {
+            throw new PlotterDomainException("Customer id must not be null");
+        }
+        if (jobType.isInternal() && orderId == null) {
+            throw new PlotterDomainException("Internal Magyen plotter jobs require a commercial order");
+        }
     }
 
     private static BigDecimal requirePositiveMeters(BigDecimal printedMeters) {

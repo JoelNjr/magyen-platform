@@ -2,6 +2,7 @@ package com.magyen.platform.commercial.application.usecase;
 
 import com.magyen.platform.commercial.application.CustomerNameResolver;
 import com.magyen.platform.commercial.application.SellerNameResolver;
+import com.magyen.platform.commercial.application.dto.GetOrdersQuery;
 import com.magyen.platform.commercial.application.dto.GetOrdersResult;
 import com.magyen.platform.commercial.application.dto.OrderResult;
 import com.magyen.platform.commercial.domain.Order;
@@ -10,7 +11,9 @@ import com.magyen.platform.commercial.domain.Quotation;
 import com.magyen.platform.commercial.domain.QuotationNumber;
 import com.magyen.platform.commercial.domain.QuotationNumberFormat;
 import com.magyen.platform.commercial.domain.QuotationRepository;
+import com.magyen.platform.commercial.domain.exception.OrderDomainException;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -47,7 +50,16 @@ public class GetOrdersUseCase {
     }
 
     public GetOrdersResult execute() {
-        List<Order> orders = orderRepository.findAll();
+        return execute(new GetOrdersQuery(null, null));
+    }
+
+    public GetOrdersResult execute(GetOrdersQuery query) {
+        Objects.requireNonNull(query, "Query must not be null");
+        validateRange(query.fromDate(), query.toDate());
+
+        List<Order> orders = orderRepository.findAll().stream()
+                .filter(order -> inRange(order.getConfirmationDate(), query.fromDate(), query.toDate()))
+                .toList();
         Function<UUID, String> sellerNames = sellerNameResolver.nameLookup(
                 orders.stream().map(Order::getSellerId).toList()
         );
@@ -68,6 +80,25 @@ public class GetOrdersUseCase {
                 .toList();
 
         return new GetOrdersResult(results);
+    }
+
+    private static void validateRange(LocalDate fromDate, LocalDate toDate) {
+        if (fromDate == null && toDate == null) {
+            return;
+        }
+        if (fromDate == null || toDate == null) {
+            throw new OrderDomainException("Both fromDate and toDate must be provided together");
+        }
+        if (fromDate.isAfter(toDate)) {
+            throw new OrderDomainException("From date must not be after to date");
+        }
+    }
+
+    private static boolean inRange(LocalDate businessDate, LocalDate fromDate, LocalDate toDate) {
+        if (fromDate == null || toDate == null) {
+            return true;
+        }
+        return businessDate != null && !businessDate.isBefore(fromDate) && !businessDate.isAfter(toDate);
     }
 
     private OrderResult toOrderResult(

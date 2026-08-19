@@ -8,6 +8,7 @@ import {
   DialogTitle,
   Stack,
   TextField,
+  Typography,
 } from '@mui/material'
 import { formatPlotterMoney } from '../presentation/plotterJobPresentation'
 
@@ -26,6 +27,8 @@ const EMPTY_FORM = {
 
 function RegisterPlotterPaymentDialog({
   open,
+  totalAmount,
+  paidAmount,
   outstandingAmount,
   onClose,
   onSubmit,
@@ -102,18 +105,26 @@ function RegisterPlotterPaymentDialog({
           {(validationError || errorMessage) && (
             <Alert severity="error">{validationError || errorMessage}</Alert>
           )}
-          <Alert severity="info">
-            Saldo pendiente: {formatPlotterMoney(outstandingAmount)}
-          </Alert>
+          <Stack spacing={0.5}>
+            <Typography variant="body2" color="text.secondary">
+              Total del trabajo: {formatPlotterMoney(totalAmount)}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Total pagado: {formatPlotterMoney(paidAmount)}
+            </Typography>
+            <Typography variant="body2">
+              Saldo pendiente: {formatPlotterMoney(outstandingAmount)}
+            </Typography>
+          </Stack>
           <TextField
-            label="Monto"
+            label="Valor a registrar"
             value={form.amount}
             onChange={(event) => updateField('amount', event.target.value)}
             fullWidth
             disabled={submitting}
           />
           <TextField
-            label="Fecha"
+            label="Fecha del pago"
             type="date"
             value={form.paymentDate}
             onChange={(event) => updateField('paymentDate', event.target.value)}

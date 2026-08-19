@@ -34,10 +34,7 @@ function resolveApiErrorMessage(error, fallbackMessage) {
 }
 
 function formatInkCost(summary) {
-  if (!summary || !summary.inkCostRecorded) {
-    return 'Sin registrar'
-  }
-  return formatPlotterMoney(summary.inkCost)
+  return formatPlotterMoney(summary?.inkCost ?? 0)
 }
 
 function formatAnalyticalResult(summary) {
@@ -155,6 +152,7 @@ function PlotterProfitabilityPage() {
             <MenuItem value="ALL">Todos</MenuItem>
             <MenuItem value="EXTERNAL">Externos</MenuItem>
             <MenuItem value="INTERNAL">Internos</MenuItem>
+            <MenuItem value="WASTE">Merma</MenuItem>
           </TextField>
           <Button variant="contained" onClick={handleApplyFilters} disabled={loading}>
             Consultar
@@ -174,6 +172,13 @@ function PlotterProfitabilityPage() {
           {errorMessage}
         </Alert>
       ) : null}
+
+      <Stack spacing={1}>
+        <Typography variant="h5">Rentabilidad</Typography>
+        <Typography variant="body2" color="text.secondary">
+          Ingreso generado menos compras de papel y tinta del período. No es cobranza.
+        </Typography>
+      </Stack>
 
       <BoxGrid>
         <MetricCard
@@ -232,12 +237,54 @@ function PlotterProfitabilityPage() {
           value={summary?.externalJobCount ?? 0}
           loading={loading}
         />
+        <MetricCard
+          title="Trabajos de merma"
+          value={summary?.wasteJobCount ?? 0}
+          loading={loading}
+        />
+        <MetricCard
+          title="Metros de merma"
+          value={
+            summary
+              ? `${formatPlotterNumber(summary.wastePrintedMeters)} m`
+              : '—'
+          }
+          loading={loading}
+        />
+      </BoxGrid>
+
+      <Stack spacing={1}>
+        <Typography variant="h5">Cobranza de trabajos externos</Typography>
+        <Typography variant="body2" color="text.secondary">
+          Pagos registrados contra trabajos EXTERNAL del período. No crea
+          transacciones de Finanzas al abrir este reporte. No incluye interno ni
+          merma.
+        </Typography>
+      </Stack>
+
+      <BoxGrid>
+        <MetricCard
+          title="Total generado"
+          value={formatPlotterMoney(summary?.externalRevenue)}
+          loading={loading}
+        />
+        <MetricCard
+          title="Total pagado"
+          value={formatPlotterMoney(summary?.externalPaidAmount)}
+          loading={loading}
+        />
+        <MetricCard
+          title="Saldo pendiente por cobrar"
+          value={formatPlotterMoney(summary?.externalOutstandingAmount)}
+          loading={loading}
+        />
       </BoxGrid>
 
       {!failed && !loading && summary ? (
         <Alert severity={summary.paperCostComplete ? 'success' : 'warning'}>
           {paperValuationLabel}. Trabajos externos: {summary.externalJobCount}.
-          Trabajos internos Magyen: {summary.internalJobCount}.
+          Trabajos internos Magyen: {summary.internalJobCount}. Trabajos de merma:{' '}
+          {summary.wasteJobCount}.
         </Alert>
       ) : null}
 

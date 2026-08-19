@@ -169,7 +169,9 @@ public class PlotterPresentationMapper {
                 result.jobCount(),
                 result.externalJobCount(),
                 result.internalJobCount(),
+                result.wasteJobCount(),
                 result.totalPaperPrintedMeters(),
+                result.wastePrintedMeters(),
                 result.externalRevenue(),
                 result.internalRevenue(),
                 result.combinedRevenue(),
@@ -182,6 +184,8 @@ public class PlotterPresentationMapper {
                 result.inkCostRecorded(),
                 result.inkCost(),
                 result.analyticalPlotterResult(),
+                result.externalPaidAmount(),
+                result.externalOutstandingAmount(),
                 result.internalOrders().stream().map(this::toInternalOrderResponse).toList()
         );
     }

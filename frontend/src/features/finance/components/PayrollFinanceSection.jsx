@@ -446,8 +446,9 @@ function PayrollFinanceSection({
       <Stack spacing={2}>
         <Typography variant="h5">Desempeño de vendedores</Typography>
         <Typography variant="body2" color="text.secondary">
-          Comisión del 5% sobre pedidos entregados o cerrados. Es acumulado /
-          pendiente de liquidación: no crea un gasto de Finanzas.
+          Comisión del 5% sobre pedidos entregados o cerrados, según la fecha de
+          confirmación. Los pedidos confirmados o en producción no acumulan. Es
+          analítico: no crea un gasto de Finanzas ni depende de generar nómina.
         </Typography>
         {performanceFailed ? (
           <Alert

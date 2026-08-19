@@ -7,10 +7,12 @@ import com.magyen.platform.plotter.domain.exception.PlotterDomainException;
  * <p>
  * {@code INTERNAL_MAGYEN} es un servicio interno Magyen (valor por metro variable).
  * {@code EXTERNAL} es un servicio de impresión a un cliente externo.
+ * {@code WASTE} es merma operativa (muestras, pruebas, errores) sin ingreso ni cobro.
  */
 public enum PlotterJobType {
     INTERNAL_MAGYEN,
-    EXTERNAL;
+    EXTERNAL,
+    WASTE;
 
     public static PlotterJobType of(String value) {
         if (value == null || value.isBlank()) {
@@ -29,5 +31,9 @@ public enum PlotterJobType {
 
     public boolean isExternal() {
         return this == EXTERNAL;
+    }
+
+    public boolean isWaste() {
+        return this == WASTE;
     }
 }

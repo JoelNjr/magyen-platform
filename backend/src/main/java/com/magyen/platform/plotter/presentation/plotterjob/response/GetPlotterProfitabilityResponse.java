@@ -14,7 +14,9 @@ public record GetPlotterProfitabilityResponse(
         int jobCount,
         int externalJobCount,
         int internalJobCount,
+        int wasteJobCount,
         BigDecimal totalPaperPrintedMeters,
+        BigDecimal wastePrintedMeters,
         BigDecimal externalRevenue,
         BigDecimal internalRevenue,
         BigDecimal combinedRevenue,
@@ -27,6 +29,8 @@ public record GetPlotterProfitabilityResponse(
         boolean inkCostRecorded,
         BigDecimal inkCost,
         BigDecimal analyticalPlotterResult,
+        BigDecimal externalPaidAmount,
+        BigDecimal externalOutstandingAmount,
         List<PlotterInternalOrderCostItemResponse> internalOrders
 ) {
 }

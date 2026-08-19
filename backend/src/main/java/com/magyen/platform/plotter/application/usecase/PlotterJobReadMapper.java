@@ -78,7 +78,9 @@ final class PlotterJobReadMapper {
                 return new Identity(order.customerName(), order.orderNumber(), order.description());
             }
         }
-        String customerName = commercialOrderPort.findCustomerName(plotterJob.getCustomerId()).orElse(null);
+        String customerName = plotterJob.getCustomerId() == null
+                ? null
+                : commercialOrderPort.findCustomerName(plotterJob.getCustomerId()).orElse(null);
         return new Identity(customerName, null, null);
     }
 

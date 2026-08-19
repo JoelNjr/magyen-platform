@@ -8,7 +8,8 @@ import java.util.Locale;
 public enum PlotterProfitabilityScope {
     ALL,
     EXTERNAL,
-    INTERNAL;
+    INTERNAL,
+    WASTE;
 
     public static PlotterProfitabilityScope of(String value) {
         if (value == null || value.isBlank()) {
@@ -19,6 +20,7 @@ public enum PlotterProfitabilityScope {
             case "ALL", "TODOS" -> ALL;
             case "EXTERNAL", "EXTERNOS" -> EXTERNAL;
             case "INTERNAL", "INTERNOS", "INTERNAL_MAGYEN" -> INTERNAL;
+            case "WASTE", "MERMA", "MERMAS" -> WASTE;
             default -> throw new IllegalArgumentException("Unsupported plotter profitability scope: " + value.trim());
         };
     }

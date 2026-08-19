@@ -38,7 +38,7 @@ final class PlotterPaymentBalanceCalculator {
 
     static BigDecimal collectableOutstanding(PlotterJob job, BigDecimal paidAmount) {
         Objects.requireNonNull(job, "Plotter job must not be null");
-        if (job.getJobType().isInternal()) {
+        if (job.getJobType().isInternal() || job.getJobType().isWaste()) {
             return ZERO;
         }
         return outstanding(job.getTotalAmount(), paidAmount);

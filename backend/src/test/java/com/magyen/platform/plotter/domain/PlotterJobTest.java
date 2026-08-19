@@ -148,6 +148,53 @@ class PlotterJobTest {
     }
 
     @Test
+    void wasteJobDoesNotRequireCustomerOrOrderAndHasZeroRevenue() {
+        PlotterJob plotterJob = PlotterJob.create(
+                UUID.randomUUID(),
+                PlotterJobType.WASTE,
+                null,
+                null,
+                LocalDate.of(2026, 8, 18),
+                UUID.randomUUID(),
+                new BigDecimal("3.5000"),
+                BigDecimal.ZERO,
+                "prueba fallida"
+        );
+
+        assertEquals(PlotterJobType.WASTE, plotterJob.getJobType());
+        assertNull(plotterJob.getCustomerId());
+        assertNull(plotterJob.getOrderId());
+        assertEquals(new BigDecimal("0.00"), plotterJob.getTotalAmount());
+        assertEquals("prueba fallida", plotterJob.getObservations());
+    }
+
+    @Test
+    void rejectsWasteJobWithCustomerOrOrder() {
+        assertThrows(PlotterDomainException.class, () -> PlotterJob.create(
+                UUID.randomUUID(),
+                PlotterJobType.WASTE,
+                UUID.randomUUID(),
+                null,
+                LocalDate.of(2026, 8, 18),
+                UUID.randomUUID(),
+                new BigDecimal("2"),
+                BigDecimal.ZERO,
+                null
+        ));
+        assertThrows(PlotterDomainException.class, () -> PlotterJob.create(
+                UUID.randomUUID(),
+                PlotterJobType.WASTE,
+                null,
+                UUID.randomUUID(),
+                LocalDate.of(2026, 8, 18),
+                UUID.randomUUID(),
+                new BigDecimal("2"),
+                BigDecimal.ZERO,
+                null
+        ));
+    }
+
+    @Test
     void calculatesTotalWithDecimalMeters() {
         BigDecimal total = PlotterJob.calculateTotalAmount(
                 new BigDecimal("10.5"),

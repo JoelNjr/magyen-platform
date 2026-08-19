@@ -1,7 +1,12 @@
 import httpClient from '../../../services/httpClient'
 
-export async function getQuotations() {
-  const response = await httpClient.get('/quotations')
+export async function getQuotations(params = {}) {
+  const response = await httpClient.get('/quotations', {
+    params: {
+      fromDate: params.fromDate || undefined,
+      toDate: params.toDate || undefined,
+    },
+  })
   return response.data
 }
 
@@ -54,8 +59,13 @@ export async function createOrder(payload) {
   return response.data
 }
 
-export async function getOrders() {
-  const response = await httpClient.get('/orders')
+export async function getOrders(params = {}) {
+  const response = await httpClient.get('/orders', {
+    params: {
+      fromDate: params.fromDate || undefined,
+      toDate: params.toDate || undefined,
+    },
+  })
   return response.data
 }
 

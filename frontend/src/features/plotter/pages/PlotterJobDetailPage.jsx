@@ -28,6 +28,7 @@ import {
 } from '../../inventory/services/inventoryService'
 import RegisterPlotterPaymentDialog from '../components/RegisterPlotterPaymentDialog'
 import {
+  canRegisterExternalPlotterPayment,
   formatPlotterCustomerLabel,
   formatPlotterDate,
   formatPlotterJobTypeLabel,
@@ -35,7 +36,9 @@ import {
   formatPlotterNumber,
   formatPlotterOrderLabel,
   getPlotterStatusChipProps,
+  isExternalPlotterJob,
   isInternalPlotterJob,
+  isWastePlotterJob,
 } from '../presentation/plotterJobPresentation'
 import {
   getPlotterJob,
@@ -222,7 +225,9 @@ function PlotterJobDetailPage() {
   const statusChip = getPlotterStatusChipProps(job.status)
   const outstanding = Number(job.outstandingAmount ?? 0)
   const internalJob = isInternalPlotterJob(job.jobType)
-  const canRegisterPayment = !internalJob && outstanding > 0
+  const wasteJob = isWastePlotterJob(job.jobType)
+  const externalJob = isExternalPlotterJob(job.jobType)
+  const canRegisterPayment = canRegisterExternalPlotterPayment(job)
 
   return (
     <>
@@ -293,7 +298,7 @@ function PlotterJobDetailPage() {
                 <Typography>{formatPlotterNumber(job.printedMeters)} m</Typography>
               </DetailField>
             </Grid>
-            {!internalJob && (
+            {!internalJob && !wasteJob && (
               <>
                 <Grid item xs={12} sm={6} md={4}>
                   <DetailField label="Precio por metro">
@@ -317,6 +322,14 @@ function PlotterJobDetailPage() {
                 </Alert>
               </Grid>
             )}
+            {wasteJob && (
+              <Grid item xs={12}>
+                <Alert severity="info">
+                  Este trabajo registra merma de papel. No genera cobro a cliente
+                  ni ingreso de Finanzas.
+                </Alert>
+              </Grid>
+            )}
             <Grid item xs={12}>
               <DetailField label="Observaciones">
                 <Typography>{job.observations || '—'}</Typography>
@@ -325,7 +338,7 @@ function PlotterJobDetailPage() {
           </Grid>
         </Paper>
 
-        {!internalJob && (
+        {externalJob && (
         <Paper sx={{ p: 3 }}>
           <Stack spacing={2}>
             <Stack
@@ -347,7 +360,7 @@ function PlotterJobDetailPage() {
                   setPaymentDialogOpen(true)
                 }}
               >
-                Registrar pago
+                {canRegisterPayment ? 'Registrar pago' : 'Pago completado'}
               </Button>
             </Stack>
 
@@ -462,6 +475,8 @@ function PlotterJobDetailPage() {
 
       <RegisterPlotterPaymentDialog
         open={paymentDialogOpen}
+        totalAmount={job.totalAmount}
+        paidAmount={job.paidAmount}
         outstandingAmount={job.outstandingAmount}
         onClose={() => {
           if (!registeringPayment) {

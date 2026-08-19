@@ -47,6 +47,9 @@ class PlotterPaymentFinanceIntegrationTest {
     private GetPlotterJobUseCase getPlotterJobUseCase;
 
     @Autowired
+    private GetPlotterJobsUseCase getPlotterJobsUseCase;
+
+    @Autowired
     private RegisterPlotterPaymentUseCase registerPlotterPaymentUseCase;
 
     @Autowired
@@ -141,6 +144,43 @@ class PlotterPaymentFinanceIntegrationTest {
     }
 
     @Test
+    void listReadReflectsOutstandingAfterSamePaymentUseCase() {
+        CreatePlotterJobResult job = createJob("100000.00");
+
+        var unpaid = listedJob(job.plotterJobId());
+        assertEquals(new BigDecimal("0.00"), unpaid.paidAmount());
+        assertEquals(new BigDecimal("100000.00"), unpaid.outstandingAmount());
+
+        registerPlotterPaymentUseCase.execute(
+                new RegisterPlotterPaymentCommand(
+                        job.plotterJobId(),
+                        new BigDecimal("40000.00"),
+                        LocalDate.of(2026, 8, 10),
+                        "Abono lista"
+                )
+        );
+
+        var partial = listedJob(job.plotterJobId());
+        assertEquals(new BigDecimal("40000.00"), partial.paidAmount());
+        assertEquals(new BigDecimal("60000.00"), partial.outstandingAmount());
+        assertEquals(1, countPlotterIncomeForJobPayments(job.plotterJobId()));
+
+        registerPlotterPaymentUseCase.execute(
+                new RegisterPlotterPaymentCommand(
+                        job.plotterJobId(),
+                        new BigDecimal("60000.00"),
+                        LocalDate.of(2026, 8, 11),
+                        "Saldo lista"
+                )
+        );
+
+        var complete = listedJob(job.plotterJobId());
+        assertEquals(new BigDecimal("100000.00"), complete.paidAmount());
+        assertEquals(new BigDecimal("0.00"), complete.outstandingAmount());
+        assertEquals(2, countPlotterIncomeForJobPayments(job.plotterJobId()));
+    }
+
+    @Test
     void rejectsZeroAndNegativePayments() {
         CreatePlotterJobResult job = createJob("50000.00");
 
@@ -192,6 +232,13 @@ class PlotterPaymentFinanceIntegrationTest {
                 new BigDecimal(pricePerMeterForOneMeter),
                 "Job pago Inc8"
         ));
+    }
+
+    private GetPlotterJobResult listedJob(UUID plotterJobId) {
+        return getPlotterJobsUseCase.execute().jobs().stream()
+                .filter(job -> plotterJobId.equals(job.plotterJobId()))
+                .findFirst()
+                .orElseThrow();
     }
 
     private List<FinancialTransaction> findByPaymentId(UUID paymentId) {

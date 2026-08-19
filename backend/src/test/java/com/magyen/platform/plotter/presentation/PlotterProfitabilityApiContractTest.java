@@ -16,7 +16,9 @@ import com.magyen.platform.inventory.application.dto.CreateInventoryItemResult;
 import com.magyen.platform.inventory.application.dto.InventoryAcquisitionCommand;
 import com.magyen.platform.inventory.application.usecase.CreateInventoryItemUseCase;
 import com.magyen.platform.plotter.application.dto.CreatePlotterJobCommand;
+import com.magyen.platform.plotter.application.dto.RegisterPlotterPaymentCommand;
 import com.magyen.platform.plotter.application.usecase.CreatePlotterJobUseCase;
+import com.magyen.platform.plotter.application.usecase.RegisterPlotterPaymentUseCase;
 import com.magyen.platform.plotter.domain.PlotterJobType;
 import com.magyen.platform.shared.testsupport.FixedSellerEmployeeFixture;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,6 +56,9 @@ class PlotterProfitabilityApiContractTest {
 
     @Autowired
     private CreatePlotterJobUseCase createPlotterJobUseCase;
+
+    @Autowired
+    private RegisterPlotterPaymentUseCase registerPlotterPaymentUseCase;
 
     @Autowired
     private CreatePayrollEmployeeUseCase createPayrollEmployeeUseCase;
@@ -175,8 +180,12 @@ class PlotterProfitabilityApiContractTest {
                 .andExpect(jsonPath("$.combinedRevenue").value(160000.00))
                 .andExpect(jsonPath("$.totalPaperCost").value(200000.00))
                 .andExpect(jsonPath("$.analyticalPlotterResult").value(-40000.00))
-                .andExpect(jsonPath("$.inkCostRecorded").value(false))
+                .andExpect(jsonPath("$.inkCostRecorded").value(true))
+                .andExpect(jsonPath("$.inkCost").value(0.00))
+                .andExpect(jsonPath("$.wasteJobCount").value(0))
                 .andExpect(jsonPath("$.paperCostComplete").value(true))
+                .andExpect(jsonPath("$.externalPaidAmount").value(0.00))
+                .andExpect(jsonPath("$.externalOutstandingAmount").value(120000.00))
                 .andExpect(jsonPath("$.internalOrders[*].orderNumber", hasItem(order.orderNumber())))
                 .andExpect(jsonPath("$.internalOrders[*].customerName", hasItem(customerName)))
                 .andExpect(jsonPath("$.internalOrders[*].serviceValue", hasItem(40000.00)));
@@ -190,6 +199,8 @@ class PlotterProfitabilityApiContractTest {
                 )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.externalRevenue").value(0.00))
+                .andExpect(jsonPath("$.externalPaidAmount").value(0.00))
+                .andExpect(jsonPath("$.externalOutstandingAmount").value(0.00))
                 .andExpect(jsonPath("$.internalJobCount").value(1))
                 .andExpect(jsonPath("$.internalRevenue").value(40000.00))
                 .andExpect(jsonPath("$.analyticalPlotterResult").value(-160000.00));
@@ -203,5 +214,94 @@ class PlotterProfitabilityApiContractTest {
                                 .accept(MediaType.APPLICATION_JSON)
                 )
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void collectionMetricsUseExternalPaymentsAndExcludeInternalAndWaste() throws Exception {
+        CreateInventoryItemResult roll = createInventoryItemUseCase.execute(new CreateInventoryItemCommand(
+                "PLPC-" + UUID.randomUUID().toString().substring(0, 8),
+                "Papel cobranza API",
+                "PAPER",
+                "METER",
+                new BigDecimal("80.0000"),
+                new BigDecimal("10.0000"),
+                null,
+                new BigDecimal("5000.00"),
+                "PAPER",
+                true
+        ));
+
+        var unpaid = createPlotterJobUseCase.execute(new CreatePlotterJobCommand(
+                UUID.randomUUID(),
+                null,
+                JOB_DATE,
+                roll.inventoryItemId(),
+                new BigDecimal("1.0000"),
+                new BigDecimal("100000.00"),
+                "externo sin pago API",
+                PlotterJobType.EXTERNAL,
+                null
+        ));
+        var partial = createPlotterJobUseCase.execute(new CreatePlotterJobCommand(
+                UUID.randomUUID(),
+                null,
+                JOB_DATE,
+                roll.inventoryItemId(),
+                new BigDecimal("1.0000"),
+                new BigDecimal("80000.00"),
+                "externo parcial API",
+                PlotterJobType.EXTERNAL,
+                null
+        ));
+        createPlotterJobUseCase.execute(new CreatePlotterJobCommand(
+                null,
+                null,
+                JOB_DATE,
+                roll.inventoryItemId(),
+                new BigDecimal("1.0000"),
+                BigDecimal.ZERO,
+                "merma cobranza API",
+                PlotterJobType.WASTE,
+                null
+        ));
+
+        registerPlotterPaymentUseCase.execute(new RegisterPlotterPaymentCommand(
+                unpaid.plotterJobId(),
+                new BigDecimal("100000.00"),
+                JOB_DATE,
+                "pago completo API"
+        ));
+        registerPlotterPaymentUseCase.execute(new RegisterPlotterPaymentCommand(
+                partial.plotterJobId(),
+                new BigDecimal("30000.00"),
+                JOB_DATE,
+                "abono API"
+        ));
+
+        mockMvc.perform(
+                        get("/api/v1/plotter/profitability")
+                                .param("fromDate", PERIOD_START.toString())
+                                .param("toDate", PERIOD_END.toString())
+                                .param("scope", "ALL")
+                                .accept(MediaType.APPLICATION_JSON)
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.externalJobCount").value(2))
+                .andExpect(jsonPath("$.wasteJobCount").value(1))
+                .andExpect(jsonPath("$.externalRevenue").value(180000.00))
+                .andExpect(jsonPath("$.externalPaidAmount").value(130000.00))
+                .andExpect(jsonPath("$.externalOutstandingAmount").value(50000.00));
+
+        mockMvc.perform(
+                        get("/api/v1/plotter/profitability")
+                                .param("fromDate", PERIOD_START.toString())
+                                .param("toDate", PERIOD_END.toString())
+                                .param("scope", "WASTE")
+                                .accept(MediaType.APPLICATION_JSON)
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.externalPaidAmount").value(0.00))
+                .andExpect(jsonPath("$.externalOutstandingAmount").value(0.00))
+                .andExpect(jsonPath("$.wasteJobCount").value(1));
     }
 }

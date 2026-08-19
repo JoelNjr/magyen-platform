@@ -8,6 +8,7 @@
     "build": "vite build",
     "lint": "oxlint",
     "test:home-access": "node --test src/features/auth/presentation/authPresentation.homeAccess.test.js",
+    "test:plotter-payment-ux": "node --test src/features/plotter/presentation/plotterJobPresentation.paymentActions.test.js",
     "preview": "vite preview"
   },
   "dependencies": {

@@ -7,6 +7,7 @@ import com.magyen.platform.commercial.application.dto.GetOrderProfitabilityListR
 import com.magyen.platform.commercial.application.dto.GetOrderProfitabilityQuery;
 import com.magyen.platform.commercial.application.dto.GetOrderProfitabilityResult;
 import com.magyen.platform.commercial.application.dto.GetOrderResult;
+import com.magyen.platform.commercial.application.dto.GetOrdersQuery;
 import com.magyen.platform.commercial.application.dto.GetOrdersResult;
 import com.magyen.platform.commercial.application.dto.ReplaceOrderItemSizesCommand;
 import com.magyen.platform.commercial.application.dto.ReplaceOrderItemSizesResult;
@@ -37,9 +38,12 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 /**
@@ -81,8 +85,11 @@ public class OrderController {
     }
 
     @GetMapping
-    public ResponseEntity<GetOrdersResponse> getOrders() {
-        GetOrdersResult result = getOrdersUseCase.execute();
+    public ResponseEntity<GetOrdersResponse> getOrders(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate
+    ) {
+        GetOrdersResult result = getOrdersUseCase.execute(new GetOrdersQuery(fromDate, toDate));
         GetOrdersResponse response = orderPresentationMapper.toResponse(result);
         return ResponseEntity.ok(response);
     }

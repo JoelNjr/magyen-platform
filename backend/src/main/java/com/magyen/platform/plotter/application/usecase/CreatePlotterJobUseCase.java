@@ -25,6 +25,8 @@ import java.util.UUID;
  * Crea un par Finance EXPENSE+INCOME del valor del servicio (neto 0).
  * No crea un segundo gasto de compra de papel.
  * EXTERNAL: servicio a cliente; el cobro permanece en el flujo de pagos.
+ * WASTE: merma operativa. Consume papel, no exige cliente ni orden, no crea INCOME
+ * ni un segundo EXPENSE.
  * <p>
  * Atomicidad: PlotterJob, el OUT y los asientos internos comparten transacción.
  * Idempotencia: el mismo {@code plotterJobId} no consume papel ni duplica asientos.
@@ -98,8 +100,17 @@ public class CreatePlotterJobUseCase {
         PlotterJobType jobType = resolveJobType(command);
         UUID customerId = command.customerId();
         UUID orderId = command.orderId();
+        BigDecimal pricePerMeter = command.pricePerMeter();
 
-        if (jobType.isInternal()) {
+        if (jobType.isWaste()) {
+            if (customerId != null) {
+                throw new PlotterDomainException("Waste plotter jobs must not reference a customer");
+            }
+            if (orderId != null) {
+                throw new PlotterDomainException("Waste plotter jobs must not reference a commercial order");
+            }
+            pricePerMeter = BigDecimal.ZERO;
+        } else if (jobType.isInternal()) {
             if (orderId == null) {
                 throw new PlotterDomainException("Internal Magyen plotter jobs require a commercial order");
             }
@@ -110,7 +121,7 @@ public class CreatePlotterJobUseCase {
             throw new PlotterDomainException("External plotter jobs must not reference a commercial order");
         }
 
-        if (customerId == null) {
+        if (!jobType.isWaste() && customerId == null) {
             throw new PlotterDomainException("Customer id must not be null");
         }
 
@@ -122,7 +133,7 @@ public class CreatePlotterJobUseCase {
                 creationDate,
                 command.paperInventoryItemId(),
                 command.printedMeters(),
-                command.pricePerMeter(),
+                pricePerMeter,
                 command.observations()
         );
 
@@ -172,6 +183,9 @@ public class CreatePlotterJobUseCase {
             throw new PlotterDomainException("Printed meters must be greater than zero");
         }
         PlotterJobType jobType = resolveJobType(command);
+        if (jobType.isWaste()) {
+            return;
+        }
         if (jobType.isExternal()) {
             if (command.customerId() == null) {
                 throw new PlotterDomainException("Customer id must not be null");

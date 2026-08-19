@@ -400,14 +400,15 @@ CREATE UNIQUE INDEX uq_inventory_movements_source
 -- Plotter module
 -- Aggregate: PlotterJob
 -- Soft refs: customer_id (Commercial), order_id (Commercial), paper_inventory_item_id (Inventory) — no FKs
--- job_type: INTERNAL_MAGYEN | EXTERNAL
+-- job_type: INTERNAL_MAGYEN | EXTERNAL | WASTE
 -- INTERNAL_MAGYEN is a production material operation, not a second purchase or sale.
+-- WASTE is operational merma (samples, tests, failed prints) without customer, order, payment or income.
 -- Paper consumption for an internal Magyen order is recorded exactly once (Inventory OUT sourceId = plotter job id).
 
 CREATE TABLE plotter_jobs (
     id                          uuid            NOT NULL,
     job_type                    varchar(30)     NOT NULL,
-    customer_id                 uuid            NOT NULL,
+    customer_id                 uuid            NULL,
     order_id                    uuid            NULL,
     creation_date               date            NOT NULL,
     paper_inventory_item_id     uuid            NOT NULL,

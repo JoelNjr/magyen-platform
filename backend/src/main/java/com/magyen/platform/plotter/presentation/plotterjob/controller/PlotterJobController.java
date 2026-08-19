@@ -2,6 +2,7 @@ package com.magyen.platform.plotter.presentation.plotterjob.controller;
 
 import com.magyen.platform.plotter.application.dto.CreatePlotterJobResult;
 import com.magyen.platform.plotter.application.dto.GetPlotterJobResult;
+import com.magyen.platform.plotter.application.dto.GetPlotterJobsQuery;
 import com.magyen.platform.plotter.application.dto.GetPlotterJobsResult;
 import com.magyen.platform.plotter.application.dto.GetPlotterPaymentsResult;
 import com.magyen.platform.plotter.application.dto.RegisterPlotterPaymentResult;
@@ -24,9 +25,12 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 /**
@@ -73,8 +77,11 @@ public class PlotterJobController {
     }
 
     @GetMapping
-    public ResponseEntity<GetPlotterJobsResponse> getPlotterJobs() {
-        GetPlotterJobsResult result = getPlotterJobsUseCase.execute();
+    public ResponseEntity<GetPlotterJobsResponse> getPlotterJobs(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate
+    ) {
+        GetPlotterJobsResult result = getPlotterJobsUseCase.execute(new GetPlotterJobsQuery(fromDate, toDate));
         return ResponseEntity.ok(plotterPresentationMapper.toGetJobsResponse(result));
     }
 

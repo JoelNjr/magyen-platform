@@ -1,7 +1,12 @@
 import httpClient from '../../../services/httpClient'
 
-export async function getProductionOrders() {
-  const response = await httpClient.get('/production-orders')
+export async function getProductionOrders(params = {}) {
+  const response = await httpClient.get('/production-orders', {
+    params: {
+      fromDate: params.fromDate || undefined,
+      toDate: params.toDate || undefined,
+    },
+  })
   return response.data
 }
 

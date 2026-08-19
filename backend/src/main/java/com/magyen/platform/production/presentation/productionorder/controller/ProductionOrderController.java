@@ -20,6 +20,7 @@ import com.magyen.platform.production.application.dto.GetProductionMaterialConsu
 import com.magyen.platform.production.application.dto.GetProductionMaterialConsumptionsResult;
 import com.magyen.platform.production.application.dto.GetProductionOrderCommand;
 import com.magyen.platform.production.application.dto.GetProductionOrderResult;
+import com.magyen.platform.production.application.dto.GetProductionOrdersQuery;
 import com.magyen.platform.production.application.dto.GetProductionOrdersResult;
 import com.magyen.platform.production.application.dto.PayProductionLaborWorkCommand;
 import com.magyen.platform.production.application.dto.PayProductionLaborWorkResult;
@@ -84,9 +85,12 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 /**
@@ -158,8 +162,13 @@ public class ProductionOrderController {
     }
 
     @GetMapping
-    public ResponseEntity<GetProductionOrdersResponse> getProductionOrders() {
-        GetProductionOrdersResult result = getProductionOrdersUseCase.execute();
+    public ResponseEntity<GetProductionOrdersResponse> getProductionOrders(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate
+    ) {
+        GetProductionOrdersResult result = getProductionOrdersUseCase.execute(
+                new GetProductionOrdersQuery(fromDate, toDate)
+        );
         GetProductionOrdersResponse response = productionPresentationMapper.toResponse(result);
         return ResponseEntity.ok(response);
     }

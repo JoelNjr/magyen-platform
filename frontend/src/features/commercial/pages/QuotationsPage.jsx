@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import AddIcon from '@mui/icons-material/Add'
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined'
 import {
@@ -25,6 +25,8 @@ import {
   resolveCustomerName,
 } from '../presentation/resolveCustomerName'
 import { getCustomers, getQuotations } from '../services/commercialService'
+import MonthPeriodNavigator from '../../../shared/period/MonthPeriodNavigator'
+import { formatMonthPeriodLabel, getCalendarMonthRange } from '../../../shared/period/monthPeriod'
 
 const currencyFormatter = new Intl.NumberFormat('es-CO', {
   style: 'currency',
@@ -78,6 +80,8 @@ function QuotationsTableHead() {
 function QuotationsPage() {
   const location = useLocation()
   const navigate = useNavigate()
+  const initialPeriod = useMemo(() => getCalendarMonthRange(), [])
+  const [period, setPeriod] = useState(initialPeriod)
   const [quotations, setQuotations] = useState([])
   const [customerNameById, setCustomerNameById] = useState({})
   const [loading, setLoading] = useState(true)
@@ -85,7 +89,9 @@ function QuotationsPage() {
   const [successOpen, setSuccessOpen] = useState(false)
 
   useEffect(() => {
-    getQuotations()
+    setLoading(true)
+    setFailed(false)
+    getQuotations({ fromDate: period.fromDate, toDate: period.toDate })
       .then((data) => {
         setQuotations(data.quotations)
         setLoading(false)
@@ -102,7 +108,7 @@ function QuotationsPage() {
       .catch(() => {
         setCustomerNameById({})
       })
-  }, [])
+  }, [period.fromDate, period.toDate])
 
   useEffect(() => {
     if (!location.state?.created) {
@@ -156,6 +162,12 @@ function QuotationsPage() {
           </Stack>
         </Stack>
 
+        <MonthPeriodNavigator
+          fromDate={period.fromDate}
+          disabled={loading}
+          onPeriodChange={setPeriod}
+        />
+
         {loading && (
           <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
             <Table>
@@ -203,9 +215,11 @@ function QuotationsPage() {
           <Paper sx={{ p: { xs: 3, sm: 4 } }}>
             <Stack spacing={2} alignItems="center" sx={{ py: 2 }}>
               <Inventory2OutlinedIcon color="action" sx={{ fontSize: 48 }} />
-              <Typography variant="h6">No hay cotizaciones registradas</Typography>
+              <Typography variant="h6">
+                No hay cotizaciones en {formatMonthPeriodLabel(period.fromDate)}
+              </Typography>
               <Typography color="text.secondary" textAlign="center">
-                Crea tu primera cotización para comenzar.
+                Cambia de mes para ver el histórico o crea una nueva cotización.
               </Typography>
               <Button
                 variant="contained"

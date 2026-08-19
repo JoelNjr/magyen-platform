@@ -18,6 +18,7 @@ import {
   formatPlotterNumber,
   formatPlotterOrderLabel,
   isInternalPlotterJob,
+  isWastePlotterJob,
 } from '../presentation/plotterJobPresentation'
 
 function toIsoDate(date = new Date()) {
@@ -88,6 +89,7 @@ function CreatePlotterJobDialog({
 
   const isInternal = isInternalPlotterJob(form.jobType)
   const isExternal = form.jobType === 'EXTERNAL'
+  const isWaste = isWastePlotterJob(form.jobType)
 
   const salePreview = useMemo(
     () => calculatePlotterTotalPreview(form.printedMeters, form.pricePerMeter),
@@ -161,24 +163,26 @@ function CreatePlotterJobDialog({
       return
     }
 
-    let pricePerMeter = null
-    const pricePerMeterRaw = form.pricePerMeter.trim()
-    if (!pricePerMeterRaw) {
-      setValidationError(
-        isInternal
-          ? 'El precio por metro es obligatorio para el servicio Plotter interno Magyen.'
-          : 'El precio por metro es obligatorio para una venta Plotter externa.'
-      )
-      return
-    }
-    pricePerMeter = Number(pricePerMeterRaw)
-    if (Number.isNaN(pricePerMeter) || (isInternal ? pricePerMeter <= 0 : pricePerMeter < 0)) {
-      setValidationError(
-        isInternal
-          ? 'El precio por metro del servicio interno debe ser mayor que cero.'
-          : 'El precio por metro debe ser un número mayor o igual a cero.'
-      )
-      return
+    let pricePerMeter = 0
+    if (!isWaste) {
+      const pricePerMeterRaw = form.pricePerMeter.trim()
+      if (!pricePerMeterRaw) {
+        setValidationError(
+          isInternal
+            ? 'El precio por metro es obligatorio para el servicio Plotter interno Magyen.'
+            : 'El precio por metro es obligatorio para una venta Plotter externa.'
+        )
+        return
+      }
+      pricePerMeter = Number(pricePerMeterRaw)
+      if (Number.isNaN(pricePerMeter) || (isInternal ? pricePerMeter <= 0 : pricePerMeter < 0)) {
+        setValidationError(
+          isInternal
+            ? 'El precio por metro del servicio interno debe ser mayor que cero.'
+            : 'El precio por metro debe ser un número mayor o igual a cero.'
+        )
+        return
+      }
     }
 
     const available = Number(selectedRoll?.stock)
@@ -221,12 +225,13 @@ function CreatePlotterJobDialog({
             fullWidth
             disabled={submitting}
             autoFocus
-            helperText="Elige si este trabajo es un servicio Plotter interno Magyen o una venta Plotter externa."
+            helperText="Elige si este trabajo es un servicio interno Magyen, una venta externa o merma operativa."
           >
             <MenuItem value="INTERNAL_MAGYEN">
               {formatPlotterJobTypeLabel('INTERNAL_MAGYEN')}
             </MenuItem>
             <MenuItem value="EXTERNAL">{formatPlotterJobTypeLabel('EXTERNAL')}</MenuItem>
+            <MenuItem value="WASTE">{formatPlotterJobTypeLabel('WASTE')}</MenuItem>
           </TextField>
 
           {isInternal && (
@@ -239,6 +244,13 @@ function CreatePlotterJobDialog({
           {isExternal && (
             <Alert severity="info">
               Venta Plotter externa. No crea una orden comercial ni producción.
+            </Alert>
+          )}
+
+          {isWaste && (
+            <Alert severity="info">
+              Merma operativa: muestras, pruebas o impresiones fallidas. Consume papel,
+              no exige cliente ni pedido y no genera cobro ni ingreso.
             </Alert>
           )}
 
@@ -331,20 +343,22 @@ function CreatePlotterJobDialog({
                 inputProps={{ inputMode: 'decimal' }}
               />
 
-              <TextField
-                label="Precio por metro"
-                value={form.pricePerMeter}
-                onChange={(event) => updateField('pricePerMeter', event.target.value)}
-                fullWidth
-                disabled={submitting}
-                required
-                helperText={
-                  isInternal
-                    ? 'Precio variable del servicio interno Magyen. No es un precio de inventario.'
-                    : 'Precio de venta al cliente externo.'
-                }
-                inputProps={{ inputMode: 'decimal' }}
-              />
+              {!isWaste && (
+                <TextField
+                  label="Precio por metro"
+                  value={form.pricePerMeter}
+                  onChange={(event) => updateField('pricePerMeter', event.target.value)}
+                  fullWidth
+                  disabled={submitting}
+                  required
+                  helperText={
+                    isInternal
+                      ? 'Precio variable del servicio interno Magyen. No es un precio de inventario.'
+                      : 'Precio de venta al cliente externo.'
+                  }
+                  inputProps={{ inputMode: 'decimal' }}
+                />
+              )}
 
               {isInternal && (
                 <Stack spacing={0.5}>
@@ -361,6 +375,13 @@ function CreatePlotterJobDialog({
                       : ''}
                   </Typography>
                 </Stack>
+              )}
+
+              {isWaste && (
+                <Typography variant="body2" color="text.secondary">
+                  La merma no genera valor de venta. El costo analítico de tinta se lee
+                  de las compras del período, no de este trabajo.
+                </Typography>
               )}
 
               {isExternal && (

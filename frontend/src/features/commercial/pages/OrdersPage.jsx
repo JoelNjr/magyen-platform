@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined'
 import {
   Alert,
@@ -23,6 +23,8 @@ import {
   resolveCustomerName,
 } from '../presentation/resolveCustomerName'
 import { getCustomers, getOrders } from '../services/commercialService'
+import MonthPeriodNavigator from '../../../shared/period/MonthPeriodNavigator'
+import { formatMonthPeriodLabel, getCalendarMonthRange } from '../../../shared/period/monthPeriod'
 
 const currencyFormatter = new Intl.NumberFormat('es-CO', {
   style: 'currency',
@@ -60,13 +62,17 @@ function OrdersTableHead() {
 
 function OrdersPage() {
   const navigate = useNavigate()
+  const initialPeriod = useMemo(() => getCalendarMonthRange(), [])
+  const [period, setPeriod] = useState(initialPeriod)
   const [orders, setOrders] = useState([])
   const [customerNameById, setCustomerNameById] = useState({})
   const [loading, setLoading] = useState(true)
   const [failed, setFailed] = useState(false)
 
   useEffect(() => {
-    getOrders()
+    setLoading(true)
+    setFailed(false)
+    getOrders({ fromDate: period.fromDate, toDate: period.toDate })
       .then((data) => {
         setOrders(data.orders ?? [])
         setLoading(false)
@@ -83,7 +89,7 @@ function OrdersPage() {
       .catch(() => {
         setCustomerNameById({})
       })
-  }, [])
+  }, [period.fromDate, period.toDate])
 
   return (
     <Stack spacing={3}>
@@ -111,10 +117,16 @@ function OrdersPage() {
           >
             Clientes
           </Button>
+          </Stack>
         </Stack>
-      </Stack>
 
-      {loading && (
+        <MonthPeriodNavigator
+          fromDate={period.fromDate}
+          disabled={loading}
+          onPeriodChange={setPeriod}
+        />
+
+        {loading && (
         <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
           <Table>
             <OrdersTableHead />
@@ -163,9 +175,12 @@ function OrdersPage() {
         <Paper sx={{ p: { xs: 3, sm: 4 } }}>
           <Stack spacing={2} alignItems="center" sx={{ py: 2 }}>
             <Inventory2OutlinedIcon color="action" sx={{ fontSize: 48 }} />
-            <Typography variant="h6">No hay órdenes registradas</Typography>
+            <Typography variant="h6">
+              No hay órdenes en {formatMonthPeriodLabel(period.fromDate)}
+            </Typography>
             <Typography color="text.secondary" textAlign="center">
-              Las órdenes comerciales se crean desde una cotización aprobada.
+              Cambia de mes para ver el histórico. Las órdenes se crean desde una
+              cotización aprobada.
             </Typography>
             <Button variant="contained" onClick={() => navigate('/commercial')}>
               Ir a cotizaciones

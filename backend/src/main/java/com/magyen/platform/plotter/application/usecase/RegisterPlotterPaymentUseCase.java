@@ -62,6 +62,11 @@ public class RegisterPlotterPaymentUseCase {
                     "Internal Magyen plotter jobs are production material operations and cannot receive customer payments"
             );
         }
+        if (job.getJobType().isWaste()) {
+            throw new PlotterDomainException(
+                    "Waste plotter jobs do not generate customer payments"
+            );
+        }
 
         List<PlotterPayment> existingPayments =
                 plotterPaymentRepository.findByPlotterJobIdNewestFirst(job.getId());

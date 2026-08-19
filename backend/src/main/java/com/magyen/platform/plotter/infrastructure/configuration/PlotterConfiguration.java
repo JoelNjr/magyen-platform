@@ -6,12 +6,14 @@ import com.magyen.platform.finance.application.usecase.EnsurePlotterInternalServ
 import com.magyen.platform.finance.application.usecase.RegisterPlotterPaymentIncomeUseCase;
 import com.magyen.platform.inventory.application.usecase.ConsumeInventoryMaterialUseCase;
 import com.magyen.platform.inventory.application.usecase.GetInventoryMovementBySourceUseCase;
+import com.magyen.platform.inventory.application.usecase.GetInkAcquisitionsUseCase;
 import com.magyen.platform.inventory.application.usecase.GetPaperAcquisitionsUseCase;
 import com.magyen.platform.inventory.domain.InventoryItemRepository;
 import com.magyen.platform.plotter.application.port.PlotterCommercialOrderPort;
 import com.magyen.platform.plotter.application.port.PlotterInternalServiceFinancePort;
 import com.magyen.platform.plotter.application.port.PlotterInventoryCostPort;
 import com.magyen.platform.plotter.application.port.PlotterJobInventoryPort;
+import com.magyen.platform.plotter.application.port.PlotterInkAcquisitionPort;
 import com.magyen.platform.plotter.application.port.PlotterPaperAcquisitionPort;
 import com.magyen.platform.plotter.application.port.PlotterPaymentFinancePort;
 import com.magyen.platform.plotter.infrastructure.commercial.PlotterCommercialOrderAdapter;
@@ -28,6 +30,7 @@ import com.magyen.platform.plotter.infrastructure.finance.PlotterInternalService
 import com.magyen.platform.plotter.infrastructure.finance.PlotterPaymentFinanceAdapter;
 import com.magyen.platform.plotter.infrastructure.inventory.PlotterInventoryCostAdapter;
 import com.magyen.platform.plotter.infrastructure.inventory.PlotterJobInventoryAdapter;
+import com.magyen.platform.plotter.infrastructure.inventory.PlotterInkAcquisitionAdapter;
 import com.magyen.platform.plotter.infrastructure.inventory.PlotterPaperAcquisitionAdapter;
 import com.magyen.platform.plotter.infrastructure.persistence.mapper.PlotterPaymentPersistenceMapper;
 import com.magyen.platform.plotter.infrastructure.persistence.mapper.PlotterPersistenceMapper;
@@ -106,6 +109,13 @@ public class PlotterConfiguration {
     }
 
     @Bean
+    public PlotterInkAcquisitionPort plotterInkAcquisitionPort(
+            GetInkAcquisitionsUseCase getInkAcquisitionsUseCase
+    ) {
+        return new PlotterInkAcquisitionAdapter(getInkAcquisitionsUseCase);
+    }
+
+    @Bean
     public GetInternalPlotterOrderCostsUseCase getInternalPlotterOrderCostsUseCase(
             PlotterJobRepository plotterJobRepository,
             PlotterInventoryCostPort plotterInventoryCostPort
@@ -178,15 +188,19 @@ public class PlotterConfiguration {
     @Bean
     public GetPlotterProfitabilityUseCase getPlotterProfitabilityUseCase(
             PlotterJobRepository plotterJobRepository,
+            PlotterPaymentRepository plotterPaymentRepository,
             PlotterInventoryCostPort plotterInventoryCostPort,
             PlotterPaperAcquisitionPort plotterPaperAcquisitionPort,
+            PlotterInkAcquisitionPort plotterInkAcquisitionPort,
             PlotterCommercialOrderPort plotterCommercialOrderPort,
             Clock clock
     ) {
         return new GetPlotterProfitabilityUseCase(
                 plotterJobRepository,
+                plotterPaymentRepository,
                 plotterInventoryCostPort,
                 plotterPaperAcquisitionPort,
+                plotterInkAcquisitionPort,
                 plotterCommercialOrderPort,
                 clock
         );

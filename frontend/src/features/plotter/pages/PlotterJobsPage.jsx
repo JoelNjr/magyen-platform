@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import AddIcon from '@mui/icons-material/Add'
 import PrintOutlinedIcon from '@mui/icons-material/PrintOutlined'
 import {
@@ -21,7 +21,9 @@ import { useNavigate } from 'react-router-dom'
 import { getCustomers, getOrders } from '../../commercial/services/commercialService'
 import { getInventoryItems, getPlotterPaperRolls } from '../../inventory/services/inventoryService'
 import CreatePlotterJobDialog from '../components/CreatePlotterJobDialog'
+import RegisterPlotterPaymentDialog from '../components/RegisterPlotterPaymentDialog'
 import {
+  canRegisterExternalPlotterPayment,
   formatPlotterCustomerLabel,
   formatPlotterDate,
   formatPlotterJobTypeLabel,
@@ -29,11 +31,15 @@ import {
   formatPlotterNumber,
   formatPlotterOrderLabel,
   getPlotterStatusChipProps,
+  isExternalPlotterPaymentComplete,
 } from '../presentation/plotterJobPresentation'
-import { createPlotterJob, getPlotterJobs } from '../services/plotterService'
+import { createPlotterJob, getPlotterJobs, registerPlotterPayment } from '../services/plotterService'
+import MonthPeriodNavigator from '../../../shared/period/MonthPeriodNavigator'
+import { formatMonthPeriodLabel, getCalendarMonthRange } from '../../../shared/period/monthPeriod'
 
 const headerCellSx = { fontWeight: 'bold' }
 const SKELETON_ROW_COUNT = 4
+const TABLE_COLUMN_COUNT = 11
 
 function resolveApiErrorMessage(error, fallbackMessage) {
   return error?.response?.data?.message || fallbackMessage
@@ -50,11 +56,13 @@ function PlotterJobsTableHead() {
         <TableCell sx={headerCellSx}>Rollo</TableCell>
         <TableCell sx={headerCellSx}>Metros</TableCell>
         <TableCell sx={headerCellSx}>Total</TableCell>
+        <TableCell sx={headerCellSx}>Pagado</TableCell>
+        <TableCell sx={headerCellSx}>Saldo</TableCell>
         <TableCell align="center" sx={headerCellSx}>
           Estado
         </TableCell>
         <TableCell align="right" sx={headerCellSx}>
-          Acción
+          Acciones
         </TableCell>
       </TableRow>
     </TableHead>
@@ -63,6 +71,8 @@ function PlotterJobsTableHead() {
 
 function PlotterJobsPage() {
   const navigate = useNavigate()
+  const initialPeriod = useMemo(() => getCalendarMonthRange(), [])
+  const [period, setPeriod] = useState(initialPeriod)
   const [jobs, setJobs] = useState([])
   const [customers, setCustomers] = useState([])
   const [orders, setOrders] = useState([])
@@ -74,6 +84,9 @@ function PlotterJobsPage() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [creating, setCreating] = useState(false)
   const [createError, setCreateError] = useState('')
+  const [paymentJob, setPaymentJob] = useState(null)
+  const [registeringPayment, setRegisteringPayment] = useState(false)
+  const [paymentError, setPaymentError] = useState('')
   const [successOpen, setSuccessOpen] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
 
@@ -100,12 +113,15 @@ function PlotterJobsPage() {
     return map
   }, [inventoryLookup])
 
-  async function loadJobs() {
+  const loadJobs = useCallback(async () => {
     setLoading(true)
     setFailed(false)
 
     try {
-      const data = await getPlotterJobs()
+      const data = await getPlotterJobs({
+        fromDate: period.fromDate,
+        toDate: period.toDate,
+      })
       setJobs(Array.isArray(data?.jobs) ? data.jobs : [])
       setLoading(false)
     } catch {
@@ -113,7 +129,7 @@ function PlotterJobsPage() {
       setFailed(true)
       setLoading(false)
     }
-  }
+  }, [period.fromDate, period.toDate])
 
   async function loadLookups() {
     setLoadingLookups(true)
@@ -145,6 +161,9 @@ function PlotterJobsPage() {
 
   useEffect(() => {
     loadJobs()
+  }, [loadJobs])
+
+  useEffect(() => {
     loadLookups()
   }, [])
 
@@ -189,6 +208,45 @@ function PlotterJobsPage() {
     }
   }
 
+  function openPaymentDialog(job) {
+    if (registeringPayment || !canRegisterExternalPlotterPayment(job)) {
+      return
+    }
+    setPaymentError('')
+    setPaymentJob(job)
+  }
+
+  function handlePaymentDialogClose() {
+    if (registeringPayment) {
+      return
+    }
+    setPaymentJob(null)
+    setPaymentError('')
+  }
+
+  async function handleRegisterPayment(payload) {
+    if (registeringPayment || !paymentJob) {
+      return
+    }
+
+    setPaymentError('')
+    setRegisteringPayment(true)
+
+    try {
+      await registerPlotterPayment(paymentJob.plotterJobId, payload)
+      await loadJobs()
+      setPaymentJob(null)
+      setSuccessMessage('Pago de Plotter registrado correctamente.')
+      setSuccessOpen(true)
+    } catch (error) {
+      setPaymentError(
+        resolveApiErrorMessage(error, 'No fue posible registrar el pago.')
+      )
+    } finally {
+      setRegisteringPayment(false)
+    }
+  }
+
   return (
     <>
       <Stack spacing={3}>
@@ -222,6 +280,12 @@ function PlotterJobsPage() {
           </Stack>
         </Stack>
 
+        <MonthPeriodNavigator
+          fromDate={period.fromDate}
+          disabled={loading}
+          onPeriodChange={setPeriod}
+        />
+
         {loading && (
           <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
             <Table>
@@ -229,7 +293,7 @@ function PlotterJobsPage() {
               <TableBody>
                 {Array.from({ length: SKELETON_ROW_COUNT }).map((_, index) => (
                   <TableRow key={`skeleton-${index}`}>
-                    {Array.from({ length: 9 }).map((__, cellIndex) => (
+                    {Array.from({ length: TABLE_COLUMN_COUNT }).map((__, cellIndex) => (
                       <TableCell key={`skeleton-cell-${cellIndex}`}>
                         <Skeleton variant="text" />
                       </TableCell>
@@ -251,10 +315,11 @@ function PlotterJobsPage() {
           <Paper sx={{ p: 4 }}>
             <Stack spacing={1} alignItems="center">
               <PrintOutlinedIcon color="disabled" sx={{ fontSize: 40 }} />
-              <Typography variant="h6">Sin trabajos de plotter</Typography>
+              <Typography variant="h6">
+                Sin trabajos de plotter en {formatMonthPeriodLabel(period.fromDate)}
+              </Typography>
               <Typography color="text.secondary" align="center">
-                Registra el primer trabajo de impresión para comenzar el seguimiento
-                operacional.
+                Cambia de mes para ver el histórico o registra un nuevo trabajo.
               </Typography>
             </Stack>
           </Paper>
@@ -288,18 +353,50 @@ function PlotterJobsPage() {
                       <TableCell>
                         {formatPlotterMoney(job.totalAmount)}
                       </TableCell>
+                      <TableCell>
+                        {formatPlotterMoney(job.paidAmount)}
+                      </TableCell>
+                      <TableCell>
+                        {formatPlotterMoney(job.outstandingAmount)}
+                      </TableCell>
                       <TableCell align="center">
                         <Chip size="small" {...statusChip} />
                       </TableCell>
                       <TableCell align="right">
-                        <Button
-                          size="small"
-                          onClick={() =>
-                            navigate(`/plotter/jobs/${job.plotterJobId}`)
-                          }
+                        <Stack
+                          direction="row"
+                          spacing={1}
+                          justifyContent="flex-end"
+                          flexWrap="wrap"
                         >
-                          Ver detalle
-                        </Button>
+                          <Button
+                            size="small"
+                            onClick={() =>
+                              navigate(`/plotter/jobs/${job.plotterJobId}`)
+                            }
+                          >
+                            Ver detalle
+                          </Button>
+                          {canRegisterExternalPlotterPayment(job) ? (
+                            <Button
+                              size="small"
+                              variant="contained"
+                              disabled={registeringPayment}
+                              onClick={() => openPaymentDialog(job)}
+                            >
+                              Registrar pago
+                            </Button>
+                          ) : null}
+                          {isExternalPlotterPaymentComplete(job) ? (
+                            <Typography
+                              variant="body2"
+                              color="success.main"
+                              sx={{ alignSelf: 'center' }}
+                            >
+                              Pago completado
+                            </Typography>
+                          ) : null}
+                        </Stack>
                       </TableCell>
                     </TableRow>
                   )
@@ -323,6 +420,17 @@ function PlotterJobsPage() {
         }))}
         paperRolls={paperRolls}
         loadingLookups={loadingLookups}
+      />
+
+      <RegisterPlotterPaymentDialog
+        open={Boolean(paymentJob)}
+        totalAmount={paymentJob?.totalAmount}
+        paidAmount={paymentJob?.paidAmount}
+        outstandingAmount={paymentJob?.outstandingAmount}
+        onClose={handlePaymentDialogClose}
+        onSubmit={handleRegisterPayment}
+        submitting={registeringPayment}
+        errorMessage={paymentError}
       />
 
       <Snackbar

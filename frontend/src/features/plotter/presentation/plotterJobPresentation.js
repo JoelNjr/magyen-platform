@@ -82,6 +82,8 @@ export function formatPlotterJobTypeLabel(jobType) {
       return 'Servicio Plotter interno Magyen'
     case 'EXTERNAL':
       return 'Venta Plotter externa'
+    case 'WASTE':
+      return 'Merma'
     default:
       return jobType || '—'
   }
@@ -89,6 +91,30 @@ export function formatPlotterJobTypeLabel(jobType) {
 
 export function isInternalPlotterJob(jobType) {
   return jobType === 'INTERNAL_MAGYEN'
+}
+
+export function isWastePlotterJob(jobType) {
+  return jobType === 'WASTE'
+}
+
+export function isExternalPlotterJob(jobType) {
+  return jobType === 'EXTERNAL'
+}
+
+export function canRegisterExternalPlotterPayment(job) {
+  if (!isExternalPlotterJob(job?.jobType)) {
+    return false
+  }
+  const outstanding = Number(job?.outstandingAmount)
+  return !Number.isNaN(outstanding) && outstanding > 0
+}
+
+export function isExternalPlotterPaymentComplete(job) {
+  if (!isExternalPlotterJob(job?.jobType)) {
+    return false
+  }
+  const outstanding = Number(job?.outstandingAmount)
+  return !Number.isNaN(outstanding) && outstanding <= 0
 }
 
 export function formatPlotterOrderLabel(jobOrOrder) {

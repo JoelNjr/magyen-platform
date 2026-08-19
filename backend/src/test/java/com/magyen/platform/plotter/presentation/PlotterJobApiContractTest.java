@@ -167,6 +167,96 @@ class PlotterJobApiContractTest {
     }
 
     @Test
+    void listExposesExternalPaymentBalanceAndRegistersPaymentThroughTheSameEndpoint() throws Exception {
+        UUID customerId = UUID.randomUUID();
+
+        MvcResult unpaidResult = mockMvc.perform(
+                        post("/api/v1/plotter/jobs")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                          "customerId": "%s",
+                                          "paperInventoryItemId": "%s",
+                                          "printedMeters": 1,
+                                          "pricePerMeter": 100000,
+                                          "observations": "sin pago"
+                                        }
+                                        """.formatted(customerId, paperRoll.inventoryItemId()))
+                )
+                .andExpect(status().isCreated())
+                .andReturn();
+        String unpaidJobId = com.jayway.jsonpath.JsonPath.read(
+                unpaidResult.getResponse().getContentAsString(),
+                "$.plotterJobId"
+        );
+
+        MvcResult partialResult = mockMvc.perform(
+                        post("/api/v1/plotter/jobs")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                          "customerId": "%s",
+                                          "paperInventoryItemId": "%s",
+                                          "printedMeters": 1,
+                                          "pricePerMeter": 80000,
+                                          "observations": "parcial"
+                                        }
+                                        """.formatted(customerId, paperRoll.inventoryItemId()))
+                )
+                .andExpect(status().isCreated())
+                .andReturn();
+        String partialJobId = com.jayway.jsonpath.JsonPath.read(
+                partialResult.getResponse().getContentAsString(),
+                "$.plotterJobId"
+        );
+
+        mockMvc.perform(
+                        post("/api/v1/plotter/jobs/{plotterJobId}/payments", partialJobId)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                          "amount": 30000,
+                                          "paymentDate": "2026-08-12",
+                                          "observations": "abono lista"
+                                        }
+                                        """)
+                )
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.paidAmount").value(30000.0))
+                .andExpect(jsonPath("$.outstandingAmount").value(50000.0));
+
+        mockMvc.perform(get("/api/v1/plotter/jobs/{plotterJobId}", unpaidJobId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.jobType").value("EXTERNAL"))
+                .andExpect(jsonPath("$.paidAmount").value(0.0))
+                .andExpect(jsonPath("$.outstandingAmount").value(100000.0));
+
+        mockMvc.perform(get("/api/v1/plotter/jobs/{plotterJobId}", partialJobId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.paidAmount").value(30000.0))
+                .andExpect(jsonPath("$.outstandingAmount").value(50000.0));
+
+        mockMvc.perform(
+                        post("/api/v1/plotter/jobs/{plotterJobId}/payments", unpaidJobId)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                          "amount": 100000,
+                                          "paymentDate": "2026-08-13"
+                                        }
+                                        """)
+                )
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.paidAmount").value(100000.0))
+                .andExpect(jsonPath("$.outstandingAmount").value(0.0));
+
+        mockMvc.perform(get("/api/v1/plotter/jobs/{plotterJobId}", unpaidJobId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.paidAmount").value(100000.0))
+                .andExpect(jsonPath("$.outstandingAmount").value(0.0));
+    }
+
+    @Test
     void rejectsInvalidMaterialInsufficientStockAndInvalidValues() throws Exception {
         CreateInventoryItemResult fabric = createInventoryItemUseCase.execute(new CreateInventoryItemCommand(
                 "FABAPI-" + UUID.randomUUID().toString().substring(0, 8),
@@ -323,7 +413,9 @@ class PlotterJobApiContractTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.jobType").value("INTERNAL_MAGYEN"))
                 .andExpect(jsonPath("$.orderNumber").value(order.orderNumber()))
-                .andExpect(jsonPath("$.customerName").value(customerName));
+                .andExpect(jsonPath("$.customerName").value(customerName))
+                .andExpect(jsonPath("$.paidAmount").value(0.0))
+                .andExpect(jsonPath("$.outstandingAmount").value(0.0));
 
         mockMvc.perform(
                         post("/api/v1/plotter/jobs/{plotterJobId}/payments", plotterJobId)
@@ -336,6 +428,70 @@ class PlotterJobApiContractTest {
                                         """)
                 )
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void createsWasteJobWithoutCustomerOrOrder() throws Exception {
+        MvcResult createResult = mockMvc.perform(
+                        post("/api/v1/plotter/jobs")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                          "jobType": "WASTE",
+                                          "creationDate": "2099-06-10",
+                                          "paperInventoryItemId": "%s",
+                                          "printedMeters": 3.5,
+                                          "observations": "muestra fallida"
+                                        }
+                                        """.formatted(paperRoll.inventoryItemId()))
+                )
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.jobType").value("WASTE"))
+                .andExpect(jsonPath("$.customerId").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.orderId").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.totalAmount").value(0.0))
+                .andReturn();
+
+        String wasteJobId = com.jayway.jsonpath.JsonPath.read(
+                createResult.getResponse().getContentAsString(),
+                "$.plotterJobId"
+        );
+
+        mockMvc.perform(get("/api/v1/plotter/jobs/{plotterJobId}", wasteJobId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.jobType").value("WASTE"))
+                .andExpect(jsonPath("$.paidAmount").value(0.0))
+                .andExpect(jsonPath("$.outstandingAmount").value(0.0));
+
+        mockMvc.perform(
+                        post("/api/v1/plotter/jobs/{plotterJobId}/payments", wasteJobId)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                          "amount": 1000,
+                                          "paymentDate": "2099-06-11"
+                                        }
+                                        """)
+                )
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(
+                        get("/api/v1/plotter/jobs")
+                                .param("fromDate", "2099-06-01")
+                                .param("toDate", "2099-06-30")
+                                .accept(MediaType.APPLICATION_JSON)
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.jobs[*].jobType", hasItem("WASTE")));
+
+        mockMvc.perform(
+                        get("/api/v1/plotter/jobs")
+                                .param("fromDate", "2099-07-01")
+                                .param("toDate", "2099-07-31")
+                                .accept(MediaType.APPLICATION_JSON)
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.jobs[*].jobType", org.hamcrest.Matchers.not(hasItem("WASTE"))));
     }
 
     @Test

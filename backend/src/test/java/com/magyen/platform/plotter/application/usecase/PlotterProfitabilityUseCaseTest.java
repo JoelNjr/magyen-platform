@@ -38,8 +38,6 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
@@ -135,13 +133,17 @@ class PlotterProfitabilityUseCaseTest {
         assertEquals(1, all.internalJobCount());
         assertEquals(new BigDecimal("16.0000"), all.totalPaperPrintedMeters());
         assertEquals(new BigDecimal("200000.00"), all.externalRevenue());
+        assertEquals(new BigDecimal("0.00"), all.externalPaidAmount());
+        assertEquals(new BigDecimal("200000.00"), all.externalOutstandingAmount());
         assertEquals(new BigDecimal("48000.00"), all.internalRevenue());
         assertEquals(new BigDecimal("248000.00"), all.combinedRevenue());
         assertEquals(new BigDecimal("200000.00"), all.totalPaperCost());
         assertEquals(new BigDecimal("6.0000"), all.internalPaperPrintedMeters());
         assertEquals(new BigDecimal("48000.00"), all.analyticalPlotterResult());
-        assertFalse(all.inkCostRecorded());
-        assertNull(all.inkCost());
+        assertTrue(all.inkCostRecorded());
+        assertEquals(new BigDecimal("0.00"), all.inkCost());
+        assertEquals(0, all.wasteJobCount());
+        assertEquals(new BigDecimal("0.0000"), all.wastePrintedMeters());
         assertTrue(all.paperCostComplete());
         assertEquals(order.orderNumber(), all.internalOrders().getFirst().orderNumber());
         assertEquals(order.customerName(), all.internalOrders().getFirst().customerName());
@@ -173,6 +175,13 @@ class PlotterProfitabilityUseCaseTest {
         assertEquals(incomeBeforePayment + 1, countPlotterIncome());
         assertEquals(1, countPaperOutsFor(external.plotterJobId()));
         assertEquals(1, countPaperOutsFor(internal.plotterJobId()));
+
+        GetPlotterProfitabilityResult afterPayment = getPlotterProfitabilityUseCase.execute(
+                new GetPlotterProfitabilityQuery(PERIOD_START, PERIOD_END, PlotterProfitabilityScope.ALL)
+        );
+        assertEquals(new BigDecimal("200000.00"), afterPayment.externalPaidAmount());
+        assertEquals(new BigDecimal("0.00"), afterPayment.externalOutstandingAmount());
+        assertEquals(new BigDecimal("48000.00"), afterPayment.analyticalPlotterResult());
     }
 
     @Test
@@ -191,6 +200,61 @@ class PlotterProfitabilityUseCaseTest {
                 new GetPlotterProfitabilityQuery(PERIOD_START, PERIOD_END, PlotterProfitabilityScope.ALL)
         );
         assertEquals(new BigDecimal("0.00"), march.totalPaperCost());
+    }
+
+    @Test
+    void inkAcquisitionsAccumulateByPeriodAndSubtractFromResultWithoutJobConsumption() {
+        createPurchasedPaperRoll("1", "200000.00", "100.0000", JOB_DATE);
+        CreateInventoryItemResult firstInk = createPurchasedInk("100000.00", JOB_DATE);
+        CreateInventoryItemResult secondInk = createPurchasedInk("150000.00", JOB_DATE);
+        createPurchasedInk("90000.00", LocalDate.of(2099, 2, 10));
+
+        CreatePlotterJobResult external = createPlotterJobUseCase.execute(new CreatePlotterJobCommand(
+                UUID.randomUUID(),
+                null,
+                JOB_DATE,
+                createPaperRoll("5000.00").inventoryItemId(),
+                new BigDecimal("4.0000"),
+                new BigDecimal("10000.00"),
+                "externo tinta",
+                PlotterJobType.EXTERNAL,
+                null
+        ));
+
+        long financeBefore = countAllFinancialTransactions();
+        GetPlotterProfitabilityResult march = getPlotterProfitabilityUseCase.execute(
+                new GetPlotterProfitabilityQuery(PERIOD_START, PERIOD_END, PlotterProfitabilityScope.ALL)
+        );
+
+        assertTrue(march.inkCostRecorded());
+        assertEquals(new BigDecimal("250000.00"), march.inkCost());
+        assertEquals(new BigDecimal("200000.00"), march.totalPaperCost());
+        assertEquals(new BigDecimal("40000.00"), march.externalRevenue());
+        assertEquals(new BigDecimal("-410000.00"), march.analyticalPlotterResult());
+        assertEquals(financeBefore, countAllFinancialTransactions());
+        assertEquals(0, countInkOuts(firstInk.inventoryItemId()));
+        assertEquals(0, countInkOuts(secondInk.inventoryItemId()));
+        assertEquals(1, countPaperOutsFor(external.plotterJobId()));
+
+        GetPlotterProfitabilityResult february = getPlotterProfitabilityUseCase.execute(
+                new GetPlotterProfitabilityQuery(
+                        LocalDate.of(2099, 2, 1),
+                        LocalDate.of(2099, 2, 28),
+                        PlotterProfitabilityScope.ALL
+                )
+        );
+        assertEquals(new BigDecimal("90000.00"), february.inkCost());
+        assertEquals(new BigDecimal("0.00"), february.totalPaperCost());
+
+        GetPlotterProfitabilityResult empty = getPlotterProfitabilityUseCase.execute(
+                new GetPlotterProfitabilityQuery(
+                        LocalDate.of(2098, 1, 1),
+                        LocalDate.of(2098, 1, 31),
+                        PlotterProfitabilityScope.ALL
+                )
+        );
+        assertEquals(new BigDecimal("0.00"), empty.inkCost());
+        assertTrue(empty.inkCostRecorded());
     }
 
     @Test
@@ -213,6 +277,124 @@ class PlotterProfitabilityUseCaseTest {
         );
         assertEquals(0, result.jobCount());
         assertEquals(new BigDecimal("0.0000"), result.totalPaperPrintedMeters());
+    }
+
+    @Test
+    void externalCollectionSummarizesPaidAndOutstandingWithoutChangingAccounting() {
+        CreateInventoryItemResult roll = createPaperRoll("5000.00");
+        CommercialOrderFixture order = createCommercialOrder(
+                LocalDate.of(2099, 5, 2),
+                LocalDate.of(2099, 5, 20)
+        );
+
+        createPlotterJobUseCase.execute(new CreatePlotterJobCommand(
+                UUID.randomUUID(),
+                null,
+                LocalDate.of(2099, 5, 4),
+                roll.inventoryItemId(),
+                new BigDecimal("1.0000"),
+                new BigDecimal("100000.00"),
+                "externo sin pago",
+                PlotterJobType.EXTERNAL,
+                null
+        ));
+        CreatePlotterJobResult partial = createPlotterJobUseCase.execute(new CreatePlotterJobCommand(
+                UUID.randomUUID(),
+                null,
+                LocalDate.of(2099, 5, 5),
+                roll.inventoryItemId(),
+                new BigDecimal("1.0000"),
+                new BigDecimal("80000.00"),
+                "externo parcial",
+                PlotterJobType.EXTERNAL,
+                null
+        ));
+        CreatePlotterJobResult paid = createPlotterJobUseCase.execute(new CreatePlotterJobCommand(
+                UUID.randomUUID(),
+                null,
+                LocalDate.of(2099, 5, 6),
+                roll.inventoryItemId(),
+                new BigDecimal("1.0000"),
+                new BigDecimal("50000.00"),
+                "externo pagado",
+                PlotterJobType.EXTERNAL,
+                null
+        ));
+        createPlotterJobUseCase.execute(new CreatePlotterJobCommand(
+                null,
+                order.orderId(),
+                LocalDate.of(2099, 5, 7),
+                roll.inventoryItemId(),
+                new BigDecimal("2.0000"),
+                new BigDecimal("8000.00"),
+                "interno cobranza",
+                PlotterJobType.INTERNAL_MAGYEN,
+                null
+        ));
+        createPlotterJobUseCase.execute(new CreatePlotterJobCommand(
+                null,
+                null,
+                LocalDate.of(2099, 5, 8),
+                roll.inventoryItemId(),
+                new BigDecimal("1.0000"),
+                BigDecimal.ZERO,
+                "merma cobranza",
+                PlotterJobType.WASTE,
+                null
+        ));
+
+        registerPlotterPaymentUseCase.execute(new RegisterPlotterPaymentCommand(
+                partial.plotterJobId(),
+                new BigDecimal("30000.00"),
+                LocalDate.of(2099, 5, 10),
+                "abono"
+        ));
+        registerPlotterPaymentUseCase.execute(new RegisterPlotterPaymentCommand(
+                paid.plotterJobId(),
+                new BigDecimal("50000.00"),
+                LocalDate.of(2099, 5, 11),
+                "saldo"
+        ));
+
+        long financeBeforeRead = countAllFinancialTransactions();
+        GetPlotterProfitabilityResult all = getPlotterProfitabilityUseCase.execute(
+                new GetPlotterProfitabilityQuery(
+                        LocalDate.of(2099, 5, 1),
+                        LocalDate.of(2099, 5, 31),
+                        PlotterProfitabilityScope.ALL
+                )
+        );
+
+        assertEquals(financeBeforeRead, countAllFinancialTransactions());
+        assertEquals(3, all.externalJobCount());
+        assertEquals(1, all.internalJobCount());
+        assertEquals(1, all.wasteJobCount());
+        assertEquals(new BigDecimal("230000.00"), all.externalRevenue());
+        assertEquals(new BigDecimal("80000.00"), all.externalPaidAmount());
+        assertEquals(new BigDecimal("150000.00"), all.externalOutstandingAmount());
+
+        GetPlotterProfitabilityResult internals = getPlotterProfitabilityUseCase.execute(
+                new GetPlotterProfitabilityQuery(
+                        LocalDate.of(2099, 5, 1),
+                        LocalDate.of(2099, 5, 31),
+                        PlotterProfitabilityScope.INTERNAL
+                )
+        );
+        assertEquals(new BigDecimal("0.00"), internals.externalRevenue());
+        assertEquals(new BigDecimal("0.00"), internals.externalPaidAmount());
+        assertEquals(new BigDecimal("0.00"), internals.externalOutstandingAmount());
+
+        GetPlotterProfitabilityResult waste = getPlotterProfitabilityUseCase.execute(
+                new GetPlotterProfitabilityQuery(
+                        LocalDate.of(2099, 5, 1),
+                        LocalDate.of(2099, 5, 31),
+                        PlotterProfitabilityScope.WASTE
+                )
+        );
+        assertEquals(new BigDecimal("0.00"), waste.externalRevenue());
+        assertEquals(new BigDecimal("0.00"), waste.externalPaidAmount());
+        assertEquals(new BigDecimal("0.00"), waste.externalOutstandingAmount());
+        assertEquals(1, waste.wasteJobCount());
     }
 
     private CreateInventoryItemResult createPurchasedPaperRoll(
@@ -243,6 +425,29 @@ class PlotterProfitabilityUseCaseTest {
         ));
     }
 
+    private CreateInventoryItemResult createPurchasedInk(String totalCost, LocalDate purchaseDate) {
+        return createInventoryItemUseCase.execute(new CreateInventoryItemCommand(
+                "INK-" + UUID.randomUUID().toString().substring(0, 8),
+                "Tinta analítica",
+                "INK",
+                "LITER",
+                new BigDecimal("1.0000"),
+                new BigDecimal("0.1000"),
+                null,
+                null,
+                "INK",
+                false,
+                new InventoryAcquisitionCommand(
+                        UUID.randomUUID(),
+                        BigDecimal.ONE,
+                        new BigDecimal(totalCost),
+                        null,
+                        purchaseDate,
+                        "compra tinta analítica"
+                )
+        ));
+    }
+
     private CreateInventoryItemResult createPaperRoll(String unitCost) {
         return createInventoryItemUseCase.execute(new CreateInventoryItemCommand(
                 "PLPR-" + UUID.randomUUID().toString().substring(0, 8),
@@ -259,6 +464,10 @@ class PlotterProfitabilityUseCaseTest {
     }
 
     private CommercialOrderFixture createCommercialOrder() {
+        return createCommercialOrder(LocalDate.of(2099, 3, 8), LocalDate.of(2099, 3, 25));
+    }
+
+    private CommercialOrderFixture createCommercialOrder(LocalDate confirmationDate, LocalDate deliveryDate) {
         String customerName = "Cliente plotter G " + UUID.randomUUID();
         var customer = createCustomerUseCase.execute(new CreateCustomerCommand(customerName));
         UUID sellerId = FixedSellerEmployeeFixture.create(
@@ -267,10 +476,10 @@ class PlotterProfitabilityUseCaseTest {
         );
         var quotation = createQuotationUseCase.execute(new CreateQuotationCommand(
                 customer.customerId(),
-                LocalDate.of(2099, 3, 20),
+                deliveryDate,
                 sellerId,
                 null,
-                LocalDate.of(2099, 3, 5)
+                confirmationDate.minusDays(3)
         ));
         addQuotationItemUseCase.execute(new AddQuotationItemCommand(
                 quotation.quotationId(),
@@ -286,8 +495,8 @@ class PlotterProfitabilityUseCaseTest {
                 quotation.quotationId(),
                 "ORD-PLG-" + UUID.randomUUID().toString().substring(0, 8),
                 null,
-                LocalDate.of(2099, 3, 8),
-                LocalDate.of(2099, 3, 25),
+                confirmationDate,
+                deliveryDate,
                 null
         ));
         return new CommercialOrderFixture(order.orderId(), order.orderNumber(), customerName);
@@ -301,6 +510,14 @@ class PlotterProfitabilityUseCaseTest {
         return financialTransactionRepository.findAllNewestFirst().stream()
                 .filter(transaction -> transaction.getSourceType() == FinancialTransactionSourceType.PLOTTER)
                 .filter(transaction -> transaction.getType() == FinancialTransactionType.INCOME)
+                .count();
+    }
+
+    private long countInkOuts(UUID inventoryItemId) {
+        return inventoryMovementRepository
+                .findByInventoryItemIdOrderByMovementDateDesc(inventoryItemId)
+                .stream()
+                .filter(movement -> movement.getSourceType() == InventoryMovementSourceType.PLOTTER)
                 .count();
     }
 

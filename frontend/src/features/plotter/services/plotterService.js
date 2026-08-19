@@ -1,7 +1,12 @@
 import httpClient from '../../../services/httpClient'
 
-export async function getPlotterJobs() {
-  const response = await httpClient.get('/plotter/jobs')
+export async function getPlotterJobs(params = {}) {
+  const response = await httpClient.get('/plotter/jobs', {
+    params: {
+      fromDate: params.fromDate || undefined,
+      toDate: params.toDate || undefined,
+    },
+  })
   return response.data
 }
 

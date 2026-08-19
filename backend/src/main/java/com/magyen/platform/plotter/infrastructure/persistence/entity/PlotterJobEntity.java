@@ -31,7 +31,7 @@ public class PlotterJobEntity {
     @Column(name = "job_type", nullable = false, length = 30)
     private PlotterJobType jobType;
 
-    @Column(name = "customer_id", nullable = false)
+    @Column(name = "customer_id")
     private UUID customerId;
 
     @Column(name = "order_id")

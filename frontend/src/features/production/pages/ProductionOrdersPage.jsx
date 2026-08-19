@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import PrecisionManufacturingOutlinedIcon from '@mui/icons-material/PrecisionManufacturingOutlined'
 import {
   Alert,
@@ -23,6 +23,8 @@ import {
   getProductionPriorityChipProps,
 } from '../presentation/productionStatusPresentation'
 import { getProductionOrders } from '../services/productionService'
+import MonthPeriodNavigator from '../../../shared/period/MonthPeriodNavigator'
+import { formatMonthPeriodLabel, getCalendarMonthRange } from '../../../shared/period/monthPeriod'
 
 const headerCellSx = { fontWeight: 'bold' }
 const SKELETON_ROW_COUNT = 4
@@ -55,12 +57,16 @@ function ProductionOrdersTableHead() {
 
 function ProductionOrdersPage() {
   const navigate = useNavigate()
+  const initialPeriod = useMemo(() => getCalendarMonthRange(), [])
+  const [period, setPeriod] = useState(initialPeriod)
   const [productionOrders, setProductionOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [failed, setFailed] = useState(false)
 
   useEffect(() => {
-    getProductionOrders()
+    setLoading(true)
+    setFailed(false)
+    getProductionOrders({ fromDate: period.fromDate, toDate: period.toDate })
       .then((data) => {
         setProductionOrders(data.productionOrders ?? [])
         setLoading(false)
@@ -69,7 +75,7 @@ function ProductionOrdersPage() {
         setFailed(true)
         setLoading(false)
       })
-  }, [])
+  }, [period.fromDate, period.toDate])
 
   return (
     <Stack spacing={3}>
@@ -81,6 +87,12 @@ function ProductionOrdersPage() {
       >
         <Typography variant="h3">Órdenes de producción</Typography>
       </Stack>
+
+      <MonthPeriodNavigator
+        fromDate={period.fromDate}
+        disabled={loading}
+        onPeriodChange={setPeriod}
+      />
 
       {loading && (
         <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
@@ -151,11 +163,10 @@ function ProductionOrdersPage() {
               sx={{ fontSize: 48 }}
             />
             <Typography variant="h6">
-              No hay órdenes de producción registradas.
+              No hay órdenes de producción en {formatMonthPeriodLabel(period.fromDate)}.
             </Typography>
             <Typography color="text.secondary" textAlign="center">
-              Las órdenes de producción aparecerán aquí cuando existan en el
-              sistema.
+              Cambia de mes para ver el histórico.
             </Typography>
           </Stack>
         </Paper>
