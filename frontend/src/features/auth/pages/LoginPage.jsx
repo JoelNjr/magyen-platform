@@ -40,11 +40,11 @@ function LoginPage() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        p: 3,
+        p: { xs: 2, sm: 3 },
         bgcolor: 'background.default',
       }}
     >
-      <Paper variant="outlined" sx={{ width: '100%', maxWidth: 420, p: 4 }}>
+      <Paper variant="outlined" sx={{ width: '100%', maxWidth: 420, p: { xs: 3, sm: 4 } }}>
         <Stack spacing={3} component="form" onSubmit={handleSubmit}>
           <Stack spacing={0.5}>
             <Typography variant="h6">Magyen Platform</Typography>

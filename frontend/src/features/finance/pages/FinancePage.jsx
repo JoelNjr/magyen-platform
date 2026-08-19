@@ -538,6 +538,7 @@ function FinancePage() {
                 onChange={(event) => setFromDate(event.target.value)}
                 InputLabelProps={{ shrink: true }}
                 size="small"
+                sx={{ width: { xs: '100%', md: 'auto' }, minWidth: { md: 160 } }}
               />
               <TextField
                 label="Hasta"
@@ -546,6 +547,7 @@ function FinancePage() {
                 onChange={(event) => setToDate(event.target.value)}
                 InputLabelProps={{ shrink: true }}
                 size="small"
+                sx={{ width: { xs: '100%', md: 'auto' }, minWidth: { md: 160 } }}
               />
               <Button
                 variant="contained"

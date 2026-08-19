@@ -52,7 +52,7 @@ function MonthPeriodNavigator({ fromDate, onPeriodChange, disabled = false }) {
             size="small"
             value={current.month}
             disabled={disabled}
-            sx={{ minWidth: 160 }}
+            sx={{ minWidth: { xs: 0, sm: 160 }, width: { xs: '100%', sm: 'auto' } }}
             onChange={(event) =>
               applyPeriod(monthPeriodFromYearMonth(current.year, Number(event.target.value)))
             }
@@ -69,7 +69,7 @@ function MonthPeriodNavigator({ fromDate, onPeriodChange, disabled = false }) {
             size="small"
             value={current.year}
             disabled={disabled}
-            sx={{ minWidth: 110 }}
+            sx={{ minWidth: { xs: 0, sm: 110 }, width: { xs: '100%', sm: 'auto' } }}
             onChange={(event) =>
               applyPeriod(monthPeriodFromYearMonth(Number(event.target.value), current.month))
             }

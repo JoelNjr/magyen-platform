@@ -339,6 +339,8 @@ function AdminUsersPage() {
             setUserPendingDeactivation(null)
           }
         }}
+        fullWidth
+        maxWidth="sm"
       >
         <DialogTitle>Desactivar usuario</DialogTitle>
         <DialogContent>

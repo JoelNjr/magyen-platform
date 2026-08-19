@@ -330,6 +330,8 @@ function AdminCatalogsPage() {
             setEntryPendingDeactivation(null)
           }
         }}
+        fullWidth
+        maxWidth="sm"
       >
         <DialogTitle>Desactivar valor</DialogTitle>
         <DialogContent>

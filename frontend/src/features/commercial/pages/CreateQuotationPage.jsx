@@ -275,16 +275,26 @@ function CreateQuotationPage() {
               disabled={submitting}
             />
 
-            <Stack direction="row" spacing={2} sx={{ justifyContent: 'flex-end' }}>
+            <Stack
+              direction={{ xs: 'column-reverse', sm: 'row' }}
+              spacing={2}
+              sx={{ justifyContent: { sm: 'flex-end' } }}
+            >
               <Button
                 type="button"
                 variant="outlined"
                 disabled={submitting}
                 onClick={() => navigate('/commercial')}
+                sx={{ width: { xs: '100%', sm: 'auto' } }}
               >
                 Cancelar
               </Button>
-              <Button type="submit" variant="contained" disabled={submitting}>
+              <Button
+                type="submit"
+                variant="contained"
+                disabled={submitting}
+                sx={{ width: { xs: '100%', sm: 'auto' } }}
+              >
                 {submitting ? 'Guardando...' : 'Guardar'}
               </Button>
             </Stack>

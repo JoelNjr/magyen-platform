@@ -132,6 +132,7 @@ function PlotterProfitabilityPage() {
             value={fromDate}
             onChange={(event) => setFromDate(event.target.value)}
             slotProps={{ inputLabel: { shrink: true } }}
+            sx={{ width: { xs: '100%', md: 'auto' }, minWidth: { md: 160 } }}
           />
           <TextField
             label="Hasta"
@@ -140,6 +141,7 @@ function PlotterProfitabilityPage() {
             value={toDate}
             onChange={(event) => setToDate(event.target.value)}
             slotProps={{ inputLabel: { shrink: true } }}
+            sx={{ width: { xs: '100%', md: 'auto' }, minWidth: { md: 160 } }}
           />
           <TextField
             select
@@ -147,7 +149,7 @@ function PlotterProfitabilityPage() {
             size="small"
             value={scope}
             onChange={(event) => setScope(event.target.value)}
-            sx={{ minWidth: 180 }}
+            sx={{ width: { xs: '100%', md: 'auto' }, minWidth: { md: 180 } }}
           >
             <MenuItem value="ALL">Todos</MenuItem>
             <MenuItem value="EXTERNAL">Externos</MenuItem>

@@ -14,6 +14,8 @@ export default function MetricCard({ title, value, loading, emphasize }) {
             variant="h5"
             sx={{
               fontWeight: emphasize ? 700 : 600,
+              overflowWrap: 'anywhere',
+              wordBreak: 'break-word',
               color: emphasize === 'positive'
                 ? 'success.main'
                 : emphasize === 'negative'

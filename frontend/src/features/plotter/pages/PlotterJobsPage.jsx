@@ -368,6 +368,8 @@ function PlotterJobsPage() {
                           spacing={1}
                           justifyContent="flex-end"
                           flexWrap="wrap"
+                          useFlexGap
+                          sx={{ minWidth: 0 }}
                         >
                           <Button
                             size="small"
