@@ -3,6 +3,8 @@ import { AuthProvider } from '../features/auth/AuthProvider'
 import AdminOnlyPage from '../features/auth/components/AdminOnlyPage'
 import ProtectedRoute from '../features/auth/components/ProtectedRoute'
 import PublicLoginRoute from '../features/auth/components/PublicLoginRoute'
+import { useAuth } from '../features/auth/AuthContext'
+import { resolveDefaultAuthenticatedPath } from '../features/auth/presentation/authPresentation'
 import AdminCatalogsPage from '../features/auth/pages/AdminCatalogsPage'
 import AdminUsersPage from '../features/auth/pages/AdminUsersPage'
 import CreateQuotationPage from '../features/commercial/pages/CreateQuotationPage'
@@ -26,6 +28,11 @@ import ProductionOrderDetailPage from '../features/production/pages/ProductionOr
 import ProductionOrdersPage from '../features/production/pages/ProductionOrdersPage'
 import MainLayout from '../layout/MainLayout'
 
+function DefaultAuthenticatedRedirect() {
+  const { identity } = useAuth()
+  return <Navigate to={resolveDefaultAuthenticatedPath(identity)} replace />
+}
+
 function AppRouter() {
   return (
     <BrowserRouter>
@@ -40,8 +47,15 @@ function AppRouter() {
               </ProtectedRoute>
             }
           >
-            <Route index element={<Navigate to="/home" replace />} />
-            <Route path="home" element={<HomePage />} />
+            <Route index element={<DefaultAuthenticatedRedirect />} />
+            <Route
+              path="home"
+              element={
+                <AdminOnlyPage redirectTo="/commercial">
+                  <HomePage />
+                </AdminOnlyPage>
+              }
+            />
             <Route path="commercial/new" element={<CreateQuotationPage />} />
             <Route path="commercial/customers" element={<CustomersPage />} />
             <Route path="commercial/sellers" element={<SellersPage />} />

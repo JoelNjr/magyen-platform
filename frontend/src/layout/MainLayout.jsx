@@ -11,56 +11,10 @@ import {
 } from '@mui/material'
 import { Link as RouterLink, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../features/auth/AuthContext'
-import { isAdmin } from '../features/auth/presentation/authPresentation'
+import { filterNavigationItems } from '../features/auth/presentation/authPresentation'
+import { navigationItems } from './navigationItems'
 
 const DRAWER_WIDTH = 240
-
-function isQuotationsSelected(pathname) {
-  return (
-    pathname === '/commercial' ||
-    pathname.startsWith('/commercial/new') ||
-    pathname.startsWith('/commercial/quotations')
-  )
-}
-
-function isOrdersSelected(pathname) {
-  return (
-    pathname === '/commercial/orders' ||
-    pathname.startsWith('/commercial/orders/')
-  )
-}
-
-const navigationItems = [
-  { label: 'Inicio', path: '/home' },
-  {
-    label: 'Cotizaciones',
-    path: '/commercial',
-    selectedWhen: isQuotationsSelected,
-    children: [
-      { label: 'Clientes', path: '/commercial/customers' },
-      { label: 'Vendedores', path: '/commercial/sellers' },
-    ],
-  },
-  {
-    label: 'Órdenes',
-    path: '/commercial/orders',
-    selectedWhen: isOrdersSelected,
-  },
-  { label: 'Producción', path: '/production' },
-  { label: 'Inventario', path: '/inventory' },
-  { label: 'Plotter', path: '/plotter' },
-  { label: 'Finanzas', path: '/finance', adminOnly: true },
-  {
-    label: 'Administración',
-    path: '/admin/users',
-    adminOnly: true,
-    selectedWhen: (pathname) => pathname.startsWith('/admin'),
-    children: [
-      { label: 'Usuarios', path: '/admin/users' },
-      { label: 'Catálogos', path: '/admin/catalogs' },
-    ],
-  },
-]
 
 function isNavigationItemSelected(pathname, item) {
   if (typeof item.selectedWhen === 'function') {
@@ -72,9 +26,7 @@ function isNavigationItemSelected(pathname, item) {
 function MainLayout() {
   const location = useLocation()
   const { identity, logout } = useAuth()
-  const visibleNavigationItems = navigationItems.filter(
-    (item) => !item.adminOnly || isAdmin(identity)
-  )
+  const visibleNavigationItems = filterNavigationItems(navigationItems, identity)
 
   return (
     <Box sx={{ display: 'flex', height: '100vh' }}>

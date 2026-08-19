@@ -129,7 +129,7 @@ export function AuthProvider({ children }) {
       setStatus('authenticated')
       resetUnauthorizedRedirect()
 
-      const destination = resolveSafeInternalPath(location.state?.from)
+      const destination = resolveSafeInternalPath(location.state?.from, nextIdentity)
       navigate(destination, { replace: true })
     },
     [location.state, navigate]

@@ -66,6 +66,7 @@ public class SecurityConfiguration {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
                         .requestMatchers("/error").permitAll()
+                        .requestMatchers("/api/v1/home/**").hasRole("ADMIN")
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/v1/finance/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/inventory/*/unit-cost").hasRole("ADMIN")

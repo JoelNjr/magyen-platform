@@ -102,7 +102,6 @@ class AuthorizationApiContractTest {
         String accessToken = loginAs(AuthenticationRole.OPERATOR);
 
         mockMvc.perform(authorized(get("/api/v1/auth/me"), accessToken)).andExpect(status().isOk());
-        mockMvc.perform(authorized(get("/api/v1/home/dashboard"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/customers"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/quotations"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/orders"), accessToken)).andExpect(status().isOk());
@@ -113,6 +112,23 @@ class AuthorizationApiContractTest {
         mockMvc.perform(authorized(get("/api/v1/orders/profitability"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/plotter/profitability"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/commercial-catalogs"), accessToken)).andExpect(status().isOk());
+    }
+
+    @Test
+    void operatorIsForbiddenFromHomeDashboard() throws Exception {
+        String accessToken = loginAs(AuthenticationRole.OPERATOR);
+
+        mockMvc.perform(authorized(get("/api/v1/home/dashboard"), accessToken))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403))
+                .andExpect(jsonPath("$.error").value("Forbidden"))
+                .andExpect(jsonPath("$.message").value("You do not have permission to perform this action."))
+                .andExpect(jsonPath("$.financialSummary").doesNotExist())
+                .andExpect(jsonPath("$.receivables").doesNotExist())
+                .andExpect(jsonPath("$.completedReceivables").doesNotExist())
+                .andExpect(jsonPath("$.commitments").doesNotExist())
+                .andExpect(jsonPath("$.productionSummary").doesNotExist())
+                .andExpect(jsonPath("$.profitabilitySummary").doesNotExist());
     }
 
     @Test
