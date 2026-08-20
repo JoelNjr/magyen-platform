@@ -245,7 +245,7 @@ function MainLayout() {
                 bgcolor: magyenColors.surface.muted,
               },
               '&.Mui-selected': {
-                bgcolor: 'rgba(201, 162, 39, 0.10)',
+            bgcolor: magyenColors.gold.selectedWash,
                 boxShadow: `inset 3px 0 0 ${magyenColors.gold.main}`,
                 '&:hover': {
                   bgcolor: magyenColors.gold.muted,

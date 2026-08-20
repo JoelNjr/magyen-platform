@@ -13,7 +13,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Typography,
 } from '@mui/material'
 import { Link as RouterLink, useNavigate } from 'react-router-dom'
 import { formatDisplayDate } from '../presentation/formatDisplayDate'
@@ -26,6 +25,7 @@ import { getCustomers, getOrders } from '../services/commercialService'
 import MonthPeriodNavigator from '../../../shared/period/MonthPeriodNavigator'
 import { formatMonthPeriodLabel, getCalendarMonthRange } from '../../../shared/period/monthPeriod'
 import PageHeader from '../../../layout/PageHeader'
+import EmptyState from '../../home/components/EmptyState'
 
 const currencyFormatter = new Intl.NumberFormat('es-CO', {
   style: 'currency',
@@ -170,21 +170,16 @@ function OrdersPage() {
       )}
 
       {!loading && !failed && orders.length === 0 && (
-        <Paper sx={{ p: { xs: 3, sm: 4 } }}>
-          <Stack spacing={2} alignItems="center" sx={{ py: 2 }}>
-            <Inventory2OutlinedIcon color="action" sx={{ fontSize: 48 }} />
-            <Typography variant="h6">
-              No hay órdenes en {formatMonthPeriodLabel(period.fromDate)}
-            </Typography>
-            <Typography color="text.secondary" textAlign="center">
-              Cambia de mes para ver el histórico. Las órdenes se crean desde una
-              cotización aprobada.
-            </Typography>
+        <EmptyState
+          icon={<Inventory2OutlinedIcon color="action" sx={{ fontSize: 48 }} />}
+          title={`No hay órdenes en ${formatMonthPeriodLabel(period.fromDate)}`}
+          message="Cambia de mes para ver el histórico. Las órdenes se crean desde una cotización aprobada."
+          action={
             <Button variant="contained" onClick={() => navigate('/commercial')}>
               Ir a cotizaciones
             </Button>
-          </Stack>
-        </Paper>
+          }
+        />
       )}
 
       {!loading && !failed && orders.length > 0 && (

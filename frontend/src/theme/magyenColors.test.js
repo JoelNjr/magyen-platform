@@ -30,3 +30,8 @@ test('functional states remain recognizable and are not replaced by gold', () =>
 test('logo is the provided static public asset', () => {
   assert.equal(MAGYEN_LOGO_PUBLIC_PATH, '/assets/magyen-logo.png')
 })
+
+test('gold selected wash is a tint, not a gold fill', () => {
+  assert.equal(magyenColors.gold.selectedWash, 'rgba(201, 162, 39, 0.10)')
+  assert.notEqual(magyenColors.gold.selectedWash, magyenColors.gold.main)
+})

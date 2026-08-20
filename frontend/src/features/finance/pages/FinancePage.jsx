@@ -7,8 +7,6 @@ import {
   Alert,
   Box,
   Button,
-  Card,
-  CardContent,
   Chip,
   Paper,
   Skeleton,
@@ -59,34 +57,12 @@ import {
   updateRecurringFinancialObligation,
 } from '../services/financeService'
 import PageHeader from '../../../layout/PageHeader'
+import EmptyState from '../../home/components/EmptyState'
+import MetricCard from '../../home/components/MetricCard'
+import SectionHeader from '../../home/components/SectionHeader'
 
 const headerCellSx = { fontWeight: 'bold' }
 const SKELETON_ROW_COUNT = 3
-
-function SectionHeader({ title, actions }) {
-  return (
-    <Stack
-      direction={{ xs: 'column', sm: 'row' }}
-      spacing={2}
-      justifyContent="space-between"
-      alignItems={{ xs: 'stretch', sm: 'center' }}
-    >
-      <Typography variant="h5">{title}</Typography>
-      {actions}
-    </Stack>
-  )
-}
-
-function EmptyState({ icon, message }) {
-  return (
-    <Paper variant="outlined" sx={{ p: 4, textAlign: 'center' }}>
-      <Stack spacing={1} alignItems="center">
-        {icon}
-        <Typography color="text.secondary">{message}</Typography>
-      </Stack>
-    </Paper>
-  )
-}
 
 function LoadingRows({ columns }) {
   return Array.from({ length: SKELETON_ROW_COUNT }).map((_, index) => (
@@ -564,7 +540,7 @@ function FinancePage() {
         </Paper>
 
         <Stack spacing={2}>
-          <Typography variant="h5">Resumen del período</Typography>
+          <SectionHeader title="Resumen del período" />
           {summaryFailed ? (
             <Alert severity="error">
               No fue posible cargar el resumen del período.
@@ -581,47 +557,35 @@ function FinancePage() {
               },
             }}
           >
-            {[
-              {
-                label: 'Ingresos',
-                value: summaryLoading
-                  ? null
-                  : formatFinanceMoney(summary?.totalIncome),
-                color: 'success.main',
-              },
-              {
-                label: 'Gastos',
-                value: summaryLoading
-                  ? null
-                  : formatFinanceMoney(summary?.totalExpense),
-                color: 'error.main',
-              },
-              {
-                label: 'Resultado neto',
-                value: summaryLoading
-                  ? null
-                  : formatFinanceMoney(summary?.netResult),
-                color: 'text.primary',
-              },
-              {
-                label: 'Movimientos',
-                value: summaryLoading ? null : String(summary?.transactionCount ?? 0),
-                color: 'text.primary',
-              },
-            ].map((card) => (
-              <Card key={card.label} variant="outlined" sx={{ height: '100%', borderLeft: 3, borderLeftColor: card.color }}>
-                <CardContent>
-                  <Typography color="text.secondary">{card.label}</Typography>
-                  {summaryLoading ? (
-                    <Skeleton width="60%" height={40} />
-                  ) : (
-                    <Typography variant="h5" sx={{ color: card.color, mt: 1 }}>
-                      {card.value}
-                    </Typography>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
+            <MetricCard
+              title="Ingresos"
+              value={formatFinanceMoney(summary?.totalIncome)}
+              loading={summaryLoading}
+              tone="income"
+            />
+            <MetricCard
+              title="Gastos"
+              value={formatFinanceMoney(summary?.totalExpense)}
+              loading={summaryLoading}
+              tone="expense"
+            />
+            <MetricCard
+              title="Resultado neto"
+              value={formatFinanceMoney(summary?.netResult)}
+              loading={summaryLoading}
+              emphasize={
+                Number(summary?.netResult) > 0
+                  ? 'positive'
+                  : Number(summary?.netResult) < 0
+                    ? 'negative'
+                    : undefined
+              }
+            />
+            <MetricCard
+              title="Movimientos"
+              value={summary?.transactionCount ?? 0}
+              loading={summaryLoading}
+            />
           </Box>
         </Stack>
 

@@ -173,8 +173,32 @@ const appTheme = createTheme({
         root: {
           borderRadius: 8,
           borderColor: magyenPalette.border,
-          boxShadow: '0 1px 2px rgba(17, 17, 17, 0.04)',
+          boxShadow: magyenColors.shadow.card,
           transition: fastColorMotion,
+        },
+      },
+    },
+    MuiCardContent: {
+      styleOverrides: {
+        root: {
+          padding: 20,
+          '&:last-child': {
+            paddingBottom: 20,
+          },
+        },
+      },
+    },
+    MuiFormLabel: {
+      styleOverrides: {
+        asterisk: {
+          color: magyenPalette.error,
+        },
+      },
+    },
+    MuiFormHelperText: {
+      styleOverrides: {
+        root: {
+          marginLeft: 0,
         },
       },
     },
@@ -203,6 +227,13 @@ const appTheme = createTheme({
         root: {
           overflowWrap: 'anywhere',
           borderColor: magyenPalette.border,
+          py: 1.25,
+          px: 2,
+          fontVariantNumeric: 'tabular-nums',
+        },
+        head: {
+          py: 1.5,
+          whiteSpace: 'nowrap',
         },
       },
     },
@@ -259,6 +290,7 @@ const appTheme = createTheme({
       styleOverrides: {
         root: {
           fontWeight: 700,
+          pb: 1,
         },
       },
     },
@@ -266,6 +298,7 @@ const appTheme = createTheme({
       styleOverrides: {
         root: {
           overflowY: 'auto',
+          paddingTop: 16,
         },
       },
     },
@@ -274,6 +307,8 @@ const appTheme = createTheme({
         root: {
           flexWrap: 'wrap',
           gap: 8,
+          px: 3,
+          py: 2,
         },
       },
     },

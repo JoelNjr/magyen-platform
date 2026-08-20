@@ -23,7 +23,6 @@ import {
   TableRow,
   Tabs,
   TextField,
-  Typography,
 } from '@mui/material'
 import {
   activateAdminCatalogEntry,
@@ -32,6 +31,7 @@ import {
   getAdminCatalogs,
 } from '../services/adminCatalogsService'
 import PageHeader from '../../../layout/PageHeader'
+import EmptyState from '../../home/components/EmptyState'
 
 const headerCellSx = { fontWeight: 'bold' }
 const SKELETON_ROW_COUNT = 4
@@ -238,12 +238,10 @@ function AdminCatalogsPage() {
               ))}
             </Stack>
           ) : entries.length === 0 ? (
-            <Stack sx={{ p: 3 }}>
-              <Typography color="text.secondary">
-                No hay valores en {currentTab.label.toLowerCase()}. Cree el primero para que
-                Magyen pueda usarlo en cotizaciones.
-              </Typography>
-            </Stack>
+            <EmptyState
+              plain
+              message={`No hay valores en ${currentTab.label.toLowerCase()}. Cree el primero para que Magyen pueda usarlo en cotizaciones.`}
+            />
           ) : (
             <TableContainer>
               <Table>

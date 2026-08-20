@@ -54,7 +54,7 @@ function LoginPage() {
           maxWidth: 420,
           p: { xs: 3, sm: 4 },
           borderTop: `3px solid ${magyenColors.gold.main}`,
-          boxShadow: '0 12px 32px rgba(0, 0, 0, 0.28)',
+          boxShadow: magyenColors.shadow.login,
           ...loginEntranceAnimation,
         }}
       >

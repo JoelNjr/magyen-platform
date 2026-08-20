@@ -25,6 +25,7 @@ import {
   updateCustomer,
 } from '../services/commercialService'
 import PageHeader from '../../../layout/PageHeader'
+import EmptyState from '../../home/components/EmptyState'
 
 const headerCellSx = { fontWeight: 'bold' }
 const SKELETON_ROW_COUNT = 4
@@ -221,13 +222,11 @@ function CustomersPage() {
         )}
 
         {!loading && !failed && customers.length === 0 && (
-          <Paper sx={{ p: { xs: 3, sm: 4 } }}>
-            <Stack spacing={2} alignItems="center" sx={{ py: 2 }}>
-              <PeopleOutlinedIcon color="action" sx={{ fontSize: 48 }} />
-              <Typography variant="h6">No hay clientes registrados</Typography>
-              <Typography color="text.secondary" textAlign="center">
-                Crea tu primer cliente para comenzar a usarlo en cotizaciones.
-              </Typography>
+          <EmptyState
+            icon={<PeopleOutlinedIcon color="action" sx={{ fontSize: 48 }} />}
+            title="No hay clientes registrados"
+            message="Crea tu primer cliente para comenzar a usarlo en cotizaciones."
+            action={
               <Button
                 variant="contained"
                 startIcon={<AddIcon />}
@@ -235,8 +234,8 @@ function CustomersPage() {
               >
                 Nuevo cliente
               </Button>
-            </Stack>
-          </Paper>
+            }
+          />
         )}
 
         {!loading && !failed && customers.length > 0 && (

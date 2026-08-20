@@ -13,7 +13,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Typography,
 } from '@mui/material'
 import { Link as RouterLink, useNavigate } from 'react-router-dom'
 import { formatDisplayDate } from '../presentation/formatDisplayDate'
@@ -24,6 +23,7 @@ import {
 } from '../presentation/productionStatusPresentation'
 import { getProductionOrders } from '../services/productionService'
 import PageHeader from '../../../layout/PageHeader'
+import EmptyState from '../../home/components/EmptyState'
 import MonthPeriodNavigator from '../../../shared/period/MonthPeriodNavigator'
 import { formatMonthPeriodLabel, getCalendarMonthRange } from '../../../shared/period/monthPeriod'
 
@@ -150,20 +150,13 @@ function ProductionOrdersPage() {
       )}
 
       {!loading && !failed && productionOrders.length === 0 && (
-        <Paper sx={{ p: { xs: 3, sm: 4 } }}>
-          <Stack spacing={2} alignItems="center" sx={{ py: 2 }}>
-            <PrecisionManufacturingOutlinedIcon
-              color="action"
-              sx={{ fontSize: 48 }}
-            />
-            <Typography variant="h6">
-              No hay órdenes de producción en {formatMonthPeriodLabel(period.fromDate)}.
-            </Typography>
-            <Typography color="text.secondary" textAlign="center">
-              Cambia de mes para ver el histórico.
-            </Typography>
-          </Stack>
-        </Paper>
+        <EmptyState
+          icon={
+            <PrecisionManufacturingOutlinedIcon color="action" sx={{ fontSize: 48 }} />
+          }
+          title={`No hay órdenes de producción en ${formatMonthPeriodLabel(period.fromDate)}.`}
+          message="Cambia de mes para ver el histórico."
+        />
       )}
 
       {!loading && !failed && productionOrders.length > 0 && (

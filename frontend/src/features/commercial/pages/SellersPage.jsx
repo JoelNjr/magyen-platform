@@ -3,6 +3,7 @@ import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined'
 import {
   Alert,
   Button,
+  Chip,
   Paper,
   Skeleton,
   Stack,
@@ -17,6 +18,7 @@ import {
 import { useNavigate } from 'react-router-dom'
 import { getSellers } from '../services/commercialService'
 import PageHeader from '../../../layout/PageHeader'
+import EmptyState from '../../home/components/EmptyState'
 
 const headerCellSx = { fontWeight: 'bold' }
 const SKELETON_ROW_COUNT = 4
@@ -96,21 +98,16 @@ function SellersPage() {
       )}
 
       {!loading && !failed && sellers.length === 0 && (
-        <Paper sx={{ p: { xs: 3, sm: 4 } }}>
-          <Stack spacing={2} alignItems="center" sx={{ py: 2 }}>
-            <BadgeOutlinedIcon color="action" sx={{ fontSize: 48 }} />
-            <Typography variant="h6">
-              No hay empleados con pago fijo disponibles para seleccionar como
-              vendedor.
-            </Typography>
-            <Typography color="text.secondary" textAlign="center">
-              Créalo en Finanzas → Empleados.
-            </Typography>
+        <EmptyState
+          icon={<BadgeOutlinedIcon color="action" sx={{ fontSize: 48 }} />}
+          title="No hay empleados con pago fijo disponibles para seleccionar como vendedor."
+          message="Créalo en Finanzas → Empleados."
+          action={
             <Button variant="outlined" onClick={() => navigate('/finance')}>
               Ir a Finanzas → Empleados
             </Button>
-          </Stack>
-        </Paper>
+          }
+        />
       )}
 
       {!loading && !failed && sellers.length > 0 && (
@@ -123,7 +120,14 @@ function SellersPage() {
                   <TableCell>
                     <Typography variant="body1">{seller.name}</Typography>
                   </TableCell>
-                  <TableCell>{seller.active ? 'Activo' : 'Inactivo'}</TableCell>
+                  <TableCell>
+                    <Chip
+                      size="small"
+                      label={seller.active ? 'Activo' : 'Inactivo'}
+                      color={seller.active ? 'success' : 'default'}
+                      variant={seller.active ? 'filled' : 'outlined'}
+                    />
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

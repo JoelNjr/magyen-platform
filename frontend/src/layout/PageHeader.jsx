@@ -40,7 +40,14 @@ export default function PageHeader({ title, subtitle, actions, icon }) {
         ) : null}
       </Stack>
       {actions ? (
-        <Box sx={{ alignSelf: { xs: 'stretch', sm: 'center' } }}>{actions}</Box>
+        <Box
+          sx={{
+            alignSelf: { xs: 'stretch', sm: 'center' },
+            width: { xs: '100%', sm: 'auto' },
+          }}
+        >
+          {actions}
+        </Box>
       ) : null}
     </Stack>
   )

@@ -9,6 +9,7 @@ export const magyenColors = {
     hover: '#B8911F',
     active: '#A07E18',
     muted: 'rgba(201, 162, 39, 0.16)',
+    selectedWash: 'rgba(201, 162, 39, 0.10)',
   },
   charcoal: {
     main: '#111111',
@@ -37,6 +38,10 @@ export const magyenColors = {
     warning: '#ED6C02',
     error: '#C62828',
     info: '#1565C0',
+  },
+  shadow: {
+    card: '0 1px 2px rgba(17, 17, 17, 0.04)',
+    login: '0 12px 32px rgba(0, 0, 0, 0.28)',
   },
 }
 

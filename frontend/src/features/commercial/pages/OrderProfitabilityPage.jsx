@@ -28,6 +28,7 @@ import {
 } from '../presentation/orderProfitabilityPresentation'
 import { getOrderProfitabilityList } from '../services/commercialService'
 import PageHeader from '../../../layout/PageHeader'
+import EmptyState from '../../home/components/EmptyState'
 
 const headerCellSx = { fontWeight: 'bold', whiteSpace: 'nowrap' }
 const SKELETON_ROW_COUNT = 4
@@ -193,16 +194,11 @@ function OrderProfitabilityPage() {
       )}
 
       {!loading && !failed && orders.length === 0 && (
-        <Paper sx={{ p: 4 }}>
-          <Stack spacing={1} alignItems="center">
-            <ReceiptLongOutlinedIcon color="disabled" sx={{ fontSize: 40 }} />
-            <Typography variant="h6">Sin pedidos para evaluar</Typography>
-            <Typography color="text.secondary" align="center">
-              No hay órdenes confirmadas, en producción o entregadas con
-              información de rentabilidad.
-            </Typography>
-          </Stack>
-        </Paper>
+        <EmptyState
+          icon={<ReceiptLongOutlinedIcon color="disabled" sx={{ fontSize: 40 }} />}
+          title="Sin pedidos para evaluar"
+          message="No hay órdenes confirmadas, en producción o entregadas con información de rentabilidad."
+        />
       )}
 
       {!loading && !failed && orders.length > 0 && (

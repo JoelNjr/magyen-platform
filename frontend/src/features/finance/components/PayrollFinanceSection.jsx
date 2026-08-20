@@ -44,6 +44,7 @@ import {
   payPayrollPeriod,
   updatePayrollEmployeeCompensation,
 } from '../services/financeService'
+import SectionHeader from '../../home/components/SectionHeader'
 
 const headerCellSx = { fontWeight: 'bold' }
 const SKELETON_ROW_COUNT = 3
@@ -306,24 +307,21 @@ function PayrollFinanceSection({
   return (
     <>
       <Stack spacing={2}>
-        <Stack
-          direction={{ xs: 'column', sm: 'row' }}
-          spacing={2}
-          justifyContent="space-between"
-          alignItems={{ xs: 'stretch', sm: 'center' }}
-        >
-          <Typography variant="h5">Empleados</Typography>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => {
-              setCreateError('')
-              setCreateOpen(true)
-            }}
-          >
-            Crear empleado
-          </Button>
-        </Stack>
+        <SectionHeader
+          title="Empleados"
+          actions={
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => {
+                setCreateError('')
+                setCreateOpen(true)
+              }}
+            >
+              Crear empleado
+            </Button>
+          }
+        />
         {employeesFailed ? (
           <Alert severity="error">No fue posible cargar los empleados.</Alert>
         ) : null}
@@ -444,12 +442,10 @@ function PayrollFinanceSection({
       </Stack>
 
       <Stack spacing={2}>
-        <Typography variant="h5">Desempeño de vendedores</Typography>
-        <Typography variant="body2" color="text.secondary">
-          Comisión del 5% sobre pedidos entregados o cerrados, según la fecha de
-          confirmación. Los pedidos confirmados o en producción no acumulan. Es
-          analítico: no crea un gasto de Finanzas ni depende de generar nómina.
-        </Typography>
+        <SectionHeader
+          title="Desempeño de vendedores"
+          subtitle="Comisión del 5% sobre pedidos entregados o cerrados, según la fecha de confirmación. Los pedidos confirmados o en producción no acumulan. Es analítico: no crea un gasto de Finanzas ni depende de generar nómina."
+        />
         {performanceFailed ? (
           <Alert
             severity="error"
@@ -522,28 +518,22 @@ function PayrollFinanceSection({
       </Stack>
 
       <Stack spacing={2}>
-        <Stack
-          direction={{ xs: 'column', sm: 'row' }}
-          spacing={2}
-          justifyContent="space-between"
-          alignItems={{ xs: 'stretch', sm: 'center' }}
-        >
-          <Typography variant="h5">Nómina</Typography>
-          <Button
-            variant="outlined"
-            onClick={() => {
-              setGenerateError('')
-              setGenerateResult(null)
-              setGenerateOpen(true)
-            }}
-          >
-            Generar nómina
-          </Button>
-        </Stack>
-        <Typography variant="body2" color="text.secondary">
-          Generar un período no crea gasto de caja. Solo al pagar se registra el
-          movimiento financiero.
-        </Typography>
+        <SectionHeader
+          title="Nómina"
+          subtitle="Generar un período no crea gasto de caja. Solo al pagar se registra el movimiento financiero."
+          actions={
+            <Button
+              variant="outlined"
+              onClick={() => {
+                setGenerateError('')
+                setGenerateResult(null)
+                setGenerateOpen(true)
+              }}
+            >
+              Generar nómina
+            </Button>
+          }
+        />
         {periodsFailed ? (
           <Alert severity="error">
             No fue posible cargar los períodos de nómina.

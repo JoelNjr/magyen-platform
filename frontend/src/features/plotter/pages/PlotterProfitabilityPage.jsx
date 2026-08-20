@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react'
 import PrintOutlinedIcon from '@mui/icons-material/PrintOutlined'
 import {
   Alert,
-  Box,
   Button,
   MenuItem,
   Paper,
@@ -15,7 +14,6 @@ import {
   TableHead,
   TableRow,
   TextField,
-  Typography,
 } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
 import MetricCard from '../../home/components/MetricCard'
@@ -28,6 +26,8 @@ import {
 } from '../presentation/plotterJobPresentation'
 import { getPlotterProfitability } from '../services/plotterService'
 import PageHeader from '../../../layout/PageHeader'
+import EmptyState from '../../home/components/EmptyState'
+import SectionHeader from '../../home/components/SectionHeader'
 
 const headerCellSx = { fontWeight: 'bold', whiteSpace: 'nowrap' }
 
@@ -168,20 +168,10 @@ function PlotterProfitabilityPage() {
         </Alert>
       ) : null}
 
-      <Stack spacing={1}>
-        <Box
-          sx={{
-            width: 28,
-            height: 3,
-            bgcolor: 'primary.main',
-            borderRadius: 1,
-          }}
-        />
-        <Typography variant="h5">Rentabilidad</Typography>
-        <Typography variant="body2" color="text.secondary">
-          Ingreso generado menos compras de papel y tinta del período. No es cobranza.
-        </Typography>
-      </Stack>
+      <SectionHeader
+        title="Rentabilidad"
+        subtitle="Ingreso generado menos compras de papel y tinta del período. No es cobranza."
+      />
 
       <BoxGrid>
         <MetricCard
@@ -264,14 +254,10 @@ function PlotterProfitabilityPage() {
         />
       </BoxGrid>
 
-      <Stack spacing={1}>
-        <Typography variant="h5">Cobranza de trabajos externos</Typography>
-        <Typography variant="body2" color="text.secondary">
-          Pagos registrados contra trabajos EXTERNAL del período. No crea
-          transacciones de Finanzas al abrir este reporte. No incluye interno ni
-          merma.
-        </Typography>
-      </Stack>
+      <SectionHeader
+        title="Cobranza de trabajos externos"
+        subtitle="Pagos registrados contra trabajos EXTERNAL del período. No crea transacciones de Finanzas al abrir este reporte. No incluye interno ni merma."
+      />
 
       <BoxGrid>
         <MetricCard
@@ -304,23 +290,20 @@ function PlotterProfitabilityPage() {
 
       <Paper sx={{ p: 3 }}>
         <Stack spacing={2}>
-          <Typography variant="h5">Trabajos internos Magyen</Typography>
-          <Typography variant="body2" color="text.secondary">
-            Valor del servicio interno Magyen atribuido a pedidos. El gasto en papel del
-            período son las compras de inventario, no estos consumos.
-          </Typography>
+          <SectionHeader
+            title="Trabajos internos Magyen"
+            subtitle="Valor del servicio interno Magyen atribuido a pedidos. El gasto en papel del período son las compras de inventario, no estos consumos."
+          />
 
           {loading ? (
             <Skeleton variant="rectangular" height={120} />
           ) : null}
 
           {!loading && !failed && internalOrders.length === 0 ? (
-            <Stack spacing={1} alignItems="center" sx={{ py: 3 }}>
-              <PrintOutlinedIcon color="disabled" sx={{ fontSize: 40 }} />
-              <Typography color="text.secondary">
-                No hay trabajos internos en el período seleccionado.
-              </Typography>
-            </Stack>
+            <EmptyState
+              icon={<PrintOutlinedIcon color="disabled" sx={{ fontSize: 40 }} />}
+              message="No hay trabajos internos en el período seleccionado."
+            />
           ) : null}
 
           {!loading && !failed && internalOrders.length > 0 ? (

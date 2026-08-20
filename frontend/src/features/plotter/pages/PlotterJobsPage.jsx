@@ -37,6 +37,7 @@ import { createPlotterJob, getPlotterJobs, registerPlotterPayment } from '../ser
 import MonthPeriodNavigator from '../../../shared/period/MonthPeriodNavigator'
 import { formatMonthPeriodLabel, getCalendarMonthRange } from '../../../shared/period/monthPeriod'
 import PageHeader from '../../../layout/PageHeader'
+import EmptyState from '../../home/components/EmptyState'
 
 const headerCellSx = { fontWeight: 'bold' }
 const SKELETON_ROW_COUNT = 4
@@ -310,17 +311,11 @@ function PlotterJobsPage() {
         )}
 
         {!loading && !failed && jobs.length === 0 && (
-          <Paper sx={{ p: 4 }}>
-            <Stack spacing={1} alignItems="center">
-              <PrintOutlinedIcon color="disabled" sx={{ fontSize: 40 }} />
-              <Typography variant="h6">
-                Sin trabajos de plotter en {formatMonthPeriodLabel(period.fromDate)}
-              </Typography>
-              <Typography color="text.secondary" align="center">
-                Cambia de mes para ver el histórico o registra un nuevo trabajo.
-              </Typography>
-            </Stack>
-          </Paper>
+          <EmptyState
+            icon={<PrintOutlinedIcon color="disabled" sx={{ fontSize: 40 }} />}
+            title={`Sin trabajos de plotter en ${formatMonthPeriodLabel(period.fromDate)}`}
+            message="Cambia de mes para ver el histórico o registra un nuevo trabajo."
+          />
         )}
 
         {!loading && !failed && jobs.length > 0 && (

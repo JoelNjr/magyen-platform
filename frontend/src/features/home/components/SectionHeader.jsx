@@ -1,4 +1,5 @@
-import { Box, Stack, Typography } from '@mui/material'
+import { Stack, Typography } from '@mui/material'
+import { BrandAccentLine } from '../../../layout/PageHeader'
 
 const PRIORITY_VARIANTS = {
   primary: 'h4',
@@ -26,17 +27,7 @@ export default function SectionHeader({
       alignItems={{ xs: 'stretch', sm: 'flex-start' }}
     >
       <Stack spacing={0.5} sx={{ minWidth: 0 }}>
-        {priority === 'primary' ? (
-          <Box
-            sx={{
-              width: 28,
-              height: 3,
-              bgcolor: 'primary.main',
-              borderRadius: 1,
-              mb: 0.5,
-            }}
-          />
-        ) : null}
+        {priority === 'primary' ? <BrandAccentLine width={28} /> : null}
         <Typography variant={variant} component="h2" fontWeight={priority === 'primary' ? 700 : 600}>
           {title}
         </Typography>

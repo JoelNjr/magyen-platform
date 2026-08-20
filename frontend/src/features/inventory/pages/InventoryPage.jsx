@@ -32,6 +32,7 @@ import {
   registerInventoryPurchase,
 } from '../services/inventoryService'
 import PageHeader from '../../../layout/PageHeader'
+import EmptyState from '../../home/components/EmptyState'
 
 const headerCellSx = { fontWeight: 'bold' }
 const SKELETON_ROW_COUNT = 4
@@ -264,12 +265,10 @@ function InventoryPage() {
         )}
 
         {!loading && !failed && items.length === 0 && (
-          <Paper sx={{ p: { xs: 3, sm: 4 } }}>
-            <Stack spacing={2} alignItems="center" sx={{ py: 2 }}>
-              <Inventory2OutlinedIcon color="action" sx={{ fontSize: 48 }} />
-              <Typography variant="h6">
-                No hay materiales registrados en el inventario.
-              </Typography>
+          <EmptyState
+            icon={<Inventory2OutlinedIcon color="action" sx={{ fontSize: 48 }} />}
+            title="No hay materiales registrados en el inventario."
+            action={
               <Button
                 variant="contained"
                 startIcon={<AddIcon />}
@@ -277,8 +276,8 @@ function InventoryPage() {
               >
                 Nuevo material
               </Button>
-            </Stack>
-          </Paper>
+            }
+          />
         )}
 
         {!loading && !failed && items.length > 0 && (
