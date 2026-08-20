@@ -1,6 +1,10 @@
+server:
+  address: 0.0.0.0
+  port: ${PORT:8080}
+
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/magyen_platform
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/magyen_platform}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
   jpa:
