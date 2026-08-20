@@ -24,6 +24,7 @@ import {
   getCustomers,
   updateCustomer,
 } from '../services/commercialService'
+import PageHeader from '../../../layout/PageHeader'
 
 const headerCellSx = { fontWeight: 'bold' }
 const SKELETON_ROW_COUNT = 4
@@ -179,13 +180,9 @@ function CustomersPage() {
           Volver
         </Button>
 
-        <Stack
-          direction={{ xs: 'column', sm: 'row' }}
-          spacing={2}
-          justifyContent="space-between"
-          alignItems={{ xs: 'stretch', sm: 'center' }}
-        >
-          <Typography variant="h3">Clientes</Typography>
+        <PageHeader
+          title="Clientes"
+          actions={
           <Button
             variant="contained"
             startIcon={<AddIcon />}
@@ -195,7 +192,8 @@ function CustomersPage() {
           >
             Nuevo cliente
           </Button>
-        </Stack>
+          }
+        />
 
         {loading && (
           <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>

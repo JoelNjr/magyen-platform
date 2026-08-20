@@ -50,6 +50,7 @@ import {
   getPaymentsByOrder,
   registerOrderPayment,
 } from '../services/commercialService'
+import PageHeader, { BrandAccentLine } from '../../../layout/PageHeader'
 import {
   ORDER_REMISSION_ACTION_LABEL,
   resolveBlobApiErrorMessage,
@@ -621,14 +622,14 @@ function OrderDetailPage() {
 
       {!loading && failed && (
         <>
-          <Typography variant="h4">Detalle de Orden</Typography>
+          <PageHeader title="Detalle de Orden" />
           <Alert severity="error">No fue posible obtener la orden.</Alert>
         </>
       )}
 
       {!loading && !failed && notFound && (
         <>
-          <Typography variant="h4">Detalle de Orden</Typography>
+          <PageHeader title="Detalle de Orden" />
           <Alert severity="warning">Orden no encontrada.</Alert>
         </>
       )}
@@ -648,6 +649,7 @@ function OrderDetailPage() {
             alignItems={{ xs: 'stretch', md: 'flex-start' }}
           >
             <Stack spacing={1}>
+              <BrandAccentLine />
               <Typography variant="body2" color="text.secondary">
                 Detalle de Orden
               </Typography>

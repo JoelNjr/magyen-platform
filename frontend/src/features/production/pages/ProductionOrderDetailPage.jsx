@@ -58,6 +58,7 @@ import {
   startProductionOperation,
   startProductionOrder,
 } from '../services/productionService'
+import PageHeader, { BrandAccentLine } from '../../../layout/PageHeader'
 
 function getLaborStatusLabel(status) {
   if (status === 'PENDING') return 'Pendiente'
@@ -69,7 +70,7 @@ function getLaborStatusLabel(status) {
 function getLaborStatusColor(status) {
   if (status === 'PENDING') return 'warning'
   if (status === 'PAID') return 'success'
-  if (status === 'CANCELLED') return 'default'
+  if (status === 'CANCELLED') return 'error'
   return 'default'
 }
 
@@ -887,7 +888,7 @@ function ProductionOrderDetailPage() {
 
         {!loading && failed && (
           <>
-            <Typography variant="h4">Detalle de Orden de Producción</Typography>
+            <PageHeader title="Detalle de Orden de Producción" />
             <Alert severity="error">
               No fue posible obtener la orden de producción.
             </Alert>
@@ -896,7 +897,7 @@ function ProductionOrderDetailPage() {
 
         {!loading && !failed && notFound && (
           <>
-            <Typography variant="h4">Detalle de Orden de Producción</Typography>
+            <PageHeader title="Detalle de Orden de Producción" />
             <Alert severity="warning">Orden de producción no encontrada.</Alert>
           </>
         )}
@@ -910,6 +911,7 @@ function ProductionOrderDetailPage() {
               alignItems={{ xs: 'stretch', sm: 'flex-start' }}
             >
               <Stack spacing={1}>
+                <BrandAccentLine />
                 <Typography variant="body2" color="text.secondary">
                   Detalle de Orden de Producción
                 </Typography>

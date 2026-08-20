@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import {
   canRegisterExternalPlotterPayment,
+  getPlotterJobTypeChipProps,
   isExternalPlotterPaymentComplete,
 } from './plotterJobPresentation.js'
 
@@ -47,6 +48,15 @@ test('I. INTERNAL jobs do not expose external payment actions', () => {
   }
   assert.equal(canRegisterExternalPlotterPayment(job), false)
   assert.equal(isExternalPlotterPaymentComplete(job), false)
+})
+
+test('plotter job types use distinct semantic chip colors, not gold for all', () => {
+  assert.equal(getPlotterJobTypeChipProps('EXTERNAL').color, 'info')
+  assert.equal(getPlotterJobTypeChipProps('INTERNAL_MAGYEN').color, 'secondary')
+  assert.equal(getPlotterJobTypeChipProps('WASTE').color, 'warning')
+  assert.notEqual(getPlotterJobTypeChipProps('EXTERNAL').color, 'primary')
+  assert.notEqual(getPlotterJobTypeChipProps('INTERNAL_MAGYEN').color, 'primary')
+  assert.notEqual(getPlotterJobTypeChipProps('WASTE').color, 'primary')
 })
 
 test('J. WASTE jobs do not expose payment actions', () => {

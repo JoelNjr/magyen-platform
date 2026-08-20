@@ -37,6 +37,7 @@ import {
   getCustomers,
   getQuotation,
 } from '../services/commercialService'
+import PageHeader, { BrandAccentLine } from '../../../layout/PageHeader'
 import {
   QUOTATION_PDF_ACTION_LABEL,
   resolveBlobApiErrorMessage,
@@ -362,14 +363,14 @@ function QuotationDetailPage() {
 
       {!loading && failed && (
         <>
-          <Typography variant="h4">Detalle de Cotización</Typography>
+          <PageHeader title="Detalle de Cotización" />
           <Typography>No fue posible obtener la cotización.</Typography>
         </>
       )}
 
       {!loading && !failed && notFound && (
         <>
-          <Typography variant="h4">Detalle de Cotización</Typography>
+          <PageHeader title="Detalle de Cotización" />
           <Typography>Cotización no encontrada.</Typography>
         </>
       )}
@@ -388,6 +389,7 @@ function QuotationDetailPage() {
             alignItems={{ xs: 'stretch', md: 'flex-start' }}
           >
             <Stack spacing={1}>
+              <BrandAccentLine />
               <Typography variant="body2" color="text.secondary">
                 Detalle de Cotización
               </Typography>

@@ -23,9 +23,11 @@ import {
   TextField,
   Typography,
 } from '@mui/material'
+import { alpha } from '@mui/material/styles'
 import EmptyState from '../components/EmptyState'
 import MetricCard from '../components/MetricCard'
 import SectionHeader from '../components/SectionHeader'
+import PageHeader from '../../../layout/PageHeader'
 import { getHomeDashboard } from '../services/homeService'
 import {
   filterGeneralInventoryAlertItems,
@@ -186,15 +188,10 @@ function HomePage() {
 
   return (
     <Stack spacing={4}>
-      <Box>
-        <Typography variant="h3" component="h1" fontWeight={700} gutterBottom>
-          Inicio
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
-          Prioridad operativa: producción, rentabilidad y obligaciones primero.
-          El período financiero solo afecta el resumen de ingresos y gastos.
-        </Typography>
-      </Box>
+      <PageHeader
+        title="Inicio"
+        subtitle="Prioridad operativa: producción, rentabilidad y obligaciones primero. El período financiero solo afecta el resumen de ingresos y gastos."
+      />
 
       {failed ? (
         <Alert
@@ -215,8 +212,7 @@ function HomePage() {
         sx={{
           p: { xs: 2, md: 3 },
           borderColor: 'warning.light',
-          bgcolor: (theme) =>
-            theme.palette.mode === 'light' ? 'rgba(237, 108, 2, 0.04)' : 'transparent',
+          bgcolor: (theme) => alpha(theme.palette.warning.main, 0.04),
         }}
       >
         <Stack spacing={2}>
@@ -295,10 +291,7 @@ function HomePage() {
                         sx={
                           inProgress
                             ? {
-                                bgcolor: (theme) =>
-                                  theme.palette.mode === 'light'
-                                    ? 'rgba(237, 108, 2, 0.08)'
-                                    : 'action.selected',
+                                bgcolor: (theme) => alpha(theme.palette.warning.main, 0.08),
                               }
                             : undefined
                         }
@@ -428,10 +421,12 @@ function HomePage() {
               <MetricCard
                 title="Valor de órdenes (completas)"
                 value={formatFinanceMoney(profitability.totalOrderValue)}
+                tone="income"
               />
               <MetricCard
                 title="Costo directo total"
                 value={formatFinanceMoney(profitability.totalDirectCost)}
+                tone="expense"
               />
               <MetricCard
                 title="Resultado directo"
@@ -883,11 +878,13 @@ function HomePage() {
             title="Ingresos"
             loading={loading}
             value={formatFinanceMoney(financial?.income)}
+            tone="income"
           />
           <MetricCard
             title="Gastos"
             loading={loading}
             value={formatFinanceMoney(financial?.expense)}
+            tone="expense"
           />
           <MetricCard
             title="Resultado neto"

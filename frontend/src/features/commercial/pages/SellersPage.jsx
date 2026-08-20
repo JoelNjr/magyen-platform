@@ -16,6 +16,7 @@ import {
 } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
 import { getSellers } from '../services/commercialService'
+import PageHeader from '../../../layout/PageHeader'
 
 const headerCellSx = { fontWeight: 'bold' }
 const SKELETON_ROW_COUNT = 4
@@ -65,11 +66,10 @@ function SellersPage() {
         Volver a comercial
       </Button>
 
-      <Typography variant="h3">Vendedores</Typography>
-      <Typography color="text.secondary">
-        Los vendedores son empleados de Finanzas con pago fijo. Esta pantalla
-        solo muestra quién puede vender; no es un catálogo independiente.
-      </Typography>
+      <PageHeader
+        title="Vendedores"
+        subtitle="Los vendedores son empleados de Finanzas con pago fijo. Esta pantalla solo muestra quién puede vender; no es un catálogo independiente."
+      />
 
       {loading && (
         <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>

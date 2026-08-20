@@ -6,7 +6,6 @@ import {
   Snackbar,
   Stack,
   TextField,
-  Typography,
 } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
 import CreateCustomerDialog from '../components/CreateCustomerDialog'
@@ -18,6 +17,7 @@ import {
   getCustomers,
   getSellers,
 } from '../services/commercialService'
+import PageHeader from '../../../layout/PageHeader'
 
 function toIsoDate(date = new Date()) {
   const year = date.getFullYear()
@@ -178,7 +178,7 @@ function CreateQuotationPage() {
       >
         <form onSubmit={handleSubmit}>
           <Stack spacing={3}>
-            <Typography variant="h4">Nueva Cotización</Typography>
+            <PageHeader title="Nueva Cotización" />
 
             {failed && (
               <Alert severity="error">No fue posible crear la cotización.</Alert>

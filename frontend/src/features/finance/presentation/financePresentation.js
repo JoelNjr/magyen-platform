@@ -177,7 +177,7 @@ export function getTransactionTypeChipColor(type) {
 export function getOccurrenceStatusChipColor(status) {
   if (status === 'PENDING') return 'warning'
   if (status === 'PAID') return 'success'
-  if (status === 'CANCELLED') return 'default'
+  if (status === 'CANCELLED') return 'error'
   return 'default'
 }
 

@@ -27,6 +27,7 @@ import {
 import { getCustomers, getQuotations } from '../services/commercialService'
 import MonthPeriodNavigator from '../../../shared/period/MonthPeriodNavigator'
 import { formatMonthPeriodLabel, getCalendarMonthRange } from '../../../shared/period/monthPeriod'
+import PageHeader from '../../../layout/PageHeader'
 
 const currencyFormatter = new Intl.NumberFormat('es-CO', {
   style: 'currency',
@@ -122,13 +123,9 @@ function QuotationsPage() {
   return (
     <>
       <Stack spacing={3}>
-        <Stack
-          direction={{ xs: 'column', sm: 'row' }}
-          spacing={2}
-          justifyContent="space-between"
-          alignItems={{ xs: 'stretch', sm: 'center' }}
-        >
-          <Typography variant="h3">Cotizaciones</Typography>
+        <PageHeader
+          title="Cotizaciones"
+          actions={
           <Stack
             direction={{ xs: 'column', sm: 'row' }}
             spacing={1.5}
@@ -160,7 +157,8 @@ function QuotationsPage() {
               Nueva cotización
             </Button>
           </Stack>
-        </Stack>
+          }
+        />
 
         <MonthPeriodNavigator
           fromDate={period.fromDate}

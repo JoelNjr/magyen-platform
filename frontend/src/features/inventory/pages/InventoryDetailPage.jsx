@@ -50,6 +50,7 @@ import {
   updateInventoryMinimumStock,
   updateInventoryUnitCost,
 } from '../services/inventoryService'
+import { BrandAccentLine } from '../../../layout/PageHeader'
 
 const headerCellSx = { fontWeight: 'bold' }
 
@@ -396,6 +397,7 @@ function InventoryDetailPage() {
         {!loading && !failed && !notFound && item && (
           <>
             <Stack spacing={1}>
+              <BrandAccentLine />
               <Typography variant="h3">Inventario</Typography>
               {item.plotterPaperRoll ? (
                 <>

@@ -31,6 +31,7 @@ import {
   deactivateAdminCatalogEntry,
   getAdminCatalogs,
 } from '../services/adminCatalogsService'
+import PageHeader from '../../../layout/PageHeader'
 
 const headerCellSx = { fontWeight: 'bold' }
 const SKELETON_ROW_COUNT = 4
@@ -195,16 +196,11 @@ function AdminCatalogsPage() {
   return (
     <>
       <Stack spacing={3}>
-        <Stack
-          direction={{ xs: 'column', sm: 'row' }}
-          spacing={2}
-          justifyContent="space-between"
-          alignItems={{ xs: 'stretch', sm: 'center' }}
-        >
-          <Stack direction="row" spacing={1} alignItems="center">
-            <CategoryOutlinedIcon />
-            <Typography variant="h4">Catálogos</Typography>
-          </Stack>
+        <PageHeader
+          title="Catálogos"
+          icon={<CategoryOutlinedIcon color="action" />}
+          subtitle="Estos catálogos alimentan cotizaciones y pedidos. Una tela de catálogo no crea inventario ni gastos en Finanzas."
+          actions={
           <Button
             variant="contained"
             startIcon={<AddIcon />}
@@ -213,12 +209,8 @@ function AdminCatalogsPage() {
           >
             Nuevo valor
           </Button>
-        </Stack>
-
-        <Typography variant="body2" color="text.secondary">
-          Estos catálogos alimentan cotizaciones y pedidos. Una tela de catálogo no crea
-          inventario ni gastos en Finanzas.
-        </Typography>
+          }
+        />
 
         {failed && (
           <Alert severity="error">
@@ -265,6 +257,7 @@ function AdminCatalogsPage() {
                           size="small"
                           label={entry.active ? 'Activo' : 'Inactivo'}
                           color={entry.active ? 'success' : 'default'}
+                          variant={entry.active ? 'filled' : 'outlined'}
                         />
                       </TableCell>
                       <TableCell align="right">

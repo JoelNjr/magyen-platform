@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Card, CardContent, Grid, Stack, Typography } from '@mui/material'
 import { getSalesReport } from '../services/intelligenceService'
+import PageHeader from '../../../layout/PageHeader'
 
 function IntelligencePage() {
   const [report, setReport] = useState(null)
@@ -29,7 +30,7 @@ function IntelligencePage() {
 
   return (
     <Stack spacing={4}>
-      <Typography variant="h4">Inteligencia Operacional</Typography>
+      <PageHeader title="Inteligencia Operacional" />
 
       <Grid container spacing={4}>
         <Grid size={{ xs: 12, md: 4 }}>

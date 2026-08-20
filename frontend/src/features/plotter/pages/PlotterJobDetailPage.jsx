@@ -31,10 +31,10 @@ import {
   canRegisterExternalPlotterPayment,
   formatPlotterCustomerLabel,
   formatPlotterDate,
-  formatPlotterJobTypeLabel,
   formatPlotterMoney,
   formatPlotterNumber,
   formatPlotterOrderLabel,
+  getPlotterJobTypeChipProps,
   getPlotterStatusChipProps,
   isExternalPlotterJob,
   isInternalPlotterJob,
@@ -45,6 +45,7 @@ import {
   getPlotterPayments,
   registerPlotterPayment,
 } from '../services/plotterService'
+import PageHeader from '../../../layout/PageHeader'
 
 function DetailField({ label, children }) {
   return (
@@ -232,26 +233,19 @@ function PlotterJobDetailPage() {
   return (
     <>
       <Stack spacing={3}>
-        <Stack
-          direction={{ xs: 'column', sm: 'row' }}
-          spacing={2}
-          justifyContent="space-between"
-          alignItems={{ xs: 'stretch', sm: 'center' }}
-        >
-          <Stack spacing={0.5}>
-            <Typography variant="h3">Trabajo de Plotter</Typography>
-            <Typography variant="body2" color="text.secondary">
-              {formatPlotterJobTypeLabel(job.jobType)}
-            </Typography>
-          </Stack>
+        <PageHeader
+          title="Trabajo de Plotter"
+          subtitle={<Chip size="small" {...getPlotterJobTypeChipProps(job.jobType)} />}
+          actions={
           <Button onClick={() => navigate('/plotter')}>Volver</Button>
-        </Stack>
+          }
+        />
 
         <Paper sx={{ p: 3 }}>
           <Grid container spacing={3}>
             <Grid item xs={12} sm={6} md={4}>
               <DetailField label="Tipo de trabajo">
-                <Typography>{formatPlotterJobTypeLabel(job.jobType)}</Typography>
+                <Chip size="small" {...getPlotterJobTypeChipProps(job.jobType)} />
               </DetailField>
             </Grid>
             <Grid item xs={12} sm={6} md={4}>

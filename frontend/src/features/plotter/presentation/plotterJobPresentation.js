@@ -22,7 +22,7 @@ export function getPlotterStatusChipProps(status) {
     case 'COMPLETED':
       return { label: formatPlotterStatusLabel(status), color: 'success' }
     case 'CANCELLED':
-      return { label: formatPlotterStatusLabel(status), color: 'warning' }
+      return { label: formatPlotterStatusLabel(status), color: 'error' }
     default:
       return { label: formatPlotterStatusLabel(status), color: 'default' }
   }
@@ -86,6 +86,20 @@ export function formatPlotterJobTypeLabel(jobType) {
       return 'Merma'
     default:
       return jobType || '—'
+  }
+}
+
+export function getPlotterJobTypeChipProps(jobType) {
+  const label = formatPlotterJobTypeLabel(jobType)
+  switch (jobType) {
+    case 'INTERNAL_MAGYEN':
+      return { label, color: 'secondary' }
+    case 'EXTERNAL':
+      return { label, color: 'info' }
+    case 'WASTE':
+      return { label, color: 'warning' }
+    default:
+      return { label, color: 'default' }
   }
 }
 

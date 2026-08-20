@@ -27,6 +27,7 @@ import {
   getOrderProfitabilityStatusChipProps,
 } from '../presentation/orderProfitabilityPresentation'
 import { getOrderProfitabilityList } from '../services/commercialService'
+import PageHeader from '../../../layout/PageHeader'
 
 const headerCellSx = { fontWeight: 'bold', whiteSpace: 'nowrap' }
 const SKELETON_ROW_COUNT = 4
@@ -114,19 +115,10 @@ function OrderProfitabilityPage() {
 
   return (
     <Stack spacing={3}>
-      <Stack
-        direction={{ xs: 'column', sm: 'row' }}
-        spacing={2}
-        justifyContent="space-between"
-        alignItems={{ xs: 'stretch', sm: 'center' }}
-      >
-        <Stack spacing={0.5}>
-          <Typography variant="h3">Rentabilidad individual</Typography>
-          <Typography variant="body2" color="text.secondary">
-            Costos de producción del pedido: materiales, mano de obra y papel de
-            Plotter interno. No es un gasto de Finanzas ni incluye saldo por cobrar.
-          </Typography>
-        </Stack>
+      <PageHeader
+        title="Rentabilidad individual"
+        subtitle="Costos de producción del pedido: materiales, mano de obra y papel de Plotter interno. No es un gasto de Finanzas ni incluye saldo por cobrar."
+        actions={
         <Button
           variant="outlined"
           onClick={() => navigate('/commercial/orders')}
@@ -134,7 +126,8 @@ function OrderProfitabilityPage() {
         >
           Ver órdenes
         </Button>
-      </Stack>
+        }
+      />
 
       {failed ? (
         <Alert

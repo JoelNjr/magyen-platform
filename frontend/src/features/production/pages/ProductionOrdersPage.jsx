@@ -23,6 +23,7 @@ import {
   getProductionPriorityChipProps,
 } from '../presentation/productionStatusPresentation'
 import { getProductionOrders } from '../services/productionService'
+import PageHeader from '../../../layout/PageHeader'
 import MonthPeriodNavigator from '../../../shared/period/MonthPeriodNavigator'
 import { formatMonthPeriodLabel, getCalendarMonthRange } from '../../../shared/period/monthPeriod'
 
@@ -79,14 +80,7 @@ function ProductionOrdersPage() {
 
   return (
     <Stack spacing={3}>
-      <Stack
-        direction={{ xs: 'column', sm: 'row' }}
-        spacing={2}
-        justifyContent="space-between"
-        alignItems={{ xs: 'stretch', sm: 'center' }}
-      >
-        <Typography variant="h3">Órdenes de producción</Typography>
-      </Stack>
+        <PageHeader title="Órdenes de producción" />
 
       <MonthPeriodNavigator
         fromDate={period.fromDate}

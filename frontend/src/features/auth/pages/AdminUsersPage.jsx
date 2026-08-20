@@ -35,6 +35,7 @@ import {
   deactivateAdminUser,
   getAdminUsers,
 } from '../services/adminUsersService'
+import PageHeader from '../../../layout/PageHeader'
 
 const headerCellSx = { fontWeight: 'bold' }
 const SKELETON_ROW_COUNT = 4
@@ -206,13 +207,9 @@ function AdminUsersPage() {
   return (
     <>
       <Stack spacing={3}>
-        <Stack
-          direction={{ xs: 'column', sm: 'row' }}
-          spacing={2}
-          justifyContent="space-between"
-          alignItems={{ xs: 'stretch', sm: 'center' }}
-        >
-          <Typography variant="h4">Usuarios internos</Typography>
+        <PageHeader
+          title="Usuarios"
+          actions={
           <Button
             variant="contained"
             startIcon={<AddIcon />}
@@ -221,7 +218,8 @@ function AdminUsersPage() {
           >
             Nuevo usuario
           </Button>
-        </Stack>
+          }
+        />
 
         {actionError && <Alert severity="error">{actionError}</Alert>}
 
@@ -279,6 +277,7 @@ function AdminUsersPage() {
                           size="small"
                           label={user.enabled ? 'Activo' : 'Inactivo'}
                           color={user.enabled ? 'success' : 'default'}
+                          variant={user.enabled ? 'filled' : 'outlined'}
                         />
                       </TableCell>
                       <TableCell align="right">

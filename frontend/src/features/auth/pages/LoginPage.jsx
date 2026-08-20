@@ -8,6 +8,9 @@ import {
   TextField,
   Typography,
 } from '@mui/material'
+import MagyenLogo from '../../../layout/MagyenLogo'
+import { magyenColors } from '../../../theme/magyenColors'
+import { loginEntranceAnimation } from '../../../theme/magyenMotion'
 import { useAuth } from '../AuthContext'
 import { resolveLoginErrorMessage } from '../presentation/authPresentation'
 
@@ -41,14 +44,40 @@ function LoginPage() {
         alignItems: 'center',
         justifyContent: 'center',
         p: { xs: 2, sm: 3 },
-        bgcolor: 'background.default',
+        bgcolor: magyenColors.charcoal.main,
       }}
     >
-      <Paper variant="outlined" sx={{ width: '100%', maxWidth: 420, p: { xs: 3, sm: 4 } }}>
+      <Paper
+        variant="outlined"
+        sx={{
+          width: '100%',
+          maxWidth: 420,
+          p: { xs: 3, sm: 4 },
+          borderTop: `3px solid ${magyenColors.gold.main}`,
+          boxShadow: '0 12px 32px rgba(0, 0, 0, 0.28)',
+          ...loginEntranceAnimation,
+        }}
+      >
         <Stack spacing={3} component="form" onSubmit={handleSubmit}>
-          <Stack spacing={0.5}>
-            <Typography variant="h6">Magyen Platform</Typography>
-            <Typography variant="h5">Iniciar sesión</Typography>
+          <Stack spacing={1.5} alignItems="center" textAlign="center">
+            <MagyenLogo size={88} />
+            <Box>
+              <Typography variant="h5" sx={{ fontWeight: 700 }}>
+                Magyen
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Confecciones Magyen
+              </Typography>
+            </Box>
+            <Box
+              sx={{
+                width: 48,
+                height: 3,
+                bgcolor: 'primary.main',
+                borderRadius: 1,
+              }}
+            />
+            <Typography variant="h6">Iniciar sesión</Typography>
           </Stack>
 
           {errorMessage && <Alert severity="error">{errorMessage}</Alert>}

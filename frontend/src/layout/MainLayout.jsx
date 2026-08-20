@@ -17,11 +17,13 @@ import {
 import { Link as RouterLink, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../features/auth/AuthContext'
 import { filterNavigationItems } from '../features/auth/presentation/authPresentation'
-import { navigationItems } from './navigationItems'
+import { magyenColors } from '../theme/magyenColors'
+import MagyenLogo from './MagyenLogo'
 import {
   PERMANENT_DRAWER_WIDTH,
   TEMPORARY_DRAWER_WIDTH,
 } from './responsiveNavigation'
+import { navigationItems } from './navigationItems'
 
 function isNavigationItemSelected(pathname, item) {
   if (typeof item.selectedWhen === 'function') {
@@ -32,7 +34,7 @@ function isNavigationItemSelected(pathname, item) {
 
 function NavigationList({ items, pathname, onNavigate }) {
   return (
-    <List>
+    <List sx={{ px: 1, py: 1 }}>
       {items.map((item) => (
         <Box key={item.path}>
           <ListItemButton
@@ -63,6 +65,38 @@ function NavigationList({ items, pathname, onNavigate }) {
   )
 }
 
+function BrandMark({ compact }) {
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 1.25,
+        minWidth: 0,
+        flexGrow: 1,
+      }}
+    >
+      <MagyenLogo size={compact ? 32 : 36} />
+      <Box sx={{ minWidth: 0 }}>
+        <Typography variant="h6" noWrap component="div" sx={{ lineHeight: 1.2 }}>
+          Magyen
+        </Typography>
+        <Typography
+          variant="caption"
+          noWrap
+          sx={{
+            display: { xs: 'none', sm: 'block' },
+            color: magyenColors.text.onDarkMuted,
+            lineHeight: 1.2,
+          }}
+        >
+          Confecciones Magyen
+        </Typography>
+      </Box>
+    </Box>
+  )
+}
+
 function MainLayout() {
   const location = useLocation()
   const theme = useTheme()
@@ -88,7 +122,42 @@ function MainLayout() {
   const navigation = (
     <>
       <Toolbar />
-      <Box sx={{ overflow: 'auto', display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <Box
+        sx={{
+          overflow: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100%',
+        }}
+      >
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1.25,
+            px: 2,
+            py: 1.5,
+            borderBottom: `1px solid ${magyenColors.border.default}`,
+          }}
+        >
+          <MagyenLogo size={40} />
+          <Box sx={{ minWidth: 0 }}>
+            <Typography
+              variant="subtitle2"
+              noWrap
+              sx={{ color: magyenColors.text.primary, fontWeight: 700 }}
+            >
+              Magyen
+            </Typography>
+            <Typography
+              variant="caption"
+              noWrap
+              sx={{ color: magyenColors.text.secondary, display: 'block' }}
+            >
+              Confecciones Magyen
+            </Typography>
+          </Box>
+        </Box>
         <NavigationList
           items={visibleNavigationItems}
           pathname={location.pathname}
@@ -96,7 +165,11 @@ function MainLayout() {
         />
         {isCompactNavigation && identity?.username ? (
           <Box sx={{ mt: 'auto', px: 2, py: 2 }}>
-            <Typography variant="body2" color="text.secondary" noWrap>
+            <Typography
+              variant="body2"
+              noWrap
+              sx={{ color: magyenColors.text.secondary }}
+            >
               {identity.username}
             </Typography>
           </Box>
@@ -125,18 +198,7 @@ function MainLayout() {
               <MenuIcon />
             </IconButton>
           ) : null}
-          <Typography
-            variant="h6"
-            noWrap
-            component="div"
-            sx={{ flexGrow: 1, minWidth: 0 }}
-          >
-            Magyen
-            <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
-              {' '}
-              Platform
-            </Box>
-          </Typography>
+          <BrandMark compact={isCompactNavigation} />
           {identity?.username ? (
             <Typography
               variant="body2"
@@ -146,6 +208,7 @@ function MainLayout() {
                 mr: { sm: 1 },
                 maxWidth: { xs: 96, sm: 180 },
                 flexShrink: 1,
+                color: magyenColors.text.onDarkMuted,
               }}
             >
               {identity.username}
@@ -170,6 +233,33 @@ function MainLayout() {
               ? TEMPORARY_DRAWER_WIDTH
               : PERMANENT_DRAWER_WIDTH,
             boxSizing: 'border-box',
+            bgcolor: magyenColors.surface.paper,
+            color: magyenColors.text.primary,
+            borderRight: `1px solid ${magyenColors.border.default}`,
+            '& .MuiListItemButton-root': {
+              borderRadius: 1,
+              mb: 0.25,
+              color: magyenColors.text.primary,
+              boxShadow: 'inset 3px 0 0 transparent',
+              '&:hover': {
+                bgcolor: magyenColors.surface.muted,
+              },
+              '&.Mui-selected': {
+                bgcolor: 'rgba(201, 162, 39, 0.10)',
+                boxShadow: `inset 3px 0 0 ${magyenColors.gold.main}`,
+                '&:hover': {
+                  bgcolor: magyenColors.gold.muted,
+                },
+              },
+              '&.Mui-selected .MuiListItemText-primary': {
+                color: magyenColors.text.primary,
+                fontWeight: 700,
+              },
+            },
+            '& .MuiListItemText-primary': {
+              color: magyenColors.text.primary,
+              fontWeight: 500,
+            },
           },
         }}
       >

@@ -25,6 +25,7 @@ import {
 import { getCustomers, getOrders } from '../services/commercialService'
 import MonthPeriodNavigator from '../../../shared/period/MonthPeriodNavigator'
 import { formatMonthPeriodLabel, getCalendarMonthRange } from '../../../shared/period/monthPeriod'
+import PageHeader from '../../../layout/PageHeader'
 
 const currencyFormatter = new Intl.NumberFormat('es-CO', {
   style: 'currency',
@@ -93,13 +94,9 @@ function OrdersPage() {
 
   return (
     <Stack spacing={3}>
-      <Stack
-        direction={{ xs: 'column', sm: 'row' }}
-        spacing={2}
-        justifyContent="space-between"
-        alignItems={{ xs: 'stretch', sm: 'center' }}
-      >
-        <Typography variant="h3">Órdenes</Typography>
+        <PageHeader
+          title="Órdenes"
+          actions={
         <Stack
           direction={{ xs: 'column', sm: 'row' }}
           spacing={1.5}
@@ -118,7 +115,8 @@ function OrdersPage() {
             Clientes
           </Button>
           </Stack>
-        </Stack>
+          }
+        />
 
         <MonthPeriodNavigator
           fromDate={period.fromDate}

@@ -31,6 +31,7 @@ import {
   getInventoryItems,
   registerInventoryPurchase,
 } from '../services/inventoryService'
+import PageHeader from '../../../layout/PageHeader'
 
 const headerCellSx = { fontWeight: 'bold' }
 const SKELETON_ROW_COUNT = 4
@@ -186,13 +187,9 @@ function InventoryPage() {
   return (
     <>
       <Stack spacing={3}>
-        <Stack
-          direction={{ xs: 'column', sm: 'row' }}
-          spacing={2}
-          justifyContent="space-between"
-          alignItems={{ xs: 'stretch', sm: 'center' }}
-        >
-          <Typography variant="h3">Inventario</Typography>
+        <PageHeader
+          title="Inventario"
+          actions={
           <Stack
             direction={{ xs: 'column', sm: 'row' }}
             spacing={1}
@@ -214,7 +211,8 @@ function InventoryPage() {
               Nuevo material
             </Button>
           </Stack>
-        </Stack>
+          }
+        />
 
         {loading && (
           <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>

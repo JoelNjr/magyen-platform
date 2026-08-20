@@ -26,16 +26,17 @@ import {
   canRegisterExternalPlotterPayment,
   formatPlotterCustomerLabel,
   formatPlotterDate,
-  formatPlotterJobTypeLabel,
   formatPlotterMoney,
   formatPlotterNumber,
   formatPlotterOrderLabel,
   getPlotterStatusChipProps,
+  getPlotterJobTypeChipProps,
   isExternalPlotterPaymentComplete,
 } from '../presentation/plotterJobPresentation'
 import { createPlotterJob, getPlotterJobs, registerPlotterPayment } from '../services/plotterService'
 import MonthPeriodNavigator from '../../../shared/period/MonthPeriodNavigator'
 import { formatMonthPeriodLabel, getCalendarMonthRange } from '../../../shared/period/monthPeriod'
+import PageHeader from '../../../layout/PageHeader'
 
 const headerCellSx = { fontWeight: 'bold' }
 const SKELETON_ROW_COUNT = 4
@@ -250,13 +251,9 @@ function PlotterJobsPage() {
   return (
     <>
       <Stack spacing={3}>
-        <Stack
-          direction={{ xs: 'column', sm: 'row' }}
-          spacing={2}
-          justifyContent="space-between"
-          alignItems={{ xs: 'stretch', sm: 'center' }}
-        >
-          <Typography variant="h3">Plotter</Typography>
+        <PageHeader
+          title="Plotter"
+          actions={
           <Stack
             direction={{ xs: 'column', sm: 'row' }}
             spacing={1.5}
@@ -278,7 +275,8 @@ function PlotterJobsPage() {
               Nuevo trabajo
             </Button>
           </Stack>
-        </Stack>
+          }
+        />
 
         <MonthPeriodNavigator
           fromDate={period.fromDate}
@@ -342,7 +340,9 @@ function PlotterJobsPage() {
 
                   return (
                     <TableRow key={job.plotterJobId} hover>
-                      <TableCell>{formatPlotterJobTypeLabel(job.jobType)}</TableCell>
+                      <TableCell>
+                        <Chip size="small" {...getPlotterJobTypeChipProps(job.jobType)} />
+                      </TableCell>
                       <TableCell>{customerLabel}</TableCell>
                       <TableCell>{formatPlotterOrderLabel(job)}</TableCell>
                       <TableCell>{formatPlotterDate(job.creationDate)}</TableCell>

@@ -58,6 +58,7 @@ import {
   registerFinancialTransaction,
   updateRecurringFinancialObligation,
 } from '../services/financeService'
+import PageHeader from '../../../layout/PageHeader'
 
 const headerCellSx = { fontWeight: 'bold' }
 const SKELETON_ROW_COUNT = 3
@@ -490,13 +491,9 @@ function FinancePage() {
   return (
     <>
       <Stack spacing={4}>
-        <Stack
-          direction={{ xs: 'column', sm: 'row' }}
-          spacing={2}
-          justifyContent="space-between"
-          alignItems={{ xs: 'stretch', sm: 'center' }}
-        >
-          <Typography variant="h3">Finanzas</Typography>
+        <PageHeader
+          title="Finanzas"
+          actions={
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
             <Button
               variant="outlined"
@@ -520,7 +517,8 @@ function FinancePage() {
               Registrar movimiento
             </Button>
           </Stack>
-        </Stack>
+          }
+        />
 
         <Paper variant="outlined" sx={{ p: 2 }}>
           <Stack spacing={2}>
@@ -611,7 +609,7 @@ function FinancePage() {
                 color: 'text.primary',
               },
             ].map((card) => (
-              <Card key={card.label} variant="outlined" sx={{ height: '100%' }}>
+              <Card key={card.label} variant="outlined" sx={{ height: '100%', borderLeft: 3, borderLeftColor: card.color }}>
                 <CardContent>
                   <Typography color="text.secondary">{card.label}</Typography>
                   {summaryLoading ? (

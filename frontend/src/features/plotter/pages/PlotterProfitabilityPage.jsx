@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import PrintOutlinedIcon from '@mui/icons-material/PrintOutlined'
 import {
   Alert,
+  Box,
   Button,
   MenuItem,
   Paper,
@@ -26,6 +27,7 @@ import {
   formatPlotterOrderLabel,
 } from '../presentation/plotterJobPresentation'
 import { getPlotterProfitability } from '../services/plotterService'
+import PageHeader from '../../../layout/PageHeader'
 
 const headerCellSx = { fontWeight: 'bold', whiteSpace: 'nowrap' }
 
@@ -96,20 +98,10 @@ function PlotterProfitabilityPage() {
 
   return (
     <Stack spacing={3}>
-      <Stack
-        direction={{ xs: 'column', sm: 'row' }}
-        spacing={2}
-        justifyContent="space-between"
-        alignItems={{ xs: 'stretch', sm: 'center' }}
-      >
-        <Stack spacing={0.5}>
-          <Typography variant="h3">Rentabilidad del Plotter</Typography>
-          <Typography variant="body2" color="text.secondary">
-            Vista analítica. El ingreso interno representa el servicio Plotter Magyen; no
-            es una venta a cliente externo. El gasto en papel son las compras de
-            inventario del período, no los consumos de producción.
-          </Typography>
-        </Stack>
+      <PageHeader
+        title="Rentabilidad del Plotter"
+        subtitle="Vista analítica. El ingreso interno representa el servicio Plotter Magyen; no es una venta a cliente externo. El gasto en papel son las compras de inventario del período, no los consumos de producción."
+        actions={
         <Button
           variant="outlined"
           onClick={() => navigate('/plotter')}
@@ -117,7 +109,8 @@ function PlotterProfitabilityPage() {
         >
           Ver trabajos
         </Button>
-      </Stack>
+        }
+      />
 
       <Paper sx={{ p: 2 }}>
         <Stack
@@ -176,6 +169,14 @@ function PlotterProfitabilityPage() {
       ) : null}
 
       <Stack spacing={1}>
+        <Box
+          sx={{
+            width: 28,
+            height: 3,
+            bgcolor: 'primary.main',
+            borderRadius: 1,
+          }}
+        />
         <Typography variant="h5">Rentabilidad</Typography>
         <Typography variant="body2" color="text.secondary">
           Ingreso generado menos compras de papel y tinta del período. No es cobranza.
@@ -196,11 +197,13 @@ function PlotterProfitabilityPage() {
           title="Total generado — Externo"
           value={formatPlotterMoney(summary?.externalRevenue)}
           loading={loading}
+          tone="external"
         />
         <MetricCard
           title="Total generado — Interno Magyen"
           value={formatPlotterMoney(summary?.internalRevenue)}
           loading={loading}
+          tone="internal"
         />
         <MetricCard
           title="Total generado — Combinado"
@@ -211,11 +214,13 @@ function PlotterProfitabilityPage() {
           title="Total gastado en papel"
           value={formatPlotterMoney(summary?.totalPaperCost)}
           loading={loading}
+          tone="expense"
         />
         <MetricCard
           title="Total gastado en tintas"
           value={formatInkCost(summary)}
           loading={loading}
+          tone="expense"
         />
         <MetricCard
           title="Resultado del Plotter"
@@ -233,16 +238,19 @@ function PlotterProfitabilityPage() {
           title="Trabajos internos"
           value={summary?.internalJobCount ?? 0}
           loading={loading}
+          tone="internal"
         />
         <MetricCard
           title="Trabajos externos"
           value={summary?.externalJobCount ?? 0}
           loading={loading}
+          tone="external"
         />
         <MetricCard
           title="Trabajos de merma"
           value={summary?.wasteJobCount ?? 0}
           loading={loading}
+          tone="waste"
         />
         <MetricCard
           title="Metros de merma"
@@ -252,6 +260,7 @@ function PlotterProfitabilityPage() {
               : '—'
           }
           loading={loading}
+          tone="waste"
         />
       </BoxGrid>
 
@@ -269,16 +278,19 @@ function PlotterProfitabilityPage() {
           title="Total generado"
           value={formatPlotterMoney(summary?.externalRevenue)}
           loading={loading}
+          tone="external"
         />
         <MetricCard
           title="Total pagado"
           value={formatPlotterMoney(summary?.externalPaidAmount)}
           loading={loading}
+          tone="income"
         />
         <MetricCard
           title="Saldo pendiente por cobrar"
           value={formatPlotterMoney(summary?.externalOutstandingAmount)}
           loading={loading}
+          tone="pending"
         />
       </BoxGrid>
 

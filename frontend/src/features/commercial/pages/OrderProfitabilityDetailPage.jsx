@@ -22,16 +22,36 @@ import {
   getOrderProfitabilityStatusChipProps,
 } from '../presentation/orderProfitabilityPresentation'
 import { getOrderProfitability } from '../services/commercialService'
+import PageHeader from '../../../layout/PageHeader'
 
 function resolveApiErrorMessage(error, fallbackMessage) {
   return error?.response?.data?.message || fallbackMessage
 }
 
-function ResultRow({ label, value, emphasize = false }) {
+function ResultRow({ label, value, emphasize = false, tone }) {
+  const valueColor =
+    tone === 'positive'
+      ? 'success.main'
+      : tone === 'negative'
+        ? 'error.main'
+        : tone === 'revenue'
+          ? 'success.main'
+          : tone === 'cost'
+            ? 'text.primary'
+            : 'text.primary'
+
   return (
     <Stack direction="row" justifyContent="space-between" spacing={2}>
       <Typography color="text.secondary">{label}</Typography>
-      <Typography sx={{ fontWeight: emphasize ? 700 : 500 }}>{value}</Typography>
+      <Typography
+        sx={{
+          fontWeight: emphasize ? 700 : 500,
+          color: valueColor,
+          textAlign: 'right',
+        }}
+      >
+        {value}
+      </Typography>
     </Stack>
   )
 }
@@ -108,23 +128,18 @@ function OrderProfitabilityDetailPage() {
 
   return (
     <Stack spacing={3}>
-      <Stack
-        direction={{ xs: 'column', sm: 'row' }}
-        spacing={2}
-        justifyContent="space-between"
-        alignItems={{ xs: 'stretch', sm: 'center' }}
-      >
-        <Stack spacing={0.5}>
-          <Typography variant="h3">Rentabilidad del pedido</Typography>
-          {loading ? (
+      <PageHeader
+        title="Rentabilidad del pedido"
+        subtitle={
+          loading ? (
             <Skeleton width={280} />
           ) : (
-            <Typography variant="body2" color="text.secondary">
-              {profitability?.orderNumber || '—'}
-              {profitability?.description ? ` — ${profitability.description}` : ''}
-            </Typography>
-          )}
-        </Stack>
+            `${profitability?.orderNumber || '—'}${
+              profitability?.description ? ` — ${profitability.description}` : ''
+            }`
+          )
+        }
+        actions={
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
           <Button
             variant="outlined"
@@ -139,7 +154,8 @@ function OrderProfitabilityDetailPage() {
             Ver pedido
           </Button>
         </Stack>
-      </Stack>
+        }
+      />
 
       {failed ? (
         <Alert
@@ -179,18 +195,19 @@ function OrderProfitabilityDetailPage() {
             />
           </Stack>
 
-          <Paper sx={{ p: 3 }}>
+          <Paper sx={{ p: 3, borderTop: 3, borderColor: 'success.main' }}>
             <Stack spacing={2}>
               <Typography variant="h5">Ingresos</Typography>
               <ResultRow
                 label="Valor del pedido"
                 value={formatProfitabilityMoney(profitability.orderValue)}
                 emphasize
+                tone="revenue"
               />
             </Stack>
           </Paper>
 
-          <Paper sx={{ p: 3 }}>
+          <Paper sx={{ p: 3, borderTop: 3, borderColor: 'secondary.main' }}>
             <Stack spacing={2}>
               <Stack spacing={0.5}>
                 <Typography variant="h5">Costos de producción</Typography>
@@ -201,23 +218,38 @@ function OrderProfitabilityDetailPage() {
               <ResultRow
                 label="Materiales"
                 value={formatMaterialProductionCost(profitability)}
+                tone="cost"
               />
               <ResultRow
                 label="Mano de obra"
                 value={formatLaborProductionCost(profitability)}
+                tone="cost"
               />
               <ResultRow
                 label="Servicio Plotter interno"
                 value={formatPlotterProductionCost(profitability)}
+                tone="cost"
               />
               <ResultRow
                 label="Papel físico (histórico, no se suma otra vez)"
                 value={formatPlotterPhysicalPaperCost(profitability)}
+                tone="cost"
               />
             </Stack>
           </Paper>
 
-          <Paper sx={{ p: 3 }}>
+          <Paper
+            sx={{
+              p: 3,
+              borderTop: 3,
+              borderColor:
+                Number(profitability.directProfit) > 0
+                  ? 'success.main'
+                  : Number(profitability.directProfit) < 0
+                    ? 'error.main'
+                    : 'warning.main',
+            }}
+          >
             <Stack spacing={2}>
               <Typography variant="h5">Resultado</Typography>
               <ResultRow
@@ -226,6 +258,7 @@ function OrderProfitabilityDetailPage() {
                   profitability.totalDirectCost,
                   profitability.profitabilityStatus
                 )}
+                tone="cost"
               />
               <Divider />
               <ResultRow
@@ -235,6 +268,13 @@ function OrderProfitabilityDetailPage() {
                   profitability.profitabilityStatus
                 )}
                 emphasize
+                tone={
+                  Number(profitability.directProfit) > 0
+                    ? 'positive'
+                    : Number(profitability.directProfit) < 0
+                      ? 'negative'
+                      : undefined
+                }
               />
               <ResultRow
                 label="Margen"
@@ -243,6 +283,13 @@ function OrderProfitabilityDetailPage() {
                   profitability.profitabilityStatus
                 )}
                 emphasize
+                tone={
+                  Number(profitability.directProfit) > 0
+                    ? 'positive'
+                    : Number(profitability.directProfit) < 0
+                      ? 'negative'
+                      : undefined
+                }
               />
             </Stack>
           </Paper>
