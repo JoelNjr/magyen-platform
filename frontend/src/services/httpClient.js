@@ -6,8 +6,10 @@ import {
 } from '../features/auth/services/authStorage'
 import { notifyUnauthorized } from '../features/auth/services/unauthorizedHandler'
 
+const apiBaseUrl = import.meta.env.VITE_API_URL || '/api/v1'
+
 const httpClient = axios.create({
-  baseURL: '/api/v1',
+  baseURL: apiBaseUrl,
   timeout: 10000,
 })
 
