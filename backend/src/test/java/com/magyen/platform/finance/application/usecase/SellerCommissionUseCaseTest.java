@@ -123,7 +123,7 @@ class SellerCommissionUseCaseTest {
     }
 
     @Test
-    void quotationOnlyAndConfirmedOrdersDoNotGenerateCommission() {
+    void quotationWithoutOrderDoesNotGenerateCommission() {
         CreatePayrollEmployeeResult seller = createFixed("Vendedor-H-inc-" + suffix());
         var customer = createCustomerUseCase.execute(new CreateCustomerCommand("Cliente H " + suffix()));
         var quotation = createQuotationUseCase.execute(new CreateQuotationCommand(
@@ -142,7 +142,6 @@ class SellerCommissionUseCaseTest {
                 new BigDecimal("800000"),
                 null
         ));
-        saveOrder(seller.employeeId(), OrderStatus.CONFIRMED, "800000.00", LocalDate.of(2026, 8, 11));
 
         GetPayrollEmployeeCommissionsResult result = getPayrollEmployeeCommissionsUseCase.execute(
                 new GetPayrollEmployeeCommissionsQuery(seller.employeeId(), null, null)
@@ -150,6 +149,21 @@ class SellerCommissionUseCaseTest {
         assertEquals(0, result.numberOfEligibleOrders());
         assertEquals(new BigDecimal("0.00"), result.totalSales());
         assertEquals(new BigDecimal("0.00"), result.accumulatedCommission());
+    }
+
+    @Test
+    void confirmedInProductionAndReadyOrdersGenerateAnalyticalCommission() {
+        CreatePayrollEmployeeResult seller = createFixed("Vendedor-H-conf-" + suffix());
+        saveOrder(seller.employeeId(), OrderStatus.CONFIRMED, "800000.00", LocalDate.of(2026, 8, 11));
+        saveOrder(seller.employeeId(), OrderStatus.IN_PRODUCTION, "200000.00", LocalDate.of(2026, 8, 12));
+        saveOrder(seller.employeeId(), OrderStatus.READY_FOR_DELIVERY, "100000.00", LocalDate.of(2026, 8, 13));
+
+        GetPayrollEmployeeCommissionsResult result = getPayrollEmployeeCommissionsUseCase.execute(
+                new GetPayrollEmployeeCommissionsQuery(seller.employeeId(), null, null)
+        );
+        assertEquals(3, result.numberOfEligibleOrders());
+        assertEquals(new BigDecimal("1100000.00"), result.totalSales());
+        assertEquals(new BigDecimal("55000.00"), result.accumulatedCommission());
     }
 
     @Test

@@ -7,10 +7,10 @@ import java.util.EnumSet;
 import java.util.Set;
 
 /**
- * Comisión V1 de vendedor: 5 % sobre el valor comercial de pedidos completados.
+ * Comisión V1 de vendedor: 5 % sobre el valor comercial de pedidos con vendedor.
  * <p>
- * Solo {@link OrderStatus#DELIVERED} y {@link OrderStatus#CLOSED}.
- * No hay estado CANCELLED en Orden; CONFIRMED / IN_PRODUCTION / READY_FOR_DELIVERY no acumulan.
+ * Acumulan {@link OrderStatus#CONFIRMED}, {@link OrderStatus#IN_PRODUCTION},
+ * {@link OrderStatus#READY_FOR_DELIVERY}, {@link OrderStatus#DELIVERED} y {@link OrderStatus#CLOSED}.
  * El cálculo es analítico: no crea asientos Finance ni altera rentabilidad.
  */
 public final class SellerCommissionPolicy {
@@ -18,6 +18,9 @@ public final class SellerCommissionPolicy {
     public static final BigDecimal RATE = new BigDecimal("0.05");
     public static final BigDecimal RATE_PERCENTAGE = new BigDecimal("5.00");
     public static final Set<OrderStatus> ELIGIBLE_STATUSES = EnumSet.of(
+            OrderStatus.CONFIRMED,
+            OrderStatus.IN_PRODUCTION,
+            OrderStatus.READY_FOR_DELIVERY,
             OrderStatus.DELIVERED,
             OrderStatus.CLOSED
     );

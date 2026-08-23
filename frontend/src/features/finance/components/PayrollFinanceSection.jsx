@@ -444,7 +444,7 @@ function PayrollFinanceSection({
       <Stack spacing={2}>
         <SectionHeader
           title="Desempeño de vendedores"
-          subtitle="Comisión del 5% sobre pedidos entregados o cerrados, según la fecha de confirmación. Los pedidos confirmados o en producción no acumulan. Es analítico: no crea un gasto de Finanzas ni depende de generar nómina."
+          subtitle="Comisión del 5% sobre pedidos confirmados, en producción, listos, entregados o cerrados, según la fecha de confirmación. Es analítico: no crea un gasto de Finanzas ni depende de generar nómina."
         />
         {performanceFailed ? (
           <Alert

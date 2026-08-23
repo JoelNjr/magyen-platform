@@ -16,7 +16,8 @@ public class CorsConfiguration {
                 new org.springframework.web.cors.CorsConfiguration();
 
         configuration.setAllowedOrigins(List.of(
-                "https://magyen-platform-frontend.onrender.com"
+                "https://magyen-platform-frontend.onrender.com",
+                "http://localhost:5173"
         ));
 
         configuration.setAllowedMethods(List.of(

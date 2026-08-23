@@ -325,7 +325,7 @@ function CreatePlotterJobDialog({
               >
                 {(paperRolls || []).map((roll) => (
                   <MenuItem key={roll.inventoryItemId} value={roll.inventoryItemId}>
-                    {roll.name || roll.paperRollNumber || roll.materialCode} —{' '}
+                    {roll.paperRollNumber ? `${roll.paperRollNumber} — ${roll.name || roll.materialCode}` : (roll.name || roll.materialCode)} —{' '}
                     {formatPlotterNumber(roll.stock)} m
                     {roll.unitCost != null && roll.unitCost !== ''
                       ? ` — ${formatPlotterMoney(roll.unitCost)}/m`

@@ -12,7 +12,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * Calcula la comisión V1 (5 %) de pedidos DELIVERED/CLOSED de un vendedor.
+ * Calcula la comisión V1 (5 %) analítica de los pedidos del vendedor.
  * <p>
  * No crea INCOME ni EXPENSE. No altera rentabilidad del pedido.
  */

@@ -6,6 +6,7 @@ import com.magyen.platform.inventory.domain.InventoryItem;
 import com.magyen.platform.inventory.domain.InventoryItemRepository;
 import com.magyen.platform.inventory.domain.InventoryMaterialType;
 
+import java.math.BigDecimal;
 import java.util.Objects;
 import java.util.stream.Stream;
 
@@ -38,7 +39,8 @@ public class GetInventoryItemsUseCase {
         }
 
         if (Boolean.TRUE.equals(query.plotterPaperRoll())) {
-            stream = stream.filter(InventoryItem::isPlotterPaperRoll);
+            stream = stream.filter(InventoryItem::isPlotterPaperRoll)
+                    .filter(item -> item.getStock().compareTo(BigDecimal.ZERO) > 0);
         }
 
         return new GetInventoryItemsResult(

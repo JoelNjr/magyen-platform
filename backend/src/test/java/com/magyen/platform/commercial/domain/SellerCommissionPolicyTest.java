@@ -11,12 +11,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class SellerCommissionPolicyTest {
 
     @Test
-    void onlyDeliveredAndClosedOrdersAreEligible() {
+    void allOrderStatusesAreEligible() {
+        assertTrue(SellerCommissionPolicy.includes(OrderStatus.CONFIRMED));
+        assertTrue(SellerCommissionPolicy.includes(OrderStatus.IN_PRODUCTION));
+        assertTrue(SellerCommissionPolicy.includes(OrderStatus.READY_FOR_DELIVERY));
         assertTrue(SellerCommissionPolicy.includes(OrderStatus.DELIVERED));
         assertTrue(SellerCommissionPolicy.includes(OrderStatus.CLOSED));
-        assertFalse(SellerCommissionPolicy.includes(OrderStatus.CONFIRMED));
-        assertFalse(SellerCommissionPolicy.includes(OrderStatus.IN_PRODUCTION));
-        assertFalse(SellerCommissionPolicy.includes(OrderStatus.READY_FOR_DELIVERY));
         assertFalse(SellerCommissionPolicy.includes(null));
     }
 
