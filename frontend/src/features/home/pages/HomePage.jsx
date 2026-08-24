@@ -13,6 +13,7 @@ import {
   Link,
   Paper,
   Skeleton,
+  Snackbar,
   Stack,
   Table,
   TableBody,
@@ -28,6 +29,8 @@ import EmptyState from '../components/EmptyState'
 import MetricCard from '../components/MetricCard'
 import SectionHeader from '../components/SectionHeader'
 import PageHeader from '../../../layout/PageHeader'
+import RegisterOrderPaymentDialog from '../../commercial/components/RegisterOrderPaymentDialog'
+import { registerOrderPayment } from '../../commercial/services/commercialService'
 import { getHomeDashboard } from '../services/homeService'
 import {
   filterGeneralInventoryAlertItems,
@@ -84,6 +87,11 @@ function HomePage() {
   const [loading, setLoading] = useState(true)
   const [failed, setFailed] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
+  const [paymentTarget, setPaymentTarget] = useState(null)
+  const [registeringPayment, setRegisteringPayment] = useState(false)
+  const [registerPaymentError, setRegisterPaymentError] = useState('')
+  const [paymentSuccessOpen, setPaymentSuccessOpen] = useState(false)
+  const [paymentSuccessMessage, setPaymentSuccessMessage] = useState('')
 
   const loadDashboard = useCallback(async (rangeFrom, rangeTo) => {
     setLoading(true)
@@ -142,9 +150,65 @@ function HomePage() {
     }
   }
 
+  function openRegisterPayment(item) {
+    if (registeringPayment) {
+      return
+    }
+    setRegisterPaymentError('')
+    setPaymentTarget(item)
+  }
+
+  function closeRegisterPayment() {
+    if (registeringPayment) {
+      return
+    }
+    setPaymentTarget(null)
+    setRegisterPaymentError('')
+  }
+
+  async function handleRegisterPayment({ amount, paymentDate, observations }) {
+    if (registeringPayment || !paymentTarget?.orderId) {
+      return
+    }
+
+    setRegisterPaymentError('')
+    setRegisteringPayment(true)
+
+    try {
+      const orderNumber = paymentTarget.orderNumber
+      await registerOrderPayment({
+        orderId: paymentTarget.orderId,
+        amount,
+        paymentDate,
+        observations,
+      })
+      setPaymentTarget(null)
+      setPaymentSuccessMessage(
+        orderNumber
+          ? `Pago de la orden ${orderNumber} registrado correctamente.`
+          : 'Pago comercial registrado correctamente.'
+      )
+      setPaymentSuccessOpen(true)
+      try {
+        const data = await getHomeDashboard({
+          fromDate,
+          toDate,
+        })
+        setDashboard(data)
+      } catch {
+        await loadDashboard(fromDate, toDate)
+      }
+    } catch (error) {
+      setRegisterPaymentError(
+        resolveApiErrorMessage(error, 'No fue posible registrar el pago.')
+      )
+    } finally {
+      setRegisteringPayment(false)
+    }
+  }
+
   const financial = dashboard?.financialSummary
   const receivables = dashboard?.receivables
-  const completedReceivables = dashboard?.completedReceivables
   const commitments = dashboard?.commitments
   const inventoryAlerts = dashboard?.inventoryAlerts
   const paperRollAlerts = dashboard?.paperRollAlerts
@@ -152,9 +216,6 @@ function HomePage() {
   const profitability = dashboard?.profitabilitySummary
 
   const receivableItems = Array.isArray(receivables?.items) ? receivables.items : []
-  const completedReceivableItems = Array.isArray(completedReceivables?.items)
-    ? completedReceivables.items
-    : []
   const commitmentItems = Array.isArray(commitments?.items) ? commitments.items : []
   const paperItems = Array.isArray(paperRollAlerts?.items) ? paperRollAlerts.items : []
   const productionItems = Array.isArray(production?.items) ? production.items : []
@@ -187,6 +248,7 @@ function HomePage() {
           : undefined
 
   return (
+    <>
     <Stack spacing={4}>
       <PageHeader
         title="Inicio"
@@ -655,7 +717,7 @@ function HomePage() {
           <TableContainer component={Paper} variant="outlined">
             <Table size="small">
               <TableBody>
-                <LoadingRows columns={3} />
+                <LoadingRows columns={4} />
               </TableBody>
             </Table>
           </TableContainer>
@@ -673,6 +735,9 @@ function HomePage() {
                   <TableCell sx={headerCellSx}>Cliente</TableCell>
                   <TableCell sx={headerCellSx} align="right">
                     Pendiente
+                  </TableCell>
+                  <TableCell sx={headerCellSx} align="right">
+                    Acción
                   </TableCell>
                 </TableRow>
               </TableHead>
@@ -694,105 +759,16 @@ function HomePage() {
                     <TableCell align="right">
                       {formatFinanceMoney(item.outstandingAmount)}
                     </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        )}
-      </Stack>
-
-      {/* 5b — Completed order receivables */}
-      <Stack spacing={2}>
-        <SectionHeader
-          title="Dinero por cobrar de pedidos completados"
-          priority="standard"
-          subtitle="Pedidos entregados o cerrados que todavía tienen saldo pendiente."
-          actions={
-            <Button component={RouterLink} to="/commercial/orders" size="small">
-              Ver órdenes
-            </Button>
-          }
-        />
-        {!failed ? (
-          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-            {loading ? (
-              <Skeleton width={180} height={32} />
-            ) : (
-              <>
-                <CounterChip
-                  label="Pendiente"
-                  value={formatFinanceMoney(
-                    completedReceivables?.totalOutstandingAmount
-                  )}
-                  color="warning"
-                />
-                <CounterChip
-                  label="Pedidos"
-                  value={completedReceivables?.orderCount ?? 0}
-                />
-              </>
-            )}
-          </Stack>
-        ) : null}
-        {loading ? (
-          <TableContainer component={Paper} variant="outlined">
-            <Table size="small">
-              <TableBody>
-                <LoadingRows columns={7} />
-              </TableBody>
-            </Table>
-          </TableContainer>
-        ) : failed ? null : completedReceivableItems.length === 0 ? (
-          <EmptyState
-            icon={<ReceiptLongOutlinedIcon color="disabled" fontSize="large" />}
-            message="No hay pedidos completados con saldo pendiente."
-          />
-        ) : (
-          <TableContainer component={Paper} variant="outlined" sx={{ overflowX: 'auto' }}>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell sx={headerCellSx}>Orden</TableCell>
-                  <TableCell sx={headerCellSx}>Descripción</TableCell>
-                  <TableCell sx={headerCellSx}>Cliente</TableCell>
-                  <TableCell sx={headerCellSx}>Entrega</TableCell>
-                  <TableCell sx={headerCellSx} align="right">
-                    Valor
-                  </TableCell>
-                  <TableCell sx={headerCellSx} align="right">
-                    Cobrado
-                  </TableCell>
-                  <TableCell sx={headerCellSx} align="right">
-                    Pendiente
-                  </TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {completedReceivableItems.map((item) => (
-                  <TableRow key={item.orderId} hover>
-                    <TableCell>
-                      <Link
-                        component={RouterLink}
-                        to={`/commercial/orders/${item.orderId}`}
-                        underline="hover"
+                    <TableCell align="right">
+                      <Button
+                        type="button"
+                        size="small"
+                        variant="contained"
+                        disabled={registeringPayment}
+                        onClick={() => openRegisterPayment(item)}
                       >
-                        {item.orderNumber || '—'}
-                      </Link>
-                    </TableCell>
-                    <TableCell>{item.description || '—'}</TableCell>
-                    <TableCell>{formatCustomerLabel(item)}</TableCell>
-                    <TableCell>
-                      {formatFinanceDate(item.promisedDeliveryDate)}
-                    </TableCell>
-                    <TableCell align="right">
-                      {formatFinanceMoney(item.orderValue)}
-                    </TableCell>
-                    <TableCell align="right">
-                      {formatFinanceMoney(item.collectedAmount)}
-                    </TableCell>
-                    <TableCell align="right">
-                      {formatFinanceMoney(item.outstandingAmount)}
+                        Registrar pago
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -974,6 +950,24 @@ function HomePage() {
         )}
       </Stack>
     </Stack>
+
+      <RegisterOrderPaymentDialog
+        open={Boolean(paymentTarget)}
+        remainingBalance={paymentTarget?.outstandingAmount}
+        formatCurrency={formatFinanceMoney}
+        onClose={closeRegisterPayment}
+        onSubmit={handleRegisterPayment}
+        submitting={registeringPayment}
+        errorMessage={registerPaymentError}
+      />
+
+      <Snackbar
+        open={paymentSuccessOpen}
+        autoHideDuration={4000}
+        onClose={() => setPaymentSuccessOpen(false)}
+        message={paymentSuccessMessage}
+      />
+    </>
   )
 }
 
