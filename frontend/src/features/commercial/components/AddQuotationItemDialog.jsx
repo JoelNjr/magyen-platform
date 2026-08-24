@@ -12,7 +12,15 @@ import {
 import CatalogSelect from './CatalogSelect'
 import { toSelectOptions, useCommercialCatalogs } from './useCommercialCatalogs'
 
-function AddQuotationItemDialog({ open, onClose, onSubmit, submitting, error }) {
+function AddQuotationItemDialog({
+  open,
+  onClose,
+  onSubmit,
+  submitting,
+  error,
+  item,
+}) {
+  const isEdit = Boolean(item)
   const { catalogs, loading: catalogsLoading, failed: catalogsFailed } =
     useCommercialCatalogs()
   const [productName, setProductName] = useState('')
@@ -38,8 +46,31 @@ function AddQuotationItemDialog({ open, onClose, onSubmit, submitting, error }) 
       setCollarType('')
       setSleeveType('')
       setCuffRequired('')
+      return
     }
-  }, [open])
+
+    if (!item) {
+      return
+    }
+
+    const specification = item.productSpecification || {}
+    setProductName(item.productName || '')
+    setFabric(item.fabric || '')
+    setSecondaryFabric(item.secondaryFabric || '')
+    setColor(item.color || '')
+    setQuantity(item.quantity == null ? '' : String(item.quantity))
+    setUnitPrice(item.unitPrice == null ? '' : String(item.unitPrice))
+    setGarmentType(specification.garmentType || '')
+    setCollarType(specification.collarType || '')
+    setSleeveType(specification.sleeveType || '')
+    setCuffRequired(
+      specification.cuffRequired === true
+        ? 'true'
+        : specification.cuffRequired === false
+          ? 'false'
+          : ''
+    )
+  }, [open, item])
 
   function handleClose() {
     if (submitting) {
@@ -76,13 +107,15 @@ function AddQuotationItemDialog({ open, onClose, onSubmit, submitting, error }) 
 
   return (
     <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
-      <DialogTitle>Agregar producto</DialogTitle>
+      <DialogTitle>{isEdit ? 'Editar producto' : 'Agregar producto'}</DialogTitle>
 
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
           {error && (
             <Alert severity="error">
-              No fue posible agregar el producto.
+              {isEdit
+                ? 'No fue posible actualizar el producto.'
+                : 'No fue posible agregar el producto.'}
             </Alert>
           )}
           {catalogsFailed && (
@@ -184,7 +217,13 @@ function AddQuotationItemDialog({ open, onClose, onSubmit, submitting, error }) 
           onClick={handleSubmit}
           disabled={fieldsDisabled || !fabric}
         >
-          {submitting ? 'Agregando...' : 'Agregar'}
+          {submitting
+            ? isEdit
+              ? 'Guardando...'
+              : 'Agregando...'
+            : isEdit
+              ? 'Guardar'
+              : 'Agregar'}
         </Button>
       </DialogActions>
     </Dialog>

@@ -11,12 +11,18 @@ import com.magyen.platform.commercial.application.dto.GetQuotationResult;
 import com.magyen.platform.commercial.application.dto.GetQuotationsQuery;
 import com.magyen.platform.commercial.application.dto.GetQuotationsResult;
 import com.magyen.platform.commercial.application.dto.CommercialDocumentPdfResult;
+import com.magyen.platform.commercial.application.dto.RemoveQuotationItemCommand;
+import com.magyen.platform.commercial.application.dto.RemoveQuotationItemResult;
+import com.magyen.platform.commercial.application.dto.UpdateQuotationItemCommand;
+import com.magyen.platform.commercial.application.dto.UpdateQuotationItemResult;
 import com.magyen.platform.commercial.application.usecase.AddQuotationItemUseCase;
 import com.magyen.platform.commercial.application.usecase.ApproveQuotationUseCase;
 import com.magyen.platform.commercial.application.usecase.CreateQuotationUseCase;
 import com.magyen.platform.commercial.application.usecase.GetQuotationUseCase;
 import com.magyen.platform.commercial.application.usecase.GetQuotationsUseCase;
 import com.magyen.platform.commercial.application.usecase.GenerateQuotationPdfUseCase;
+import com.magyen.platform.commercial.application.usecase.RemoveQuotationItemUseCase;
+import com.magyen.platform.commercial.application.usecase.UpdateQuotationItemUseCase;
 import com.magyen.platform.commercial.presentation.quotation.mapper.QuotationPresentationMapper;
 import com.magyen.platform.commercial.presentation.quotation.request.AddQuotationItemRequest;
 import com.magyen.platform.commercial.presentation.quotation.request.CreateQuotationRequest;
@@ -25,14 +31,18 @@ import com.magyen.platform.commercial.presentation.quotation.response.ApproveQuo
 import com.magyen.platform.commercial.presentation.quotation.response.CreateQuotationResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.GetQuotationResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.GetQuotationsResponse;
+import com.magyen.platform.commercial.presentation.quotation.response.RemoveQuotationItemResponse;
+import com.magyen.platform.commercial.presentation.quotation.response.UpdateQuotationItemResponse;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -54,6 +64,8 @@ public class QuotationController {
     private final CreateQuotationUseCase createQuotationUseCase;
     private final ApproveQuotationUseCase approveQuotationUseCase;
     private final AddQuotationItemUseCase addQuotationItemUseCase;
+    private final UpdateQuotationItemUseCase updateQuotationItemUseCase;
+    private final RemoveQuotationItemUseCase removeQuotationItemUseCase;
     private final GetQuotationsUseCase getQuotationsUseCase;
     private final GetQuotationUseCase getQuotationUseCase;
     private final GenerateQuotationPdfUseCase generateQuotationPdfUseCase;
@@ -63,6 +75,8 @@ public class QuotationController {
             CreateQuotationUseCase createQuotationUseCase,
             ApproveQuotationUseCase approveQuotationUseCase,
             AddQuotationItemUseCase addQuotationItemUseCase,
+            UpdateQuotationItemUseCase updateQuotationItemUseCase,
+            RemoveQuotationItemUseCase removeQuotationItemUseCase,
             GetQuotationsUseCase getQuotationsUseCase,
             GetQuotationUseCase getQuotationUseCase,
             GenerateQuotationPdfUseCase generateQuotationPdfUseCase,
@@ -71,6 +85,8 @@ public class QuotationController {
         this.createQuotationUseCase = createQuotationUseCase;
         this.approveQuotationUseCase = approveQuotationUseCase;
         this.addQuotationItemUseCase = addQuotationItemUseCase;
+        this.updateQuotationItemUseCase = updateQuotationItemUseCase;
+        this.removeQuotationItemUseCase = removeQuotationItemUseCase;
         this.getQuotationsUseCase = getQuotationsUseCase;
         this.getQuotationUseCase = getQuotationUseCase;
         this.generateQuotationPdfUseCase = generateQuotationPdfUseCase;
@@ -129,6 +145,35 @@ public class QuotationController {
         AddQuotationItemResponse response = quotationPresentationMapper.toAddItemResponse(result);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PutMapping("/{quotationId}/items/{itemId}")
+    public ResponseEntity<UpdateQuotationItemResponse> updateQuotationItem(
+            @PathVariable UUID quotationId,
+            @PathVariable UUID itemId,
+            @RequestBody AddQuotationItemRequest request
+    ) {
+        UpdateQuotationItemCommand command = quotationPresentationMapper.toUpdateItemCommand(
+                quotationId,
+                itemId,
+                request
+        );
+        UpdateQuotationItemResult result = updateQuotationItemUseCase.execute(command);
+        UpdateQuotationItemResponse response = quotationPresentationMapper.toUpdateItemResponse(result);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{quotationId}/items/{itemId}")
+    public ResponseEntity<RemoveQuotationItemResponse> removeQuotationItem(
+            @PathVariable UUID quotationId,
+            @PathVariable UUID itemId
+    ) {
+        RemoveQuotationItemCommand command = quotationPresentationMapper.toRemoveItemCommand(quotationId, itemId);
+        RemoveQuotationItemResult result = removeQuotationItemUseCase.execute(command);
+        RemoveQuotationItemResponse response = quotationPresentationMapper.toRemoveItemResponse(result);
+
+        return ResponseEntity.ok(response);
     }
 
     @PatchMapping("/{quotationId}/approve")

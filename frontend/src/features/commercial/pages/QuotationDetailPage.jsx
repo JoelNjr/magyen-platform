@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import AddIcon from '@mui/icons-material/Add'
+import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined'
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined'
 import {
   Alert,
@@ -7,6 +9,7 @@ import {
   Chip,
   Divider,
   Grid,
+  IconButton,
   Paper,
   Skeleton,
   Snackbar,
@@ -17,12 +20,14 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  Tooltip,
   Typography,
 } from '@mui/material'
 import { useNavigate, useParams } from 'react-router-dom'
 import AddQuotationItemDialog from '../components/AddQuotationItemDialog'
 import ApproveQuotationDialog from '../components/ApproveQuotationDialog'
 import CreateOrderFromQuotationDialog from '../components/CreateOrderFromQuotationDialog'
+import RemoveQuotationItemDialog from '../components/RemoveQuotationItemDialog'
 import { formatDisplayDate } from '../presentation/formatDisplayDate'
 import { formatQuotationNumber } from '../presentation/formatQuotationNumber'
 import {
@@ -36,6 +41,8 @@ import {
   downloadQuotationPdf,
   getCustomers,
   getQuotation,
+  removeQuotationItem,
+  updateQuotationItem,
 } from '../services/commercialService'
 import PageHeader, { BrandAccentLine } from '../../../layout/PageHeader'
 import {
@@ -82,6 +89,30 @@ function DetailField({ label, children }) {
       {children}
     </Stack>
   )
+}
+
+function mergeQuotationItemUpdatePayload(existingItem, payload) {
+  const existingSpec = existingItem?.productSpecification || {}
+  const formSpec = payload.productSpecification || {}
+  return {
+    ...payload,
+    productSpecification: {
+      garmentType: formSpec.garmentType || null,
+      collarType: formSpec.collarType || null,
+      sleeveType: formSpec.sleeveType || null,
+      cuffRequired:
+        formSpec.cuffRequired === undefined ? null : formSpec.cuffRequired,
+      sublimationRequired: Boolean(existingSpec.sublimationRequired),
+      embroideryRequired: Boolean(existingSpec.embroideryRequired),
+      dtfRequired: Boolean(existingSpec.dtfRequired),
+      decorationNotes: existingSpec.decorationNotes || null,
+      includesNames: Boolean(existingSpec.includesNames),
+      includesNumbers: Boolean(existingSpec.includesNumbers),
+      includesLogos: Boolean(existingSpec.includesLogos),
+      personalizationNotes: existingSpec.personalizationNotes || null,
+      itemObservations: existingSpec.itemObservations || null,
+    },
+  }
 }
 
 const headerCellSx = { fontWeight: 'bold' }
@@ -136,8 +167,13 @@ function QuotationDetailPage() {
   const [notFound, setNotFound] = useState(false)
 
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [editingItem, setEditingItem] = useState(null)
   const [submittingItem, setSubmittingItem] = useState(false)
-  const [addItemError, setAddItemError] = useState(false)
+  const [itemFormError, setItemFormError] = useState(false)
+
+  const [itemToRemove, setItemToRemove] = useState(null)
+  const [removingItem, setRemovingItem] = useState(false)
+  const [removeItemError, setRemoveItemError] = useState('')
 
   const [approveDialogOpen, setApproveDialogOpen] = useState(false)
   const [approving, setApproving] = useState(false)
@@ -152,7 +188,8 @@ function QuotationDetailPage() {
   const [generatingPdf, setGeneratingPdf] = useState(false)
   const [pdfError, setPdfError] = useState('')
 
-  const pageBusy = submittingItem || approving || creatingOrder || generatingPdf
+  const pageBusy =
+    submittingItem || removingItem || approving || creatingOrder || generatingPdf
 
   useEffect(() => {
     setLoading(true)
@@ -191,22 +228,32 @@ function QuotationDetailPage() {
     setQuotation(refreshedQuotation)
   }
 
-  async function handleAddItem(payload) {
+  async function handleSubmitItem(payload) {
     if (submittingItem) {
       return
     }
 
-    setAddItemError(false)
+    setItemFormError(false)
     setSubmittingItem(true)
 
     try {
-      await addQuotationItem(quotation.quotationId, payload)
+      if (editingItem) {
+        await updateQuotationItem(
+          quotation.quotationId,
+          editingItem.itemId,
+          mergeQuotationItemUpdatePayload(editingItem, payload)
+        )
+        setSuccessMessage('Producto actualizado correctamente.')
+      } else {
+        await addQuotationItem(quotation.quotationId, payload)
+        setSuccessMessage('Producto agregado correctamente.')
+      }
       await refreshQuotation()
       setDialogOpen(false)
-      setSuccessMessage('Producto agregado correctamente.')
+      setEditingItem(null)
       setSuccessOpen(true)
     } catch {
-      setAddItemError(true)
+      setItemFormError(true)
     } finally {
       setSubmittingItem(false)
     }
@@ -218,16 +265,69 @@ function QuotationDetailPage() {
     }
 
     setDialogOpen(false)
-    setAddItemError(false)
+    setEditingItem(null)
+    setItemFormError(false)
   }
 
   function openAddDialog() {
-    if (pageBusy) {
+    if (pageBusy || quotation.status !== 'DRAFT') {
       return
     }
 
-    setAddItemError(false)
+    setEditingItem(null)
+    setItemFormError(false)
     setDialogOpen(true)
+  }
+
+  function openEditDialog(item) {
+    if (pageBusy || quotation.status !== 'DRAFT') {
+      return
+    }
+
+    setEditingItem(item)
+    setItemFormError(false)
+    setDialogOpen(true)
+  }
+
+  function openRemoveDialog(item) {
+    if (pageBusy || quotation.status !== 'DRAFT') {
+      return
+    }
+
+    setRemoveItemError('')
+    setItemToRemove(item)
+  }
+
+  function closeRemoveDialog() {
+    if (removingItem) {
+      return
+    }
+
+    setItemToRemove(null)
+    setRemoveItemError('')
+  }
+
+  async function handleRemoveItemConfirm() {
+    if (removingItem || !itemToRemove) {
+      return
+    }
+
+    setRemoveItemError('')
+    setRemovingItem(true)
+
+    try {
+      await removeQuotationItem(quotation.quotationId, itemToRemove.itemId)
+      await refreshQuotation()
+      setItemToRemove(null)
+      setSuccessMessage('Producto eliminado correctamente.')
+      setSuccessOpen(true)
+    } catch (error) {
+      setRemoveItemError(
+        resolveApiErrorMessage(error, 'No fue posible eliminar el producto.')
+      )
+    } finally {
+      setRemovingItem(false)
+    }
   }
 
   function openApproveDialog() {
@@ -560,6 +660,11 @@ function QuotationDetailPage() {
                         <TableCell align="right" sx={headerCellSx}>
                           Subtotal
                         </TableCell>
+                        {quotation.status === 'DRAFT' && (
+                          <TableCell align="right" sx={headerCellSx}>
+                            Acciones
+                          </TableCell>
+                        )}
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -576,6 +681,40 @@ function QuotationDetailPage() {
                           <TableCell align="right">
                             {formatCurrency(item.subtotal)}
                           </TableCell>
+                          {quotation.status === 'DRAFT' && (
+                            <TableCell align="right">
+                              <Stack
+                                direction="row"
+                                spacing={0.5}
+                                justifyContent="flex-end"
+                              >
+                                <Tooltip title="Editar">
+                                  <span>
+                                    <IconButton
+                                      aria-label="Editar producto"
+                                      size="small"
+                                      disabled={pageBusy}
+                                      onClick={() => openEditDialog(item)}
+                                    >
+                                      <EditOutlinedIcon fontSize="small" />
+                                    </IconButton>
+                                  </span>
+                                </Tooltip>
+                                <Tooltip title="Eliminar">
+                                  <span>
+                                    <IconButton
+                                      aria-label="Eliminar producto"
+                                      size="small"
+                                      disabled={pageBusy}
+                                      onClick={() => openRemoveDialog(item)}
+                                    >
+                                      <DeleteOutlinedIcon fontSize="small" />
+                                    </IconButton>
+                                  </span>
+                                </Tooltip>
+                              </Stack>
+                            </TableCell>
+                          )}
                         </TableRow>
                       ))}
                     </TableBody>
@@ -616,9 +755,19 @@ function QuotationDetailPage() {
           <AddQuotationItemDialog
             open={dialogOpen}
             onClose={handleDialogClose}
-            onSubmit={handleAddItem}
+            onSubmit={handleSubmitItem}
             submitting={submittingItem}
-            error={addItemError}
+            error={itemFormError}
+            item={editingItem}
+          />
+
+          <RemoveQuotationItemDialog
+            open={Boolean(itemToRemove)}
+            onClose={closeRemoveDialog}
+            onConfirm={handleRemoveItemConfirm}
+            submitting={removingItem}
+            errorMessage={removeItemError}
+            productName={itemToRemove?.productName}
           />
 
           <ApproveQuotationDialog

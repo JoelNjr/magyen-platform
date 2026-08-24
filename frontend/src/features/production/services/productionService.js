@@ -1,4 +1,5 @@
 import httpClient from '../../../services/httpClient'
+import { triggerBrowserPdfDownload } from '../../commercial/presentation/commercialDocumentDownload'
 
 export async function getProductionOrders(params = {}) {
   const response = await httpClient.get('/production-orders', {
@@ -13,6 +14,17 @@ export async function getProductionOrders(params = {}) {
 export async function getProductionOrder(productionOrderId) {
   const response = await httpClient.get(`/production-orders/${productionOrderId}`)
   return response.data
+}
+
+export async function downloadProductionOrderPdf(productionOrderId) {
+  const response = await httpClient.get(
+    `/production-orders/${productionOrderId}/pdf`,
+    {
+      responseType: 'blob',
+      timeout: 30000,
+    }
+  )
+  triggerBrowserPdfDownload(response, 'Orden-de-Produccion.pdf')
 }
 
 export async function getProductionMaterialConsumptions(productionOrderId) {

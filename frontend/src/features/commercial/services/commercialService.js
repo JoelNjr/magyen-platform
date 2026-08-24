@@ -58,6 +58,21 @@ export async function addQuotationItem(quotationId, payload) {
   return response.data
 }
 
+export async function updateQuotationItem(quotationId, itemId, payload) {
+  const response = await httpClient.put(
+    `/quotations/${quotationId}/items/${itemId}`,
+    payload
+  )
+  return response.data
+}
+
+export async function removeQuotationItem(quotationId, itemId) {
+  const response = await httpClient.delete(
+    `/quotations/${quotationId}/items/${itemId}`
+  )
+  return response.data
+}
+
 export async function approveQuotation(quotationId) {
   const response = await httpClient.patch(`/quotations/${quotationId}/approve`)
   return response.data

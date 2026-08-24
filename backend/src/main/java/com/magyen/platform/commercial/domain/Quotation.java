@@ -157,17 +157,58 @@ public class Quotation {
         recalculateTotal();
     }
 
+    public void updateItem(
+            UUID itemId,
+            String productName,
+            int quantity,
+            String fabric,
+            String secondaryFabric,
+            String color,
+            Money unitPrice,
+            ProductSpecification productSpecification
+    ) {
+        if (status != QuotationStatus.DRAFT) {
+            throw new QuotationDomainException(
+                    "Items can only be updated while the quotation is draft. Current status: " + status
+            );
+        }
+
+        Objects.requireNonNull(itemId, "Item id must not be null");
+        validateQuantity(quantity);
+        validateUnitPrice(unitPrice);
+
+        int index = indexOfItem(itemId);
+        if (index < 0) {
+            throw new QuotationDomainException("Quotation item not found: " + itemId);
+        }
+
+        items.set(index, QuotationItem.reconstitute(
+                itemId,
+                productName,
+                quantity,
+                fabric,
+                secondaryFabric,
+                color,
+                unitPrice,
+                productSpecification
+        ));
+        recalculateTotal();
+    }
+
     public void removeItem(UUID itemId) {
         Objects.requireNonNull(itemId, "Item id must not be null");
+
+        if (status != QuotationStatus.DRAFT) {
+            throw new QuotationDomainException(
+                    "Items can only be removed while the quotation is draft. Current status: " + status
+            );
+        }
 
         boolean removed = items.removeIf(item -> item.getId().equals(itemId));
         if (!removed) {
             throw new QuotationDomainException("Quotation item not found: " + itemId);
         }
 
-        if (status != QuotationStatus.DRAFT) {
-            ensureHasAtLeastOneProduct();
-        }
         recalculateTotal();
     }
 
@@ -282,6 +323,15 @@ public class Quotation {
     @Override
     public int hashCode() {
         return Objects.hash(id);
+    }
+
+    private int indexOfItem(UUID itemId) {
+        for (int index = 0; index < items.size(); index++) {
+            if (items.get(index).getId().equals(itemId)) {
+                return index;
+            }
+        }
+        return -1;
     }
 
     private void recalculateTotal() {

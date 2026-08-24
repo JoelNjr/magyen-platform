@@ -1,5 +1,6 @@
 export const QUOTATION_PDF_ACTION_LABEL = 'Generar PDF'
 export const ORDER_REMISSION_ACTION_LABEL = 'Generar remisión'
+export const PRODUCTION_ORDER_PDF_ACTION_LABEL = 'Generar PDF'
 
 export function parseContentDispositionFilename(header, fallbackFilename) {
   if (!header || typeof header !== 'string') {

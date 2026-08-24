@@ -47,6 +47,7 @@ import {
   cancelProductionLaborWork,
   completeProductionOperation,
   completeProductionOrder,
+  downloadProductionOrderPdf,
   getEligibleProductionLaborOperators,
   getProductionLaborWorks,
   getProductionMaterialConsumptions,
@@ -59,6 +60,10 @@ import {
   startProductionOrder,
 } from '../services/productionService'
 import PageHeader, { BrandAccentLine } from '../../../layout/PageHeader'
+import {
+  PRODUCTION_ORDER_PDF_ACTION_LABEL,
+  resolveBlobApiErrorMessage,
+} from '../../commercial/presentation/commercialDocumentDownload'
 
 function getLaborStatusLabel(status) {
   if (status === 'PENDING') return 'Pendiente'
@@ -326,6 +331,8 @@ function ProductionOrderDetailPage() {
   const [cancelLaborTarget, setCancelLaborTarget] = useState(null)
   const [cancellingLabor, setCancellingLabor] = useState(false)
   const [cancelLaborError, setCancelLaborError] = useState('')
+  const [generatingPdf, setGeneratingPdf] = useState(false)
+  const [pdfError, setPdfError] = useState('')
 
   async function loadMaterialCostAttribution() {
     const consumptionsResponse =
@@ -399,7 +406,7 @@ function ProductionOrderDetailPage() {
     startingOperation ||
     completingOperation
   const laborBusy = registeringLabor || payingLabor || cancellingLabor
-  const pageBusy = lifecycleBusy || operationBusy || laborBusy
+  const pageBusy = lifecycleBusy || operationBusy || laborBusy || generatingPdf
   const canAddOperation = status === 'CREATED'
   const orderAllowsOperationExecution = status === 'IN_PROGRESS'
   const canRegisterLabor = status === 'IN_PROGRESS'
@@ -873,6 +880,28 @@ function ProductionOrderDetailPage() {
     }
   }
 
+  async function handleGeneratePdf() {
+    if (pageBusy || !productionOrder) {
+      return
+    }
+
+    setPdfError('')
+    setGeneratingPdf(true)
+
+    try {
+      await downloadProductionOrderPdf(productionOrder.productionOrderId)
+    } catch (error) {
+      setPdfError(
+        await resolveBlobApiErrorMessage(
+          error,
+          'No fue posible generar el PDF de la orden de producción.'
+        )
+      )
+    } finally {
+      setGeneratingPdf(false)
+    }
+  }
+
   return (
     <>
       <Stack spacing={3}>
@@ -904,6 +933,11 @@ function ProductionOrderDetailPage() {
 
         {!loading && !failed && productionOrder && (
           <>
+            {pdfError ? (
+              <Alert severity="error" onClose={() => setPdfError('')}>
+                {pdfError}
+              </Alert>
+            ) : null}
             <Stack
               direction={{ xs: 'column', sm: 'row' }}
               spacing={2}
@@ -959,6 +993,15 @@ function ProductionOrderDetailPage() {
                 spacing={1.5}
                 sx={{ alignSelf: { xs: 'stretch', sm: 'center' } }}
               >
+                <Button
+                  variant="outlined"
+                  onClick={handleGeneratePdf}
+                  disabled={pageBusy}
+                >
+                  {generatingPdf
+                    ? 'Generando PDF…'
+                    : PRODUCTION_ORDER_PDF_ACTION_LABEL}
+                </Button>
                 {status === 'CREATED' && (
                   <Button
                     variant="contained"

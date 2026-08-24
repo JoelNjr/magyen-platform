@@ -27,8 +27,10 @@ import com.magyen.platform.commercial.application.usecase.GetQuotationsUseCase;
 import com.magyen.platform.commercial.application.usecase.GenerateOrderRemissionPdfUseCase;
 import com.magyen.platform.commercial.application.usecase.GenerateQuotationPdfUseCase;
 import com.magyen.platform.commercial.application.usecase.ReplaceOrderItemSizesUseCase;
+import com.magyen.platform.commercial.application.usecase.RemoveQuotationItemUseCase;
 import com.magyen.platform.commercial.application.usecase.UpdateCustomerUseCase;
 import com.magyen.platform.commercial.application.usecase.UpdateOrderItemProductSpecificationUseCase;
+import com.magyen.platform.commercial.application.usecase.UpdateQuotationItemUseCase;
 import com.magyen.platform.commercial.domain.CustomerRepository;
 import com.magyen.platform.commercial.domain.OrderRepository;
 import com.magyen.platform.commercial.domain.QuotationNumberGenerator;
@@ -179,6 +181,19 @@ public class CommercialConfiguration {
             CommercialCatalogValidator commercialCatalogValidator
     ) {
         return new AddQuotationItemUseCase(quotationRepository, commercialCatalogValidator);
+    }
+
+    @Bean
+    public UpdateQuotationItemUseCase updateQuotationItemUseCase(
+            QuotationRepository quotationRepository,
+            CommercialCatalogValidator commercialCatalogValidator
+    ) {
+        return new UpdateQuotationItemUseCase(quotationRepository, commercialCatalogValidator);
+    }
+
+    @Bean
+    public RemoveQuotationItemUseCase removeQuotationItemUseCase(QuotationRepository quotationRepository) {
+        return new RemoveQuotationItemUseCase(quotationRepository);
     }
 
     @Bean

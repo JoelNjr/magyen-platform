@@ -13,6 +13,7 @@ import com.magyen.platform.inventory.application.usecase.GetInventoryMovementByS
 import com.magyen.platform.production.application.CommercialOrderIdentityResolver;
 import com.magyen.platform.production.application.ProductionSnapshotFactory;
 import com.magyen.platform.production.application.port.ProductionCommercialChronologyPort;
+import com.magyen.platform.production.application.port.ProductionDocumentPdfPort;
 import com.magyen.platform.production.application.port.ProductionLaborEmployeePort;
 import com.magyen.platform.production.application.port.ProductionLaborEarningsQuery;
 import com.magyen.platform.production.application.port.ProductionLaborFinancePort;
@@ -31,6 +32,7 @@ import com.magyen.platform.production.application.usecase.GetProductionLaborWork
 import com.magyen.platform.production.application.usecase.GetProductionMaterialConsumptionsUseCase;
 import com.magyen.platform.production.application.usecase.GetProductionOrderUseCase;
 import com.magyen.platform.production.application.usecase.GetProductionOrdersUseCase;
+import com.magyen.platform.production.application.usecase.GenerateProductionOrderPdfUseCase;
 import com.magyen.platform.production.application.usecase.ListEligibleProductionLaborOperatorsUseCase;
 import com.magyen.platform.production.application.usecase.PayProductionLaborWorkUseCase;
 import com.magyen.platform.production.application.usecase.PlanProductionOrderUseCase;
@@ -44,6 +46,7 @@ import com.magyen.platform.production.infrastructure.finance.ProductionLaborEmpl
 import com.magyen.platform.production.infrastructure.finance.ProductionLaborFinanceAdapter;
 import com.magyen.platform.production.infrastructure.inventory.ProductionMaterialConsumptionInventoryAdapter;
 import com.magyen.platform.production.infrastructure.inventory.ProductionMaterialCostInventoryAdapter;
+import com.magyen.platform.production.infrastructure.pdf.OpenPdfProductionDocumentAdapter;
 import com.magyen.platform.production.infrastructure.persistence.mapper.ProductionPersistenceMapper;
 import com.magyen.platform.production.presentation.productionorder.mapper.ProductionPresentationMapper;
 import org.springframework.context.annotation.Bean;
@@ -181,6 +184,22 @@ public class ProductionConfiguration {
                 productionOrderRepository,
                 productionMaterialCostInventoryPort,
                 commercialOrderIdentityResolver
+        );
+    }
+
+    @Bean
+    public ProductionDocumentPdfPort productionDocumentPdfPort() {
+        return new OpenPdfProductionDocumentAdapter();
+    }
+
+    @Bean
+    public GenerateProductionOrderPdfUseCase generateProductionOrderPdfUseCase(
+            GetProductionOrderUseCase getProductionOrderUseCase,
+            ProductionDocumentPdfPort productionDocumentPdfPort
+    ) {
+        return new GenerateProductionOrderPdfUseCase(
+                getProductionOrderUseCase,
+                productionDocumentPdfPort
         );
     }
 

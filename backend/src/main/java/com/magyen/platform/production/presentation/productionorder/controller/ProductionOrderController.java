@@ -22,6 +22,7 @@ import com.magyen.platform.production.application.dto.GetProductionOrderCommand;
 import com.magyen.platform.production.application.dto.GetProductionOrderResult;
 import com.magyen.platform.production.application.dto.GetProductionOrdersQuery;
 import com.magyen.platform.production.application.dto.GetProductionOrdersResult;
+import com.magyen.platform.production.application.dto.ProductionDocumentPdfResult;
 import com.magyen.platform.production.application.dto.PayProductionLaborWorkCommand;
 import com.magyen.platform.production.application.dto.PayProductionLaborWorkResult;
 import com.magyen.platform.production.application.dto.PlanProductionOrderCommand;
@@ -45,6 +46,7 @@ import com.magyen.platform.production.application.usecase.GetProductionLaborWork
 import com.magyen.platform.production.application.usecase.GetProductionMaterialConsumptionsUseCase;
 import com.magyen.platform.production.application.usecase.GetProductionOrderUseCase;
 import com.magyen.platform.production.application.usecase.GetProductionOrdersUseCase;
+import com.magyen.platform.production.application.usecase.GenerateProductionOrderPdfUseCase;
 import com.magyen.platform.production.application.usecase.PayProductionLaborWorkUseCase;
 import com.magyen.platform.production.application.usecase.PlanProductionOrderUseCase;
 import com.magyen.platform.production.application.usecase.RegisterProductionLaborWorkUseCase;
@@ -78,7 +80,9 @@ import com.magyen.platform.production.presentation.productionorder.response.Regi
 import com.magyen.platform.production.presentation.productionorder.response.RegisterProductionMaterialConsumptionResponse;
 import com.magyen.platform.production.presentation.productionorder.response.StartProductionOperationResponse;
 import com.magyen.platform.production.presentation.productionorder.response.StartProductionOrderResponse;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -105,6 +109,7 @@ public class ProductionOrderController {
     private final CreateProductionOrderFromOrderUseCase createProductionOrderFromOrderUseCase;
     private final GetProductionOrdersUseCase getProductionOrdersUseCase;
     private final GetProductionOrderUseCase getProductionOrderUseCase;
+    private final GenerateProductionOrderPdfUseCase generateProductionOrderPdfUseCase;
     private final PlanProductionOrderUseCase planProductionOrderUseCase;
     private final StartProductionOrderUseCase startProductionOrderUseCase;
     private final CompleteProductionOrderUseCase completeProductionOrderUseCase;
@@ -125,6 +130,7 @@ public class ProductionOrderController {
             CreateProductionOrderFromOrderUseCase createProductionOrderFromOrderUseCase,
             GetProductionOrdersUseCase getProductionOrdersUseCase,
             GetProductionOrderUseCase getProductionOrderUseCase,
+            GenerateProductionOrderPdfUseCase generateProductionOrderPdfUseCase,
             PlanProductionOrderUseCase planProductionOrderUseCase,
             StartProductionOrderUseCase startProductionOrderUseCase,
             CompleteProductionOrderUseCase completeProductionOrderUseCase,
@@ -144,6 +150,7 @@ public class ProductionOrderController {
         this.createProductionOrderFromOrderUseCase = createProductionOrderFromOrderUseCase;
         this.getProductionOrdersUseCase = getProductionOrdersUseCase;
         this.getProductionOrderUseCase = getProductionOrderUseCase;
+        this.generateProductionOrderPdfUseCase = generateProductionOrderPdfUseCase;
         this.planProductionOrderUseCase = planProductionOrderUseCase;
         this.startProductionOrderUseCase = startProductionOrderUseCase;
         this.completeProductionOrderUseCase = completeProductionOrderUseCase;
@@ -182,6 +189,16 @@ public class ProductionOrderController {
         GetProductionOrderResponse response = productionPresentationMapper.toResponse(result);
 
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping(value = "/{productionOrderId}/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    public ResponseEntity<byte[]> getProductionOrderPdf(@PathVariable UUID productionOrderId) {
+        GetProductionOrderCommand command = productionPresentationMapper.toGetProductionOrderCommand(productionOrderId);
+        ProductionDocumentPdfResult result = generateProductionOrderPdfUseCase.execute(command);
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition(result.filename()))
+                .body(result.content());
     }
 
     @PostMapping
@@ -395,5 +412,9 @@ public class ProductionOrderController {
                 productionPresentationMapper.toCancelLaborWorkResponse(result);
 
         return ResponseEntity.ok(response);
+    }
+
+    private static String contentDisposition(String filename) {
+        return "attachment; filename=\"" + filename + "\"";
     }
 }

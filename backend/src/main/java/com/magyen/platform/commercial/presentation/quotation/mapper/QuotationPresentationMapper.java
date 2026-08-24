@@ -11,6 +11,10 @@ import com.magyen.platform.commercial.application.dto.GetQuotationResult;
 import com.magyen.platform.commercial.application.dto.GetQuotationsResult;
 import com.magyen.platform.commercial.application.dto.ProductSpecificationCommand;
 import com.magyen.platform.commercial.application.dto.ProductSpecificationResult;
+import com.magyen.platform.commercial.application.dto.RemoveQuotationItemCommand;
+import com.magyen.platform.commercial.application.dto.RemoveQuotationItemResult;
+import com.magyen.platform.commercial.application.dto.UpdateQuotationItemCommand;
+import com.magyen.platform.commercial.application.dto.UpdateQuotationItemResult;
 import com.magyen.platform.commercial.presentation.quotation.request.AddQuotationItemRequest;
 import com.magyen.platform.commercial.presentation.quotation.request.CreateQuotationRequest;
 import com.magyen.platform.commercial.presentation.quotation.request.ProductSpecificationRequest;
@@ -22,6 +26,8 @@ import com.magyen.platform.commercial.presentation.quotation.response.GetQuotati
 import com.magyen.platform.commercial.presentation.quotation.response.GetQuotationsResponse.QuotationResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.ProductSpecificationResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.QuotationItemResponse;
+import com.magyen.platform.commercial.presentation.quotation.response.RemoveQuotationItemResponse;
+import com.magyen.platform.commercial.presentation.quotation.response.UpdateQuotationItemResponse;
 
 import java.util.List;
 import java.util.Objects;
@@ -94,6 +100,54 @@ public class QuotationPresentationMapper {
         return new AddQuotationItemResponse(
                 result.quotationId(),
                 result.itemId(),
+                result.totalAmount()
+        );
+    }
+
+    public UpdateQuotationItemCommand toUpdateItemCommand(
+            UUID quotationId,
+            UUID itemId,
+            AddQuotationItemRequest request
+    ) {
+        Objects.requireNonNull(quotationId, "Quotation id must not be null");
+        Objects.requireNonNull(itemId, "Item id must not be null");
+        Objects.requireNonNull(request, "AddQuotationItemRequest must not be null");
+
+        return new UpdateQuotationItemCommand(
+                quotationId,
+                itemId,
+                request.productName(),
+                request.quantity(),
+                request.fabric(),
+                request.secondaryFabric(),
+                request.color(),
+                request.unitPrice(),
+                toProductSpecificationCommand(request.productSpecification())
+        );
+    }
+
+    public UpdateQuotationItemResponse toUpdateItemResponse(UpdateQuotationItemResult result) {
+        Objects.requireNonNull(result, "UpdateQuotationItemResult must not be null");
+
+        return new UpdateQuotationItemResponse(
+                result.quotationId(),
+                result.itemId(),
+                result.totalAmount()
+        );
+    }
+
+    public RemoveQuotationItemCommand toRemoveItemCommand(UUID quotationId, UUID itemId) {
+        Objects.requireNonNull(quotationId, "Quotation id must not be null");
+        Objects.requireNonNull(itemId, "Item id must not be null");
+
+        return new RemoveQuotationItemCommand(quotationId, itemId);
+    }
+
+    public RemoveQuotationItemResponse toRemoveItemResponse(RemoveQuotationItemResult result) {
+        Objects.requireNonNull(result, "RemoveQuotationItemResult must not be null");
+
+        return new RemoveQuotationItemResponse(
+                result.quotationId(),
                 result.totalAmount()
         );
     }
