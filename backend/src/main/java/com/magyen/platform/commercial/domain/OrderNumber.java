@@ -23,6 +23,17 @@ public final class OrderNumber {
         return new OrderNumber(value.trim());
     }
 
+    /**
+     * Número comercial de la orden reservado por la cotización de origen.
+     * <p>
+     * Cotización {@code C000014} → orden {@code 14}. El consecutivo ya quedó
+     * consumido al crear la cotización; no se genera una secuencia nueva.
+     */
+    public static OrderNumber fromQuotationNumber(QuotationNumber quotationNumber) {
+        Objects.requireNonNull(quotationNumber, "Quotation number must not be null");
+        return of(Long.toString(quotationNumber.getValue()));
+    }
+
     public String getValue() {
         return value;
     }

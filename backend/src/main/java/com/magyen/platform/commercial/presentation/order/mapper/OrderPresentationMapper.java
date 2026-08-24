@@ -53,7 +53,6 @@ public class OrderPresentationMapper {
 
         return new CreateOrderFromQuotationCommand(
                 request.quotationId(),
-                request.orderNumber(),
                 request.description(),
                 request.confirmationDate(),
                 request.deliveryDate(),

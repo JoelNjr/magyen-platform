@@ -493,7 +493,6 @@ class PlotterProfitabilityUseCaseTest {
         approveQuotationUseCase.execute(new ApproveQuotationCommand(quotation.quotationId()));
         var order = createOrderFromQuotationUseCase.execute(new CreateOrderFromQuotationCommand(
                 quotation.quotationId(),
-                "ORD-PLG-" + UUID.randomUUID().toString().substring(0, 8),
                 null,
                 confirmationDate,
                 deliveryDate,

@@ -12,7 +12,7 @@
     "test:commercial-pdf": "node --test src/features/commercial/presentation/commercialDocumentDownload.test.js",
     "test:responsive": "node --test src/layout/responsiveNavigation.test.js",
     "test:theme": "node --test src/theme/magyenColors.test.js src/theme/magyenMotion.test.js",
-    "test": "node --test src/features/auth/presentation/authPresentation.homeAccess.test.js src/features/plotter/presentation/plotterJobPresentation.paymentActions.test.js src/features/commercial/presentation/commercialDocumentDownload.test.js src/layout/responsiveNavigation.test.js src/theme/magyenColors.test.js src/theme/magyenMotion.test.js",
+    "test": "node --test src/features/auth/presentation/authPresentation.homeAccess.test.js src/features/plotter/presentation/plotterJobPresentation.paymentActions.test.js src/features/commercial/presentation/commercialDocumentDownload.test.js src/features/commercial/presentation/formatQuotationNumber.test.js src/layout/responsiveNavigation.test.js src/theme/magyenColors.test.js src/theme/magyenMotion.test.js",
     "preview": "vite preview"
   },
   "dependencies": {

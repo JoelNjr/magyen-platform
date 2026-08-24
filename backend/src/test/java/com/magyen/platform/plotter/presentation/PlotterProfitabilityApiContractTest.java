@@ -132,7 +132,6 @@ class PlotterProfitabilityApiContractTest {
         approveQuotationUseCase.execute(new ApproveQuotationCommand(quotation.quotationId()));
         var order = createOrderFromQuotationUseCase.execute(new CreateOrderFromQuotationCommand(
                 quotation.quotationId(),
-                "ORD-PLGA-" + UUID.randomUUID().toString().substring(0, 8),
                 null,
                 LocalDate.of(2099, 4, 8),
                 LocalDate.of(2099, 4, 25),

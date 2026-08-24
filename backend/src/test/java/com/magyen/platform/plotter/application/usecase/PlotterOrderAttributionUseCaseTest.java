@@ -95,7 +95,6 @@ class PlotterOrderAttributionUseCaseTest {
         approveQuotationUseCase.execute(new ApproveQuotationCommand(quotation.quotationId()));
         var order = createOrderFromQuotationUseCase.execute(new CreateOrderFromQuotationCommand(
                 quotation.quotationId(),
-                "ORD-PLOT-" + UUID.randomUUID().toString().substring(0, 8),
                 null,
                 LocalDate.of(2026, 7, 29),
                 LocalDate.of(2026, 8, 6),

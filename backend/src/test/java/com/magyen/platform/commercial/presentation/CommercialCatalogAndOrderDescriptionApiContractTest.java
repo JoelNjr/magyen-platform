@@ -193,7 +193,7 @@ class CommercialCatalogAndOrderDescriptionApiContractTest {
                 QUOTATION_NUMBER_PATTERN
         );
         String expectedDisplay = "C" + String.format("%06d", quotationNumber);
-        String orderNumber = "1";
+        String reservedOrderNumber = Long.toString(quotationNumber);
 
         MvcResult createOrderResult = mockMvc.perform(
                         post("/api/v1/orders")
@@ -201,21 +201,21 @@ class CommercialCatalogAndOrderDescriptionApiContractTest {
                                 .content("""
                                         {
                                           "quotationId": "%s",
-                                          "orderNumber": "%s",
+                                          "orderNumber": "1",
                                           "description": "Camisetas de voleibol",
                                           "deliveryDate": "%s"
                                         }
-                                        """.formatted(quotationId, orderNumber, LocalDate.now().plusDays(10)))
+                                        """.formatted(quotationId, LocalDate.now().plusDays(10)))
                 )
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.orderNumber").value(orderNumber))
+                .andExpect(jsonPath("$.orderNumber").value(reservedOrderNumber))
                 .andReturn();
 
         UUID orderId = extractUuid(createOrderResult.getResponse().getContentAsString(), ORDER_ID_PATTERN);
 
         mockMvc.perform(get("/api/v1/orders/{orderId}", orderId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.orderNumber").value(orderNumber))
+                .andExpect(jsonPath("$.orderNumber").value(reservedOrderNumber))
                 .andExpect(jsonPath("$.description").value("Camisetas de voleibol"))
                 .andExpect(jsonPath("$.quotationId").value(quotationId.toString()))
                 .andExpect(jsonPath("$.quotationNumber").value((int) quotationNumber))
@@ -224,14 +224,14 @@ class CommercialCatalogAndOrderDescriptionApiContractTest {
         mockMvc.perform(get("/api/v1/orders"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.orders[?(@.orderId=='" + orderId + "')].orderNumber")
-                        .value(hasItem(orderNumber)))
+                        .value(hasItem(reservedOrderNumber)))
                 .andExpect(jsonPath("$.orders[?(@.orderId=='" + orderId + "')].description")
                         .value(hasItem("Camisetas de voleibol")))
                 .andExpect(jsonPath("$.orders[?(@.orderId=='" + orderId + "')].quotationNumberDisplay")
                         .value(hasItem(expectedDisplay)));
 
         assertTrue(expectedDisplay.startsWith("C"));
-        assertEquals(orderNumber, "1");
+        assertEquals(Long.toString(quotationNumber), reservedOrderNumber);
     }
 
     private UUID createDraftQuotation() throws Exception {

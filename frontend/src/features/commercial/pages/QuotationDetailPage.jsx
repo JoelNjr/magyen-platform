@@ -289,7 +289,7 @@ function QuotationDetailPage() {
     setCreateOrderError('')
   }
 
-  async function handleCreateOrderSubmit({ orderNumber, description, confirmationDate }) {
+  async function handleCreateOrderSubmit({ description, confirmationDate }) {
     if (creatingOrder) {
       return
     }
@@ -300,7 +300,6 @@ function QuotationDetailPage() {
     try {
       const createdOrder = await createOrder({
         quotationId: quotation.quotationId,
-        orderNumber,
         description,
         confirmationDate,
         deliveryDate: quotation.deliveryDate,
@@ -639,6 +638,7 @@ function QuotationDetailPage() {
             quotationDate={quotation.creationDate}
             deliveryDate={quotation.deliveryDate}
             sellerName={quotation.sellerName}
+            quotationNumber={quotation.quotationNumber}
           />
         </>
       )}

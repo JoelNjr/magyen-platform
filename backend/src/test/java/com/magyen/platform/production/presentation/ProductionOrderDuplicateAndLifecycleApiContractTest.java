@@ -48,6 +48,8 @@ class ProductionOrderDuplicateAndLifecycleApiContractTest {
             Pattern.compile("\"itemId\"\\s*:\\s*\"([0-9a-fA-F-]{36})\"");
     private static final Pattern OPERATION_ID_PATTERN =
             Pattern.compile("\"operationId\"\\s*:\\s*\"([0-9a-fA-F-]{36})\"");
+    private static final Pattern ORDER_NUMBER_PATTERN =
+            Pattern.compile("\"orderNumber\"\\s*:\\s*\"([^\"]+)\"");
     private static final Pattern PRODUCTION_ITEM_ID_PATTERN =
             Pattern.compile("\"productionItemId\"\\s*:\\s*\"([0-9a-fA-F-]{36})\"");
 
@@ -431,23 +433,24 @@ class ProductionOrderDuplicateAndLifecycleApiContractTest {
         mockMvc.perform(patch("/api/v1/quotations/{quotationId}/approve", quotationId))
                 .andExpect(status().isOk());
 
-        String orderNumber = "ORD-E2E-" + UUID.randomUUID().toString().substring(0, 8);
         MvcResult orderResult = mockMvc.perform(
                         post("/api/v1/orders")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("""
                                         {
                                           "quotationId": "%s",
-                                          "orderNumber": "%s",
+                                          "orderNumber": "ORD-E2E-IGNORED",
                                           "deliveryDate": "%s",
                                           "observations": "Confirmed source order"
                                         }
-                                        """.formatted(quotationId, orderNumber, LocalDate.now().plusDays(10)))
+                                        """.formatted(quotationId, LocalDate.now().plusDays(10)))
                 )
                 .andExpect(status().isCreated())
                 .andReturn();
 
-        UUID orderId = extractUuid(orderResult.getResponse().getContentAsString(), ORDER_ID_PATTERN);
+        String createBody = orderResult.getResponse().getContentAsString();
+        UUID orderId = extractUuid(createBody, ORDER_ID_PATTERN);
+        String orderNumber = extractValue(createBody, ORDER_NUMBER_PATTERN);
 
         MvcResult orderDetail = mockMvc.perform(get("/api/v1/orders/{orderId}", orderId))
                 .andExpect(status().isOk())
@@ -508,9 +511,13 @@ class ProductionOrderDuplicateAndLifecycleApiContractTest {
     }
 
     private UUID extractUuid(String body, Pattern pattern) {
+        return UUID.fromString(extractValue(body, pattern));
+    }
+
+    private String extractValue(String body, Pattern pattern) {
         Matcher matcher = pattern.matcher(body);
-        assertTrue(matcher.find(), "UUID not found in response: " + body);
-        return UUID.fromString(matcher.group(1));
+        assertTrue(matcher.find(), "Value not found in response: " + body);
+        return matcher.group(1);
     }
 
     private record ConfirmedOrderFixture(

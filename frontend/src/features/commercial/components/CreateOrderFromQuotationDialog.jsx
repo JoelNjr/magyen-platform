@@ -12,6 +12,10 @@ import {
   Typography,
 } from '@mui/material'
 import { formatDisplayDate } from '../presentation/formatDisplayDate'
+import {
+  formatQuotationNumber,
+  formatReservedOrderNumber,
+} from '../presentation/formatQuotationNumber'
 
 function toIsoDate(date = new Date()) {
   const year = date.getFullYear()
@@ -29,15 +33,16 @@ function CreateOrderFromQuotationDialog({
   quotationDate,
   deliveryDate,
   sellerName,
+  quotationNumber,
 }) {
-  const [orderNumber, setOrderNumber] = useState('')
   const [description, setDescription] = useState('')
   const [confirmationDate, setConfirmationDate] = useState('')
   const [validationError, setValidationError] = useState('')
+  const reservedOrderNumber = formatReservedOrderNumber(quotationNumber)
+  const quotationNumberDisplay = formatQuotationNumber(quotationNumber)
 
   useEffect(() => {
     if (!open) {
-      setOrderNumber('')
       setDescription('')
       setConfirmationDate('')
       setValidationError('')
@@ -56,16 +61,20 @@ function CreateOrderFromQuotationDialog({
   }
 
   function handleSubmit() {
-    const trimmedOrderNumber = orderNumber.trim()
+    if (!reservedOrderNumber) {
+      setValidationError(
+        'Esta cotización no tiene un número comercial reservado. No se puede crear la orden.'
+      )
+      return
+    }
 
-    if (!trimmedOrderNumber || !confirmationDate) {
-      setValidationError('El número de orden y la fecha de confirmación son obligatorios.')
+    if (!confirmationDate) {
+      setValidationError('La fecha de confirmación es obligatoria.')
       return
     }
 
     setValidationError('')
     onSubmit({
-      orderNumber: trimmedOrderNumber,
       description: description.trim() || null,
       confirmationDate,
     })
@@ -119,15 +128,16 @@ function CreateOrderFromQuotationDialog({
             <Typography>{sellerName || '—'}</Typography>
           </Stack>
 
-          <TextField
-            label="Número de orden"
-            value={orderNumber}
-            onChange={(event) => setOrderNumber(event.target.value)}
-            fullWidth
-            required
-            disabled={submitting}
-            helperText="Identificador comercial de la orden. No se genera automáticamente."
-          />
+          <Stack spacing={0.5}>
+            <Typography variant="body2" color="text.secondary">
+              Número de orden
+            </Typography>
+            <Typography>{reservedOrderNumber || 'Sin número reservado'}</Typography>
+            <Typography variant="caption" color="text.secondary">
+              Se toma de la cotización {quotationNumberDisplay} y queda reservado desde su
+              creación. No se puede modificar.
+            </Typography>
+          </Stack>
 
           <TextField
             label="Descripción del pedido"
@@ -148,7 +158,7 @@ function CreateOrderFromQuotationDialog({
           type="button"
           variant="contained"
           onClick={handleSubmit}
-          disabled={submitting}
+          disabled={submitting || !reservedOrderNumber}
         >
           {submitting ? 'Creando...' : 'Crear orden'}
         </Button>

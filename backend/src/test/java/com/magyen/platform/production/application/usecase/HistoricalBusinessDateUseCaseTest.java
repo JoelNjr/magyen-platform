@@ -165,7 +165,6 @@ class HistoricalBusinessDateUseCaseTest {
         assertThrows(IllegalArgumentException.class, () -> createOrderFromQuotationUseCase.execute(
                 new CreateOrderFromQuotationCommand(
                         quotation.quotationId(),
-                        "SHOULD-FAIL",
                         null,
                         LocalDate.of(2026, 7, 26),
                         LocalDate.of(2026, 8, 6),
@@ -176,7 +175,6 @@ class HistoricalBusinessDateUseCaseTest {
         CreateOrderFromQuotationResult order = createOrderFromQuotationUseCase.execute(
                 new CreateOrderFromQuotationCommand(
                         quotation.quotationId(),
-                        "ORD-HIST-" + UUID.randomUUID().toString().substring(0, 8),
                         "Pedido histórico de prueba",
                         LocalDate.of(2026, 7, 29),
                         LocalDate.of(2026, 8, 6),

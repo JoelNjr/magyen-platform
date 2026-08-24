@@ -32,6 +32,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -104,7 +105,10 @@ class CommercialDocumentPdfApiContractTest {
         MvcResult result = mockMvc.perform(get("/api/v1/orders/{orderId}/remission/pdf", order.orderId()))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PDF))
-                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, org.hamcrest.Matchers.containsString("Remision-PDF-1")))
+                .andExpect(header().string(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        org.hamcrest.Matchers.containsString("Remision-" + order.orderNumber())
+                ))
                 .andReturn();
 
         byte[] pdf = result.getResponse().getContentAsByteArray();
@@ -115,7 +119,7 @@ class CommercialDocumentPdfApiContractTest {
         assertTrue(text.contains("REMISIÓN"));
         assertTrue(text.contains("Documento de entrega"));
         assertFalse(text.contains("FACTURA"));
-        assertTrue(text.contains("PDF-1"));
+        assertTrue(text.contains(order.orderNumber()));
         assertTrue(text.contains("Sofia Vergara PDF"));
         assertTrue(text.contains("Camisetas de voleibol PDF"));
         assertTrue(text.contains("S: 3"));
@@ -200,6 +204,7 @@ class CommercialDocumentPdfApiContractTest {
         mockMvc.perform(patch("/api/v1/quotations/{quotationId}/approve", quotation.quotationId()))
                 .andExpect(status().isOk());
 
+        String reservedOrderNumber = Long.toString(quotation.quotationNumber());
         MvcResult createOrder = mockMvc.perform(
                         post("/api/v1/orders")
                                 .contentType(MediaType.APPLICATION_JSON)
@@ -213,6 +218,7 @@ class CommercialDocumentPdfApiContractTest {
                                         """.formatted(quotation.quotationId()))
                 )
                 .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.orderNumber").value(reservedOrderNumber))
                 .andReturn();
         UUID orderId = extractUuid(createOrder.getResponse().getContentAsString(), ORDER_ID_PATTERN);
 
@@ -235,7 +241,7 @@ class CommercialDocumentPdfApiContractTest {
                 )
                 .andExpect(status().isOk());
 
-        return new PreparedOrder(orderId);
+        return new PreparedOrder(orderId, reservedOrderNumber);
     }
 
     private String extractText(byte[] pdf) throws Exception {
@@ -267,6 +273,6 @@ class CommercialDocumentPdfApiContractTest {
     private record PreparedQuotation(UUID quotationId, long quotationNumber) {
     }
 
-    private record PreparedOrder(UUID orderId) {
+    private record PreparedOrder(UUID orderId, String orderNumber) {
     }
 }

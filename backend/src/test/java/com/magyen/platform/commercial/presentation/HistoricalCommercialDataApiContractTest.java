@@ -40,6 +40,8 @@ class HistoricalCommercialDataApiContractTest {
             Pattern.compile("\"quotationId\"\\s*:\\s*\"([0-9a-fA-F-]{36})\"");
     private static final Pattern ORDER_ID_PATTERN =
             Pattern.compile("\"orderId\"\\s*:\\s*\"([0-9a-fA-F-]{36})\"");
+    private static final Pattern QUOTATION_NUMBER_PATTERN =
+            Pattern.compile("\"quotationNumber\"\\s*:\\s*(\\d+)");
 
     @Autowired
     private WebApplicationContext webApplicationContext;
@@ -225,19 +227,23 @@ class HistoricalCommercialDataApiContractTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.totalAmount").value(400000));
 
-        mockMvc.perform(get("/api/v1/quotations/{quotationId}", quotationId))
+        MvcResult quotationDetail = mockMvc.perform(get("/api/v1/quotations/{quotationId}", quotationId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.quotationNumber").isNumber())
                 .andExpect(jsonPath("$.items[0].color").value("Blanco"))
                 .andExpect(jsonPath("$.items[0].quantity").value(10))
                 .andExpect(jsonPath("$.items[0].unitPrice").value(40000))
                 .andExpect(jsonPath("$.items[0].subtotal").value(400000))
-                .andExpect(jsonPath("$.totalAmount").value(400000));
+                .andExpect(jsonPath("$.totalAmount").value(400000))
+                .andReturn();
+        String reservedOrderNumber = Long.toString(extractLong(
+                quotationDetail.getResponse().getContentAsString(),
+                QUOTATION_NUMBER_PATTERN
+        ));
 
         mockMvc.perform(patch("/api/v1/quotations/{quotationId}/approve", quotationId))
                 .andExpect(status().isOk());
 
-        String orderNumber = "1";
         LocalDate orderDeliveryDate = LocalDate.now().plusDays(10);
         MvcResult orderResult = mockMvc.perform(
                         post("/api/v1/orders")
@@ -245,22 +251,22 @@ class HistoricalCommercialDataApiContractTest {
                                 .content("""
                                         {
                                           "quotationId": "%s",
-                                          "orderNumber": "%s",
+                                          "orderNumber": "1",
                                           "deliveryDate": "%s",
                                           "salesperson": "Otro Nombre",
                                           "observations": "Pedido histórico"
                                         }
-                                        """.formatted(quotationId, orderNumber, orderDeliveryDate))
+                                        """.formatted(quotationId, orderDeliveryDate))
                 )
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.orderNumber").value("1"))
+                .andExpect(jsonPath("$.orderNumber").value(reservedOrderNumber))
                 .andReturn();
 
         UUID orderId = extractUuid(orderResult.getResponse().getContentAsString(), ORDER_ID_PATTERN);
 
         mockMvc.perform(get("/api/v1/orders/{orderId}", orderId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.orderNumber").value("1"))
+                .andExpect(jsonPath("$.orderNumber").value(reservedOrderNumber))
                 .andExpect(jsonPath("$.sellerId").value(sellerId.toString()))
                 .andExpect(jsonPath("$.sellerName").value("Vendedor Orden"))
                 .andExpect(jsonPath("$.salesperson").doesNotExist())
@@ -277,5 +283,11 @@ class HistoricalCommercialDataApiContractTest {
         Matcher matcher = pattern.matcher(body);
         assertTrue(matcher.find(), "UUID not found in response: " + body);
         return UUID.fromString(matcher.group(1));
+    }
+
+    private long extractLong(String body, Pattern pattern) {
+        Matcher matcher = pattern.matcher(body);
+        assertTrue(matcher.find(), "Number not found in response: " + body);
+        return Long.parseLong(matcher.group(1));
     }
 }

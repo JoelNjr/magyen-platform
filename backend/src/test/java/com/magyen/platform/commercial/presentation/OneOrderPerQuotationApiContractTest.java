@@ -41,6 +41,9 @@ class OneOrderPerQuotationApiContractTest {
     private static final Pattern QUOTATION_ID_PATTERN =
             Pattern.compile("\"quotationId\"\\s*:\\s*\"([0-9a-fA-F-]{36})\"");
 
+    private static final Pattern QUOTATION_NUMBER_PATTERN =
+            Pattern.compile("\"quotationNumber\"\\s*:\\s*(\\d+)");
+
     @Autowired
     private WebApplicationContext webApplicationContext;
 
@@ -59,15 +62,17 @@ class OneOrderPerQuotationApiContractTest {
 
     @Test
     void rejectsSecondOrderForSameQuotationAndExposesOrderIdOnQuotationDetail() throws Exception {
-        UUID quotationId = createApprovedQuotationWithItem();
+        ApprovedQuotationFixture quotation = createApprovedQuotationWithItem();
+        UUID quotationId = quotation.quotationId();
+        String reservedOrderNumber = quotation.reservedOrderNumber();
 
-        String firstOrderNumber = "ORD-ONE-" + UUID.randomUUID().toString().substring(0, 8);
         MvcResult firstCreate = mockMvc.perform(
                         post("/api/v1/orders")
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content(createOrderPayload(quotationId, firstOrderNumber))
+                                .content(createOrderPayload(quotationId, "ORD-IGNORED-" + UUID.randomUUID()))
                 )
                 .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.orderNumber").value(reservedOrderNumber))
                 .andReturn();
 
         UUID orderId = extractUuid(firstCreate.getResponse().getContentAsString(), ORDER_ID_PATTERN);
@@ -90,7 +95,7 @@ class OneOrderPerQuotationApiContractTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.orderId").value(orderId.toString()))
                 .andExpect(jsonPath("$.quotationId").value(quotationId.toString()))
-                .andExpect(jsonPath("$.orderNumber").value(firstOrderNumber));
+                .andExpect(jsonPath("$.orderNumber").value(reservedOrderNumber));
     }
 
     @Test
@@ -144,7 +149,7 @@ class OneOrderPerQuotationApiContractTest {
                 .andExpect(status().isBadRequest());
     }
 
-    private UUID createApprovedQuotationWithItem() throws Exception {
+    private ApprovedQuotationFixture createApprovedQuotationWithItem() throws Exception {
         Customer customer = customerRepository.save(Customer.create("Cliente One Order"));
         UUID sellerId = FixedSellerEmployeeFixture.create(
                 createPayrollEmployeeUseCase,
@@ -190,7 +195,8 @@ class OneOrderPerQuotationApiContractTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.orderId").value(nullValue()));
 
-        return quotationId;
+        long quotationNumber = extractLong(quotationResult.getResponse().getContentAsString(), QUOTATION_NUMBER_PATTERN);
+        return new ApprovedQuotationFixture(quotationId, Long.toString(quotationNumber));
     }
 
     private String createOrderPayload(UUID quotationId, String orderNumber) {
@@ -208,5 +214,14 @@ class OneOrderPerQuotationApiContractTest {
         Matcher matcher = pattern.matcher(body);
         assertTrue(matcher.find(), "UUID not found in response: " + body);
         return UUID.fromString(matcher.group(1));
+    }
+
+    private long extractLong(String body, Pattern pattern) {
+        Matcher matcher = pattern.matcher(body);
+        assertTrue(matcher.find(), "Number not found in response: " + body);
+        return Long.parseLong(matcher.group(1));
+    }
+
+    private record ApprovedQuotationFixture(UUID quotationId, String reservedOrderNumber) {
     }
 }

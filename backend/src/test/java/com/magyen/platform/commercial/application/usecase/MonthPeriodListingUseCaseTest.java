@@ -154,7 +154,6 @@ class MonthPeriodListingUseCaseTest {
         approveQuotationUseCase.execute(new ApproveQuotationCommand(quotation.quotationId()));
         return createOrderFromQuotationUseCase.execute(new CreateOrderFromQuotationCommand(
                 quotation.quotationId(),
-                "ORD-M-" + UUID.randomUUID().toString().substring(0, 8),
                 name,
                 confirmationDate,
                 confirmationDate.plusDays(7),

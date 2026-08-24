@@ -406,7 +406,6 @@ class PlotterInternalExternalUseCaseTest {
         CreateOrderFromQuotationResult order = createOrderFromQuotationUseCase.execute(
                 new CreateOrderFromQuotationCommand(
                         quotation.quotationId(),
-                        "ORD-INCD-" + UUID.randomUUID().toString().substring(0, 8),
                         null,
                         LocalDate.of(2026, 7, 29),
                         LocalDate.of(2026, 8, 6),
