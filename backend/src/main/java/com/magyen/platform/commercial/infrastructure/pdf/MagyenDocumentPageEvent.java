@@ -1,5 +1,6 @@
 package com.magyen.platform.commercial.infrastructure.pdf;
 
+import com.magyen.platform.shared.infrastructure.pdf.MagyenPdfHeaderLogo;
 import org.openpdf.text.Document;
 import org.openpdf.text.Element;
 import org.openpdf.text.Font;
@@ -45,12 +46,13 @@ final class MagyenDocumentPageEvent extends PdfPageEventHelper {
         float right = document.right();
         float headerY = document.top() + 28;
         float footerY = document.bottom() - 28;
+        float brandX = MagyenPdfHeaderLogo.drawAtLeft(canvas, left, headerY);
 
         ColumnText.showTextAligned(
                 canvas,
                 Element.ALIGN_LEFT,
                 new Phrase("MAGYEN  ·  Confecciones Magyen", brandFont),
-                left,
+                brandX,
                 headerY,
                 0
         );

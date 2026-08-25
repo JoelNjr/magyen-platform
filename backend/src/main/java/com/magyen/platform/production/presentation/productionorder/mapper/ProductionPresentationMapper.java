@@ -18,6 +18,12 @@ import com.magyen.platform.production.application.dto.RegisterProductionLaborWor
 import com.magyen.platform.production.application.dto.RegisterProductionLaborWorkResult;
 import com.magyen.platform.production.application.dto.RegisterProductionMaterialConsumptionCommand;
 import com.magyen.platform.production.application.dto.RegisterProductionMaterialConsumptionResult;
+import com.magyen.platform.production.application.dto.RemoveProductionReferenceImageResult;
+import com.magyen.platform.production.application.dto.ReplaceProductionReferenceImageCommand;
+import com.magyen.platform.production.application.dto.ReplaceProductionReferenceImageResult;
+import com.magyen.platform.production.application.dto.RemoveProductionReferenceImageResult;
+import com.magyen.platform.production.application.dto.ReplaceProductionReferenceImageCommand;
+import com.magyen.platform.production.application.dto.ReplaceProductionReferenceImageResult;
 import com.magyen.platform.production.application.dto.AssignProductionOperationOperatorCommand;
 import com.magyen.platform.production.application.dto.AssignProductionOperationOperatorResult;
 import com.magyen.platform.production.application.dto.CompleteProductionOperationCommand;
@@ -73,6 +79,8 @@ import com.magyen.platform.production.presentation.productionorder.response.Prod
 import com.magyen.platform.production.presentation.productionorder.response.ProductionOperationResponse;
 import com.magyen.platform.production.presentation.productionorder.response.ProductionProductSpecificationResponse;
 import com.magyen.platform.production.presentation.productionorder.response.ProductionSizeBreakdownResponse;
+import com.magyen.platform.production.presentation.productionorder.response.RemoveProductionReferenceImageResponse;
+import com.magyen.platform.production.presentation.productionorder.response.ReplaceProductionReferenceImageResponse;
 import com.magyen.platform.production.presentation.productionorder.response.RegisterProductionLaborWorkResponse;
 import com.magyen.platform.production.presentation.productionorder.response.RegisterProductionMaterialConsumptionResponse;
 import com.magyen.platform.production.presentation.productionorder.response.StartProductionOperationResponse;
@@ -119,6 +127,41 @@ public class ProductionPresentationMapper {
         return new GetProductionOrderCommand(productionOrderId);
     }
 
+    public ReplaceProductionReferenceImageCommand toReplaceReferenceImageCommand(
+            UUID productionOrderId,
+            String originalFilename,
+            String declaredContentType,
+            byte[] content
+    ) {
+        Objects.requireNonNull(productionOrderId, "Production order id must not be null");
+        return new ReplaceProductionReferenceImageCommand(
+                productionOrderId,
+                originalFilename,
+                declaredContentType,
+                content
+        );
+    }
+
+    public ReplaceProductionReferenceImageResponse toReplaceReferenceImageResponse(
+            ReplaceProductionReferenceImageResult result
+    ) {
+        Objects.requireNonNull(result, "ReplaceProductionReferenceImageResult must not be null");
+        return new ReplaceProductionReferenceImageResponse(
+                result.productionOrderId(),
+                result.hasReferenceImage()
+        );
+    }
+
+    public RemoveProductionReferenceImageResponse toRemoveReferenceImageResponse(
+            RemoveProductionReferenceImageResult result
+    ) {
+        Objects.requireNonNull(result, "RemoveProductionReferenceImageResult must not be null");
+        return new RemoveProductionReferenceImageResponse(
+                result.productionOrderId(),
+                result.hasReferenceImage()
+        );
+    }
+
     public GetProductionOrdersResponse toResponse(GetProductionOrdersResult result) {
         Objects.requireNonNull(result, "GetProductionOrdersResult must not be null");
 
@@ -161,7 +204,8 @@ public class ProductionPresentationMapper {
                 operations,
                 toMaterialCostSummaryResponse(result.materialCostSummary()),
                 toLaborCostSummaryResponse(result.laborCostSummary()),
-                result.totalProductionCost()
+                result.totalProductionCost(),
+                result.hasReferenceImage()
         );
     }
 

@@ -2,7 +2,10 @@ package com.magyen.platform.commercial.infrastructure.pdf;
 
 import com.magyen.platform.commercial.application.dto.CommercialDocumentProductLine;
 import com.magyen.platform.commercial.application.dto.QuotationPdfDocument;
+import com.magyen.platform.commercial.application.dto.RemissionPdfDocument;
 import org.junit.jupiter.api.Test;
+import org.openpdf.text.pdf.PdfDictionary;
+import org.openpdf.text.pdf.PdfName;
 import org.openpdf.text.pdf.PdfReader;
 import org.openpdf.text.pdf.parser.PdfTextExtractor;
 
@@ -61,8 +64,60 @@ class OpenPdfCommercialDocumentAdapterTest {
             assertTrue(lastPage.contains("1.400.000") || lastPage.contains("1400000"));
             assertTrue(firstPage.contains("MAGYEN"));
             assertTrue(firstPage.contains("COTIZACIÓN"));
+            assertTrue(pageHasEmbeddedImage(reader, 1));
+            assertTrue(pageHasEmbeddedImage(reader, reader.getNumberOfPages()));
         } finally {
             reader.close();
         }
+    }
+
+    @Test
+    void remissionPdfIncludesHeaderLogoWithoutChangingDocumentCopy() throws Exception {
+        byte[] pdf = new OpenPdfCommercialDocumentAdapter().renderRemission(new RemissionPdfDocument(
+                "14",
+                "Uniformes institucionales",
+                LocalDate.of(2026, 8, 20),
+                LocalDate.of(2026, 8, 30),
+                "Colegio San José",
+                "Ana",
+                null,
+                List.of(new CommercialDocumentProductLine(
+                        "Camiseta institucional",
+                        "Camiseta",
+                        "Uniforme",
+                        10,
+                        "S: 10",
+                        null,
+                        null,
+                        "Blanco",
+                        "Redondo",
+                        "Manga corta sisa",
+                        "No",
+                        null,
+                        new BigDecimal("25000.00"),
+                        new BigDecimal("250000.00")
+                )),
+                new BigDecimal("250000.00"),
+                BigDecimal.ZERO,
+                new BigDecimal("250000.00")
+        ));
+
+        try (PdfReader reader = new PdfReader(pdf)) {
+            String text = new PdfTextExtractor(reader).getTextFromPage(1);
+            assertTrue(text.contains("REMISIÓN"));
+            assertTrue(text.contains("MAGYEN"));
+            assertTrue(text.contains("14"));
+            assertTrue(pageHasEmbeddedImage(reader, 1));
+        }
+    }
+
+    private static boolean pageHasEmbeddedImage(PdfReader reader, int pageNumber) {
+        PdfDictionary page = reader.getPageN(pageNumber);
+        PdfDictionary resources = page.getAsDict(PdfName.RESOURCES);
+        if (resources == null) {
+            return false;
+        }
+        PdfDictionary xObjects = resources.getAsDict(PdfName.XOBJECT);
+        return xObjects != null && !xObjects.getKeys().isEmpty();
     }
 }

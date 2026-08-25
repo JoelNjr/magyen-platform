@@ -22,7 +22,6 @@ import java.util.stream.Collectors;
  * Ensambla el modelo de PDF de producción a partir de la lectura existente.
  * <p>
  * No inventa campos ausentes. No incluye costos ni identidades técnicas.
- * La imagen de referencia queda nula mientras no exista almacenamiento.
  */
 public final class ProductionPdfDocumentMapper {
 
@@ -30,6 +29,13 @@ public final class ProductionPdfDocumentMapper {
     }
 
     public static ProductionOrderPdfDocument toDocument(GetProductionOrderResult productionOrder) {
+        return toDocument(productionOrder, null);
+    }
+
+    public static ProductionOrderPdfDocument toDocument(
+            GetProductionOrderResult productionOrder,
+            byte[] referenceImage
+    ) {
         Objects.requireNonNull(productionOrder, "Production order result must not be null");
         List<ProductionDocumentProductLine> lines = productionOrder.items() == null
                 ? List.of()
@@ -51,7 +57,7 @@ public final class ProductionPdfDocumentMapper {
                 blankToNull(productionOrder.observations()),
                 List.copyOf(lines),
                 List.copyOf(operations),
-                null
+                referenceImage
         );
     }
 

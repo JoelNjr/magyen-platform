@@ -16,6 +16,35 @@ export async function getProductionOrder(productionOrderId) {
   return response.data
 }
 
+export async function replaceProductionReferenceImage(productionOrderId, file) {
+  const formData = new FormData()
+  formData.append('file', file)
+  const response = await httpClient.put(
+    `/production-orders/${productionOrderId}/reference-image`,
+    formData,
+    { timeout: 30000 }
+  )
+  return response.data
+}
+
+export async function getProductionReferenceImageBlob(productionOrderId) {
+  const response = await httpClient.get(
+    `/production-orders/${productionOrderId}/reference-image`,
+    {
+      responseType: 'blob',
+      timeout: 30000,
+    }
+  )
+  return response.data
+}
+
+export async function deleteProductionReferenceImage(productionOrderId) {
+  const response = await httpClient.delete(
+    `/production-orders/${productionOrderId}/reference-image`
+  )
+  return response.data
+}
+
 export async function downloadProductionOrderPdf(productionOrderId) {
   const response = await httpClient.get(
     `/production-orders/${productionOrderId}/pdf`,

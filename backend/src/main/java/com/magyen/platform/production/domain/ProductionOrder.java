@@ -35,6 +35,7 @@ public class ProductionOrder {
     private final List<ProductionOperation> operations;
     private final List<ProductionMaterialConsumption> materialConsumptions;
     private final List<ProductionLaborWork> laborWorks;
+    private ProductionReferenceImage referenceImage;
 
     private ProductionOrder(
             UUID id,
@@ -50,7 +51,8 @@ public class ProductionOrder {
             List<ProductionItem> items,
             List<ProductionOperation> operations,
             List<ProductionMaterialConsumption> materialConsumptions,
-            List<ProductionLaborWork> laborWorks
+            List<ProductionLaborWork> laborWorks,
+            ProductionReferenceImage referenceImage
     ) {
         this.id = Objects.requireNonNull(id, "Production order id must not be null");
         this.orderId = Objects.requireNonNull(orderId, "Order id must not be null");
@@ -70,6 +72,7 @@ public class ProductionOrder {
         this.laborWorks = new ArrayList<>(
                 Objects.requireNonNull(laborWorks, "Labor works must not be null")
         );
+        this.referenceImage = referenceImage;
     }
 
     /**
@@ -123,7 +126,8 @@ public class ProductionOrder {
                 items == null ? List.of() : items,
                 List.of(),
                 List.of(),
-                List.of()
+                List.of(),
+                null
         );
     }
 
@@ -243,6 +247,45 @@ public class ProductionOrder {
             LocalDate actualStartDate,
             LocalDate actualCompletionDate
     ) {
+        return reconstitute(
+                id,
+                orderId,
+                creationDate,
+                status,
+                priority,
+                plannedStartDate,
+                plannedEndDate,
+                observations,
+                items,
+                operations,
+                materialConsumptions,
+                laborWorks,
+                actualStartDate,
+                actualCompletionDate,
+                null
+        );
+    }
+
+    /**
+     * Reconstruye una Orden de Producción incluyendo la referencia de imagen operativa.
+     */
+    public static ProductionOrder reconstitute(
+            UUID id,
+            UUID orderId,
+            LocalDate creationDate,
+            ProductionStatus status,
+            ProductionPriority priority,
+            LocalDate plannedStartDate,
+            LocalDate plannedEndDate,
+            String observations,
+            List<ProductionItem> items,
+            List<ProductionOperation> operations,
+            List<ProductionMaterialConsumption> materialConsumptions,
+            List<ProductionLaborWork> laborWorks,
+            LocalDate actualStartDate,
+            LocalDate actualCompletionDate,
+            ProductionReferenceImage referenceImage
+    ) {
         return new ProductionOrder(
                 id,
                 orderId,
@@ -257,8 +300,17 @@ public class ProductionOrder {
                 items == null ? List.of() : items,
                 operations == null ? List.of() : operations,
                 materialConsumptions == null ? List.of() : materialConsumptions,
-                laborWorks == null ? List.of() : laborWorks
+                laborWorks == null ? List.of() : laborWorks,
+                referenceImage
         );
+    }
+
+    public void attachReferenceImage(ProductionReferenceImage referenceImage) {
+        this.referenceImage = Objects.requireNonNull(referenceImage, "Reference image must not be null");
+    }
+
+    public void clearReferenceImage() {
+        this.referenceImage = null;
     }
 
     /**
@@ -554,6 +606,10 @@ public class ProductionOrder {
 
     public List<ProductionLaborWork> getLaborWorks() {
         return Collections.unmodifiableList(laborWorks);
+    }
+
+    public ProductionReferenceImage getReferenceImage() {
+        return referenceImage;
     }
 
     @Override

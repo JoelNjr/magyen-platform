@@ -11,9 +11,11 @@ import com.magyen.platform.inventory.application.usecase.ConsumeInventoryMateria
 import com.magyen.platform.inventory.application.usecase.GetInventoryItemUseCase;
 import com.magyen.platform.inventory.application.usecase.GetInventoryMovementBySourceUseCase;
 import com.magyen.platform.production.application.CommercialOrderIdentityResolver;
+import com.magyen.platform.production.application.ProductionReferenceImageInspector;
 import com.magyen.platform.production.application.ProductionSnapshotFactory;
 import com.magyen.platform.production.application.port.ProductionCommercialChronologyPort;
 import com.magyen.platform.production.application.port.ProductionDocumentPdfPort;
+import com.magyen.platform.production.application.port.ProductionReferenceImageStoragePort;
 import com.magyen.platform.production.application.port.ProductionLaborEmployeePort;
 import com.magyen.platform.production.application.port.ProductionLaborEarningsQuery;
 import com.magyen.platform.production.application.port.ProductionLaborFinancePort;
@@ -33,11 +35,14 @@ import com.magyen.platform.production.application.usecase.GetProductionMaterialC
 import com.magyen.platform.production.application.usecase.GetProductionOrderUseCase;
 import com.magyen.platform.production.application.usecase.GetProductionOrdersUseCase;
 import com.magyen.platform.production.application.usecase.GenerateProductionOrderPdfUseCase;
+import com.magyen.platform.production.application.usecase.GetProductionReferenceImageUseCase;
 import com.magyen.platform.production.application.usecase.ListEligibleProductionLaborOperatorsUseCase;
 import com.magyen.platform.production.application.usecase.PayProductionLaborWorkUseCase;
 import com.magyen.platform.production.application.usecase.PlanProductionOrderUseCase;
 import com.magyen.platform.production.application.usecase.RegisterProductionLaborWorkUseCase;
 import com.magyen.platform.production.application.usecase.RegisterProductionMaterialConsumptionUseCase;
+import com.magyen.platform.production.application.usecase.RemoveProductionReferenceImageUseCase;
+import com.magyen.platform.production.application.usecase.ReplaceProductionReferenceImageUseCase;
 import com.magyen.platform.production.application.usecase.StartProductionOperationUseCase;
 import com.magyen.platform.production.application.usecase.StartProductionOrderUseCase;
 import com.magyen.platform.production.domain.ProductionOrderRepository;
@@ -48,14 +53,29 @@ import com.magyen.platform.production.infrastructure.inventory.ProductionMateria
 import com.magyen.platform.production.infrastructure.inventory.ProductionMaterialCostInventoryAdapter;
 import com.magyen.platform.production.infrastructure.pdf.OpenPdfProductionDocumentAdapter;
 import com.magyen.platform.production.infrastructure.persistence.mapper.ProductionPersistenceMapper;
+import com.magyen.platform.production.infrastructure.storage.ObjectStorageProperties;
+import com.magyen.platform.production.infrastructure.storage.S3ProductionReferenceImageStorageAdapter;
+import com.magyen.platform.production.infrastructure.storage.UnconfiguredProductionReferenceImageStorageAdapter;
 import com.magyen.platform.production.presentation.productionorder.mapper.ProductionPresentationMapper;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.core.checksums.RequestChecksumCalculation;
+import software.amazon.awssdk.core.checksums.ResponseChecksumValidation;
+import software.amazon.awssdk.http.urlconnection.UrlConnectionHttpClient;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3Configuration;
+
+import java.net.URI;
 
 /**
  * Ensambla los beans del módulo de producción que no se registran por estereotipos Spring.
  */
 @Configuration
+@EnableConfigurationProperties(ObjectStorageProperties.class)
 public class ProductionConfiguration {
 
     @Bean
@@ -195,11 +215,68 @@ public class ProductionConfiguration {
     @Bean
     public GenerateProductionOrderPdfUseCase generateProductionOrderPdfUseCase(
             GetProductionOrderUseCase getProductionOrderUseCase,
-            ProductionDocumentPdfPort productionDocumentPdfPort
+            ProductionDocumentPdfPort productionDocumentPdfPort,
+            ProductionReferenceImageStoragePort productionReferenceImageStoragePort
     ) {
         return new GenerateProductionOrderPdfUseCase(
                 getProductionOrderUseCase,
-                productionDocumentPdfPort
+                productionDocumentPdfPort,
+                productionReferenceImageStoragePort
+        );
+    }
+
+    @Bean
+    public ProductionReferenceImageInspector productionReferenceImageInspector() {
+        return new ProductionReferenceImageInspector();
+    }
+
+    @Bean
+    public ProductionReferenceImageStoragePort productionReferenceImageStoragePort(
+            ObjectStorageProperties objectStorageProperties
+    ) {
+        if (!objectStorageProperties.isConfigured()) {
+            return new UnconfiguredProductionReferenceImageStorageAdapter();
+        }
+        return new S3ProductionReferenceImageStorageAdapter(
+                s3Client(objectStorageProperties),
+                objectStorageProperties.bucket()
+        );
+    }
+
+    @Bean
+    public ReplaceProductionReferenceImageUseCase replaceProductionReferenceImageUseCase(
+            ProductionOrderRepository productionOrderRepository,
+            ProductionReferenceImageStoragePort productionReferenceImageStoragePort,
+            ProductionReferenceImageInspector productionReferenceImageInspector,
+            ObjectStorageProperties objectStorageProperties
+    ) {
+        return new ReplaceProductionReferenceImageUseCase(
+                productionOrderRepository,
+                productionReferenceImageStoragePort,
+                productionReferenceImageInspector,
+                objectStorageProperties.resolvedKeyPrefix()
+        );
+    }
+
+    @Bean
+    public RemoveProductionReferenceImageUseCase removeProductionReferenceImageUseCase(
+            ProductionOrderRepository productionOrderRepository,
+            ProductionReferenceImageStoragePort productionReferenceImageStoragePort
+    ) {
+        return new RemoveProductionReferenceImageUseCase(
+                productionOrderRepository,
+                productionReferenceImageStoragePort
+        );
+    }
+
+    @Bean
+    public GetProductionReferenceImageUseCase getProductionReferenceImageUseCase(
+            ProductionOrderRepository productionOrderRepository,
+            ProductionReferenceImageStoragePort productionReferenceImageStoragePort
+    ) {
+        return new GetProductionReferenceImageUseCase(
+                productionOrderRepository,
+                productionReferenceImageStoragePort
         );
     }
 
@@ -334,5 +411,21 @@ public class ProductionConfiguration {
             ProductionLaborEmployeePort productionLaborEmployeePort
     ) {
         return new ListEligibleProductionLaborOperatorsUseCase(productionLaborEmployeePort);
+    }
+
+    private S3Client s3Client(ObjectStorageProperties properties) {
+        var builder = S3Client.builder()
+                .region(Region.of(properties.resolvedRegion()))
+                .credentialsProvider(StaticCredentialsProvider.create(
+                        AwsBasicCredentials.create(properties.accessKey(), properties.secretKey())
+                ))
+                .requestChecksumCalculation(RequestChecksumCalculation.WHEN_REQUIRED)
+                .responseChecksumValidation(ResponseChecksumValidation.WHEN_REQUIRED)
+                .httpClient(UrlConnectionHttpClient.create());
+        if (properties.endpoint() != null && !properties.endpoint().isBlank()) {
+            builder.endpointOverride(URI.create(properties.endpoint().trim()))
+                    .serviceConfiguration(S3Configuration.builder().pathStyleAccessEnabled(true).build());
+        }
+        return builder.build();
     }
 }

@@ -183,6 +183,8 @@ CREATE TABLE production_orders (
     actual_start_date       date            NULL,
     actual_completion_date  date            NULL,
     observations            varchar(2000)   NULL,
+    reference_image_object_key     varchar(255)    NULL,
+    reference_image_content_type   varchar(50)     NULL,
     CONSTRAINT production_orders_pkey PRIMARY KEY (id),
     CONSTRAINT production_orders_order_id_key UNIQUE (order_id)
 );

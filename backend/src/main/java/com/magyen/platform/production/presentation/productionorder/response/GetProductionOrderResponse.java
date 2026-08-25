@@ -27,6 +27,7 @@ public record GetProductionOrderResponse(
         List<ProductionOperationResponse> operations,
         ProductionMaterialCostSummaryResponse materialCostSummary,
         ProductionLaborCostSummaryResponse laborCostSummary,
-        BigDecimal totalProductionCost
+        BigDecimal totalProductionCost,
+        boolean hasReferenceImage
 ) {
 }

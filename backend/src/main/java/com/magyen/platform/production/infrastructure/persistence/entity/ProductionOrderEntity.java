@@ -56,6 +56,12 @@ public class ProductionOrderEntity {
     @Column(name = "observations", length = 2000)
     private String observations;
 
+    @Column(name = "reference_image_object_key", length = 255)
+    private String referenceImageObjectKey;
+
+    @Column(name = "reference_image_content_type", length = 50)
+    private String referenceImageContentType;
+
     @OneToMany(mappedBy = "productionOrder", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProductionItemEntity> items = new ArrayList<>();
 
@@ -149,6 +155,22 @@ public class ProductionOrderEntity {
 
     public void setObservations(String observations) {
         this.observations = observations;
+    }
+
+    public String getReferenceImageObjectKey() {
+        return referenceImageObjectKey;
+    }
+
+    public void setReferenceImageObjectKey(String referenceImageObjectKey) {
+        this.referenceImageObjectKey = referenceImageObjectKey;
+    }
+
+    public String getReferenceImageContentType() {
+        return referenceImageContentType;
+    }
+
+    public void setReferenceImageContentType(String referenceImageContentType) {
+        this.referenceImageContentType = referenceImageContentType;
     }
 
     public List<ProductionItemEntity> getItems() {

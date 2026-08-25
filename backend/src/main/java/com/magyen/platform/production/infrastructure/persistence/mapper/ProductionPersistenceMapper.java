@@ -6,6 +6,7 @@ import com.magyen.platform.production.domain.ProductionLaborWork;
 import com.magyen.platform.production.domain.ProductionMaterialConsumption;
 import com.magyen.platform.production.domain.ProductionOperation;
 import com.magyen.platform.production.domain.ProductionOrder;
+import com.magyen.platform.production.domain.ProductionReferenceImage;
 import com.magyen.platform.production.domain.SizeBreakdown;
 import com.magyen.platform.production.infrastructure.persistence.entity.ProductionItemEntity;
 import com.magyen.platform.production.infrastructure.persistence.entity.ProductionItemSizeEntity;
@@ -39,6 +40,13 @@ public class ProductionPersistenceMapper {
         productionOrderEntity.setActualStartDate(productionOrder.getActualStartDate());
         productionOrderEntity.setActualCompletionDate(productionOrder.getActualCompletionDate());
         productionOrderEntity.setObservations(productionOrder.getObservations());
+        if (productionOrder.getReferenceImage() == null) {
+            productionOrderEntity.setReferenceImageObjectKey(null);
+            productionOrderEntity.setReferenceImageContentType(null);
+        } else {
+            productionOrderEntity.setReferenceImageObjectKey(productionOrder.getReferenceImage().getObjectKey());
+            productionOrderEntity.setReferenceImageContentType(productionOrder.getReferenceImage().getContentType());
+        }
 
         List<ProductionItemEntity> itemEntities = new ArrayList<>();
         for (ProductionItem item : productionOrder.getItems()) {
@@ -120,7 +128,19 @@ public class ProductionPersistenceMapper {
                 materialConsumptions,
                 laborWorks,
                 productionOrderEntity.getActualStartDate(),
-                productionOrderEntity.getActualCompletionDate()
+                productionOrderEntity.getActualCompletionDate(),
+                toReferenceImage(productionOrderEntity)
+        );
+    }
+
+    private ProductionReferenceImage toReferenceImage(ProductionOrderEntity productionOrderEntity) {
+        if (productionOrderEntity.getReferenceImageObjectKey() == null
+                || productionOrderEntity.getReferenceImageObjectKey().isBlank()) {
+            return null;
+        }
+        return ProductionReferenceImage.of(
+                productionOrderEntity.getReferenceImageObjectKey(),
+                productionOrderEntity.getReferenceImageContentType()
         );
     }
 

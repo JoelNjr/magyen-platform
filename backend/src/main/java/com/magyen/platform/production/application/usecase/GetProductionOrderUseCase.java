@@ -112,7 +112,11 @@ public class GetProductionOrderUseCase {
                 operations,
                 materialCostSummary,
                 laborCostSummary,
-                resolveTotalProductionCost(materialCostSummary, laborCostSummary)
+                resolveTotalProductionCost(materialCostSummary, laborCostSummary),
+                productionOrder.getReferenceImage() != null,
+                productionOrder.getReferenceImage() == null
+                        ? null
+                        : productionOrder.getReferenceImage().getObjectKey()
         );
     }
 

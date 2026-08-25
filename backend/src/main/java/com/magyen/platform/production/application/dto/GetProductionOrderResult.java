@@ -30,6 +30,8 @@ public record GetProductionOrderResult(
         List<ProductionOperationResult> operations,
         ProductionMaterialCostSummary materialCostSummary,
         ProductionLaborCostSummary laborCostSummary,
-        BigDecimal totalProductionCost
+        BigDecimal totalProductionCost,
+        boolean hasReferenceImage,
+        String referenceImageObjectKey
 ) {
 }

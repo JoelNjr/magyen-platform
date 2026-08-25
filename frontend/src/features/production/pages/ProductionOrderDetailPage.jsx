@@ -22,6 +22,7 @@ import {
 } from '@mui/material'
 import { useNavigate, useParams, Link as RouterLink } from 'react-router-dom'
 import AddProductionOperationDialog from '../components/AddProductionOperationDialog'
+import ProductionReferenceImageSection from '../components/ProductionReferenceImageSection'
 import AssignProductionOperatorDialog from '../components/AssignProductionOperatorDialog'
 import ConfirmProductionLifecycleDialog from '../components/ConfirmProductionLifecycleDialog'
 import PlanProductionOrderDialog from '../components/PlanProductionOrderDialog'
@@ -1149,6 +1150,16 @@ function ProductionOrderDetailPage() {
                 </Grid>
               </Grid>
             </Paper>
+
+            <ProductionReferenceImageSection
+              productionOrderId={productionOrder.productionOrderId}
+              hasReferenceImage={Boolean(productionOrder.hasReferenceImage)}
+              onChanged={async (message) => {
+                await refreshProductionOrder()
+                setSuccessMessage(message)
+                setSuccessOpen(true)
+              }}
+            />
 
             <Paper sx={{ p: 3 }}>
               <Stack spacing={3}>

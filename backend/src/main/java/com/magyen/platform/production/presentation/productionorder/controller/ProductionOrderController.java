@@ -22,7 +22,12 @@ import com.magyen.platform.production.application.dto.GetProductionOrderCommand;
 import com.magyen.platform.production.application.dto.GetProductionOrderResult;
 import com.magyen.platform.production.application.dto.GetProductionOrdersQuery;
 import com.magyen.platform.production.application.dto.GetProductionOrdersResult;
+import com.magyen.platform.production.application.dto.GetProductionReferenceImageResult;
 import com.magyen.platform.production.application.dto.ProductionDocumentPdfResult;
+import com.magyen.platform.production.application.dto.RemoveProductionReferenceImageCommand;
+import com.magyen.platform.production.application.dto.RemoveProductionReferenceImageResult;
+import com.magyen.platform.production.application.dto.ReplaceProductionReferenceImageCommand;
+import com.magyen.platform.production.application.dto.ReplaceProductionReferenceImageResult;
 import com.magyen.platform.production.application.dto.PayProductionLaborWorkCommand;
 import com.magyen.platform.production.application.dto.PayProductionLaborWorkResult;
 import com.magyen.platform.production.application.dto.PlanProductionOrderCommand;
@@ -47,6 +52,9 @@ import com.magyen.platform.production.application.usecase.GetProductionMaterialC
 import com.magyen.platform.production.application.usecase.GetProductionOrderUseCase;
 import com.magyen.platform.production.application.usecase.GetProductionOrdersUseCase;
 import com.magyen.platform.production.application.usecase.GenerateProductionOrderPdfUseCase;
+import com.magyen.platform.production.application.usecase.GetProductionReferenceImageUseCase;
+import com.magyen.platform.production.application.usecase.RemoveProductionReferenceImageUseCase;
+import com.magyen.platform.production.application.usecase.ReplaceProductionReferenceImageUseCase;
 import com.magyen.platform.production.application.usecase.PayProductionLaborWorkUseCase;
 import com.magyen.platform.production.application.usecase.PlanProductionOrderUseCase;
 import com.magyen.platform.production.application.usecase.RegisterProductionLaborWorkUseCase;
@@ -76,6 +84,8 @@ import com.magyen.platform.production.presentation.productionorder.response.GetP
 import com.magyen.platform.production.presentation.productionorder.response.GetProductionOrdersResponse;
 import com.magyen.platform.production.presentation.productionorder.response.PayProductionLaborWorkResponse;
 import com.magyen.platform.production.presentation.productionorder.response.PlanProductionOrderResponse;
+import com.magyen.platform.production.presentation.productionorder.response.RemoveProductionReferenceImageResponse;
+import com.magyen.platform.production.presentation.productionorder.response.ReplaceProductionReferenceImageResponse;
 import com.magyen.platform.production.presentation.productionorder.response.RegisterProductionLaborWorkResponse;
 import com.magyen.platform.production.presentation.productionorder.response.RegisterProductionMaterialConsumptionResponse;
 import com.magyen.platform.production.presentation.productionorder.response.StartProductionOperationResponse;
@@ -84,15 +94,18 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.util.UUID;
@@ -110,6 +123,9 @@ public class ProductionOrderController {
     private final GetProductionOrdersUseCase getProductionOrdersUseCase;
     private final GetProductionOrderUseCase getProductionOrderUseCase;
     private final GenerateProductionOrderPdfUseCase generateProductionOrderPdfUseCase;
+    private final ReplaceProductionReferenceImageUseCase replaceProductionReferenceImageUseCase;
+    private final RemoveProductionReferenceImageUseCase removeProductionReferenceImageUseCase;
+    private final GetProductionReferenceImageUseCase getProductionReferenceImageUseCase;
     private final PlanProductionOrderUseCase planProductionOrderUseCase;
     private final StartProductionOrderUseCase startProductionOrderUseCase;
     private final CompleteProductionOrderUseCase completeProductionOrderUseCase;
@@ -131,6 +147,9 @@ public class ProductionOrderController {
             GetProductionOrdersUseCase getProductionOrdersUseCase,
             GetProductionOrderUseCase getProductionOrderUseCase,
             GenerateProductionOrderPdfUseCase generateProductionOrderPdfUseCase,
+            ReplaceProductionReferenceImageUseCase replaceProductionReferenceImageUseCase,
+            RemoveProductionReferenceImageUseCase removeProductionReferenceImageUseCase,
+            GetProductionReferenceImageUseCase getProductionReferenceImageUseCase,
             PlanProductionOrderUseCase planProductionOrderUseCase,
             StartProductionOrderUseCase startProductionOrderUseCase,
             CompleteProductionOrderUseCase completeProductionOrderUseCase,
@@ -151,6 +170,9 @@ public class ProductionOrderController {
         this.getProductionOrdersUseCase = getProductionOrdersUseCase;
         this.getProductionOrderUseCase = getProductionOrderUseCase;
         this.generateProductionOrderPdfUseCase = generateProductionOrderPdfUseCase;
+        this.replaceProductionReferenceImageUseCase = replaceProductionReferenceImageUseCase;
+        this.removeProductionReferenceImageUseCase = removeProductionReferenceImageUseCase;
+        this.getProductionReferenceImageUseCase = getProductionReferenceImageUseCase;
         this.planProductionOrderUseCase = planProductionOrderUseCase;
         this.startProductionOrderUseCase = startProductionOrderUseCase;
         this.completeProductionOrderUseCase = completeProductionOrderUseCase;
@@ -199,6 +221,44 @@ public class ProductionOrderController {
                 .contentType(MediaType.APPLICATION_PDF)
                 .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition(result.filename()))
                 .body(result.content());
+    }
+
+    @GetMapping("/{productionOrderId}/reference-image")
+    public ResponseEntity<byte[]> getProductionReferenceImage(@PathVariable UUID productionOrderId) {
+        GetProductionOrderCommand command = productionPresentationMapper.toGetProductionOrderCommand(productionOrderId);
+        GetProductionReferenceImageResult result = getProductionReferenceImageUseCase.execute(command);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(result.contentType()))
+                .header(HttpHeaders.CACHE_CONTROL, "private, no-store")
+                .body(result.content());
+    }
+
+    @PutMapping(value = "/{productionOrderId}/reference-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ReplaceProductionReferenceImageResponse> replaceProductionReferenceImage(
+            @PathVariable UUID productionOrderId,
+            @RequestParam("file") MultipartFile file
+    ) {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("Reference image file is required");
+        }
+        ReplaceProductionReferenceImageCommand command = productionPresentationMapper.toReplaceReferenceImageCommand(
+                productionOrderId,
+                file.getOriginalFilename(),
+                file.getContentType(),
+                readFileBytes(file)
+        );
+        ReplaceProductionReferenceImageResult result = replaceProductionReferenceImageUseCase.execute(command);
+        return ResponseEntity.ok(productionPresentationMapper.toReplaceReferenceImageResponse(result));
+    }
+
+    @DeleteMapping("/{productionOrderId}/reference-image")
+    public ResponseEntity<RemoveProductionReferenceImageResponse> removeProductionReferenceImage(
+            @PathVariable UUID productionOrderId
+    ) {
+        RemoveProductionReferenceImageResult result = removeProductionReferenceImageUseCase.execute(
+                new RemoveProductionReferenceImageCommand(productionOrderId)
+        );
+        return ResponseEntity.ok(productionPresentationMapper.toRemoveReferenceImageResponse(result));
     }
 
     @PostMapping
@@ -416,5 +476,13 @@ public class ProductionOrderController {
 
     private static String contentDisposition(String filename) {
         return "attachment; filename=\"" + filename + "\"";
+    }
+
+    private static byte[] readFileBytes(MultipartFile file) {
+        try {
+            return file.getBytes();
+        } catch (Exception exception) {
+            throw new IllegalArgumentException("Unable to read the reference image file");
+        }
     }
 }
