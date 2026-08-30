@@ -13,7 +13,7 @@ public final class ProductionDocumentFilename {
         if (identifier.isBlank()) {
             return "Orden-de-Produccion.pdf";
         }
-        return "Orden-de-Produccion-" + identifier + ".pdf";
+        return "Orden-de-Produccion_" + identifier + ".pdf";
     }
 
     private static String sanitize(String value) {

@@ -1,5 +1,7 @@
 package com.magyen.platform.commercial.presentation.quotation.controller;
 
+import com.magyen.platform.commercial.application.dto.ApplyQuotationDiscountCommand;
+import com.magyen.platform.commercial.application.dto.ApplyQuotationDiscountResult;
 import com.magyen.platform.commercial.application.dto.AddQuotationItemCommand;
 import com.magyen.platform.commercial.application.dto.AddQuotationItemResult;
 import com.magyen.platform.commercial.application.dto.ApproveQuotationCommand;
@@ -15,6 +17,7 @@ import com.magyen.platform.commercial.application.dto.RemoveQuotationItemCommand
 import com.magyen.platform.commercial.application.dto.RemoveQuotationItemResult;
 import com.magyen.platform.commercial.application.dto.UpdateQuotationItemCommand;
 import com.magyen.platform.commercial.application.dto.UpdateQuotationItemResult;
+import com.magyen.platform.commercial.application.usecase.ApplyQuotationDiscountUseCase;
 import com.magyen.platform.commercial.application.usecase.AddQuotationItemUseCase;
 import com.magyen.platform.commercial.application.usecase.ApproveQuotationUseCase;
 import com.magyen.platform.commercial.application.usecase.CreateQuotationUseCase;
@@ -24,8 +27,10 @@ import com.magyen.platform.commercial.application.usecase.GenerateQuotationPdfUs
 import com.magyen.platform.commercial.application.usecase.RemoveQuotationItemUseCase;
 import com.magyen.platform.commercial.application.usecase.UpdateQuotationItemUseCase;
 import com.magyen.platform.commercial.presentation.quotation.mapper.QuotationPresentationMapper;
+import com.magyen.platform.commercial.presentation.quotation.request.ApplyQuotationDiscountRequest;
 import com.magyen.platform.commercial.presentation.quotation.request.AddQuotationItemRequest;
 import com.magyen.platform.commercial.presentation.quotation.request.CreateQuotationRequest;
+import com.magyen.platform.commercial.presentation.quotation.response.ApplyQuotationDiscountResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.AddQuotationItemResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.ApproveQuotationResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.CreateQuotationResponse;
@@ -69,6 +74,7 @@ public class QuotationController {
     private final GetQuotationsUseCase getQuotationsUseCase;
     private final GetQuotationUseCase getQuotationUseCase;
     private final GenerateQuotationPdfUseCase generateQuotationPdfUseCase;
+    private final ApplyQuotationDiscountUseCase applyQuotationDiscountUseCase;
     private final QuotationPresentationMapper quotationPresentationMapper;
 
     public QuotationController(
@@ -80,6 +86,7 @@ public class QuotationController {
             GetQuotationsUseCase getQuotationsUseCase,
             GetQuotationUseCase getQuotationUseCase,
             GenerateQuotationPdfUseCase generateQuotationPdfUseCase,
+            ApplyQuotationDiscountUseCase applyQuotationDiscountUseCase,
             QuotationPresentationMapper quotationPresentationMapper
     ) {
         this.createQuotationUseCase = createQuotationUseCase;
@@ -90,6 +97,7 @@ public class QuotationController {
         this.getQuotationsUseCase = getQuotationsUseCase;
         this.getQuotationUseCase = getQuotationUseCase;
         this.generateQuotationPdfUseCase = generateQuotationPdfUseCase;
+        this.applyQuotationDiscountUseCase = applyQuotationDiscountUseCase;
         this.quotationPresentationMapper = quotationPresentationMapper;
     }
 
@@ -174,6 +182,17 @@ public class QuotationController {
         RemoveQuotationItemResponse response = quotationPresentationMapper.toRemoveItemResponse(result);
 
         return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/{quotationId}/discount")
+    public ResponseEntity<ApplyQuotationDiscountResponse> applyDiscount(
+            @PathVariable UUID quotationId,
+            @RequestBody ApplyQuotationDiscountRequest request
+    ) {
+        ApplyQuotationDiscountCommand command =
+                quotationPresentationMapper.toApplyDiscountCommand(quotationId, request);
+        ApplyQuotationDiscountResult result = applyQuotationDiscountUseCase.execute(command);
+        return ResponseEntity.ok(quotationPresentationMapper.toApplyDiscountResponse(result));
     }
 
     @PatchMapping("/{quotationId}/approve")

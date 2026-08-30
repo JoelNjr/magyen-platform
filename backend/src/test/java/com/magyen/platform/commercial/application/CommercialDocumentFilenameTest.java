@@ -8,12 +8,12 @@ class CommercialDocumentFilenameTest {
 
     @Test
     void quotationFilenameUsesBusinessNumberNotUuid() {
-        assertEquals("Cotizacion-C000001.pdf", CommercialDocumentFilename.quotation("C000001"));
+        assertEquals("Cotizacion_14.pdf", CommercialDocumentFilename.quotation("14"));
     }
 
     @Test
     void remissionFilenamePreservesExistingOrderNumber() {
-        assertEquals("Remision-1.pdf", CommercialDocumentFilename.remission("1"));
-        assertEquals("Remision-PDF-1.pdf", CommercialDocumentFilename.remission("PDF-1"));
+        assertEquals("Remision_13.pdf", CommercialDocumentFilename.remission("13"));
+        assertEquals("Remision_PDF-1.pdf", CommercialDocumentFilename.remission("PDF-1"));
     }
 }

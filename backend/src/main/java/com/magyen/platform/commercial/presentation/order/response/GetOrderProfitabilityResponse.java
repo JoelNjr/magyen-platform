@@ -18,6 +18,7 @@ public record GetOrderProfitabilityResponse(
         BigDecimal outstandingAmount,
         BigDecimal materialCost,
         BigDecimal laborCost,
+        BigDecimal otherDirectCost,
         BigDecimal plotterMaterialCost,
         boolean plotterCostAttributable,
         BigDecimal internalPlotterServiceCost,

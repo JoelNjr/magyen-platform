@@ -27,6 +27,8 @@ public record GetOrderResult(
         String sellerName,
         String observations,
         List<OrderItemResult> items,
+        BigDecimal subtotalAmount,
+        BigDecimal discountAmount,
         BigDecimal totalAmount
 ) {
 }

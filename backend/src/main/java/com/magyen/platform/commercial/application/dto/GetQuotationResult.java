@@ -21,6 +21,8 @@ public record GetQuotationResult(
         String sellerName,
         String observations,
         List<QuotationItemResult> items,
+        BigDecimal subtotalAmount,
+        BigDecimal discountAmount,
         BigDecimal totalAmount,
         UUID orderId
 ) {

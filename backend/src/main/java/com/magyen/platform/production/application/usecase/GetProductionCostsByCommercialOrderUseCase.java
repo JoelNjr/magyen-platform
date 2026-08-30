@@ -5,6 +5,7 @@ import com.magyen.platform.production.application.dto.GetProductionCostsByCommer
 import com.magyen.platform.production.application.dto.GetProductionMaterialConsumptionResult;
 import com.magyen.platform.production.application.dto.ProductionLaborCostSummary;
 import com.magyen.platform.production.application.dto.ProductionMaterialCostSummary;
+import com.magyen.platform.production.application.dto.ProductionOtherCostSummary;
 import com.magyen.platform.production.application.port.ProductionMaterialCostInventoryPort;
 import com.magyen.platform.production.application.port.ProductionMaterialHistoricalCost;
 import com.magyen.platform.production.domain.ProductionMaterialConsumption;
@@ -69,6 +70,8 @@ public class GetProductionCostsByCommercialOrderUseCase {
                 ZERO_MONEY,
                 0,
                 0,
+                0,
+                ZERO_MONEY,
                 0
         );
     }
@@ -83,6 +86,8 @@ public class GetProductionCostsByCommercialOrderUseCase {
                 ProductionMaterialCostSummaryCalculator.from(enrichedConsumptions);
         ProductionLaborCostSummary laborCostSummary =
                 ProductionLaborCostSummaryCalculator.from(productionOrder.getLaborWorks());
+        ProductionOtherCostSummary otherCostSummary =
+                ProductionOtherCostSummaryCalculator.from(productionOrder.getAdditionalCosts());
 
         BigDecimal materialCost = materialCostSummary.totalMaterialCost() == null
                 ? ZERO_MONEY
@@ -90,6 +95,9 @@ public class GetProductionCostsByCommercialOrderUseCase {
         BigDecimal laborCost = laborCostSummary.totalLaborCost() == null
                 ? ZERO_MONEY
                 : laborCostSummary.totalLaborCost();
+        BigDecimal otherCost = otherCostSummary.totalOtherCost() == null
+                ? ZERO_MONEY
+                : otherCostSummary.totalOtherCost();
 
         return new GetProductionCostsByCommercialOrderResult(
                 productionOrder.getId(),
@@ -101,7 +109,9 @@ public class GetProductionCostsByCommercialOrderUseCase {
                 laborCost,
                 laborCostSummary.laborWorkCount(),
                 laborCostSummary.pendingCount(),
-                laborCostSummary.paidCount()
+                laborCostSummary.paidCount(),
+                otherCost,
+                otherCostSummary.otherCostCount()
         );
     }
 

@@ -37,6 +37,7 @@ public class OrderPersistenceMapper {
         orderEntity.setSellerId(order.getSellerId());
         orderEntity.setObservations(order.getObservations());
         orderEntity.setDescription(order.getDescription());
+        orderEntity.setDiscountAmount(toAmount(order.getDiscount()));
         orderEntity.setTotalAmount(toAmount(order.getTotal()));
 
         mapDeliveryCommitment(orderEntity, order.getDeliveryCommitment());
@@ -73,7 +74,10 @@ public class OrderPersistenceMapper {
                 orderEntity.getSellerId(),
                 orderEntity.getObservations(),
                 orderEntity.getDescription(),
-                items
+                items,
+                toMoney(orderEntity.getDiscountAmount() == null
+                        ? BigDecimal.ZERO
+                        : orderEntity.getDiscountAmount())
         );
     }
 

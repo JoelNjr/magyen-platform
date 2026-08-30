@@ -32,6 +32,8 @@ import com.magyen.platform.production.application.dto.PayProductionLaborWorkComm
 import com.magyen.platform.production.application.dto.PayProductionLaborWorkResult;
 import com.magyen.platform.production.application.dto.PlanProductionOrderCommand;
 import com.magyen.platform.production.application.dto.PlanProductionOrderResult;
+import com.magyen.platform.production.application.dto.RegisterProductionAdditionalCostCommand;
+import com.magyen.platform.production.application.dto.RegisterProductionAdditionalCostResult;
 import com.magyen.platform.production.application.dto.RegisterProductionLaborWorkCommand;
 import com.magyen.platform.production.application.dto.RegisterProductionLaborWorkResult;
 import com.magyen.platform.production.application.dto.RegisterProductionMaterialConsumptionCommand;
@@ -57,6 +59,7 @@ import com.magyen.platform.production.application.usecase.RemoveProductionRefere
 import com.magyen.platform.production.application.usecase.ReplaceProductionReferenceImageUseCase;
 import com.magyen.platform.production.application.usecase.PayProductionLaborWorkUseCase;
 import com.magyen.platform.production.application.usecase.PlanProductionOrderUseCase;
+import com.magyen.platform.production.application.usecase.RegisterProductionAdditionalCostUseCase;
 import com.magyen.platform.production.application.usecase.RegisterProductionLaborWorkUseCase;
 import com.magyen.platform.production.application.usecase.RegisterProductionMaterialConsumptionUseCase;
 import com.magyen.platform.production.application.usecase.StartProductionOperationUseCase;
@@ -69,6 +72,7 @@ import com.magyen.platform.production.presentation.productionorder.request.PayPr
 import com.magyen.platform.production.presentation.productionorder.request.CompleteProductionOrderRequest;
 import com.magyen.platform.production.presentation.productionorder.request.PlanProductionOrderRequest;
 import com.magyen.platform.production.presentation.productionorder.request.StartProductionOrderRequest;
+import com.magyen.platform.production.presentation.productionorder.request.RegisterProductionAdditionalCostRequest;
 import com.magyen.platform.production.presentation.productionorder.request.RegisterProductionLaborWorkRequest;
 import com.magyen.platform.production.presentation.productionorder.request.RegisterProductionMaterialConsumptionRequest;
 import com.magyen.platform.production.presentation.productionorder.response.AddProductionOperationResponse;
@@ -86,6 +90,7 @@ import com.magyen.platform.production.presentation.productionorder.response.PayP
 import com.magyen.platform.production.presentation.productionorder.response.PlanProductionOrderResponse;
 import com.magyen.platform.production.presentation.productionorder.response.RemoveProductionReferenceImageResponse;
 import com.magyen.platform.production.presentation.productionorder.response.ReplaceProductionReferenceImageResponse;
+import com.magyen.platform.production.presentation.productionorder.response.RegisterProductionAdditionalCostResponse;
 import com.magyen.platform.production.presentation.productionorder.response.RegisterProductionLaborWorkResponse;
 import com.magyen.platform.production.presentation.productionorder.response.RegisterProductionMaterialConsumptionResponse;
 import com.magyen.platform.production.presentation.productionorder.response.StartProductionOperationResponse;
@@ -140,6 +145,7 @@ public class ProductionOrderController {
     private final GetProductionLaborWorkUseCase getProductionLaborWorkUseCase;
     private final PayProductionLaborWorkUseCase payProductionLaborWorkUseCase;
     private final CancelProductionLaborWorkUseCase cancelProductionLaborWorkUseCase;
+    private final RegisterProductionAdditionalCostUseCase registerProductionAdditionalCostUseCase;
     private final ProductionPresentationMapper productionPresentationMapper;
 
     public ProductionOrderController(
@@ -164,6 +170,7 @@ public class ProductionOrderController {
             GetProductionLaborWorkUseCase getProductionLaborWorkUseCase,
             PayProductionLaborWorkUseCase payProductionLaborWorkUseCase,
             CancelProductionLaborWorkUseCase cancelProductionLaborWorkUseCase,
+            RegisterProductionAdditionalCostUseCase registerProductionAdditionalCostUseCase,
             ProductionPresentationMapper productionPresentationMapper
     ) {
         this.createProductionOrderFromOrderUseCase = createProductionOrderFromOrderUseCase;
@@ -187,6 +194,7 @@ public class ProductionOrderController {
         this.getProductionLaborWorkUseCase = getProductionLaborWorkUseCase;
         this.payProductionLaborWorkUseCase = payProductionLaborWorkUseCase;
         this.cancelProductionLaborWorkUseCase = cancelProductionLaborWorkUseCase;
+        this.registerProductionAdditionalCostUseCase = registerProductionAdditionalCostUseCase;
         this.productionPresentationMapper = productionPresentationMapper;
     }
 
@@ -458,6 +466,18 @@ public class ProductionOrderController {
         PayProductionLaborWorkResponse response = productionPresentationMapper.toPayLaborWorkResponse(result);
 
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{productionOrderId}/additional-costs")
+    public ResponseEntity<RegisterProductionAdditionalCostResponse> registerAdditionalCost(
+            @PathVariable UUID productionOrderId,
+            @RequestBody RegisterProductionAdditionalCostRequest request
+    ) {
+        RegisterProductionAdditionalCostCommand command =
+                productionPresentationMapper.toRegisterAdditionalCostCommand(productionOrderId, request);
+        RegisterProductionAdditionalCostResult result = registerProductionAdditionalCostUseCase.execute(command);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(productionPresentationMapper.toRegisterAdditionalCostResponse(result));
     }
 
     @PatchMapping("/{productionOrderId}/labor/{laborWorkId}/cancel")

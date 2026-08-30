@@ -71,11 +71,15 @@ class CommercialDocumentPdfApiContractTest {
     void quotationPdfContainsBusinessContentWithoutTechnicalIdentifiers() throws Exception {
         PreparedQuotation quotation = createQuotationWithProduct();
         String expectedNumber = "C" + String.format("%06d", quotation.quotationNumber());
+        String expectedFilenameNumber = String.valueOf(quotation.quotationNumber());
 
         MvcResult result = mockMvc.perform(get("/api/v1/quotations/{quotationId}/pdf", quotation.quotationId()))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PDF))
-                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, org.hamcrest.Matchers.containsString(expectedNumber)))
+                .andExpect(header().string(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        org.hamcrest.Matchers.containsString("Cotizacion_" + expectedFilenameNumber + ".pdf")
+                ))
                 .andReturn();
 
         byte[] pdf = result.getResponse().getContentAsByteArray();
@@ -107,7 +111,7 @@ class CommercialDocumentPdfApiContractTest {
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PDF))
                 .andExpect(header().string(
                         HttpHeaders.CONTENT_DISPOSITION,
-                        org.hamcrest.Matchers.containsString("Remision-" + order.orderNumber())
+                        org.hamcrest.Matchers.containsString("Remision_" + order.orderNumber() + ".pdf")
                 ))
                 .andReturn();
 

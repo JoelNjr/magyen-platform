@@ -2,6 +2,7 @@ package com.magyen.platform.finance.presentation.transaction.controller;
 
 import com.magyen.platform.finance.application.dto.GetFinancialTransactionQuery;
 import com.magyen.platform.finance.application.dto.GetFinancialTransactionResult;
+import com.magyen.platform.finance.application.dto.GetFinancialTransactionsQuery;
 import com.magyen.platform.finance.application.dto.GetFinancialTransactionsResult;
 import com.magyen.platform.finance.application.dto.RegisterFinancialTransactionCommand;
 import com.magyen.platform.finance.application.dto.RegisterFinancialTransactionResult;
@@ -18,9 +19,12 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 /**
@@ -61,8 +65,13 @@ public class FinancialTransactionController {
     }
 
     @GetMapping
-    public ResponseEntity<GetFinancialTransactionsResponse> getFinancialTransactions() {
-        GetFinancialTransactionsResult result = getFinancialTransactionsUseCase.execute();
+    public ResponseEntity<GetFinancialTransactionsResponse> getFinancialTransactions(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate
+    ) {
+        GetFinancialTransactionsResult result = getFinancialTransactionsUseCase.execute(
+                new GetFinancialTransactionsQuery(fromDate, toDate)
+        );
         GetFinancialTransactionsResponse response = financialTransactionPresentationMapper.toResponse(result);
 
         return ResponseEntity.ok(response);

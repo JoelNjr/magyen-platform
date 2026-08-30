@@ -40,6 +40,8 @@ public final class CommercialPdfDocumentMapper {
                 blankToNull(quotation.sellerName()),
                 blankToNull(quotation.observations()),
                 List.copyOf(lines),
+                quotation.subtotalAmount(),
+                quotation.discountAmount(),
                 quotation.totalAmount()
         );
     }

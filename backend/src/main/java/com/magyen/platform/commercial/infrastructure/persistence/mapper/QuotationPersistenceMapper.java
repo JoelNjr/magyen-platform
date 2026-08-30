@@ -32,6 +32,7 @@ public class QuotationPersistenceMapper {
         quotationEntity.setStatus(quotation.getStatus());
         quotationEntity.setSellerId(quotation.getSellerId());
         quotationEntity.setObservations(quotation.getObservations());
+        quotationEntity.setDiscountAmount(toAmount(quotation.getDiscount()));
         quotationEntity.setTotalAmount(toAmount(quotation.getTotal()));
 
         List<QuotationItemEntity> itemEntities = new ArrayList<>();
@@ -62,7 +63,10 @@ public class QuotationPersistenceMapper {
                 quotationEntity.getStatus(),
                 quotationEntity.getSellerId(),
                 quotationEntity.getObservations(),
-                items
+                items,
+                toMoney(quotationEntity.getDiscountAmount() == null
+                        ? BigDecimal.ZERO
+                        : quotationEntity.getDiscountAmount())
         );
     }
 

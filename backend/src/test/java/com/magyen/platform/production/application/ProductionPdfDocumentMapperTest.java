@@ -62,6 +62,8 @@ class ProductionPdfDocumentMapperTest {
                 new ProductionMaterialCostSummary(null, 0, 0, 0),
                 null,
                 null,
+                List.of(),
+                null,
                 false,
                 null
         );

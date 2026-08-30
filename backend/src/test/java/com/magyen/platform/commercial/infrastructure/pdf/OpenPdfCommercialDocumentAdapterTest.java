@@ -48,6 +48,8 @@ class OpenPdfCommercialDocumentAdapterTest {
                 "Vendedor PDF",
                 null,
                 lines,
+                new BigDecimal("1400000.00"),
+                BigDecimal.ZERO,
                 new BigDecimal("1400000.00")
         ));
 

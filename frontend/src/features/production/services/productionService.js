@@ -106,6 +106,14 @@ export async function payProductionLaborWork(
   return response.data
 }
 
+export async function registerProductionAdditionalCost(productionOrderId, payload) {
+  const response = await httpClient.post(
+    `/production-orders/${productionOrderId}/additional-costs`,
+    payload
+  )
+  return response.data
+}
+
 export async function cancelProductionLaborWork(productionOrderId, laborWorkId) {
   const response = await httpClient.patch(
     `/production-orders/${productionOrderId}/labor/${laborWorkId}/cancel`

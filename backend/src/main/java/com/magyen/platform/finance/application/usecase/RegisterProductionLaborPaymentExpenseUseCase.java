@@ -8,17 +8,20 @@ import com.magyen.platform.finance.domain.FinancialTransaction;
 import com.magyen.platform.finance.domain.FinancialTransactionRepository;
 import com.magyen.platform.finance.domain.FinancialTransactionSourceType;
 import com.magyen.platform.finance.domain.FinancialTransactionType;
-import com.magyen.platform.finance.domain.exception.FinanceDomainException;
+import com.magyen.platform.finance.domain.LaborPaymentWeek;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Registra el EXPENSE de caja por pago de mano de obra por producción.
+ * Acumula el EXPENSE de caja de mano de obra en un movimiento semanal.
  * <p>
- * {@code sourceType = PAYROLL}, {@code sourceId = laborWorkId}.
- * Reutiliza {@code uq_financial_transactions_payroll_source}.
+ * Semana ISO lunes-domingo según la fecha real de pago.
+ * {@code sourceType = PAYROLL}, {@code sourceId = LaborPaymentWeek.sourceId()}.
+ * Reutiliza {@code uq_financial_transactions_payroll_source}: un movimiento por semana.
+ * El detalle por empleado permanece en Production ({@code ProductionLaborWork}).
+ * No crea una fila nueva si la semana ya tiene movimiento: suma el monto.
  */
 public class RegisterProductionLaborPaymentExpenseUseCase {
 
@@ -42,38 +45,41 @@ public class RegisterProductionLaborPaymentExpenseUseCase {
         Objects.requireNonNull(command.amount(), "Amount must not be null");
         Objects.requireNonNull(command.paymentDate(), "Payment date must not be null");
 
+        LaborPaymentWeek week = LaborPaymentWeek.of(command.paymentDate());
+        FinancialAmount paymentAmount = FinancialAmount.of(command.amount());
+
         Optional<FinancialTransaction> existing = financialTransactionRepository.findBySourceTypeAndSourceId(
                 FinancialTransactionSourceType.PAYROLL,
-                command.laborWorkId()
+                week.sourceId()
         );
+
+        FinancialTransaction saved;
         if (existing.isPresent()) {
-            throw new FinanceDomainException("A PAYROLL financial transaction already exists for this labor work");
+            FinancialTransaction current = existing.get();
+            int nextCount = LaborPaymentWeek.parsePaymentCount(current.getObservation()) + 1;
+            saved = financialTransactionRepository.save(
+                    current.withAmountDescriptionAndObservation(
+                            current.getAmount().add(paymentAmount),
+                            week.description(nextCount),
+                            week.observation(nextCount)
+                    )
+            );
+        } else {
+            saved = financialTransactionRepository.save(FinancialTransaction.create(
+                    FinancialTransactionType.EXPENSE,
+                    paymentAmount,
+                    week.getWeekStart(),
+                    FinancialCategory.PAYROLL.name(),
+                    week.description(1),
+                    week.observation(1),
+                    FinancialTransactionSourceType.PAYROLL,
+                    week.sourceId()
+            ));
         }
 
-        String description = buildDescription(command.operatorDisplayName());
-
-        FinancialTransaction transaction = FinancialTransaction.create(
-                FinancialTransactionType.EXPENSE,
-                FinancialAmount.of(command.amount()),
-                command.paymentDate(),
-                FinancialCategory.PAYROLL.name(),
-                description,
-                command.observation(),
-                FinancialTransactionSourceType.PAYROLL,
-                command.laborWorkId()
-        );
-
-        FinancialTransaction saved = financialTransactionRepository.save(transaction);
         return new RegisterProductionLaborPaymentExpenseResult(
                 saved.getId(),
                 saved.getAmount().getValue()
         );
-    }
-
-    private static String buildDescription(String operatorDisplayName) {
-        if (operatorDisplayName == null || operatorDisplayName.isBlank()) {
-            return "Pago de mano de obra";
-        }
-        return "Pago de mano de obra - " + operatorDisplayName.trim();
     }
 }

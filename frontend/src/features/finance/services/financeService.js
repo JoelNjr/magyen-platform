@@ -5,8 +5,13 @@ export async function getFinancialPeriodSummary(params) {
   return response.data
 }
 
-export async function getFinancialTransactions() {
-  const response = await httpClient.get('/finance/transactions')
+export async function getFinancialTransactions(params = {}) {
+  const response = await httpClient.get('/finance/transactions', {
+    params: {
+      fromDate: params.fromDate || undefined,
+      toDate: params.toDate || undefined,
+    },
+  })
   return response.data
 }
 

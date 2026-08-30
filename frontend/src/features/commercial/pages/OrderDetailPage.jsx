@@ -1079,6 +1079,26 @@ function OrderDetailPage() {
                   justifyContent="space-between"
                   alignItems="center"
                 >
+                  <Typography color="text.secondary">Subtotal</Typography>
+                  <Typography color="text.secondary">
+                    {formatCurrency(order.subtotalAmount ?? order.totalAmount)}
+                  </Typography>
+                </Stack>
+                <Stack
+                  direction="row"
+                  justifyContent="space-between"
+                  alignItems="center"
+                >
+                  <Typography color="text.secondary">Descuento</Typography>
+                  <Typography color="text.secondary">
+                    {formatCurrency(order.discountAmount ?? 0)}
+                  </Typography>
+                </Stack>
+                <Stack
+                  direction="row"
+                  justifyContent="space-between"
+                  alignItems="center"
+                >
                   <Typography variant="h6" sx={{ fontWeight: 700 }}>
                     TOTAL
                   </Typography>

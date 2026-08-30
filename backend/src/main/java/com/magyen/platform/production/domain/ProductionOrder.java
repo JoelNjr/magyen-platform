@@ -1,6 +1,7 @@
 package com.magyen.platform.production.domain;
 
 import com.magyen.platform.production.domain.exception.ProductionDomainException;
+import com.magyen.platform.shared.domain.Money;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -35,6 +36,7 @@ public class ProductionOrder {
     private final List<ProductionOperation> operations;
     private final List<ProductionMaterialConsumption> materialConsumptions;
     private final List<ProductionLaborWork> laborWorks;
+    private final List<ProductionAdditionalCost> additionalCosts;
     private ProductionReferenceImage referenceImage;
 
     private ProductionOrder(
@@ -52,6 +54,7 @@ public class ProductionOrder {
             List<ProductionOperation> operations,
             List<ProductionMaterialConsumption> materialConsumptions,
             List<ProductionLaborWork> laborWorks,
+            List<ProductionAdditionalCost> additionalCosts,
             ProductionReferenceImage referenceImage
     ) {
         this.id = Objects.requireNonNull(id, "Production order id must not be null");
@@ -71,6 +74,9 @@ public class ProductionOrder {
         );
         this.laborWorks = new ArrayList<>(
                 Objects.requireNonNull(laborWorks, "Labor works must not be null")
+        );
+        this.additionalCosts = new ArrayList<>(
+                Objects.requireNonNull(additionalCosts, "Additional costs must not be null")
         );
         this.referenceImage = referenceImage;
     }
@@ -124,6 +130,7 @@ public class ProductionOrder {
                 null,
                 observations,
                 items == null ? List.of() : items,
+                List.of(),
                 List.of(),
                 List.of(),
                 List.of(),
@@ -286,6 +293,47 @@ public class ProductionOrder {
             LocalDate actualCompletionDate,
             ProductionReferenceImage referenceImage
     ) {
+        return reconstitute(
+                id,
+                orderId,
+                creationDate,
+                status,
+                priority,
+                plannedStartDate,
+                plannedEndDate,
+                observations,
+                items,
+                operations,
+                materialConsumptions,
+                laborWorks,
+                actualStartDate,
+                actualCompletionDate,
+                referenceImage,
+                List.of()
+        );
+    }
+
+    /**
+     * Reconstruye una Orden de Producción incluyendo costos directos adicionales.
+     */
+    public static ProductionOrder reconstitute(
+            UUID id,
+            UUID orderId,
+            LocalDate creationDate,
+            ProductionStatus status,
+            ProductionPriority priority,
+            LocalDate plannedStartDate,
+            LocalDate plannedEndDate,
+            String observations,
+            List<ProductionItem> items,
+            List<ProductionOperation> operations,
+            List<ProductionMaterialConsumption> materialConsumptions,
+            List<ProductionLaborWork> laborWorks,
+            LocalDate actualStartDate,
+            LocalDate actualCompletionDate,
+            ProductionReferenceImage referenceImage,
+            List<ProductionAdditionalCost> additionalCosts
+    ) {
         return new ProductionOrder(
                 id,
                 orderId,
@@ -301,6 +349,7 @@ public class ProductionOrder {
                 operations == null ? List.of() : operations,
                 materialConsumptions == null ? List.of() : materialConsumptions,
                 laborWorks == null ? List.of() : laborWorks,
+                additionalCosts == null ? List.of() : additionalCosts,
                 referenceImage
         );
     }
@@ -541,6 +590,44 @@ public class ProductionOrder {
         return laborWork;
     }
 
+    /**
+     * Registra un costo directo adicional (categoría OTROS u otras futuras).
+     * <p>
+     * Solo permitido mientras el estado sea {@link ProductionStatus#IN_PROGRESS}.
+     * No crea el movimiento financiero; Application lo registra de forma idempotente.
+     */
+    public ProductionAdditionalCost registerAdditionalCost(
+            ProductionDirectCostCategory category,
+            String description,
+            Money amount,
+            LocalDate incurredDate
+    ) {
+        ensureAdditionalCostAllowed();
+        Objects.requireNonNull(category, "Category must not be null");
+        Objects.requireNonNull(incurredDate, "Incurred date must not be null");
+
+        ProductionAdditionalCost additionalCost = ProductionAdditionalCost.create(
+                this.id,
+                category,
+                description,
+                amount,
+                incurredDate
+        );
+        additionalCosts.add(additionalCost);
+        return additionalCost;
+    }
+
+    public ProductionAdditionalCost requireAdditionalCost(UUID additionalCostId) {
+        Objects.requireNonNull(additionalCostId, "Additional cost id must not be null");
+
+        return additionalCosts.stream()
+                .filter(cost -> cost.getId().equals(additionalCostId))
+                .findFirst()
+                .orElseThrow(() -> new ProductionDomainException(
+                        "Production additional cost not found: " + additionalCostId
+                ));
+    }
+
     public ProductionLaborWork requireLaborWork(UUID laborWorkId) {
         Objects.requireNonNull(laborWorkId, "Labor work id must not be null");
 
@@ -608,6 +695,10 @@ public class ProductionOrder {
         return Collections.unmodifiableList(laborWorks);
     }
 
+    public List<ProductionAdditionalCost> getAdditionalCosts() {
+        return Collections.unmodifiableList(additionalCosts);
+    }
+
     public ProductionReferenceImage getReferenceImage() {
         return referenceImage;
     }
@@ -653,6 +744,10 @@ public class ProductionOrder {
 
     private void ensureLaborWorkAllowed() {
         ensureInProgressForProductionFacts("Labor work");
+    }
+
+    private void ensureAdditionalCostAllowed() {
+        ensureInProgressForProductionFacts("Additional cost");
     }
 
     private void ensureInProgressForProductionFacts(String factLabel) {

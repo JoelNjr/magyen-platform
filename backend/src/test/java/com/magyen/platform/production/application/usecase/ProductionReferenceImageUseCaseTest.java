@@ -254,6 +254,8 @@ class ProductionReferenceImageUseCaseTest {
                 new ProductionMaterialCostSummary(null, 0, 0, 0),
                 null,
                 null,
+                List.of(),
+                null,
                 objectKey != null,
                 objectKey
         );

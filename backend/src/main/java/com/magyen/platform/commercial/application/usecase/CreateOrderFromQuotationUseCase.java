@@ -78,7 +78,8 @@ public class CreateOrderFromQuotationUseCase {
                 quotation.getSellerId(),
                 command.observations(),
                 command.description(),
-                mapItems(quotation.getItems())
+                mapItems(quotation.getItems()),
+                quotation.getDiscount()
         );
 
         Order savedOrder = orderRepository.save(order);

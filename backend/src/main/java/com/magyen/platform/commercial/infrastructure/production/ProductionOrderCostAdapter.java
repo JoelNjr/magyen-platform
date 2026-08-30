@@ -41,7 +41,9 @@ public class ProductionOrderCostAdapter implements ProductionOrderCostPort {
                 result.valuedMaterialConsumptionCount(),
                 result.unvaluedMaterialConsumptionCount(),
                 result.laborCost(),
-                result.laborWorkCount()
+                result.laborWorkCount(),
+                result.otherCost(),
+                result.otherCostCount()
         );
     }
 }

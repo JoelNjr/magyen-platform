@@ -31,6 +31,11 @@ public interface FinancialTransactionRepository {
     List<FinancialTransaction> findAllNewestFirst();
 
     /**
+     * Lista movimientos con {@code transactionDate} en {@code [fromDate, toDate]} (inclusive).
+     */
+    List<FinancialTransaction> findByTransactionDateBetweenNewestFirst(LocalDate fromDate, LocalDate toDate);
+
+    /**
      * Suma montos del ledger por tipo en {@code [fromDate, toDate]} (inclusive).
      */
     BigDecimal sumAmountByTypeBetween(

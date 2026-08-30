@@ -15,6 +15,8 @@ public record QuotationPdfDocument(
         String sellerName,
         String observations,
         List<CommercialDocumentProductLine> lines,
+        BigDecimal subtotalAmount,
+        BigDecimal discountAmount,
         BigDecimal totalAmount
 ) {
 }

@@ -95,6 +95,8 @@ public class GetOrderUseCase {
                 sellerNameResolver.resolveName(order.getSellerId()),
                 order.getObservations(),
                 items,
+                order.getSubtotal().getAmount(),
+                order.getDiscount().getAmount(),
                 order.getTotal().getAmount()
         );
     }

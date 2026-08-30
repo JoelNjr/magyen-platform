@@ -18,7 +18,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * Paga un registro PENDING creando exactamente un EXPENSE PAYROLL en Finance.
+ * Paga un registro PENDING y acumula el EXPENSE PAYROLL semanal en Finance.
  * <p>
  * Atomicidad: ledger + markPaid + save del agregado en la misma transacción.
  */

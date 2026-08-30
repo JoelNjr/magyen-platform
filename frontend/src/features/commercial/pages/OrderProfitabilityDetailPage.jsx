@@ -226,6 +226,11 @@ function OrderProfitabilityDetailPage() {
                 tone="cost"
               />
               <ResultRow
+                label="Otros costos directos"
+                value={formatProfitabilityMoney(profitability.otherDirectCost)}
+                tone="cost"
+              />
+              <ResultRow
                 label="Servicio Plotter interno"
                 value={formatPlotterProductionCost(profitability)}
                 tone="cost"

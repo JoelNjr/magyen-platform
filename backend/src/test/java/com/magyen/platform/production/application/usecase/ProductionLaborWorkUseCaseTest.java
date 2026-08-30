@@ -199,12 +199,35 @@ class ProductionLaborWorkUseCaseTest {
         assertEquals(financeBefore + 1, countPayrollExpenses());
 
         FinancialTransaction expense = financialTransactionRepository
-                .findBySourceTypeAndSourceId(FinancialTransactionSourceType.PAYROLL, first.laborWorkId())
+                .findBySourceTypeAndSourceId(
+                        FinancialTransactionSourceType.PAYROLL,
+                        com.magyen.platform.finance.domain.LaborPaymentWeek.of(LocalDate.of(2026, 8, 11)).sourceId()
+                )
                 .orElseThrow();
         assertEquals(FinancialTransactionType.EXPENSE, expense.getType());
         assertEquals("PAYROLL", expense.getCategory());
         assertEquals(new BigDecimal("80000.00"), expense.getAmount().getValue());
-        assertTrue(expense.getDescription().contains(productionOperator.displayName()));
+        assertTrue(expense.getDescription().contains("Mano de obra"));
+        assertTrue(expense.getDescription().contains("1 pago"));
+
+        PayProductionLaborWorkResult paidSameWeek = payProductionLaborWorkUseCase.execute(
+                new PayProductionLaborWorkCommand(
+                        productionOrderId,
+                        otherOperator.laborWorkId(),
+                        LocalDate.of(2026, 8, 12),
+                        null
+                )
+        );
+        assertEquals(paid.financialTransactionId(), paidSameWeek.financialTransactionId());
+        assertEquals(financeBefore + 1, countPayrollExpenses());
+        FinancialTransaction weekly = financialTransactionRepository
+                .findBySourceTypeAndSourceId(
+                        FinancialTransactionSourceType.PAYROLL,
+                        com.magyen.platform.finance.domain.LaborPaymentWeek.of(LocalDate.of(2026, 8, 12)).sourceId()
+                )
+                .orElseThrow();
+        assertEquals(new BigDecimal("110000.00"), weekly.getAmount().getValue());
+        assertTrue(weekly.getDescription().contains("2 pagos"));
 
         assertThrows(ProductionLaborWorkAlreadyPaidException.class, () -> payProductionLaborWorkUseCase.execute(
                 new PayProductionLaborWorkCommand(
@@ -239,8 +262,8 @@ class ProductionLaborWorkUseCaseTest {
         );
         assertEquals(new BigDecimal("110000.00"), order.laborCostSummary().totalLaborCost());
         assertEquals(2, order.laborCostSummary().laborWorkCount());
-        assertEquals(1, order.laborCostSummary().pendingCount());
-        assertEquals(1, order.laborCostSummary().paidCount());
+        assertEquals(0, order.laborCostSummary().pendingCount());
+        assertEquals(2, order.laborCostSummary().paidCount());
         assertEquals(new BigDecimal("110000.00"), order.totalProductionCost());
 
         ProductionOrder reloaded = productionOrderRepository.findById(productionOrderId).orElseThrow();

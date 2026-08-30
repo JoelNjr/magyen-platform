@@ -26,6 +26,7 @@ import ProductionReferenceImageSection from '../components/ProductionReferenceIm
 import AssignProductionOperatorDialog from '../components/AssignProductionOperatorDialog'
 import ConfirmProductionLifecycleDialog from '../components/ConfirmProductionLifecycleDialog'
 import PlanProductionOrderDialog from '../components/PlanProductionOrderDialog'
+import RegisterProductionAdditionalCostDialog from '../components/RegisterProductionAdditionalCostDialog'
 import RegisterProductionLaborDialog from '../components/RegisterProductionLaborDialog'
 import RegisterProductionMaterialConsumptionDialog from '../components/RegisterProductionMaterialConsumptionDialog'
 import { getInventoryItems } from '../../inventory/services/inventoryService'
@@ -55,6 +56,7 @@ import {
   getProductionOrder,
   payProductionLaborWork,
   planProductionOrder,
+  registerProductionAdditionalCost,
   registerProductionLaborWork,
   registerProductionMaterialConsumption,
   startProductionOperation,
@@ -323,6 +325,9 @@ function ProductionOrderDetailPage() {
 
   const [registerLaborOpen, setRegisterLaborOpen] = useState(false)
   const [registeringLabor, setRegisteringLabor] = useState(false)
+  const [registerOtherCostOpen, setRegisterOtherCostOpen] = useState(false)
+  const [registeringOtherCost, setRegisteringOtherCost] = useState(false)
+  const [registerOtherCostError, setRegisterOtherCostError] = useState('')
   const [registerLaborError, setRegisterLaborError] = useState('')
 
   const [payLaborTarget, setPayLaborTarget] = useState(null)
@@ -407,7 +412,9 @@ function ProductionOrderDetailPage() {
     startingOperation ||
     completingOperation
   const laborBusy = registeringLabor || payingLabor || cancellingLabor
-  const pageBusy = lifecycleBusy || operationBusy || laborBusy || generatingPdf
+  const pageBusy =
+    lifecycleBusy || operationBusy || laborBusy || generatingPdf || registeringOtherCost
+  const canRegisterOtherCost = status === 'IN_PROGRESS'
   const canAddOperation = status === 'CREATED'
   const orderAllowsOperationExecution = status === 'IN_PROGRESS'
   const canRegisterLabor = status === 'IN_PROGRESS'
@@ -645,6 +652,28 @@ function ProductionOrderDetailPage() {
       setRegisterLaborError('No fue posible cargar los operarios disponibles.')
     } finally {
       setLaborOperatorsLoading(false)
+    }
+  }
+
+  async function handleRegisterOtherCostSubmit(payload) {
+    if (registeringOtherCost) {
+      return
+    }
+    setRegisteringOtherCost(true)
+    setRegisterOtherCostError('')
+    try {
+      await registerProductionAdditionalCost(productionOrder.productionOrderId, payload)
+      const orderData = await getProductionOrder(productionOrder.productionOrderId)
+      setProductionOrder(orderData)
+      setRegisterOtherCostOpen(false)
+      setSuccessMessage('Costo OTROS registrado.')
+      setSuccessOpen(true)
+    } catch (error) {
+      setRegisterOtherCostError(
+        resolveApiErrorMessage(error, 'No fue posible registrar el costo.')
+      )
+    } finally {
+      setRegisteringOtherCost(false)
     }
   }
 
@@ -1334,6 +1363,12 @@ function ProductionOrderDetailPage() {
                         productionOrder?.laborCostSummary?.totalLaborCost
                     ) ?? 'No hay mano de obra registrada'}
                   </Typography>
+                  <Typography>
+                    Otros:{' '}
+                    {formatProductionMaterialCost(
+                      productionOrder?.otherCostSummary?.totalOtherCost
+                    ) ?? 'No hay costos OTROS'}
+                  </Typography>
                   <Typography variant="h6">
                     Total costo productivo:{' '}
                     {formatProductionMaterialCost(
@@ -1341,6 +1376,69 @@ function ProductionOrderDetailPage() {
                     ) ?? '—'}
                   </Typography>
                 </Stack>
+              </Stack>
+            </Paper>
+
+            <Paper sx={{ p: 3 }}>
+              <Stack spacing={3}>
+                <Stack
+                  direction={{ xs: 'column', sm: 'row' }}
+                  spacing={1.5}
+                  justifyContent="space-between"
+                  alignItems={{ xs: 'stretch', sm: 'center' }}
+                >
+                  <Stack spacing={1}>
+                    <Typography variant="h5">Costos OTROS</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Envíos, empaques, transporte y otros costos directos.
+                    </Typography>
+                  </Stack>
+                  {canRegisterOtherCost ? (
+                    <Button
+                      variant="outlined"
+                      startIcon={<AddIcon />}
+                      onClick={() => {
+                        setRegisterOtherCostError('')
+                        setRegisterOtherCostOpen(true)
+                      }}
+                      disabled={pageBusy}
+                    >
+                      Registrar OTROS
+                    </Button>
+                  ) : null}
+                </Stack>
+                {(productionOrder?.additionalCosts ?? []).length === 0 ? (
+                  <Typography color="text.secondary">
+                    No hay costos OTROS registrados.
+                  </Typography>
+                ) : (
+                  <TableContainer>
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell sx={headerCellSx}>Categoría</TableCell>
+                          <TableCell sx={headerCellSx}>Descripción</TableCell>
+                          <TableCell sx={headerCellSx}>Fecha</TableCell>
+                          <TableCell sx={headerCellSx} align="right">
+                            Valor
+                          </TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {(productionOrder.additionalCosts ?? []).map((cost) => (
+                          <TableRow key={cost.additionalCostId}>
+                            <TableCell>{cost.category === 'OTHER' ? 'OTROS' : cost.category}</TableCell>
+                            <TableCell>{cost.description}</TableCell>
+                            <TableCell>{formatDisplayDate(cost.incurredDate)}</TableCell>
+                            <TableCell align="right">
+                              {formatProductionMaterialCost(cost.amount)}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                )}
               </Stack>
             </Paper>
 
@@ -1654,6 +1752,17 @@ function ProductionOrderDetailPage() {
               errorMessage={consumeError}
             />
 
+            <RegisterProductionAdditionalCostDialog
+              open={registerOtherCostOpen}
+              onClose={() => {
+                if (!registeringOtherCost) {
+                  setRegisterOtherCostOpen(false)
+                }
+              }}
+              onSubmit={handleRegisterOtherCostSubmit}
+              submitting={registeringOtherCost}
+              errorMessage={registerOtherCostError}
+            />
             <RegisterProductionLaborDialog
               open={registerLaborOpen}
               operators={laborOperators}

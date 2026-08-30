@@ -19,6 +19,8 @@ public record GetQuotationResponse(
         String sellerName,
         String observations,
         List<QuotationItemResponse> items,
+        BigDecimal subtotalAmount,
+        BigDecimal discountAmount,
         BigDecimal totalAmount,
         UUID orderId
 ) {

@@ -18,20 +18,20 @@ test('order action label is Generar remisión', () => {
 test('filename uses the quoted Content-Disposition value', () => {
   assert.equal(
     parseContentDispositionFilename(
-      'attachment; filename="Cotizacion-C000001.pdf"',
+      'attachment; filename="Cotizacion_14.pdf"',
       'Cotizacion.pdf'
     ),
-    'Cotizacion-C000001.pdf'
+    'Cotizacion_14.pdf'
   )
 })
 
 test('filename preserves the existing order business number', () => {
   assert.equal(
     parseContentDispositionFilename(
-      'attachment; filename="Remision-1.pdf"',
+      'attachment; filename="Remision_13.pdf"',
       'Remision.pdf'
     ),
-    'Remision-1.pdf'
+    'Remision_13.pdf'
   )
 })
 

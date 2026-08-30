@@ -27,6 +27,7 @@ public class Quotation {
     private final UUID sellerId;
     private String observations;
     private final List<QuotationItem> items;
+    private Money discount;
     private Money total;
 
     private Quotation(
@@ -38,7 +39,8 @@ public class Quotation {
             QuotationStatus status,
             UUID sellerId,
             String observations,
-            List<QuotationItem> items
+            List<QuotationItem> items,
+            Money discount
     ) {
         this.id = Objects.requireNonNull(id, "Quotation id must not be null");
         this.quotationNumber = quotationNumber;
@@ -49,6 +51,7 @@ public class Quotation {
         this.sellerId = Objects.requireNonNull(sellerId, "Seller id must not be null");
         this.observations = observations;
         this.items = new ArrayList<>(items);
+        this.discount = discount == null ? Money.zero() : discount;
         recalculateTotal();
     }
 
@@ -75,7 +78,8 @@ public class Quotation {
                 QuotationStatus.DRAFT,
                 sellerId,
                 observations,
-                List.of()
+                List.of(),
+                Money.zero()
         );
     }
 
@@ -96,6 +100,35 @@ public class Quotation {
             String observations,
             List<QuotationItem> items
     ) {
+        return reconstitute(
+                id,
+                quotationNumber,
+                customerId,
+                creationDate,
+                deliveryDate,
+                status,
+                sellerId,
+                observations,
+                items,
+                Money.zero()
+        );
+    }
+
+    /**
+     * Reconstruye una cotización incluyendo el descuento sobre el subtotal de productos.
+     */
+    public static Quotation reconstitute(
+            UUID id,
+            QuotationNumber quotationNumber,
+            UUID customerId,
+            LocalDate creationDate,
+            LocalDate deliveryDate,
+            QuotationStatus status,
+            UUID sellerId,
+            String observations,
+            List<QuotationItem> items,
+            Money discount
+    ) {
         validateDeliveryDate(creationDate, deliveryDate);
 
         return new Quotation(
@@ -107,7 +140,8 @@ public class Quotation {
                 status,
                 sellerId,
                 observations,
-                items
+                items,
+                discount
         );
     }
 
@@ -213,6 +247,21 @@ public class Quotation {
     }
 
     /**
+     * Aplica un descuento sobre el subtotal de productos. No altera precios unitarios.
+     * <p>
+     * Solo permitido en {@link QuotationStatus#DRAFT}.
+     */
+    public void applyDiscount(Money discount) {
+        if (status != QuotationStatus.DRAFT) {
+            throw new QuotationDomainException(
+                    "Discount can only be applied while the quotation is draft. Current status: " + status
+            );
+        }
+        this.discount = discount == null ? Money.zero() : discount;
+        recalculateTotal();
+    }
+
+    /**
      * Aprueba la cotización tras la aceptación del cliente.
      * <p>
      * Transición válida: {@link QuotationStatus#DRAFT} → {@link QuotationStatus#APPROVED}.
@@ -304,6 +353,14 @@ public class Quotation {
         return Collections.unmodifiableList(items);
     }
 
+    public Money getSubtotal() {
+        return calculateSubtotal();
+    }
+
+    public Money getDiscount() {
+        return discount;
+    }
+
     public Money getTotal() {
         return total;
     }
@@ -335,7 +392,15 @@ public class Quotation {
     }
 
     private void recalculateTotal() {
-        this.total = items.stream()
+        Money subtotal = calculateSubtotal();
+        if (discount.isGreaterThan(subtotal)) {
+            throw new QuotationDomainException("Discount must not exceed quotation subtotal");
+        }
+        this.total = subtotal.subtract(discount);
+    }
+
+    private Money calculateSubtotal() {
+        return items.stream()
                 .map(QuotationItem::getSubtotal)
                 .reduce(Money.zero(), Money::add);
     }

@@ -10,6 +10,7 @@ import com.magyen.platform.commercial.application.port.OrderPaymentCollectionPor
 import com.magyen.platform.commercial.application.port.PlotterOrderCostPort;
 import com.magyen.platform.commercial.application.port.ProductionOrderCostPort;
 import com.magyen.platform.commercial.application.usecase.AddQuotationItemUseCase;
+import com.magyen.platform.commercial.application.usecase.ApplyQuotationDiscountUseCase;
 import com.magyen.platform.commercial.application.usecase.ApproveQuotationUseCase;
 import com.magyen.platform.commercial.application.usecase.CreateCustomerUseCase;
 import com.magyen.platform.commercial.application.usecase.CreateOrderFromQuotationUseCase;
@@ -173,6 +174,11 @@ public class CommercialConfiguration {
     @Bean
     public ApproveQuotationUseCase approveQuotationUseCase(QuotationRepository quotationRepository) {
         return new ApproveQuotationUseCase(quotationRepository);
+    }
+
+    @Bean
+    public ApplyQuotationDiscountUseCase applyQuotationDiscountUseCase(QuotationRepository quotationRepository) {
+        return new ApplyQuotationDiscountUseCase(quotationRepository);
     }
 
     @Bean

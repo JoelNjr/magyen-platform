@@ -25,6 +25,8 @@ public record GetOrderResponse(
         String sellerName,
         String observations,
         List<OrderItemResponse> items,
+        BigDecimal subtotalAmount,
+        BigDecimal discountAmount,
         BigDecimal totalAmount
 ) {
 

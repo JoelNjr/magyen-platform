@@ -2,6 +2,7 @@ package com.magyen.platform.production.infrastructure.persistence.mapper;
 
 import com.magyen.platform.production.domain.ProductSpecification;
 import com.magyen.platform.production.domain.ProductionItem;
+import com.magyen.platform.production.domain.ProductionAdditionalCost;
 import com.magyen.platform.production.domain.ProductionLaborWork;
 import com.magyen.platform.production.domain.ProductionMaterialConsumption;
 import com.magyen.platform.production.domain.ProductionOperation;
@@ -10,10 +11,13 @@ import com.magyen.platform.production.domain.ProductionReferenceImage;
 import com.magyen.platform.production.domain.SizeBreakdown;
 import com.magyen.platform.production.infrastructure.persistence.entity.ProductionItemEntity;
 import com.magyen.platform.production.infrastructure.persistence.entity.ProductionItemSizeEntity;
+import com.magyen.platform.production.infrastructure.persistence.entity.ProductionAdditionalCostEntity;
 import com.magyen.platform.production.infrastructure.persistence.entity.ProductionLaborWorkEntity;
 import com.magyen.platform.production.infrastructure.persistence.entity.ProductionMaterialConsumptionEntity;
 import com.magyen.platform.production.infrastructure.persistence.entity.ProductionOperationEntity;
 import com.magyen.platform.production.infrastructure.persistence.entity.ProductionOrderEntity;
+
+import com.magyen.platform.shared.domain.Money;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -80,6 +84,14 @@ public class ProductionPersistenceMapper {
         }
         productionOrderEntity.setLaborWorks(laborWorkEntities);
 
+        List<ProductionAdditionalCostEntity> additionalCostEntities = new ArrayList<>();
+        for (ProductionAdditionalCost additionalCost : productionOrder.getAdditionalCosts()) {
+            ProductionAdditionalCostEntity additionalCostEntity = toAdditionalCostEntity(additionalCost);
+            additionalCostEntity.setProductionOrder(productionOrderEntity);
+            additionalCostEntities.add(additionalCostEntity);
+        }
+        productionOrderEntity.setAdditionalCosts(additionalCostEntities);
+
         return productionOrderEntity;
     }
 
@@ -114,6 +126,15 @@ public class ProductionPersistenceMapper {
             laborWorks.add(toLaborWorkDomain(laborWorkEntity));
         }
 
+        List<ProductionAdditionalCost> additionalCosts = new ArrayList<>();
+        List<ProductionAdditionalCostEntity> additionalCostEntities =
+                productionOrderEntity.getAdditionalCosts() == null
+                        ? List.of()
+                        : productionOrderEntity.getAdditionalCosts();
+        for (ProductionAdditionalCostEntity additionalCostEntity : additionalCostEntities) {
+            additionalCosts.add(toAdditionalCostDomain(additionalCostEntity));
+        }
+
         return ProductionOrder.reconstitute(
                 productionOrderEntity.getId(),
                 productionOrderEntity.getOrderId(),
@@ -129,7 +150,8 @@ public class ProductionPersistenceMapper {
                 laborWorks,
                 productionOrderEntity.getActualStartDate(),
                 productionOrderEntity.getActualCompletionDate(),
-                toReferenceImage(productionOrderEntity)
+                toReferenceImage(productionOrderEntity),
+                additionalCosts
         );
     }
 
@@ -345,6 +367,37 @@ public class ProductionPersistenceMapper {
                 laborWorkEntity.getStatus(),
                 laborWorkEntity.getPaidAt(),
                 laborWorkEntity.getFinancialTransactionId()
+        );
+    }
+
+    private ProductionAdditionalCostEntity toAdditionalCostEntity(ProductionAdditionalCost additionalCost) {
+        Objects.requireNonNull(additionalCost, "Additional cost must not be null");
+
+        ProductionAdditionalCostEntity entity = new ProductionAdditionalCostEntity();
+        entity.setId(additionalCost.getId());
+        entity.setCategory(additionalCost.getCategory());
+        entity.setDescription(additionalCost.getDescription());
+        entity.setAmount(additionalCost.getAmount().getAmount());
+        entity.setIncurredDate(additionalCost.getIncurredDate());
+        entity.setFinancialTransactionId(additionalCost.getFinancialTransactionId());
+        return entity;
+    }
+
+    private ProductionAdditionalCost toAdditionalCostDomain(ProductionAdditionalCostEntity entity) {
+        Objects.requireNonNull(entity, "Additional cost entity must not be null");
+        Objects.requireNonNull(
+                entity.getProductionOrder(),
+                "Additional cost must reference a production order"
+        );
+
+        return ProductionAdditionalCost.reconstitute(
+                entity.getId(),
+                entity.getProductionOrder().getId(),
+                entity.getCategory(),
+                entity.getDescription(),
+                Money.of(entity.getAmount()),
+                entity.getIncurredDate(),
+                entity.getFinancialTransactionId()
         );
     }
 }

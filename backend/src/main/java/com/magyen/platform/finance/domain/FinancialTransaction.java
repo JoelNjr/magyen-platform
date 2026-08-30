@@ -141,6 +141,46 @@ public class FinancialTransaction {
         return sourceId;
     }
 
+    /**
+     * Reemplaza monto y descripción conservando la identidad del movimiento.
+     * <p>
+     * Se usa para acumular pagos de mano de obra en el movimiento semanal.
+     */
+    public FinancialTransaction withAmountAndDescription(FinancialAmount newAmount, String newDescription) {
+        return new FinancialTransaction(
+                id,
+                type,
+                newAmount,
+                transactionDate,
+                category,
+                newDescription,
+                observation,
+                sourceType,
+                sourceId
+        );
+    }
+
+    /**
+     * Reemplaza monto, descripción y observación conservando la identidad.
+     */
+    public FinancialTransaction withAmountDescriptionAndObservation(
+            FinancialAmount newAmount,
+            String newDescription,
+            String newObservation
+    ) {
+        return new FinancialTransaction(
+                id,
+                type,
+                newAmount,
+                transactionDate,
+                category,
+                newDescription,
+                newObservation,
+                sourceType,
+                sourceId
+        );
+    }
+
     @Override
     public boolean equals(Object other) {
         if (this == other) {

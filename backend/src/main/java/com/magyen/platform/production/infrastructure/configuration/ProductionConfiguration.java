@@ -6,6 +6,7 @@ import com.magyen.platform.commercial.application.usecase.GetOrdersUseCase;
 import com.magyen.platform.commercial.application.usecase.GetQuotationUseCase;
 import com.magyen.platform.finance.application.usecase.GetPayrollEmployeeUseCase;
 import com.magyen.platform.finance.application.usecase.GetPayrollEmployeesUseCase;
+import com.magyen.platform.finance.application.usecase.RegisterProductionAdditionalCostExpenseUseCase;
 import com.magyen.platform.finance.application.usecase.RegisterProductionLaborPaymentExpenseUseCase;
 import com.magyen.platform.inventory.application.usecase.ConsumeInventoryMaterialUseCase;
 import com.magyen.platform.inventory.application.usecase.GetInventoryItemUseCase;
@@ -18,6 +19,7 @@ import com.magyen.platform.production.application.port.ProductionDocumentPdfPort
 import com.magyen.platform.production.application.port.ProductionReferenceImageStoragePort;
 import com.magyen.platform.production.application.port.ProductionLaborEmployeePort;
 import com.magyen.platform.production.application.port.ProductionLaborEarningsQuery;
+import com.magyen.platform.production.application.port.ProductionAdditionalCostFinancePort;
 import com.magyen.platform.production.application.port.ProductionLaborFinancePort;
 import com.magyen.platform.production.application.port.ProductionMaterialConsumptionInventoryPort;
 import com.magyen.platform.production.application.port.ProductionMaterialCostInventoryPort;
@@ -39,6 +41,7 @@ import com.magyen.platform.production.application.usecase.GetProductionReference
 import com.magyen.platform.production.application.usecase.ListEligibleProductionLaborOperatorsUseCase;
 import com.magyen.platform.production.application.usecase.PayProductionLaborWorkUseCase;
 import com.magyen.platform.production.application.usecase.PlanProductionOrderUseCase;
+import com.magyen.platform.production.application.usecase.RegisterProductionAdditionalCostUseCase;
 import com.magyen.platform.production.application.usecase.RegisterProductionLaborWorkUseCase;
 import com.magyen.platform.production.application.usecase.RegisterProductionMaterialConsumptionUseCase;
 import com.magyen.platform.production.application.usecase.RemoveProductionReferenceImageUseCase;
@@ -47,6 +50,7 @@ import com.magyen.platform.production.application.usecase.StartProductionOperati
 import com.magyen.platform.production.application.usecase.StartProductionOrderUseCase;
 import com.magyen.platform.production.domain.ProductionOrderRepository;
 import com.magyen.platform.production.infrastructure.commercial.ProductionCommercialChronologyAdapter;
+import com.magyen.platform.production.infrastructure.finance.ProductionAdditionalCostFinanceAdapter;
 import com.magyen.platform.production.infrastructure.finance.ProductionLaborEmployeeAdapter;
 import com.magyen.platform.production.infrastructure.finance.ProductionLaborFinanceAdapter;
 import com.magyen.platform.production.infrastructure.inventory.ProductionMaterialConsumptionInventoryAdapter;
@@ -351,6 +355,24 @@ public class ProductionConfiguration {
             RegisterProductionLaborPaymentExpenseUseCase registerProductionLaborPaymentExpenseUseCase
     ) {
         return new ProductionLaborFinanceAdapter(registerProductionLaborPaymentExpenseUseCase);
+    }
+
+    @Bean
+    public ProductionAdditionalCostFinancePort productionAdditionalCostFinancePort(
+            RegisterProductionAdditionalCostExpenseUseCase registerProductionAdditionalCostExpenseUseCase
+    ) {
+        return new ProductionAdditionalCostFinanceAdapter(registerProductionAdditionalCostExpenseUseCase);
+    }
+
+    @Bean
+    public RegisterProductionAdditionalCostUseCase registerProductionAdditionalCostUseCase(
+            ProductionOrderRepository productionOrderRepository,
+            ProductionAdditionalCostFinancePort productionAdditionalCostFinancePort
+    ) {
+        return new RegisterProductionAdditionalCostUseCase(
+                productionOrderRepository,
+                productionAdditionalCostFinancePort
+        );
     }
 
     @Bean

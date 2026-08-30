@@ -20,6 +20,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TextField,
   Tooltip,
   Typography,
 } from '@mui/material'
@@ -36,6 +37,7 @@ import {
 } from '../presentation/resolveCustomerName'
 import {
   addQuotationItem,
+  applyQuotationDiscount,
   approveQuotation,
   createOrder,
   downloadQuotationPdf,
@@ -187,9 +189,17 @@ function QuotationDetailPage() {
   const [successMessage, setSuccessMessage] = useState('')
   const [generatingPdf, setGeneratingPdf] = useState(false)
   const [pdfError, setPdfError] = useState('')
+  const [discountInput, setDiscountInput] = useState('')
+  const [applyingDiscount, setApplyingDiscount] = useState(false)
+  const [discountError, setDiscountError] = useState('')
 
   const pageBusy =
-    submittingItem || removingItem || approving || creatingOrder || generatingPdf
+    submittingItem ||
+    removingItem ||
+    approving ||
+    creatingOrder ||
+    generatingPdf ||
+    applyingDiscount
 
   useEffect(() => {
     setLoading(true)
@@ -200,6 +210,9 @@ function QuotationDetailPage() {
     getQuotation(quotationId)
       .then((data) => {
         setQuotation(data)
+        setDiscountInput(
+          data?.discountAmount == null ? '0' : String(data.discountAmount)
+        )
         setLoading(false)
       })
       .catch((error) => {
@@ -226,6 +239,36 @@ function QuotationDetailPage() {
   async function refreshQuotation() {
     const refreshedQuotation = await getQuotation(quotation.quotationId)
     setQuotation(refreshedQuotation)
+    setDiscountInput(
+      refreshedQuotation?.discountAmount == null
+        ? '0'
+        : String(refreshedQuotation.discountAmount)
+    )
+  }
+
+  async function handleApplyDiscount() {
+    if (pageBusy || quotation.status !== 'DRAFT') {
+      return
+    }
+    const amount = Number(discountInput)
+    if (Number.isNaN(amount) || amount < 0) {
+      setDiscountError('El descuento no puede ser negativo.')
+      return
+    }
+    setDiscountError('')
+    setApplyingDiscount(true)
+    try {
+      await applyQuotationDiscount(quotation.quotationId, { discountAmount: amount })
+      await refreshQuotation()
+      setSuccessMessage('Descuento actualizado.')
+      setSuccessOpen(true)
+    } catch (error) {
+      setDiscountError(
+        resolveApiErrorMessage(error, 'No fue posible aplicar el descuento.')
+      )
+    } finally {
+      setApplyingDiscount(false)
+    }
   }
 
   async function handleSubmitItem(payload) {
@@ -733,9 +776,45 @@ function QuotationDetailPage() {
                 >
                   <Typography color="text.secondary">Subtotal</Typography>
                   <Typography color="text.secondary">
-                    {formatCurrency(quotation.totalAmount)}
+                    {formatCurrency(quotation.subtotalAmount ?? quotation.totalAmount)}
                   </Typography>
                 </Stack>
+                <Stack
+                  direction="row"
+                  justifyContent="space-between"
+                  alignItems="center"
+                >
+                  <Typography color="text.secondary">Descuento</Typography>
+                  <Typography color="text.secondary">
+                    {formatCurrency(quotation.discountAmount ?? 0)}
+                  </Typography>
+                </Stack>
+                {quotation.status === 'DRAFT' ? (
+                  <Stack
+                    direction={{ xs: 'column', sm: 'row' }}
+                    spacing={1.5}
+                    alignItems={{ sm: 'center' }}
+                  >
+                    <TextField
+                      label="Descuento sobre el total"
+                      type="number"
+                      size="small"
+                      value={discountInput}
+                      onChange={(event) => setDiscountInput(event.target.value)}
+                      disabled={pageBusy}
+                      inputProps={{ min: 0, step: '0.01' }}
+                      sx={{ maxWidth: { sm: 220 } }}
+                    />
+                    <Button
+                      variant="outlined"
+                      onClick={handleApplyDiscount}
+                      disabled={pageBusy}
+                    >
+                      {applyingDiscount ? 'Aplicando...' : 'Aplicar descuento'}
+                    </Button>
+                  </Stack>
+                ) : null}
+                {discountError ? <Alert severity="error">{discountError}</Alert> : null}
                 <Stack
                   direction="row"
                   justifyContent="space-between"

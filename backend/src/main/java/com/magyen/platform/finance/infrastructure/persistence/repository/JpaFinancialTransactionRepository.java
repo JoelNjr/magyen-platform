@@ -78,6 +78,17 @@ public class JpaFinancialTransactionRepository implements FinancialTransactionRe
     }
 
     @Override
+    public List<FinancialTransaction> findByTransactionDateBetweenNewestFirst(LocalDate fromDate, LocalDate toDate) {
+        Objects.requireNonNull(fromDate, "From date must not be null");
+        Objects.requireNonNull(toDate, "To date must not be null");
+        return springDataFinancialTransactionRepository
+                .findByTransactionDateBetweenOrderByTransactionDateDescIdDesc(fromDate, toDate)
+                .stream()
+                .map(financialTransactionPersistenceMapper::toDomain)
+                .toList();
+    }
+
+    @Override
     public BigDecimal sumAmountByTypeBetween(
             FinancialTransactionType type,
             LocalDate fromDate,

@@ -21,7 +21,9 @@ public interface ProductionOrderCostPort {
             int valuedMaterialConsumptionCount,
             int unvaluedMaterialConsumptionCount,
             BigDecimal laborCost,
-            int laborWorkCount
+            int laborWorkCount,
+            BigDecimal otherCost,
+            int otherCostCount
     ) {
     }
 }

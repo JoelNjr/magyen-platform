@@ -73,6 +73,11 @@ export async function removeQuotationItem(quotationId, itemId) {
   return response.data
 }
 
+export async function applyQuotationDiscount(quotationId, payload) {
+  const response = await httpClient.patch(`/quotations/${quotationId}/discount`, payload)
+  return response.data
+}
+
 export async function approveQuotation(quotationId) {
   const response = await httpClient.patch(`/quotations/${quotationId}/approve`)
   return response.data

@@ -52,6 +52,9 @@ public class QuotationEntity {
     @Column(name = "observations", length = 2000)
     private String observations;
 
+    @Column(name = "discount_amount", nullable = false, precision = 19, scale = 2)
+    private BigDecimal discountAmount;
+
     @Column(name = "total_amount", nullable = false, precision = 19, scale = 2)
     private BigDecimal totalAmount;
 
@@ -123,6 +126,14 @@ public class QuotationEntity {
 
     public void setObservations(String observations) {
         this.observations = observations;
+    }
+
+    public BigDecimal getDiscountAmount() {
+        return discountAmount;
+    }
+
+    public void setDiscountAmount(BigDecimal discountAmount) {
+        this.discountAmount = discountAmount;
     }
 
     public BigDecimal getTotalAmount() {

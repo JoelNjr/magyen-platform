@@ -87,7 +87,7 @@ public class OpenPdfCommercialDocumentAdapter implements CommercialDocumentPdfPo
         addPartySection(pdf, document.customerName(), document.sellerName());
         addObservations(pdf, document.observations());
         addProductTable(pdf, document.lines());
-        addTotals(pdf, document.totalAmount(), null, null);
+        addQuotationTotals(pdf, document);
     }
 
     private void buildRemission(Document pdf, RemissionPdfDocument document) throws DocumentException {
@@ -183,6 +183,24 @@ public class OpenPdfCommercialDocumentAdapter implements CommercialDocumentPdfPo
                 table.addCell(alignCell(formatMoney(line.lineTotal()), Element.ALIGN_RIGHT));
             }
         }
+        pdf.add(table);
+    }
+
+    private void addQuotationTotals(Document pdf, QuotationPdfDocument document) throws DocumentException {
+        PdfPTable table = new PdfPTable(2);
+        table.setWidthPercentage(45);
+        table.setHorizontalAlignment(Element.ALIGN_RIGHT);
+        table.setKeepTogether(true);
+        table.setSpacingAfter(16);
+        table.addCell(labelCell("Subtotal"));
+        table.addCell(alignCell(formatMoney(document.subtotalAmount()), Element.ALIGN_RIGHT));
+        if (document.discountAmount() != null
+                && document.discountAmount().compareTo(java.math.BigDecimal.ZERO) > 0) {
+            table.addCell(labelCell("Descuento"));
+            table.addCell(alignCell(formatMoney(document.discountAmount()), Element.ALIGN_RIGHT));
+        }
+        table.addCell(labelCell("Total"));
+        table.addCell(alignCell(formatMoney(document.totalAmount()), Element.ALIGN_RIGHT));
         pdf.add(table);
     }
 

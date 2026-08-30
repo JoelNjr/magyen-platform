@@ -72,6 +72,8 @@ public class GetQuotationUseCase {
                 sellerNameResolver.resolveName(quotation.getSellerId()),
                 quotation.getObservations(),
                 items,
+                quotation.getSubtotal().getAmount(),
+                quotation.getDiscount().getAmount(),
                 quotation.getTotal().getAmount(),
                 orderId
         );

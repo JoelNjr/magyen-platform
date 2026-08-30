@@ -18,7 +18,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  TextField,
   Typography,
 } from '@mui/material'
 import ConfirmFinanceActionDialog from '../components/ConfirmFinanceActionDialog'
@@ -35,7 +34,6 @@ import {
   getOccurrenceStatusLabel,
   getFrequencyLabel,
   getObligationTypeLabel,
-  getPreviousCalendarMonthRange,
   getSourceTypeLabel,
   getTransactionTypeChipColor,
   getTransactionTypeLabel,
@@ -60,6 +58,7 @@ import PageHeader from '../../../layout/PageHeader'
 import EmptyState from '../../home/components/EmptyState'
 import MetricCard from '../../home/components/MetricCard'
 import SectionHeader from '../../home/components/SectionHeader'
+import MonthPeriodNavigator from '../../../shared/period/MonthPeriodNavigator'
 
 const headerCellSx = { fontWeight: 'bold' }
 const SKELETON_ROW_COUNT = 3
@@ -227,11 +226,14 @@ function FinancePage() {
     }
   }, [])
 
-  const loadTransactions = useCallback(async () => {
+  const loadTransactions = useCallback(async (rangeFrom, rangeTo) => {
     setTransactionsLoading(true)
     setTransactionsFailed(false)
     try {
-      const data = await getFinancialTransactions()
+      const data = await getFinancialTransactions({
+        fromDate: rangeFrom,
+        toDate: rangeTo,
+      })
       setTransactions(Array.isArray(data?.transactions) ? data.transactions : [])
     } catch {
       setTransactions([])
@@ -251,7 +253,7 @@ function FinancePage() {
     loadOverdue()
     loadUpcoming()
     loadObligations()
-    loadTransactions()
+    loadTransactions(fromDate, toDate)
     // Carga inicial únicamente; el resumen se recarga al aplicar período.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -269,18 +271,7 @@ function FinancePage() {
     setFromDate(nextFrom)
     setToDate(nextTo)
     loadSummary(nextFrom, nextTo)
-  }
-
-  function handlePeriodPreset(kind) {
-    if (kind === 'current') {
-      const range = getCalendarMonthRange()
-      applyPeriod(range.fromDate, range.toDate)
-      return
-    }
-    if (kind === 'previous') {
-      const range = getPreviousCalendarMonthRange()
-      applyPeriod(range.fromDate, range.toDate)
-    }
+    loadTransactions(nextFrom, nextTo)
   }
 
   async function handlePayOccurrence(occurrence) {
@@ -294,7 +285,7 @@ function FinancePage() {
       await Promise.all([
         reloadCommitmentViews(),
         loadSummary(fromDate, toDate),
-        loadTransactions(),
+        loadTransactions(fromDate, toDate),
       ])
       showSuccess(`Pago registrado: ${occurrence.obligationName}.`)
     } catch (error) {
@@ -426,7 +417,7 @@ function FinancePage() {
     try {
       await registerFinancialTransaction(payload)
       setRegisterOpen(false)
-      await Promise.all([loadTransactions(), loadSummary(fromDate, toDate)])
+      await Promise.all([loadTransactions(fromDate, toDate), loadSummary(fromDate, toDate)])
       showSuccess('Movimiento registrado.')
     } catch (error) {
       setRegisterError(
@@ -496,48 +487,13 @@ function FinancePage() {
           }
         />
 
-        <Paper variant="outlined" sx={{ p: 2 }}>
-          <Stack spacing={2}>
-            <Typography variant="h6">Período</Typography>
-            {periodError ? <Alert severity="error">{periodError}</Alert> : null}
-            <Stack
-              direction={{ xs: 'column', md: 'row' }}
-              spacing={2}
-              alignItems={{ md: 'center' }}
-            >
-              <TextField
-                label="Desde"
-                type="date"
-                value={fromDate}
-                onChange={(event) => setFromDate(event.target.value)}
-                InputLabelProps={{ shrink: true }}
-                size="small"
-                sx={{ width: { xs: '100%', md: 'auto' }, minWidth: { md: 160 } }}
-              />
-              <TextField
-                label="Hasta"
-                type="date"
-                value={toDate}
-                onChange={(event) => setToDate(event.target.value)}
-                InputLabelProps={{ shrink: true }}
-                size="small"
-                sx={{ width: { xs: '100%', md: 'auto' }, minWidth: { md: 160 } }}
-              />
-              <Button
-                variant="contained"
-                onClick={() => applyPeriod(fromDate, toDate)}
-              >
-                Aplicar
-              </Button>
-              <Button onClick={() => handlePeriodPreset('current')}>
-                Mes actual
-              </Button>
-              <Button onClick={() => handlePeriodPreset('previous')}>
-                Mes anterior
-              </Button>
-            </Stack>
-          </Stack>
-        </Paper>
+        <Stack spacing={1.5}>
+          {periodError ? <Alert severity="error">{periodError}</Alert> : null}
+          <MonthPeriodNavigator
+            fromDate={fromDate}
+            onPeriodChange={(period) => applyPeriod(period.fromDate, period.toDate)}
+          />
+        </Stack>
 
         <Stack spacing={2}>
           <SectionHeader title="Resumen del período" />
@@ -835,7 +791,7 @@ function FinancePage() {
           onFinanceChanged={async (rangeFrom, rangeTo) => {
             await Promise.all([
               loadSummary(rangeFrom, rangeTo),
-              loadTransactions(),
+              loadTransactions(rangeFrom ?? fromDate, rangeTo ?? toDate),
             ])
           }}
           showSuccess={showSuccess}
@@ -962,7 +918,7 @@ function FinancePage() {
         </Stack>
 
         <Stack spacing={2}>
-          <SectionHeader title="Movimientos financieros" />
+          <SectionHeader title="Movimientos financieros del período" />
           {transactionsFailed ? (
             <Alert severity="error">
               No fue posible cargar los movimientos financieros.

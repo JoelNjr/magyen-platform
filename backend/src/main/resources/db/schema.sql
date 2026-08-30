@@ -39,6 +39,7 @@ CREATE TABLE quotations (
     status              varchar(20)     NOT NULL,
     seller_id           uuid            NOT NULL, -- soft UUID: payroll_employees.id for new rows; leftover sellers.id possible historically
     observations        varchar(2000)   NULL,
+    discount_amount     numeric(19, 2)  NOT NULL DEFAULT 0,
     total_amount        numeric(19, 2)  NOT NULL,
     CONSTRAINT quotations_pkey PRIMARY KEY (id),
     CONSTRAINT quotations_quotation_number_key UNIQUE (quotation_number)
@@ -103,6 +104,7 @@ CREATE TABLE orders (
     seller_id                   uuid            NOT NULL, -- soft UUID: payroll_employees.id for new rows; leftover sellers.id possible historically
     observations                varchar(2000)   NULL,
     description                 varchar(2000)   NULL,
+    discount_amount             numeric(19, 2)  NOT NULL DEFAULT 0,
     total_amount                numeric(19, 2)  NOT NULL,
     CONSTRAINT orders_pkey PRIMARY KEY (id),
     CONSTRAINT orders_quotation_id_key UNIQUE (quotation_id)
@@ -322,6 +324,26 @@ CREATE TABLE production_labor_work (
 CREATE INDEX idx_production_labor_work_production_order_id ON production_labor_work (production_order_id);
 CREATE INDEX idx_production_labor_work_operator_employee_id ON production_labor_work (operator_employee_id);
 CREATE INDEX idx_production_labor_work_status ON production_labor_work (status);
+
+-- Additional direct costs (OTROS): envíos, empaques, etc.
+-- financial_transaction_id is a soft UUID to financial_transactions.id (no FK).
+CREATE TABLE production_additional_costs (
+    id                          uuid            NOT NULL,
+    production_order_id         uuid            NOT NULL,
+    category                    varchar(30)     NOT NULL,
+    description                 varchar(2000)   NOT NULL,
+    amount                      numeric(19, 2)  NOT NULL,
+    incurred_date               date            NOT NULL,
+    financial_transaction_id    uuid            NULL,
+    CONSTRAINT production_additional_costs_pkey PRIMARY KEY (id),
+    CONSTRAINT fk_production_additional_costs_production_order
+        FOREIGN KEY (production_order_id)
+        REFERENCES production_orders (id)
+        ON DELETE CASCADE
+);
+
+CREATE INDEX idx_production_additional_costs_production_order_id
+    ON production_additional_costs (production_order_id);
 
 -- Inventory module
 -- Aggregate: InventoryItem + InventoryMovement history
@@ -626,6 +648,12 @@ CREATE INDEX idx_payroll_periods_status ON payroll_periods (status);
 CREATE UNIQUE INDEX uq_financial_transactions_payroll_source
     ON financial_transactions (source_type, source_id)
     WHERE source_type = 'PAYROLL'
+      AND source_id IS NOT NULL;
+
+-- Un costo adicional de producción no puede generar dos gastos del ledger.
+CREATE UNIQUE INDEX uq_financial_transactions_production_source
+    ON financial_transactions (source_type, source_id)
+    WHERE source_type = 'PRODUCTION'
       AND source_id IS NOT NULL;
 
 -- Una compra de inventario no puede generar dos gastos del ledger.

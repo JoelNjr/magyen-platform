@@ -37,6 +37,20 @@ public final class Money {
         return new Money(this.amount.add(other.amount));
     }
 
+    public Money subtract(Money other) {
+        Objects.requireNonNull(other, "Other money must not be null");
+        BigDecimal result = this.amount.subtract(other.amount);
+        if (result.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("Subtraction result must not be negative");
+        }
+        return new Money(result);
+    }
+
+    public boolean isGreaterThan(Money other) {
+        Objects.requireNonNull(other, "Other money must not be null");
+        return this.amount.compareTo(other.amount) > 0;
+    }
+
     public Money multiply(int quantity) {
         if (quantity < 0) {
             throw new IllegalArgumentException("Quantity must not be negative");

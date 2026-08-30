@@ -30,6 +30,7 @@ public class Order {
     private final String observations;
     private final String description;
     private final List<OrderItem> items;
+    private Money discount;
     private Money total;
 
     private Order(
@@ -44,7 +45,8 @@ public class Order {
             UUID sellerId,
             String observations,
             String description,
-            List<OrderItem> items
+            List<OrderItem> items,
+            Money discount
     ) {
         this.id = Objects.requireNonNull(id, "Order id must not be null");
         this.orderNumber = Objects.requireNonNull(orderNumber, "Order number must not be null");
@@ -60,7 +62,8 @@ public class Order {
         this.observations = observations;
         this.description = blankToNull(description);
         this.items = new ArrayList<>(Objects.requireNonNull(items, "Items must not be null"));
-        this.total = calculateTotal(this.items);
+        this.discount = discount == null ? Money.zero() : discount;
+        this.total = calculateTotal(this.items, this.discount);
         this.paymentSummary = Objects.requireNonNull(paymentSummary, "Payment summary must not be null");
 
         ensureHasAtLeastOneProduct();
@@ -106,12 +109,39 @@ public class Order {
             String description,
             List<OrderItem> items
     ) {
+        return create(
+                orderNumber,
+                customerId,
+                quotationId,
+                confirmationDate,
+                deliveryCommitment,
+                sellerId,
+                observations,
+                description,
+                items,
+                Money.zero()
+        );
+    }
+
+    public static Order create(
+            OrderNumber orderNumber,
+            UUID customerId,
+            UUID quotationId,
+            LocalDate confirmationDate,
+            DeliveryCommitment deliveryCommitment,
+            UUID sellerId,
+            String observations,
+            String description,
+            List<OrderItem> items,
+            Money discount
+    ) {
         Objects.requireNonNull(items, "Items must not be null");
         validateDeliveryCommitment(confirmationDate, deliveryCommitment);
         validateItems(items);
 
         List<OrderItem> committedItems = new ArrayList<>(items);
-        Money total = calculateTotal(committedItems);
+        Money resolvedDiscount = discount == null ? Money.zero() : discount;
+        Money total = calculateTotal(committedItems, resolvedDiscount);
         PaymentSummary paymentSummary = PaymentSummary.forConfirmedOrder(total);
 
         return new Order(
@@ -126,7 +156,8 @@ public class Order {
                 sellerId,
                 observations,
                 description,
-                committedItems
+                committedItems,
+                resolvedDiscount
         );
     }
 
@@ -178,6 +209,38 @@ public class Order {
             String description,
             List<OrderItem> items
     ) {
+        return reconstitute(
+                id,
+                orderNumber,
+                customerId,
+                quotationId,
+                confirmationDate,
+                status,
+                deliveryCommitment,
+                paymentSummary,
+                sellerId,
+                observations,
+                description,
+                items,
+                Money.zero()
+        );
+    }
+
+    public static Order reconstitute(
+            UUID id,
+            OrderNumber orderNumber,
+            UUID customerId,
+            UUID quotationId,
+            LocalDate confirmationDate,
+            OrderStatus status,
+            DeliveryCommitment deliveryCommitment,
+            PaymentSummary paymentSummary,
+            UUID sellerId,
+            String observations,
+            String description,
+            List<OrderItem> items,
+            Money discount
+    ) {
         validateDeliveryCommitment(confirmationDate, deliveryCommitment);
 
         return new Order(
@@ -192,7 +255,8 @@ public class Order {
                 sellerId,
                 observations,
                 description,
-                items
+                items,
+                discount
         );
     }
 
@@ -343,6 +407,14 @@ public class Order {
         return Collections.unmodifiableList(items);
     }
 
+    public Money getSubtotal() {
+        return calculateSubtotal(items);
+    }
+
+    public Money getDiscount() {
+        return discount;
+    }
+
     public Money getTotal() {
         return total;
     }
@@ -393,7 +465,7 @@ public class Order {
     }
 
     private void recalculateTotal() {
-        this.total = calculateTotal(this.items);
+        this.total = calculateTotal(this.items, this.discount);
     }
 
     private void synchronizePaymentSummary() {
@@ -416,10 +488,19 @@ public class Order {
         }
     }
 
-    private static Money calculateTotal(List<OrderItem> items) {
+    private static Money calculateSubtotal(List<OrderItem> items) {
         return items.stream()
                 .map(OrderItem::getSubtotal)
                 .reduce(Money.zero(), Money::add);
+    }
+
+    private static Money calculateTotal(List<OrderItem> items, Money discount) {
+        Money subtotal = calculateSubtotal(items);
+        Money resolvedDiscount = discount == null ? Money.zero() : discount;
+        if (resolvedDiscount.isGreaterThan(subtotal)) {
+            throw new OrderDomainException("Discount must not exceed order subtotal");
+        }
+        return subtotal.subtract(resolvedDiscount);
     }
 
     private static void validateItems(List<OrderItem> items) {

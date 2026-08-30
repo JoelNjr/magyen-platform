@@ -1,5 +1,7 @@
 package com.magyen.platform.commercial.presentation.quotation.mapper;
 
+import com.magyen.platform.commercial.application.dto.ApplyQuotationDiscountCommand;
+import com.magyen.platform.commercial.application.dto.ApplyQuotationDiscountResult;
 import com.magyen.platform.commercial.application.dto.AddQuotationItemCommand;
 import com.magyen.platform.commercial.application.dto.AddQuotationItemResult;
 import com.magyen.platform.commercial.application.dto.ApproveQuotationCommand;
@@ -15,9 +17,11 @@ import com.magyen.platform.commercial.application.dto.RemoveQuotationItemCommand
 import com.magyen.platform.commercial.application.dto.RemoveQuotationItemResult;
 import com.magyen.platform.commercial.application.dto.UpdateQuotationItemCommand;
 import com.magyen.platform.commercial.application.dto.UpdateQuotationItemResult;
+import com.magyen.platform.commercial.presentation.quotation.request.ApplyQuotationDiscountRequest;
 import com.magyen.platform.commercial.presentation.quotation.request.AddQuotationItemRequest;
 import com.magyen.platform.commercial.presentation.quotation.request.CreateQuotationRequest;
 import com.magyen.platform.commercial.presentation.quotation.request.ProductSpecificationRequest;
+import com.magyen.platform.commercial.presentation.quotation.response.ApplyQuotationDiscountResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.AddQuotationItemResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.ApproveQuotationResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.CreateQuotationResponse;
@@ -67,6 +71,25 @@ public class QuotationPresentationMapper {
         Objects.requireNonNull(quotationId, "Quotation id must not be null");
 
         return new ApproveQuotationCommand(quotationId);
+    }
+
+    public ApplyQuotationDiscountCommand toApplyDiscountCommand(
+            UUID quotationId,
+            ApplyQuotationDiscountRequest request
+    ) {
+        Objects.requireNonNull(quotationId, "Quotation id must not be null");
+        Objects.requireNonNull(request, "ApplyQuotationDiscountRequest must not be null");
+        return new ApplyQuotationDiscountCommand(quotationId, request.discountAmount());
+    }
+
+    public ApplyQuotationDiscountResponse toApplyDiscountResponse(ApplyQuotationDiscountResult result) {
+        Objects.requireNonNull(result, "ApplyQuotationDiscountResult must not be null");
+        return new ApplyQuotationDiscountResponse(
+                result.quotationId(),
+                result.subtotalAmount(),
+                result.discountAmount(),
+                result.totalAmount()
+        );
     }
 
     public ApproveQuotationResponse toApproveResponse(ApproveQuotationResult result) {
@@ -207,6 +230,8 @@ public class QuotationPresentationMapper {
                 result.sellerName(),
                 result.observations(),
                 items,
+                result.subtotalAmount(),
+                result.discountAmount(),
                 result.totalAmount(),
                 result.orderId()
         );

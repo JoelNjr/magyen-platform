@@ -40,6 +40,11 @@ public final class FinancialAmount {
         return value;
     }
 
+    public FinancialAmount add(FinancialAmount other) {
+        Objects.requireNonNull(other, "Other financial amount must not be null");
+        return new FinancialAmount(this.value.add(other.value));
+    }
+
     @Override
     public boolean equals(Object other) {
         if (this == other) {

@@ -19,6 +19,8 @@ public record GetProductionCostsByCommercialOrderResult(
         BigDecimal laborCost,
         int laborWorkCount,
         int pendingLaborCount,
-        int paidLaborCount
+        int paidLaborCount,
+        BigDecimal otherCost,
+        int otherCostCount
 ) {
 }

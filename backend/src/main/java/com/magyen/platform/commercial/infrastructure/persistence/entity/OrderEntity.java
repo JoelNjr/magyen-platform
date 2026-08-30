@@ -70,6 +70,9 @@ public class OrderEntity {
     @Column(name = "description", length = 2000)
     private String description;
 
+    @Column(name = "discount_amount", nullable = false, precision = 19, scale = 2)
+    private BigDecimal discountAmount;
+
     @Column(name = "total_amount", nullable = false, precision = 19, scale = 2)
     private BigDecimal totalAmount;
 
@@ -197,6 +200,14 @@ public class OrderEntity {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public BigDecimal getDiscountAmount() {
+        return discountAmount;
+    }
+
+    public void setDiscountAmount(BigDecimal discountAmount) {
+        this.discountAmount = discountAmount;
     }
 
     public BigDecimal getTotalAmount() {

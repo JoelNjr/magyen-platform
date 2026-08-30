@@ -13,7 +13,7 @@ public final class CommercialDocumentFilename {
         if (identifier.isBlank()) {
             return "Cotizacion.pdf";
         }
-        return "Cotizacion-" + identifier + ".pdf";
+        return "Cotizacion_" + identifier + ".pdf";
     }
 
     public static String remission(String orderNumber) {
@@ -21,7 +21,7 @@ public final class CommercialDocumentFilename {
         if (identifier.isBlank()) {
             return "Remision.pdf";
         }
-        return "Remision-" + identifier + ".pdf";
+        return "Remision_" + identifier + ".pdf";
     }
 
     private static String sanitize(String value) {

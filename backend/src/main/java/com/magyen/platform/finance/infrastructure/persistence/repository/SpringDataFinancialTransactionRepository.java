@@ -21,6 +21,11 @@ public interface SpringDataFinancialTransactionRepository
 
     List<FinancialTransactionEntity> findAllByOrderByTransactionDateDescIdDesc();
 
+    List<FinancialTransactionEntity> findByTransactionDateBetweenOrderByTransactionDateDescIdDesc(
+            LocalDate fromDate,
+            LocalDate toDate
+    );
+
     Optional<FinancialTransactionEntity> findBySourceTypeAndSourceId(
             FinancialTransactionSourceType sourceType,
             UUID sourceId

@@ -5,15 +5,18 @@ import com.magyen.platform.production.application.CommercialOrderIdentityResolve
 import com.magyen.platform.production.application.dto.GetProductionMaterialConsumptionResult;
 import com.magyen.platform.production.application.dto.GetProductionOrderCommand;
 import com.magyen.platform.production.application.dto.GetProductionOrderResult;
+import com.magyen.platform.production.application.dto.ProductionAdditionalCostResult;
 import com.magyen.platform.production.application.dto.ProductionItemResult;
 import com.magyen.platform.production.application.dto.ProductionLaborCostSummary;
 import com.magyen.platform.production.application.dto.ProductionMaterialCostSummary;
+import com.magyen.platform.production.application.dto.ProductionOtherCostSummary;
 import com.magyen.platform.production.application.dto.ProductionOperationResult;
 import com.magyen.platform.production.application.dto.ProductionProductSpecificationResult;
 import com.magyen.platform.production.application.dto.ProductionSizeBreakdownResult;
 import com.magyen.platform.production.application.port.ProductionMaterialCostInventoryPort;
 import com.magyen.platform.production.application.port.ProductionMaterialHistoricalCost;
 import com.magyen.platform.production.domain.ProductSpecification;
+import com.magyen.platform.production.domain.ProductionAdditionalCost;
 import com.magyen.platform.production.domain.ProductionItem;
 import com.magyen.platform.production.domain.ProductionMaterialConsumption;
 import com.magyen.platform.production.domain.ProductionOperation;
@@ -89,6 +92,9 @@ public class GetProductionOrderUseCase {
         ProductionLaborCostSummary laborCostSummary = ProductionLaborCostSummaryCalculator.from(
                 productionOrder.getLaborWorks()
         );
+        ProductionOtherCostSummary otherCostSummary = ProductionOtherCostSummaryCalculator.from(
+                productionOrder.getAdditionalCosts()
+        );
 
         CommercialOrderIdentity commercialIdentity =
                 commercialOrderIdentityResolver.resolve(productionOrder.getOrderId());
@@ -112,7 +118,9 @@ public class GetProductionOrderUseCase {
                 operations,
                 materialCostSummary,
                 laborCostSummary,
-                resolveTotalProductionCost(materialCostSummary, laborCostSummary),
+                otherCostSummary,
+                productionOrder.getAdditionalCosts().stream().map(this::toAdditionalCostResult).toList(),
+                resolveTotalProductionCost(materialCostSummary, laborCostSummary, otherCostSummary),
                 productionOrder.getReferenceImage() != null,
                 productionOrder.getReferenceImage() == null
                         ? null
@@ -120,13 +128,29 @@ public class GetProductionOrderUseCase {
         );
     }
 
+    private ProductionAdditionalCostResult toAdditionalCostResult(
+            ProductionAdditionalCost cost
+    ) {
+        return new ProductionAdditionalCostResult(
+                cost.getId(),
+                cost.getProductionOrderId(),
+                cost.getCategory(),
+                cost.getDescription(),
+                cost.getAmount().getAmount(),
+                cost.getIncurredDate(),
+                cost.getFinancialTransactionId()
+        );
+    }
+
     private BigDecimal resolveTotalProductionCost(
             ProductionMaterialCostSummary materialCostSummary,
-            ProductionLaborCostSummary laborCostSummary
+            ProductionLaborCostSummary laborCostSummary,
+            ProductionOtherCostSummary otherCostSummary
     ) {
         int materialCount = materialCostSummary == null ? 0 : materialCostSummary.consumptionCount();
         int laborCount = laborCostSummary == null ? 0 : laborCostSummary.laborWorkCount();
-        if (materialCount + laborCount == 0) {
+        int otherCount = otherCostSummary == null ? 0 : otherCostSummary.otherCostCount();
+        if (materialCount + laborCount + otherCount == 0) {
             return null;
         }
 
@@ -136,7 +160,10 @@ public class GetProductionOrderUseCase {
         BigDecimal labor = laborCostSummary == null || laborCostSummary.totalLaborCost() == null
                 ? BigDecimal.ZERO
                 : laborCostSummary.totalLaborCost();
-        return material.add(labor);
+        BigDecimal other = otherCostSummary == null || otherCostSummary.totalOtherCost() == null
+                ? BigDecimal.ZERO
+                : otherCostSummary.totalOtherCost();
+        return material.add(labor).add(other);
     }
 
     private GetProductionMaterialConsumptionResult toConsumptionCostResult(

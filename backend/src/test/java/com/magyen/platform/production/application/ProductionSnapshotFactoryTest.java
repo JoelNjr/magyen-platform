@@ -142,6 +142,8 @@ class ProductionSnapshotFactoryTest {
                 "Snapshot Tester",
                 "Commercial source",
                 items,
+                new BigDecimal("900000"),
+                BigDecimal.ZERO,
                 new BigDecimal("900000")
         );
     }

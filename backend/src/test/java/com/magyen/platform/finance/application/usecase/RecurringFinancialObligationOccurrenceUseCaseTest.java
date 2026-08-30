@@ -324,6 +324,14 @@ class RecurringFinancialObligationOccurrenceUseCaseTest {
             }
 
             @Override
+            public List<FinancialTransaction> findByTransactionDateBetweenNewestFirst(
+                    LocalDate fromDate,
+                    LocalDate toDate
+            ) {
+                return List.of();
+            }
+
+            @Override
             public java.util.Optional<FinancialTransaction> findBySourceTypeAndSourceId(
                     FinancialTransactionSourceType sourceType,
                     UUID sourceId

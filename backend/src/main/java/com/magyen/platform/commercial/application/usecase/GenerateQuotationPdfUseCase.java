@@ -50,7 +50,9 @@ public class GenerateQuotationPdfUseCase {
         byte[] content = commercialDocumentPdfPort.renderQuotation(document);
         return new CommercialDocumentPdfResult(
                 content,
-                CommercialDocumentFilename.quotation(document.quotationNumberDisplay()),
+                CommercialDocumentFilename.quotation(
+                        quotation.quotationNumber() == null ? null : String.valueOf(quotation.quotationNumber())
+                ),
                 PDF_CONTENT_TYPE
         );
     }

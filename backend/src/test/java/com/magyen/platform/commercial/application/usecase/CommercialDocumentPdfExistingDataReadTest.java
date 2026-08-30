@@ -58,7 +58,9 @@ class CommercialDocumentPdfExistingDataReadTest {
         String businessNumber = QuotationNumberFormat.display(quotation.getQuotationNumber());
         if (businessNumber != null) {
             assertTrue(text.contains(businessNumber));
-            assertTrue(result.filename().contains(businessNumber));
+            assertTrue(result.filename().contains(
+                    "Cotizacion_" + quotation.getQuotationNumber().getValue() + ".pdf"
+            ));
         }
         assertFalse(text.contains(quotation.getId().toString()));
     }

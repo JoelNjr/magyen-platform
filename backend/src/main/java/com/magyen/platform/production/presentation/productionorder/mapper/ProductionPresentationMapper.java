@@ -13,7 +13,11 @@ import com.magyen.platform.production.application.dto.GetProductionMaterialConsu
 import com.magyen.platform.production.application.dto.GetProductionMaterialConsumptionsResult;
 import com.magyen.platform.production.application.dto.PayProductionLaborWorkCommand;
 import com.magyen.platform.production.application.dto.PayProductionLaborWorkResult;
+import com.magyen.platform.production.application.dto.ProductionAdditionalCostResult;
 import com.magyen.platform.production.application.dto.ProductionLaborCostSummary;
+import com.magyen.platform.production.application.dto.ProductionOtherCostSummary;
+import com.magyen.platform.production.application.dto.RegisterProductionAdditionalCostCommand;
+import com.magyen.platform.production.application.dto.RegisterProductionAdditionalCostResult;
 import com.magyen.platform.production.application.dto.RegisterProductionLaborWorkCommand;
 import com.magyen.platform.production.application.dto.RegisterProductionLaborWorkResult;
 import com.magyen.platform.production.application.dto.RegisterProductionMaterialConsumptionCommand;
@@ -56,6 +60,7 @@ import com.magyen.platform.production.presentation.productionorder.request.PayPr
 import com.magyen.platform.production.presentation.productionorder.request.CompleteProductionOrderRequest;
 import com.magyen.platform.production.presentation.productionorder.request.PlanProductionOrderRequest;
 import com.magyen.platform.production.presentation.productionorder.request.StartProductionOrderRequest;
+import com.magyen.platform.production.presentation.productionorder.request.RegisterProductionAdditionalCostRequest;
 import com.magyen.platform.production.presentation.productionorder.request.RegisterProductionLaborWorkRequest;
 import com.magyen.platform.production.presentation.productionorder.request.RegisterProductionMaterialConsumptionRequest;
 import com.magyen.platform.production.presentation.productionorder.response.AddProductionOperationResponse;
@@ -74,7 +79,10 @@ import com.magyen.platform.production.presentation.productionorder.response.GetP
 import com.magyen.platform.production.presentation.productionorder.response.PayProductionLaborWorkResponse;
 import com.magyen.platform.production.presentation.productionorder.response.PlanProductionOrderResponse;
 import com.magyen.platform.production.presentation.productionorder.response.ProductionItemResponse;
+import com.magyen.platform.production.presentation.productionorder.response.ProductionAdditionalCostResponse;
 import com.magyen.platform.production.presentation.productionorder.response.ProductionLaborCostSummaryResponse;
+import com.magyen.platform.production.presentation.productionorder.response.ProductionOtherCostSummaryResponse;
+import com.magyen.platform.production.presentation.productionorder.response.RegisterProductionAdditionalCostResponse;
 import com.magyen.platform.production.presentation.productionorder.response.ProductionMaterialCostSummaryResponse;
 import com.magyen.platform.production.presentation.productionorder.response.ProductionOperationResponse;
 import com.magyen.platform.production.presentation.productionorder.response.ProductionProductSpecificationResponse;
@@ -204,6 +212,10 @@ public class ProductionPresentationMapper {
                 operations,
                 toMaterialCostSummaryResponse(result.materialCostSummary()),
                 toLaborCostSummaryResponse(result.laborCostSummary()),
+                toOtherCostSummaryResponse(result.otherCostSummary()),
+                result.additionalCosts() == null
+                        ? List.of()
+                        : result.additionalCosts().stream().map(this::toAdditionalCostResponse).toList(),
                 result.totalProductionCost(),
                 result.hasReferenceImage()
         );
@@ -685,6 +697,36 @@ public class ProductionPresentationMapper {
         );
     }
 
+    public RegisterProductionAdditionalCostCommand toRegisterAdditionalCostCommand(
+            UUID productionOrderId,
+            RegisterProductionAdditionalCostRequest request
+    ) {
+        Objects.requireNonNull(productionOrderId, "Production order id must not be null");
+        Objects.requireNonNull(request, "RegisterProductionAdditionalCostRequest must not be null");
+        return new RegisterProductionAdditionalCostCommand(
+                productionOrderId,
+                request.category(),
+                request.description(),
+                request.amount(),
+                request.incurredDate()
+        );
+    }
+
+    public RegisterProductionAdditionalCostResponse toRegisterAdditionalCostResponse(
+            RegisterProductionAdditionalCostResult result
+    ) {
+        Objects.requireNonNull(result, "RegisterProductionAdditionalCostResult must not be null");
+        return new RegisterProductionAdditionalCostResponse(
+                result.additionalCostId(),
+                result.productionOrderId(),
+                result.category().name(),
+                result.description(),
+                result.amount(),
+                result.incurredDate(),
+                result.financialTransactionId()
+        );
+    }
+
     private ProductionLaborCostSummaryResponse toLaborCostSummaryResponse(ProductionLaborCostSummary summary) {
         Objects.requireNonNull(summary, "Production labor cost summary must not be null");
         return new ProductionLaborCostSummaryResponse(
@@ -692,6 +734,26 @@ public class ProductionPresentationMapper {
                 summary.laborWorkCount(),
                 summary.pendingCount(),
                 summary.paidCount()
+        );
+    }
+
+    private ProductionOtherCostSummaryResponse toOtherCostSummaryResponse(ProductionOtherCostSummary summary) {
+        if (summary == null) {
+            return new ProductionOtherCostSummaryResponse(null, 0);
+        }
+        return new ProductionOtherCostSummaryResponse(summary.totalOtherCost(), summary.otherCostCount());
+    }
+
+    private ProductionAdditionalCostResponse toAdditionalCostResponse(ProductionAdditionalCostResult result) {
+        Objects.requireNonNull(result, "Additional cost result must not be null");
+        return new ProductionAdditionalCostResponse(
+                result.additionalCostId(),
+                result.productionOrderId(),
+                result.category().name(),
+                result.description(),
+                result.amount(),
+                result.incurredDate(),
+                result.financialTransactionId()
         );
     }
 }

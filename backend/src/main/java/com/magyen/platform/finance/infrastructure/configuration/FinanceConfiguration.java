@@ -42,6 +42,7 @@ import com.magyen.platform.finance.application.usecase.PayRecurringFinancialObli
 import com.magyen.platform.finance.application.usecase.RegisterFinancialTransactionUseCase;
 import com.magyen.platform.finance.application.usecase.RegisterPaymentUseCase;
 import com.magyen.platform.finance.application.usecase.RegisterPlotterPaymentIncomeUseCase;
+import com.magyen.platform.finance.application.usecase.RegisterProductionAdditionalCostExpenseUseCase;
 import com.magyen.platform.finance.application.usecase.RegisterProductionLaborPaymentExpenseUseCase;
 import com.magyen.platform.finance.application.usecase.EnsureInventoryPurchaseExpenseUseCase;
 import com.magyen.platform.finance.application.usecase.EnsurePlotterInternalServiceLedgerUseCase;
@@ -504,6 +505,13 @@ public class FinanceConfiguration {
             FinancialTransactionRepository financialTransactionRepository
     ) {
         return new RegisterProductionLaborPaymentExpenseUseCase(financialTransactionRepository);
+    }
+
+    @Bean
+    public RegisterProductionAdditionalCostExpenseUseCase registerProductionAdditionalCostExpenseUseCase(
+            FinancialTransactionRepository financialTransactionRepository
+    ) {
+        return new RegisterProductionAdditionalCostExpenseUseCase(financialTransactionRepository);
     }
 
     @Bean

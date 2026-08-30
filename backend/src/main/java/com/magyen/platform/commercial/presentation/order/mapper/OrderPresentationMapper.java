@@ -107,6 +107,7 @@ public class OrderPresentationMapper {
                 result.outstandingAmount(),
                 result.materialCost(),
                 result.laborCost(),
+                result.otherDirectCost(),
                 result.plotterMaterialCost(),
                 result.plotterCostAttributable(),
                 result.internalPlotterServiceCost(),
@@ -167,6 +168,8 @@ public class OrderPresentationMapper {
                 result.sellerName(),
                 result.observations(),
                 items,
+                result.subtotalAmount(),
+                result.discountAmount(),
                 result.totalAmount()
         );
     }

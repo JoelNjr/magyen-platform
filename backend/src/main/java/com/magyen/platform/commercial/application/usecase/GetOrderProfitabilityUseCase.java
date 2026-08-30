@@ -84,12 +84,13 @@ public class GetOrderProfitabilityUseCase {
 
         BigDecimal materialCost = money(costs.materialCost());
         BigDecimal laborCost = money(costs.laborCost());
+        BigDecimal otherCost = money(costs.otherCost());
         BigDecimal plotterMaterialCost = money(plotterCosts.plotterMaterialCost());
         BigDecimal internalPlotterServiceCost = money(plotterCosts.internalPlotterServiceCost());
         BigDecimal attributablePlotterCost = money(plotterCosts.attributablePlotterCost());
         BigDecimal collectedAmount = money(collection.collectedAmount());
         BigDecimal outstandingAmount = money(collection.outstandingAmount());
-        BigDecimal totalDirectCost = money(materialCost.add(laborCost).add(attributablePlotterCost));
+        BigDecimal totalDirectCost = money(materialCost.add(laborCost).add(otherCost).add(attributablePlotterCost));
         BigDecimal directProfit = money(orderValue.subtract(totalDirectCost));
         BigDecimal directMarginPercentage = resolveMarginPercentage(orderValue, directProfit);
 
@@ -114,7 +115,8 @@ public class GetOrderProfitabilityUseCase {
                 order.getDescription(),
                 customerNameResolver.resolveName(order.getCustomerId()),
                 order.getDeliveryCommitment().getPromisedDeliveryDate(),
-                internalPlotterServiceCost
+                internalPlotterServiceCost,
+                otherCost
         );
     }
 
@@ -140,7 +142,9 @@ public class GetOrderProfitabilityUseCase {
             PlotterOrderCostPort.PlotterOrderCostSnapshot plotterCosts
     ) {
         boolean hasProductionActivity = costs.productionOrderFound()
-                && (costs.materialConsumptionCount() > 0 || costs.laborWorkCount() > 0);
+                && (costs.materialConsumptionCount() > 0
+                || costs.laborWorkCount() > 0
+                || costs.otherCostCount() > 0);
         boolean hasPlotterActivity = plotterCosts.internalJobCount() > 0;
         if (!hasProductionActivity && !hasPlotterActivity) {
             return OrderProfitabilityStatus.NO_COST_DATA;
