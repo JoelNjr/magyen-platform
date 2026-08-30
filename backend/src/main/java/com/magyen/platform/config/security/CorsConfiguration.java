@@ -2,6 +2,7 @@ package com.magyen.platform.config.security;
 
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -10,15 +11,18 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @Configuration
 public class CorsConfiguration {
 
+    private final List<String> allowedOrigins;
+
+    public CorsConfiguration(@Value("${magyen.cors.allowed-origins}") String allowedOrigins) {
+        this.allowedOrigins = CorsAllowedOrigins.parse(allowedOrigins);
+    }
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         org.springframework.web.cors.CorsConfiguration configuration =
                 new org.springframework.web.cors.CorsConfiguration();
 
-        configuration.setAllowedOrigins(List.of(
-                "https://magyen-platform-frontend.onrender.com",
-                "http://localhost:5173"
-        ));
+        configuration.setAllowedOrigins(allowedOrigins);
 
         configuration.setAllowedMethods(List.of(
                 "GET",
