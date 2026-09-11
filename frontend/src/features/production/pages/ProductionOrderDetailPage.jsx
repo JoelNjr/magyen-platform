@@ -34,6 +34,11 @@ import { formatDisplayDate } from '../presentation/formatDisplayDate'
 import { resolveProductionBusinessLabel } from '../presentation/resolveProductionBusinessLabel'
 import { formatCuffRequired } from '../../commercial/presentation/commercialCatalogs'
 import {
+  canCompleteProductionOrder,
+  canConsumeProductionMaterial,
+  canExecuteProductionOperations,
+  canRegisterProductionLabor,
+  canRegisterProductionOtherCost,
   formatProductionOperationType,
   getProductionOperationStatusChipProps,
   getProductionOrderStatusChipProps,
@@ -414,10 +419,10 @@ function ProductionOrderDetailPage() {
   const laborBusy = registeringLabor || payingLabor || cancellingLabor
   const pageBusy =
     lifecycleBusy || operationBusy || laborBusy || generatingPdf || registeringOtherCost
-  const canRegisterOtherCost = status === 'IN_PROGRESS'
+  const canRegisterOtherCost = canRegisterProductionOtherCost(status)
   const canAddOperation = status === 'CREATED'
-  const orderAllowsOperationExecution = status === 'IN_PROGRESS'
-  const canRegisterLabor = status === 'IN_PROGRESS'
+  const orderAllowsOperationExecution = canExecuteProductionOperations(status)
+  const canRegisterLabor = canRegisterProductionLabor(status)
   const usedOperationTypes = operations.map((operation) => operation.type)
 
   function openPlanDialog() {
@@ -703,7 +708,7 @@ function ProductionOrderDetailPage() {
   }
 
   async function openConsumeDialog() {
-    if (pageBusy || status !== 'IN_PROGRESS') {
+    if (pageBusy || !canConsumeProductionMaterial(status)) {
       return
     }
 
@@ -1052,7 +1057,7 @@ function ProductionOrderDetailPage() {
                   </Button>
                 )}
 
-                {status === 'IN_PROGRESS' && (
+                {canCompleteProductionOrder(status) && (
                   <Button
                     variant="contained"
                     onClick={openCompleteDialog}
@@ -1291,7 +1296,7 @@ function ProductionOrderDetailPage() {
                   </Grid>
                 </Grid>
 
-                {status === 'IN_PROGRESS' ? (
+                {canConsumeProductionMaterial(status) ? (
                   <Button
                     type="button"
                     variant="outlined"

@@ -18,6 +18,8 @@ import java.util.UUID;
 /**
  * Registra un costo directo adicional (OTROS) y su EXPENSE en Finance.
  * <p>
+ * Permitido en IN_PROGRESS y COMPLETED. El agregado decide la regla de estado;
+ * este caso de uso no la duplica ni reabre la producción.
  * Atomicidad: ledger + vínculo + save del agregado en la misma transacción.
  * sourceId = additionalCostId evita doble contabilización.
  */

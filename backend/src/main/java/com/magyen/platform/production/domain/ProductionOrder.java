@@ -593,7 +593,8 @@ public class ProductionOrder {
     /**
      * Registra un costo directo adicional (categoría OTROS u otras futuras).
      * <p>
-     * Solo permitido mientras el estado sea {@link ProductionStatus#IN_PROGRESS}.
+     * Permitido en {@link ProductionStatus#IN_PROGRESS} y {@link ProductionStatus#COMPLETED}.
+     * No reabre la producción ni altera prendas, operaciones, consumos o labor.
      * No crea el movimiento financiero; Application lo registra de forma idempotente.
      */
     public ProductionAdditionalCost registerAdditionalCost(
@@ -747,7 +748,12 @@ public class ProductionOrder {
     }
 
     private void ensureAdditionalCostAllowed() {
-        ensureInProgressForProductionFacts("Additional cost");
+        if (status != ProductionStatus.IN_PROGRESS && status != ProductionStatus.COMPLETED) {
+            throw new ProductionDomainException(
+                    "Additional cost can only be registered while status is IN_PROGRESS or COMPLETED. Current status: "
+                            + status
+            );
+        }
     }
 
     private void ensureInProgressForProductionFacts(String factLabel) {

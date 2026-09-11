@@ -1,3 +1,23 @@
+export function canRegisterProductionOtherCost(status) {
+  return status === 'IN_PROGRESS' || status === 'COMPLETED'
+}
+
+export function canRegisterProductionLabor(status) {
+  return status === 'IN_PROGRESS'
+}
+
+export function canConsumeProductionMaterial(status) {
+  return status === 'IN_PROGRESS'
+}
+
+export function canExecuteProductionOperations(status) {
+  return status === 'IN_PROGRESS'
+}
+
+export function canCompleteProductionOrder(status) {
+  return status === 'IN_PROGRESS'
+}
+
 export function getProductionOrderStatusChipProps(status) {
   switch (status) {
     case 'CREATED':

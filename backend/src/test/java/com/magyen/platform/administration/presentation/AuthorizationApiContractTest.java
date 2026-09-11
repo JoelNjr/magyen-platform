@@ -116,6 +116,17 @@ class AuthorizationApiContractTest {
         mockMvc.perform(authorized(get("/api/v1/orders/" + UNKNOWN_ID + "/remission/pdf"), accessToken))
                 .andExpect(status().isBadRequest());
         mockMvc.perform(authorized(get("/api/v1/production-orders"), accessToken)).andExpect(status().isOk());
+        mockMvc.perform(authorized(post("/api/v1/production-orders/" + UNKNOWN_ID + "/additional-costs"), accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "category": "OTHER",
+                                  "description": "Envío",
+                                  "amount": 10000,
+                                  "incurredDate": "2026-09-12"
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
         mockMvc.perform(authorized(get("/api/v1/production/labor-operators"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/inventory"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/plotter/jobs"), accessToken)).andExpect(status().isOk());
@@ -246,6 +257,11 @@ class AuthorizationApiContractTest {
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.status").value(401));
         mockMvc.perform(delete("/api/v1/production-orders/" + UNKNOWN_ID + "/reference-image"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401));
+        mockMvc.perform(post("/api/v1/production-orders/" + UNKNOWN_ID + "/additional-costs")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.status").value(401));
     }
