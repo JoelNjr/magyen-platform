@@ -6,6 +6,7 @@ import com.magyen.platform.commercial.application.dto.GetOrdersQuery;
 import com.magyen.platform.commercial.application.dto.GetOrdersResult;
 import com.magyen.platform.commercial.application.dto.OrderResult;
 import com.magyen.platform.commercial.domain.Order;
+import com.magyen.platform.commercial.domain.OrderNumber;
 import com.magyen.platform.commercial.domain.OrderRepository;
 import com.magyen.platform.commercial.domain.Quotation;
 import com.magyen.platform.commercial.domain.QuotationNumber;
@@ -14,6 +15,7 @@ import com.magyen.platform.commercial.domain.QuotationRepository;
 import com.magyen.platform.commercial.domain.exception.OrderDomainException;
 
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -25,6 +27,9 @@ import java.util.stream.Collectors;
  * Caso de uso que consulta las Órdenes existentes.
  */
 public class GetOrdersUseCase {
+
+    private static final Comparator<Order> BY_COMMERCIAL_CONSECUTIVE =
+            Comparator.comparing(Order::getOrderNumber, OrderNumber.byCommercialConsecutive());
 
     private final OrderRepository orderRepository;
     private final QuotationRepository quotationRepository;
@@ -59,6 +64,7 @@ public class GetOrdersUseCase {
 
         List<Order> orders = orderRepository.findAll().stream()
                 .filter(order -> inRange(order.getConfirmationDate(), query.fromDate(), query.toDate()))
+                .sorted(BY_COMMERCIAL_CONSECUTIVE)
                 .toList();
         Function<UUID, String> sellerNames = sellerNameResolver.nameLookup(
                 orders.stream().map(Order::getSellerId).toList()

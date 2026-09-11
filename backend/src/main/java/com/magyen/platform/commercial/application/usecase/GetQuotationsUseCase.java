@@ -10,6 +10,7 @@ import com.magyen.platform.commercial.domain.QuotationRepository;
 import com.magyen.platform.commercial.domain.exception.QuotationDomainException;
 
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -19,6 +20,11 @@ import java.util.function.Function;
  * Caso de uso que consulta las cotizaciones existentes.
  */
 public class GetQuotationsUseCase {
+
+    private static final Comparator<Quotation> BY_COMMERCIAL_CONSECUTIVE = Comparator.comparing(
+            quotation -> quotation.getQuotationNumber() == null ? null : quotation.getQuotationNumber().getValue(),
+            Comparator.nullsLast(Long::compareTo)
+    );
 
     private final QuotationRepository quotationRepository;
     private final SellerNameResolver sellerNameResolver;
@@ -41,6 +47,7 @@ public class GetQuotationsUseCase {
 
         List<Quotation> quotations = quotationRepository.findAll().stream()
                 .filter(quotation -> inRange(quotation.getCreationDate(), query.fromDate(), query.toDate()))
+                .sorted(BY_COMMERCIAL_CONSECUTIVE)
                 .toList();
         Function<UUID, String> sellerNames = sellerNameResolver.nameLookup(
                 quotations.stream().map(Quotation::getSellerId).toList()

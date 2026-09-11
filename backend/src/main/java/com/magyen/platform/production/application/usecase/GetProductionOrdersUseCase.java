@@ -10,6 +10,7 @@ import com.magyen.platform.production.domain.ProductionOrderRepository;
 import com.magyen.platform.production.domain.exception.ProductionDomainException;
 
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -19,6 +20,12 @@ import java.util.UUID;
  * Caso de uso que consulta las Órdenes de Producción existentes.
  */
 public class GetProductionOrdersUseCase {
+
+    private static final Comparator<ProductionOrderResult> BY_COMMERCIAL_CONSECUTIVE =
+            Comparator.comparing(
+                    GetProductionOrdersUseCase::commercialConsecutive,
+                    Comparator.nullsLast(Long::compareTo)
+            ).thenComparing(result -> result.orderNumber() == null ? "" : result.orderNumber());
 
     private final ProductionOrderRepository productionOrderRepository;
     private final CommercialOrderIdentityResolver commercialOrderIdentityResolver;
@@ -61,6 +68,7 @@ public class GetProductionOrdersUseCase {
                                 CommercialOrderIdentity.missing(productionOrder.getOrderId())
                         )
                 ))
+                .sorted(BY_COMMERCIAL_CONSECUTIVE)
                 .toList();
 
         return new GetProductionOrdersResult(productionOrders);
@@ -83,6 +91,20 @@ public class GetProductionOrdersUseCase {
             return true;
         }
         return businessDate != null && !businessDate.isBefore(fromDate) && !businessDate.isAfter(toDate);
+    }
+
+    private static Long commercialConsecutive(ProductionOrderResult result) {
+        String orderNumber = result.orderNumber();
+        if (orderNumber == null || orderNumber.isBlank()) {
+            return null;
+        }
+        String trimmed = orderNumber.trim();
+        for (int i = 0; i < trimmed.length(); i++) {
+            if (!Character.isDigit(trimmed.charAt(i))) {
+                return null;
+            }
+        }
+        return Long.parseLong(trimmed);
     }
 
     private ProductionOrderResult toProductionOrderResult(

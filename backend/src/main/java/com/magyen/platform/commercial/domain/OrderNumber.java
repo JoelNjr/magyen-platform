@@ -1,5 +1,6 @@
 package com.magyen.platform.commercial.domain;
 
+import java.util.Comparator;
 import java.util.Objects;
 
 /**
@@ -36,6 +37,37 @@ public final class OrderNumber {
 
     public String getValue() {
         return value;
+    }
+
+    /**
+     * Consecutivo numérico del identificador comercial cuando el valor es solo dígitos.
+     * <p>
+     * {@code "9"}, {@code "10"}, {@code "14"} se ordenan como 9, 10, 14.
+     * Identificadores no numéricos históricos no se reinterpretan.
+     */
+    public Long numericConsecutive() {
+        return parseNumericConsecutive(value);
+    }
+
+    /**
+     * Orden de listado por consecutivo comercial numérico, no lexicográfico.
+     */
+    public static Comparator<OrderNumber> byCommercialConsecutive() {
+        return Comparator.comparing(OrderNumber::numericConsecutive, Comparator.nullsLast(Long::compareTo))
+                .thenComparing(OrderNumber::getValue);
+    }
+
+    static Long parseNumericConsecutive(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        String trimmed = raw.trim();
+        for (int i = 0; i < trimmed.length(); i++) {
+            if (!Character.isDigit(trimmed.charAt(i))) {
+                return null;
+            }
+        }
+        return Long.parseLong(trimmed);
     }
 
     @Override
