@@ -20,6 +20,7 @@ import FinancePage from '../features/finance/pages/FinancePage'
 import HomePage from '../features/home/pages/HomePage'
 import IntelligencePage from '../features/intelligence/pages/IntelligencePage'
 import InventoryDetailPage from '../features/inventory/pages/InventoryDetailPage'
+import InventoryMaterialDetailPage from '../features/inventory/pages/InventoryMaterialDetailPage'
 import InventoryPage from '../features/inventory/pages/InventoryPage'
 import PlotterJobDetailPage from '../features/plotter/pages/PlotterJobDetailPage'
 import PlotterJobsPage from '../features/plotter/pages/PlotterJobsPage'
@@ -82,6 +83,10 @@ function AppRouter() {
               element={<ProductionOrderDetailPage />}
             />
             <Route path="production" element={<ProductionOrdersPage />} />
+            <Route
+              path="inventory/materials/:materialCode"
+              element={<InventoryMaterialDetailPage />}
+            />
             <Route
               path="inventory/:inventoryItemId"
               element={<InventoryDetailPage />}

@@ -80,6 +80,71 @@ export function formatStockWithUnit(stock, unitOfMeasure) {
   return `${quantity} ${unitLabel}`
 }
 
+export function getInventoryCatalogTitle(material) {
+  if (!material) {
+    return 'Material'
+  }
+
+  const typeLabel = formatMaterialTypeLabel(material.materialType)
+  if (material.materialCode) {
+    return `${typeLabel} ${material.materialCode}`
+  }
+
+  return material.name || typeLabel || 'Material'
+}
+
+export function formatPhysicalUnitCount(material) {
+  if (!material?.paperMaterial) {
+    return null
+  }
+
+  const count = Number(material.physicalUnitCount)
+  if (!Number.isFinite(count) || count <= 0) {
+    return null
+  }
+
+  return count === 1 ? '1 rollo' : `${count} rollos`
+}
+
+export function formatCatalogUnitCostLabel(material) {
+  if (!material) {
+    return 'No configurado'
+  }
+
+  if (!material.unitCostUniform) {
+    return 'Costos distintos'
+  }
+
+  return formatUnitCostLabel(material.unitCost, material.unitOfMeasure)
+}
+
+export function formatCatalogMinimumStockLabel(material) {
+  if (!material || !material.minimumStockUniform) {
+    return '—'
+  }
+
+  if (material.minimumStock === null || material.minimumStock === undefined) {
+    return '—'
+  }
+
+  return formatStockWithUnit(material.minimumStock, material.unitOfMeasure)
+}
+
+export function toPurchaseSelectableCatalogItem(material) {
+  if (!material?.stockHoldingItemId) {
+    return null
+  }
+
+  return {
+    inventoryItemId: material.stockHoldingItemId,
+    name: getInventoryCatalogTitle(material),
+    materialCode: material.materialCode,
+    stock: material.aggregatedStock,
+    unitOfMeasure: material.unitOfMeasure,
+    unitCost: material.unitCost,
+  }
+}
+
 export function getInventoryMaterialTitle(item) {
   if (!item) {
     return 'Material'

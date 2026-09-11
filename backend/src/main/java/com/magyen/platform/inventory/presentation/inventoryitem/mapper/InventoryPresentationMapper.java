@@ -4,10 +4,14 @@ import com.magyen.platform.inventory.application.dto.CreateInventoryItemCommand;
 import com.magyen.platform.inventory.application.dto.CreateInventoryItemResult;
 import com.magyen.platform.inventory.application.dto.DecreaseInventoryStockCommand;
 import com.magyen.platform.inventory.application.dto.DecreaseInventoryStockResult;
+import com.magyen.platform.inventory.application.dto.GetInventoryCatalogResult;
 import com.magyen.platform.inventory.application.dto.GetInventoryItemQuery;
 import com.magyen.platform.inventory.application.dto.GetInventoryItemResult;
 import com.magyen.platform.inventory.application.dto.GetInventoryItemsQuery;
 import com.magyen.platform.inventory.application.dto.GetInventoryItemsResult;
+import com.magyen.platform.inventory.application.dto.GetInventoryMaterialQuery;
+import com.magyen.platform.inventory.application.dto.GetInventoryMaterialResult;
+import com.magyen.platform.inventory.application.dto.InventoryCatalogItemResult;
 import com.magyen.platform.inventory.application.dto.GetInventoryMovementResult;
 import com.magyen.platform.inventory.application.dto.GetInventoryMovementsQuery;
 import com.magyen.platform.inventory.application.dto.GetInventoryMovementsResult;
@@ -33,8 +37,11 @@ import com.magyen.platform.inventory.presentation.inventoryitem.request.UpdateIn
 import com.magyen.platform.inventory.presentation.inventoryitem.request.UpdateInventoryUnitCostRequest;
 import com.magyen.platform.inventory.presentation.inventoryitem.response.CreateInventoryItemResponse;
 import com.magyen.platform.inventory.presentation.inventoryitem.response.DecreaseInventoryStockResponse;
+import com.magyen.platform.inventory.presentation.inventoryitem.response.GetInventoryCatalogItemResponse;
+import com.magyen.platform.inventory.presentation.inventoryitem.response.GetInventoryCatalogResponse;
 import com.magyen.platform.inventory.presentation.inventoryitem.response.GetInventoryItemResponse;
 import com.magyen.platform.inventory.presentation.inventoryitem.response.GetInventoryItemsResponse;
+import com.magyen.platform.inventory.presentation.inventoryitem.response.GetInventoryMaterialResponse;
 import com.magyen.platform.inventory.presentation.inventoryitem.response.GetInventoryMovementResponse;
 import com.magyen.platform.inventory.presentation.inventoryitem.response.GetInventoryMovementsResponse;
 import com.magyen.platform.inventory.presentation.inventoryitem.response.IncreaseInventoryStockResponse;
@@ -139,6 +146,57 @@ public class InventoryPresentationMapper {
 
         return new GetInventoryItemsResponse(
                 result.items().stream()
+                        .map(this::toResponse)
+                        .toList()
+        );
+    }
+
+    public GetInventoryMaterialQuery toMaterialQuery(String materialCode) {
+        if (materialCode == null || materialCode.isBlank()) {
+            throw new InventoryDomainException("Material code must not be blank");
+        }
+        return new GetInventoryMaterialQuery(materialCode.trim());
+    }
+
+    public GetInventoryCatalogItemResponse toCatalogResponse(InventoryCatalogItemResult result) {
+        Objects.requireNonNull(result, "Inventory catalog item result must not be null");
+
+        return new GetInventoryCatalogItemResponse(
+                result.materialCode(),
+                result.name(),
+                result.category(),
+                result.materialType().name(),
+                result.unitOfMeasure(),
+                result.description(),
+                result.aggregatedStock(),
+                result.minimumStock(),
+                result.minimumStockUniform(),
+                result.lowStock(),
+                result.status().name(),
+                result.unitCost(),
+                result.unitCostUniform(),
+                result.physicalUnitCount(),
+                result.paperMaterial(),
+                result.stockHoldingItemId()
+        );
+    }
+
+    public GetInventoryCatalogResponse toResponse(GetInventoryCatalogResult result) {
+        Objects.requireNonNull(result, "GetInventoryCatalogResult must not be null");
+
+        return new GetInventoryCatalogResponse(
+                result.materials().stream()
+                        .map(this::toCatalogResponse)
+                        .toList()
+        );
+    }
+
+    public GetInventoryMaterialResponse toResponse(GetInventoryMaterialResult result) {
+        Objects.requireNonNull(result, "GetInventoryMaterialResult must not be null");
+
+        return new GetInventoryMaterialResponse(
+                toCatalogResponse(result.material()),
+                result.units().stream()
                         .map(this::toResponse)
                         .toList()
         );

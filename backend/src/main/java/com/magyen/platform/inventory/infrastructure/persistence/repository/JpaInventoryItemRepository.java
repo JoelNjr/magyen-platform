@@ -97,6 +97,15 @@ public class JpaInventoryItemRepository implements InventoryItemRepository {
     }
 
     @Override
+    public List<InventoryItem> findAllByMaterialCode(MaterialCode materialCode) {
+        Objects.requireNonNull(materialCode, "Material code must not be null");
+
+        return springDataInventoryItemRepository.findByMaterialCode(materialCode.getValue()).stream()
+                .map(inventoryPersistenceMapper::toDomain)
+                .toList();
+    }
+
+    @Override
     public Optional<InventoryItem> findFirstByMaterialType(InventoryMaterialType materialType) {
         Objects.requireNonNull(materialType, "Material type must not be null");
 

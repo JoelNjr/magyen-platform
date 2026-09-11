@@ -3,8 +3,10 @@ package com.magyen.platform.inventory.infrastructure.configuration;
 import com.magyen.platform.inventory.application.usecase.ConsumeInventoryMaterialUseCase;
 import com.magyen.platform.inventory.application.usecase.CreateInventoryItemUseCase;
 import com.magyen.platform.inventory.application.usecase.DecreaseInventoryStockUseCase;
+import com.magyen.platform.inventory.application.usecase.GetInventoryCatalogUseCase;
 import com.magyen.platform.inventory.application.usecase.GetInventoryItemUseCase;
 import com.magyen.platform.inventory.application.usecase.GetInventoryItemsUseCase;
+import com.magyen.platform.inventory.application.usecase.GetInventoryMaterialUseCase;
 import com.magyen.platform.inventory.application.usecase.GetInventoryMovementBySourceUseCase;
 import com.magyen.platform.inventory.application.usecase.GetInventoryMovementsUseCase;
 import com.magyen.platform.inventory.application.usecase.GetInkAcquisitionsUseCase;
@@ -60,6 +62,16 @@ public class InventoryConfiguration {
     @Bean
     public GetInventoryItemsUseCase getInventoryItemsUseCase(InventoryItemRepository inventoryItemRepository) {
         return new GetInventoryItemsUseCase(inventoryItemRepository);
+    }
+
+    @Bean
+    public GetInventoryCatalogUseCase getInventoryCatalogUseCase(InventoryItemRepository inventoryItemRepository) {
+        return new GetInventoryCatalogUseCase(inventoryItemRepository);
+    }
+
+    @Bean
+    public GetInventoryMaterialUseCase getInventoryMaterialUseCase(InventoryItemRepository inventoryItemRepository) {
+        return new GetInventoryMaterialUseCase(inventoryItemRepository);
     }
 
     @Bean

@@ -9,6 +9,18 @@ export async function getPlotterPaperRolls() {
   return getInventoryItems({ plotterPaperRoll: true })
 }
 
+export async function getInventoryMaterials() {
+  const response = await httpClient.get('/inventory/materials')
+  return response.data
+}
+
+export async function getInventoryMaterial(materialCode) {
+  const response = await httpClient.get(
+    `/inventory/materials/${encodeURIComponent(materialCode)}`
+  )
+  return response.data
+}
+
 export async function getInventoryItem(inventoryItemId) {
   const response = await httpClient.get(`/inventory/${inventoryItemId}`)
   return response.data

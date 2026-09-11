@@ -4,9 +4,12 @@ import com.magyen.platform.inventory.application.dto.CreateInventoryItemCommand;
 import com.magyen.platform.inventory.application.dto.CreateInventoryItemResult;
 import com.magyen.platform.inventory.application.dto.DecreaseInventoryStockCommand;
 import com.magyen.platform.inventory.application.dto.DecreaseInventoryStockResult;
+import com.magyen.platform.inventory.application.dto.GetInventoryCatalogResult;
 import com.magyen.platform.inventory.application.dto.GetInventoryItemQuery;
 import com.magyen.platform.inventory.application.dto.GetInventoryItemResult;
 import com.magyen.platform.inventory.application.dto.GetInventoryItemsResult;
+import com.magyen.platform.inventory.application.dto.GetInventoryMaterialQuery;
+import com.magyen.platform.inventory.application.dto.GetInventoryMaterialResult;
 import com.magyen.platform.inventory.application.dto.GetInventoryMovementsQuery;
 import com.magyen.platform.inventory.application.dto.GetInventoryMovementsResult;
 import com.magyen.platform.inventory.application.dto.IncreaseInventoryStockCommand;
@@ -19,8 +22,10 @@ import com.magyen.platform.inventory.application.dto.UpdateInventoryMinimumStock
 import com.magyen.platform.inventory.application.dto.UpdateInventoryUnitCostCommand;
 import com.magyen.platform.inventory.application.usecase.CreateInventoryItemUseCase;
 import com.magyen.platform.inventory.application.usecase.DecreaseInventoryStockUseCase;
+import com.magyen.platform.inventory.application.usecase.GetInventoryCatalogUseCase;
 import com.magyen.platform.inventory.application.usecase.GetInventoryItemUseCase;
 import com.magyen.platform.inventory.application.usecase.GetInventoryItemsUseCase;
+import com.magyen.platform.inventory.application.usecase.GetInventoryMaterialUseCase;
 import com.magyen.platform.inventory.application.usecase.GetInventoryMovementsUseCase;
 import com.magyen.platform.inventory.application.usecase.IncreaseInventoryStockUseCase;
 import com.magyen.platform.inventory.application.usecase.RegisterInventoryMovementUseCase;
@@ -37,8 +42,10 @@ import com.magyen.platform.inventory.presentation.inventoryitem.request.UpdateIn
 import com.magyen.platform.inventory.presentation.inventoryitem.request.UpdateInventoryUnitCostRequest;
 import com.magyen.platform.inventory.presentation.inventoryitem.response.CreateInventoryItemResponse;
 import com.magyen.platform.inventory.presentation.inventoryitem.response.DecreaseInventoryStockResponse;
+import com.magyen.platform.inventory.presentation.inventoryitem.response.GetInventoryCatalogResponse;
 import com.magyen.platform.inventory.presentation.inventoryitem.response.GetInventoryItemResponse;
 import com.magyen.platform.inventory.presentation.inventoryitem.response.GetInventoryItemsResponse;
+import com.magyen.platform.inventory.presentation.inventoryitem.response.GetInventoryMaterialResponse;
 import com.magyen.platform.inventory.presentation.inventoryitem.response.GetInventoryMovementsResponse;
 import com.magyen.platform.inventory.presentation.inventoryitem.response.IncreaseInventoryStockResponse;
 import com.magyen.platform.inventory.presentation.inventoryitem.response.RegisterInventoryMovementResponse;
@@ -65,6 +72,8 @@ public class InventoryController {
 
     private final CreateInventoryItemUseCase createInventoryItemUseCase;
     private final GetInventoryItemsUseCase getInventoryItemsUseCase;
+    private final GetInventoryCatalogUseCase getInventoryCatalogUseCase;
+    private final GetInventoryMaterialUseCase getInventoryMaterialUseCase;
     private final GetInventoryItemUseCase getInventoryItemUseCase;
     private final GetInventoryMovementsUseCase getInventoryMovementsUseCase;
     private final UpdateInventoryMinimumStockUseCase updateInventoryMinimumStockUseCase;
@@ -78,6 +87,8 @@ public class InventoryController {
     public InventoryController(
             CreateInventoryItemUseCase createInventoryItemUseCase,
             GetInventoryItemsUseCase getInventoryItemsUseCase,
+            GetInventoryCatalogUseCase getInventoryCatalogUseCase,
+            GetInventoryMaterialUseCase getInventoryMaterialUseCase,
             GetInventoryItemUseCase getInventoryItemUseCase,
             GetInventoryMovementsUseCase getInventoryMovementsUseCase,
             UpdateInventoryMinimumStockUseCase updateInventoryMinimumStockUseCase,
@@ -90,6 +101,8 @@ public class InventoryController {
     ) {
         this.createInventoryItemUseCase = createInventoryItemUseCase;
         this.getInventoryItemsUseCase = getInventoryItemsUseCase;
+        this.getInventoryCatalogUseCase = getInventoryCatalogUseCase;
+        this.getInventoryMaterialUseCase = getInventoryMaterialUseCase;
         this.getInventoryItemUseCase = getInventoryItemUseCase;
         this.getInventoryMovementsUseCase = getInventoryMovementsUseCase;
         this.updateInventoryMinimumStockUseCase = updateInventoryMinimumStockUseCase;
@@ -121,6 +134,25 @@ public class InventoryController {
                 inventoryPresentationMapper.toItemsQuery(materialType, plotterPaperRoll)
         );
         GetInventoryItemsResponse response = inventoryPresentationMapper.toResponse(result);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/materials")
+    public ResponseEntity<GetInventoryCatalogResponse> getInventoryCatalog() {
+        GetInventoryCatalogResult result = getInventoryCatalogUseCase.execute();
+        GetInventoryCatalogResponse response = inventoryPresentationMapper.toResponse(result);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/materials/{materialCode}")
+    public ResponseEntity<GetInventoryMaterialResponse> getInventoryMaterial(
+            @PathVariable String materialCode
+    ) {
+        GetInventoryMaterialQuery query = inventoryPresentationMapper.toMaterialQuery(materialCode);
+        GetInventoryMaterialResult result = getInventoryMaterialUseCase.execute(query);
+        GetInventoryMaterialResponse response = inventoryPresentationMapper.toResponse(result);
 
         return ResponseEntity.ok(response);
     }

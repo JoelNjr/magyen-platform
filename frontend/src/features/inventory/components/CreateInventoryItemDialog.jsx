@@ -41,12 +41,23 @@ function createPurchaseId() {
   return undefined
 }
 
+function applyPaperDefaults(form) {
+  return {
+    ...form,
+    unitOfMeasure: 'METER',
+    category: form.category.trim() ? form.category : 'PAPER',
+    purchaseQuantity: form.purchaseQuantity.trim() ? form.purchaseQuantity : '1',
+  }
+}
+
 function CreateInventoryItemDialog({
   open,
   onClose,
   onSubmit,
   submitting,
   errorMessage,
+  initialMaterialType,
+  lockMaterialType = false,
 }) {
   const [form, setForm] = useState(EMPTY_FORM)
   const [validationError, setValidationError] = useState('')
@@ -55,13 +66,18 @@ function CreateInventoryItemDialog({
     if (!open) {
       setForm(EMPTY_FORM)
       setValidationError('')
-    } else {
-      setForm((current) => ({
-        ...current,
-        purchaseDate: current.purchaseDate || todayIsoDate(),
-      }))
+      return
     }
-  }, [open])
+
+    setForm(() => {
+      const next = {
+        ...EMPTY_FORM,
+        materialType: initialMaterialType || '',
+        purchaseDate: todayIsoDate(),
+      }
+      return next.materialType === 'PAPER' ? applyPaperDefaults(next) : next
+    })
+  }, [open, initialMaterialType])
 
   function handleClose() {
     if (submitting) {
@@ -254,10 +270,18 @@ function CreateInventoryItemDialog({
   const isFabric = form.materialType === 'FABRIC'
   const isOtherMaterial = Boolean(form.materialType) && !isPaper
   const typeSelected = Boolean(form.materialType)
+  const creatingPaperRoll = lockMaterialType && initialMaterialType === 'PAPER'
+  const submitLabel = submitting
+    ? 'Creando...'
+    : creatingPaperRoll
+      ? 'Crear rollo'
+      : 'Crear material'
 
   return (
     <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
-      <DialogTitle>Nuevo material</DialogTitle>
+      <DialogTitle>
+        {creatingPaperRoll ? 'Nuevo rollo de papel' : 'Nuevo material'}
+      </DialogTitle>
 
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
@@ -271,8 +295,8 @@ function CreateInventoryItemDialog({
             value={form.materialType}
             onChange={(event) => updateField('materialType', event.target.value)}
             fullWidth
-            disabled={submitting}
-            autoFocus
+            disabled={submitting || lockMaterialType}
+            autoFocus={!lockMaterialType}
             required
           >
             <MenuItem value="" disabled>
@@ -478,7 +502,7 @@ function CreateInventoryItemDialog({
           onClick={handleSubmit}
           disabled={submitting || !typeSelected}
         >
-          {submitting ? 'Creando...' : 'Crear material'}
+          {submitLabel}
         </Button>
       </DialogActions>
     </Dialog>

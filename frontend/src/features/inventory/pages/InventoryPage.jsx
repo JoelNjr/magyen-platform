@@ -21,14 +21,17 @@ import { useNavigate } from 'react-router-dom'
 import CreateInventoryItemDialog from '../components/CreateInventoryItemDialog'
 import RegisterInventoryPurchaseDialog from '../components/RegisterInventoryPurchaseDialog'
 import {
+  formatCatalogMinimumStockLabel,
+  formatCatalogUnitCostLabel,
+  formatPhysicalUnitCount,
   formatStockWithUnit,
-  formatUnitCostLabel,
-  getInventoryMaterialTitle,
+  getInventoryCatalogTitle,
   getInventoryStockStatusChipProps,
+  toPurchaseSelectableCatalogItem,
 } from '../presentation/inventoryStatusPresentation'
 import {
   createInventoryItem,
-  getInventoryItems,
+  getInventoryMaterials,
   registerInventoryPurchase,
 } from '../services/inventoryService'
 import PageHeader from '../../../layout/PageHeader'
@@ -64,7 +67,7 @@ function InventoryTableHead() {
 
 function InventoryPage() {
   const navigate = useNavigate()
-  const [items, setItems] = useState([])
+  const [materials, setMaterials] = useState([])
   const [loading, setLoading] = useState(true)
   const [failed, setFailed] = useState(false)
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
@@ -76,23 +79,27 @@ function InventoryPage() {
   const [successOpen, setSuccessOpen] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
 
-  async function loadInventoryItems() {
+  const purchaseItems = materials
+    .map(toPurchaseSelectableCatalogItem)
+    .filter(Boolean)
+
+  async function loadInventoryCatalog() {
     setLoading(true)
     setFailed(false)
 
     try {
-      const data = await getInventoryItems()
-      setItems(Array.isArray(data?.items) ? data.items : [])
+      const data = await getInventoryMaterials()
+      setMaterials(Array.isArray(data?.materials) ? data.materials : [])
       setLoading(false)
     } catch {
-      setItems([])
+      setMaterials([])
       setFailed(true)
       setLoading(false)
     }
   }
 
   useEffect(() => {
-    loadInventoryItems()
+    loadInventoryCatalog()
   }, [])
 
   function openPurchaseDialog() {
@@ -127,7 +134,7 @@ function InventoryPage() {
         purchaseDate: payload.purchaseDate,
         observation: payload.observation,
       })
-      await loadInventoryItems()
+      await loadInventoryCatalog()
       setPurchaseDialogOpen(false)
       setSuccessMessage('Entrada de material registrada. El gasto de la compra quedó en Finanzas.')
       setSuccessOpen(true)
@@ -168,7 +175,7 @@ function InventoryPage() {
 
     try {
       const created = await createInventoryItem(payload)
-      await loadInventoryItems()
+      await loadInventoryCatalog()
       setCreateDialogOpen(false)
       if (created?.plotterPaperRoll && created?.paperRollNumber) {
         setSuccessMessage(`Rollo ${created.paperRollNumber} creado correctamente.`)
@@ -199,7 +206,7 @@ function InventoryPage() {
             <Button
               variant="outlined"
               onClick={openPurchaseDialog}
-              disabled={loading || creating || purchasing || items.length === 0}
+              disabled={loading || creating || purchasing || purchaseItems.length === 0}
             >
               Registrar entrada de material
             </Button>
@@ -264,7 +271,7 @@ function InventoryPage() {
           </Alert>
         )}
 
-        {!loading && !failed && items.length === 0 && (
+        {!loading && !failed && materials.length === 0 && (
           <EmptyState
             icon={<Inventory2OutlinedIcon color="action" sx={{ fontSize: 48 }} />}
             title="No hay materiales registrados en el inventario."
@@ -280,38 +287,45 @@ function InventoryPage() {
           />
         )}
 
-        {!loading && !failed && items.length > 0 && (
+        {!loading && !failed && materials.length > 0 && (
           <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
             <Table>
               <InventoryTableHead />
               <TableBody>
-                {items.map((item) => {
-                  const statusChip = getInventoryStockStatusChipProps(item.lowStock)
-                  const detailPath = `/inventory/${item.inventoryItemId}`
-                  const minimumStockLabel =
-                    item.minimumStock === null || item.minimumStock === undefined
-                      ? '—'
-                      : formatStockWithUnit(item.minimumStock, item.unitOfMeasure)
+                {materials.map((material) => {
+                  const statusChip = getInventoryStockStatusChipProps(material.lowStock)
+                  const detailPath = `/inventory/materials/${encodeURIComponent(material.materialCode)}`
+                  const physicalUnitLabel = formatPhysicalUnitCount(material)
 
                   return (
-                    <TableRow key={item.inventoryItemId} hover>
+                    <TableRow key={material.materialCode} hover>
                       <TableCell>
                         <Typography variant="body1">
-                          {getInventoryMaterialTitle(item)}
+                          {getInventoryCatalogTitle(material)}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {item.materialCode}
+                        {material.name ? (
+                          <Typography variant="caption" color="text.secondary">
+                            {material.name}
+                          </Typography>
+                        ) : null}
+                      </TableCell>
+                      <TableCell>{material.materialCode}</TableCell>
+                      <TableCell>
+                        <Typography variant="body2">
+                          {formatStockWithUnit(
+                            material.aggregatedStock,
+                            material.unitOfMeasure
+                          )}
                         </Typography>
+                        {physicalUnitLabel ? (
+                          <Typography variant="caption" color="text.secondary">
+                            {physicalUnitLabel}
+                          </Typography>
+                        ) : null}
                       </TableCell>
-                      <TableCell>{item.materialCode}</TableCell>
-                      <TableCell>
-                        {formatStockWithUnit(item.stock, item.unitOfMeasure)}
-                      </TableCell>
-                      <TableCell>{item.unitOfMeasure}</TableCell>
-                      <TableCell>{minimumStockLabel}</TableCell>
-                      <TableCell>
-                        {formatUnitCostLabel(item.unitCost, item.unitOfMeasure)}
-                      </TableCell>
+                      <TableCell>{material.unitOfMeasure}</TableCell>
+                      <TableCell>{formatCatalogMinimumStockLabel(material)}</TableCell>
+                      <TableCell>{formatCatalogUnitCostLabel(material)}</TableCell>
                       <TableCell align="center">
                         <Chip
                           label={statusChip.label}
@@ -347,7 +361,7 @@ function InventoryPage() {
 
       <RegisterInventoryPurchaseDialog
         open={purchaseDialogOpen}
-        items={items}
+        items={purchaseItems}
         onClose={handlePurchaseDialogClose}
         onSubmit={handleRegisterPurchase}
         submitting={purchasing}

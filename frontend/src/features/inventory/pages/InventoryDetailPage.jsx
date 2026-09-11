@@ -347,6 +347,8 @@ function InventoryDetailPage() {
   }
 
   const statusChip = getInventoryStockStatusChipProps(item?.lowStock)
+  const isPaperUnit =
+    item?.materialType === 'PAPER' || Boolean(item?.plotterPaperRoll)
   const monitoringDisabled =
     item &&
     (item.minimumStock === null || item.minimumStock === undefined)
@@ -356,7 +358,13 @@ function InventoryDetailPage() {
       <Stack spacing={3}>
         <Button
           variant="outlined"
-          onClick={() => navigate('/inventory')}
+          onClick={() =>
+            navigate(
+              item?.materialCode
+                ? `/inventory/materials/${encodeURIComponent(item.materialCode)}`
+                : '/inventory'
+            )
+          }
           sx={{ alignSelf: 'flex-start' }}
         >
           Volver
@@ -433,13 +441,15 @@ function InventoryDetailPage() {
                   spacing={1}
                   sx={{ width: { xs: '100%', sm: 'auto' } }}
                 >
-                  <Button
-                    variant="contained"
-                    onClick={openPurchaseDialog}
-                    disabled={pageBusy}
-                  >
-                    Registrar entrada de material
-                  </Button>
+                  {!isPaperUnit && (
+                    <Button
+                      variant="contained"
+                      onClick={openPurchaseDialog}
+                      disabled={pageBusy}
+                    >
+                      Registrar entrada de material
+                    </Button>
+                  )}
                   <Button
                     variant="outlined"
                     onClick={openMovementDialog}
@@ -527,6 +537,13 @@ function InventoryDetailPage() {
                   </DetailField>
                 </Grid>
               </Grid>
+
+              {isPaperUnit && (
+                <Alert severity="info" sx={{ mt: 2 }}>
+                  Una compra de papel crea un rollo nuevo desde el material. No
+                  se agregan metros a este rollo existente.
+                </Alert>
+              )}
 
               {item.lowStock && (
                 <Alert severity="error" sx={{ mt: 2 }}>
