@@ -29,6 +29,8 @@ import java.util.Objects;
  * Orquesta el read model del Dashboard Home.
  * <p>
  * Solo lectura: no modifica Finance, Inventory, Production, Plotter ni Commercial.
+ * El período resuelto aplica al resumen financiero ({@code transactionDate})
+ * y a la rentabilidad comercial (entrega programada). El resto es snapshot actual.
  */
 public class GetHomeDashboardUseCase {
 
@@ -83,7 +85,7 @@ public class GetHomeDashboardUseCase {
         ProductionDashboardPort.HomeProductionSummarySnapshot production =
                 productionDashboardPort.getCurrentProductionSummary();
         CommercialDashboardPort.HomeProfitabilitySummarySnapshot profitability =
-                commercialDashboardPort.getCurrentProfitabilitySummary();
+                commercialDashboardPort.getProfitabilitySummary(period.fromDate(), period.toDate());
 
         return new GetHomeDashboardResult(
                 period.fromDate(),

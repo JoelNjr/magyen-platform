@@ -8,6 +8,7 @@ import jakarta.persistence.EntityManager;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -86,6 +87,17 @@ public class JpaOrderRepository implements OrderRepository {
     @Transactional(readOnly = true)
     public List<Order> findAll() {
         return springDataOrderRepository.findAll().stream()
+                .map(orderPersistenceMapper::toDomain)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Order> findByPromisedDeliveryDateBetween(LocalDate fromDate, LocalDate toDate) {
+        Objects.requireNonNull(fromDate, "From date must not be null");
+        Objects.requireNonNull(toDate, "To date must not be null");
+
+        return springDataOrderRepository.findByPromisedDeliveryDateBetween(fromDate, toDate).stream()
                 .map(orderPersistenceMapper::toDomain)
                 .toList();
     }

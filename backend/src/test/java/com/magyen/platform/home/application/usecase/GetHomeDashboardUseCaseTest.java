@@ -1116,6 +1116,7 @@ class GetHomeDashboardUseCaseTest {
 
     @Test
     void profitabilityAggregatesCompletePartialAndNoCostWithoutTreatingUnknownAsTotals() {
+        // promisedDeliveryDate = confirmationDate + 7 days → 2026-08-08; el mes por defecto del test es agosto.
         Order completeOrder = createOrderWithTotal("ORD-HOME-PC-", "1000000.00");
         UUID productionOrderId = createInProgressProductionOrder(completeOrder.getId());
         InventoryItem fabric = inventoryItemRepository.save(InventoryItem.create(

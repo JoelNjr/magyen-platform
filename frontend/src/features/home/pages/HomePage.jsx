@@ -38,6 +38,13 @@ import {
   formatFinanceDate,
   formatFinanceMoney,
   formatHomeMargin,
+  HOME_ORDER_VALUE_LABEL,
+  HOME_PAGE_SUBTITLE,
+  HOME_PERIOD_SUBTITLE,
+  HOME_PERIOD_TITLE,
+  HOME_PROFITABILITY_BACKEND_CAPTION,
+  HOME_PROFITABILITY_SUBTITLE,
+  HOME_PROFITABILITY_TITLE,
   formatHomeStock,
   getCalendarMonthRange,
   getCommitmentUrgencyChipProps,
@@ -252,7 +259,7 @@ function HomePage() {
     <Stack spacing={4}>
       <PageHeader
         title="Inicio"
-        subtitle="Prioridad operativa: producción, rentabilidad y obligaciones primero. El período financiero solo afecta el resumen de ingresos y gastos."
+        subtitle={HOME_PAGE_SUBTITLE}
       />
 
       {failed ? (
@@ -417,9 +424,9 @@ function HomePage() {
       {/* 2 — Profitability (Priority 2) */}
       <Stack spacing={2}>
         <SectionHeader
-          title="Rentabilidad"
+          title={HOME_PROFITABILITY_TITLE}
           priority="secondary"
-          subtitle="Rentabilidad directa de órdenes. Incluye tela, mano de obra y papel de Plotter interno cuando existe. No es ganancia neta."
+          subtitle={HOME_PROFITABILITY_SUBTITLE}
           actions={
             <Button component={RouterLink} to="/commercial/orders/profitability" size="small">
               Ver rentabilidad individual
@@ -481,7 +488,7 @@ function HomePage() {
               }}
             >
               <MetricCard
-                title="Valor de órdenes (completas)"
+                title={HOME_ORDER_VALUE_LABEL}
                 value={formatFinanceMoney(profitability.totalOrderValue)}
                 tone="income"
               />
@@ -501,8 +508,7 @@ function HomePage() {
               />
             </Box>
             <Typography variant="caption" color="text.secondary">
-              Valores de rentabilidad directa suministrados por el backend. No se
-              recalculan en el frontend.
+              {HOME_PROFITABILITY_BACKEND_CAPTION}
             </Typography>
           </>
         )}
@@ -782,9 +788,9 @@ function HomePage() {
       <Paper variant="outlined" sx={{ p: 2 }}>
         <Stack spacing={2}>
           <SectionHeader
-            title="Período financiero"
+            title={HOME_PERIOD_TITLE}
             priority="context"
-            subtitle="Aplica únicamente al resumen financiero."
+            subtitle={HOME_PERIOD_SUBTITLE}
           />
           <Stack
             direction={{ xs: 'column', sm: 'row' }}
@@ -820,8 +826,9 @@ function HomePage() {
           {periodError ? <Alert severity="warning">{periodError}</Alert> : null}
           {!loading && !failed && dashboard?.fromDate && dashboard?.toDate ? (
             <Typography variant="caption" color="text.secondary">
-              Resumen financiero: {formatFinanceDate(dashboard.fromDate)} –{' '}
-              {formatFinanceDate(dashboard.toDate)}
+              Período: {formatFinanceDate(dashboard.fromDate)} –{' '}
+              {formatFinanceDate(dashboard.toDate)}. Finanzas por fecha de
+              movimiento; rentabilidad por entrega programada.
             </Typography>
           ) : null}
         </Stack>

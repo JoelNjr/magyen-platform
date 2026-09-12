@@ -158,5 +158,15 @@ class ApplyQuotationDiscountUseCaseTest {
         public List<Order> findAll() {
             return new ArrayList<>(orders.values());
         }
+
+        @Override
+        public List<Order> findByPromisedDeliveryDateBetween(LocalDate fromDate, LocalDate toDate) {
+            return orders.values().stream()
+                    .filter(order -> {
+                        LocalDate promised = order.getDeliveryCommitment().getPromisedDeliveryDate();
+                        return !promised.isBefore(fromDate) && !promised.isAfter(toDate);
+                    })
+                    .toList();
+        }
     }
 }

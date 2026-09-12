@@ -3,6 +3,8 @@ package com.magyen.platform.commercial.infrastructure.persistence.repository;
 import com.magyen.platform.commercial.infrastructure.persistence.entity.OrderEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -18,4 +20,6 @@ public interface SpringDataOrderRepository extends JpaRepository<OrderEntity, UU
      * hasta aplicar UNIQUE(quotation_id).
      */
     Optional<OrderEntity> findFirstByQuotationId(UUID quotationId);
+
+    List<OrderEntity> findByPromisedDeliveryDateBetween(LocalDate fromDate, LocalDate toDate);
 }

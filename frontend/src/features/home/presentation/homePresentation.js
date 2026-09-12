@@ -78,6 +78,16 @@ export function formatHomeStock(value) {
   })
 }
 
+export {
+  HOME_ORDER_VALUE_LABEL,
+  HOME_PAGE_SUBTITLE,
+  HOME_PERIOD_SUBTITLE,
+  HOME_PERIOD_TITLE,
+  HOME_PROFITABILITY_BACKEND_CAPTION,
+  HOME_PROFITABILITY_SUBTITLE,
+  HOME_PROFITABILITY_TITLE,
+} from './homeProfitabilityCopy.js'
+
 export function formatHomeMargin(value) {
   if (value === null || value === undefined || value === '') {
     return '—'

@@ -1,7 +1,7 @@
 package com.magyen.platform.home.infrastructure.configuration;
 
 import com.magyen.platform.commercial.application.port.OrderPaymentCollectionPort;
-import com.magyen.platform.commercial.application.usecase.GetOrderProfitabilityUseCase;
+import com.magyen.platform.commercial.application.usecase.GetOrderProfitabilityByPromisedDeliveryPeriodUseCase;
 import com.magyen.platform.commercial.application.usecase.GetOrdersUseCase;
 import com.magyen.platform.finance.application.usecase.GetFinancialPeriodSummaryUseCase;
 import com.magyen.platform.finance.application.usecase.GetOverdueFinancialObligationOccurrencesUseCase;
@@ -54,12 +54,13 @@ public class HomeConfiguration {
     public CommercialDashboardPort commercialDashboardPort(
             GetOrdersUseCase getOrdersUseCase,
             OrderPaymentCollectionPort orderPaymentCollectionPort,
-            GetOrderProfitabilityUseCase getOrderProfitabilityUseCase
+            GetOrderProfitabilityByPromisedDeliveryPeriodUseCase
+                    getOrderProfitabilityByPromisedDeliveryPeriodUseCase
     ) {
         return new CommercialDashboardAdapter(
                 getOrdersUseCase,
                 orderPaymentCollectionPort,
-                getOrderProfitabilityUseCase
+                getOrderProfitabilityByPromisedDeliveryPeriodUseCase
         );
     }
 

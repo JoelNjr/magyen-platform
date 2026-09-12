@@ -19,6 +19,7 @@ import com.magyen.platform.commercial.application.usecase.GetCommercialCatalogsU
 import com.magyen.platform.commercial.application.usecase.GetCustomersUseCase;
 import com.magyen.platform.commercial.application.usecase.GetSellerCommissionPerformanceUseCase;
 import com.magyen.platform.commercial.application.usecase.GetSellersUseCase;
+import com.magyen.platform.commercial.application.usecase.GetOrderProfitabilityByPromisedDeliveryPeriodUseCase;
 import com.magyen.platform.commercial.application.usecase.GetOrderProfitabilityListUseCase;
 import com.magyen.platform.commercial.application.usecase.GetOrderProfitabilityUseCase;
 import com.magyen.platform.commercial.application.usecase.GetOrderUseCase;
@@ -347,6 +348,18 @@ public class CommercialConfiguration {
             GetOrderProfitabilityUseCase getOrderProfitabilityUseCase
     ) {
         return new GetOrderProfitabilityListUseCase(getOrdersUseCase, getOrderProfitabilityUseCase);
+    }
+
+    @Bean
+    public GetOrderProfitabilityByPromisedDeliveryPeriodUseCase
+            getOrderProfitabilityByPromisedDeliveryPeriodUseCase(
+            OrderRepository orderRepository,
+            GetOrderProfitabilityUseCase getOrderProfitabilityUseCase
+    ) {
+        return new GetOrderProfitabilityByPromisedDeliveryPeriodUseCase(
+                orderRepository,
+                getOrderProfitabilityUseCase
+        );
     }
 
     @Bean

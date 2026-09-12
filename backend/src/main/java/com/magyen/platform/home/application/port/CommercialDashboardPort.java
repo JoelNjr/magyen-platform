@@ -27,13 +27,14 @@ public interface CommercialDashboardPort {
     HomeReceivablesSnapshot getCompletedOutstandingReceivables();
 
     /**
-     * Resumen de rentabilidad directa de Órdenes comerciales elegibles.
+     * Resumen de rentabilidad directa de Órdenes con entrega programada en
+     * {@code [fromDate, toDate]} (inclusive).
      * <p>
      * Totales monetarios ({@code totalOrderValue}, {@code totalDirectCost},
      * {@code totalDirectProfit}, margen) solo agregan estados {@code COMPLETE}
      * para no tratar costos desconocidos como cero.
      */
-    HomeProfitabilitySummarySnapshot getCurrentProfitabilitySummary();
+    HomeProfitabilitySummarySnapshot getProfitabilitySummary(LocalDate fromDate, LocalDate toDate);
 
     record HomeReceivablesSnapshot(
             BigDecimal totalOutstandingAmount,
