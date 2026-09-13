@@ -139,6 +139,26 @@ export async function replaceOrderItemSizes(orderId, orderItemId, sizes) {
   return response.data
 }
 
+export async function addOrderItem(orderId, payload) {
+  const response = await httpClient.post(`/orders/${orderId}/items`, payload)
+  return response.data
+}
+
+export async function updateOrderItem(orderId, itemId, payload) {
+  const response = await httpClient.put(`/orders/${orderId}/items/${itemId}`, payload)
+  return response.data
+}
+
+export async function removeOrderItem(orderId, itemId) {
+  const response = await httpClient.delete(`/orders/${orderId}/items/${itemId}`)
+  return response.data
+}
+
+export async function applyOrderDiscount(orderId, payload) {
+  const response = await httpClient.patch(`/orders/${orderId}/discount`, payload)
+  return response.data
+}
+
 export async function updateOrderItemProductSpecification(
   orderId,
   orderItemId,

@@ -39,16 +39,9 @@ public class UpdateOrderItemProductSpecificationUseCase {
                         "Order not found: " + command.orderId()
                 ));
 
-        OrderItem orderItem = order.getItems().stream()
-                .filter(item -> item.getId().equals(command.orderItemId()))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Order item not found in order: " + command.orderItemId()
-                ));
-
         ProductSpecification productSpecification =
                 commercialCatalogValidator.requireProductSpecification(command.productSpecification());
-        orderItem.assignProductSpecification(productSpecification);
+        order.assignItemProductSpecification(command.orderItemId(), productSpecification);
 
         Order savedOrder = orderRepository.save(order);
 

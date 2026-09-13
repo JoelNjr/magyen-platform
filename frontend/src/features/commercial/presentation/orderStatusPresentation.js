@@ -1,6 +1,14 @@
 /**
  * Presentation helpers for Commercial OrderStatus chips.
  */
+export function canEditOrderCommercialContent(status) {
+  return (
+    status === 'CONFIRMED' ||
+    status === 'IN_PRODUCTION' ||
+    status === 'READY_FOR_DELIVERY'
+  )
+}
+
 export function getOrderStatusChipProps(status) {
   switch (status) {
     case 'CONFIRMED':

@@ -24,12 +24,12 @@ public class OrderItem {
     private final UUID id;
     private final UUID quotationItemId;
     private final String productName;
-    private final int quantity;
+    private int quantity;
     private final String fabric;
     private final String secondaryFabric;
     private final String color;
-    private final Money unitPrice;
-    private final Money subtotal;
+    private Money unitPrice;
+    private Money subtotal;
     private ProductSpecification productSpecification;
     private final List<SizeBreakdown> sizeBreakdowns;
 
@@ -273,6 +273,34 @@ public class OrderItem {
                 sizeBreakdowns,
                 quotationItemId
         );
+    }
+
+    /**
+     * Actualiza cantidad y precio unitario del compromiso comercial.
+     * <p>
+     * No cambia {@code id} ni {@code quotationItemId}. No modifica tallas.
+     * Rechaza una cantidad menor que la suma de tallas ya registradas.
+     */
+    void updateCommercialCommitment(int quantity, Money unitPrice) {
+        if (quantity <= 0) {
+            throw new OrderDomainException("Quantity must be greater than zero");
+        }
+        Objects.requireNonNull(unitPrice, "Unit price must not be null");
+        if (unitPrice.getAmount().signum() <= 0) {
+            throw new OrderDomainException("Unit price must be greater than zero");
+        }
+
+        int assignedSizeQuantity = getAssignedSizeQuantity();
+        if (assignedSizeQuantity > quantity) {
+            throw new OrderDomainException(
+                    "Total size quantity must not exceed order item quantity. "
+                            + "Assigned: " + assignedSizeQuantity + ", item quantity: " + quantity
+            );
+        }
+
+        this.quantity = quantity;
+        this.unitPrice = unitPrice;
+        this.subtotal = unitPrice.multiply(quantity);
     }
 
     /**

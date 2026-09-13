@@ -3,13 +3,16 @@ package com.magyen.platform.commercial.infrastructure.configuration;
 import com.magyen.platform.commercial.application.CustomerNameResolver;
 import com.magyen.platform.commercial.application.SellerNameResolver;
 import com.magyen.platform.commercial.application.CommercialCatalogValidator;
+import com.magyen.platform.commercial.application.OrderPaymentFloorGuard;
 import com.magyen.platform.commercial.application.port.CommercialCatalogPort;
 import com.magyen.platform.commercial.application.port.CommercialDocumentPdfPort;
 import com.magyen.platform.commercial.application.port.CommercialSellerEmployeePort;
 import com.magyen.platform.commercial.application.port.OrderPaymentCollectionPort;
 import com.magyen.platform.commercial.application.port.PlotterOrderCostPort;
 import com.magyen.platform.commercial.application.port.ProductionOrderCostPort;
+import com.magyen.platform.commercial.application.usecase.AddOrderItemUseCase;
 import com.magyen.platform.commercial.application.usecase.AddQuotationItemUseCase;
+import com.magyen.platform.commercial.application.usecase.ApplyOrderDiscountUseCase;
 import com.magyen.platform.commercial.application.usecase.ApplyQuotationDiscountUseCase;
 import com.magyen.platform.commercial.application.usecase.ApproveQuotationUseCase;
 import com.magyen.platform.commercial.application.usecase.CreateCustomerUseCase;
@@ -29,9 +32,11 @@ import com.magyen.platform.commercial.application.usecase.GetQuotationsUseCase;
 import com.magyen.platform.commercial.application.usecase.GenerateOrderRemissionPdfUseCase;
 import com.magyen.platform.commercial.application.usecase.GenerateQuotationPdfUseCase;
 import com.magyen.platform.commercial.application.usecase.ReplaceOrderItemSizesUseCase;
+import com.magyen.platform.commercial.application.usecase.RemoveOrderItemUseCase;
 import com.magyen.platform.commercial.application.usecase.RemoveQuotationItemUseCase;
 import com.magyen.platform.commercial.application.usecase.UpdateCustomerUseCase;
 import com.magyen.platform.commercial.application.usecase.UpdateOrderItemProductSpecificationUseCase;
+import com.magyen.platform.commercial.application.usecase.UpdateOrderItemUseCase;
 import com.magyen.platform.commercial.application.usecase.UpdateQuotationItemUseCase;
 import com.magyen.platform.commercial.domain.CustomerRepository;
 import com.magyen.platform.commercial.domain.OrderRepository;
@@ -367,6 +372,44 @@ public class CommercialConfiguration {
             OrderRepository orderRepository
     ) {
         return new GetSellerCommissionPerformanceUseCase(orderRepository);
+    }
+
+    @Bean
+    public OrderPaymentFloorGuard orderPaymentFloorGuard(OrderPaymentCollectionPort orderPaymentCollectionPort) {
+        return new OrderPaymentFloorGuard(orderPaymentCollectionPort);
+    }
+
+    @Bean
+    public AddOrderItemUseCase addOrderItemUseCase(
+            OrderRepository orderRepository,
+            CommercialCatalogValidator commercialCatalogValidator,
+            OrderPaymentFloorGuard orderPaymentFloorGuard
+    ) {
+        return new AddOrderItemUseCase(orderRepository, commercialCatalogValidator, orderPaymentFloorGuard);
+    }
+
+    @Bean
+    public UpdateOrderItemUseCase updateOrderItemUseCase(
+            OrderRepository orderRepository,
+            OrderPaymentFloorGuard orderPaymentFloorGuard
+    ) {
+        return new UpdateOrderItemUseCase(orderRepository, orderPaymentFloorGuard);
+    }
+
+    @Bean
+    public RemoveOrderItemUseCase removeOrderItemUseCase(
+            OrderRepository orderRepository,
+            OrderPaymentFloorGuard orderPaymentFloorGuard
+    ) {
+        return new RemoveOrderItemUseCase(orderRepository, orderPaymentFloorGuard);
+    }
+
+    @Bean
+    public ApplyOrderDiscountUseCase applyOrderDiscountUseCase(
+            OrderRepository orderRepository,
+            OrderPaymentFloorGuard orderPaymentFloorGuard
+    ) {
+        return new ApplyOrderDiscountUseCase(orderRepository, orderPaymentFloorGuard);
     }
 
     @Bean

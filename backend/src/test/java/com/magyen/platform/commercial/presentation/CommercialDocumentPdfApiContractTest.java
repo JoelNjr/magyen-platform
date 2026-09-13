@@ -51,6 +51,22 @@ class CommercialDocumentPdfApiContractTest {
             Pattern.compile("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}");
     private static final UUID UNKNOWN_ID = UUID.fromString("00000000-0000-4000-8000-000000000001");
 
+    /**
+     * Matches the API default creation/confirmation date ({@code LocalDate.now()}).
+     * Delivery dates are derived from this so the fixture cannot expire.
+     */
+    private static LocalDate fixtureCreationDate() {
+        return LocalDate.now();
+    }
+
+    private static LocalDate fixtureQuotationDeliveryDate() {
+        return fixtureCreationDate().plusDays(10);
+    }
+
+    private static LocalDate fixtureOrderDeliveryDate() {
+        return fixtureCreationDate().plusDays(15);
+    }
+
     @Autowired
     private WebApplicationContext webApplicationContext;
 
@@ -169,7 +185,7 @@ class CommercialDocumentPdfApiContractTest {
                                           "deliveryDate": "%s",
                                           "sellerId": "%s"
                                         }
-                                        """.formatted(customer.getId(), LocalDate.of(2026, 9, 10), sellerId))
+                                        """.formatted(customer.getId(), fixtureQuotationDeliveryDate(), sellerId))
                 )
                 .andExpect(status().isCreated())
                 .andReturn();
@@ -217,9 +233,9 @@ class CommercialDocumentPdfApiContractTest {
                                           "quotationId": "%s",
                                           "orderNumber": "PDF-1",
                                           "description": "Pedido de remisión PDF",
-                                          "deliveryDate": "2026-09-15"
+                                          "deliveryDate": "%s"
                                         }
-                                        """.formatted(quotation.quotationId()))
+                                        """.formatted(quotation.quotationId(), fixtureOrderDeliveryDate()))
                 )
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.orderNumber").value(reservedOrderNumber))

@@ -331,35 +331,110 @@ public class Order {
     /**
      * Agrega un producto comprometido a la Orden.
      * <p>
-     * Solo permitido mientras el estado sea {@link OrderStatus#CONFIRMED}.
+     * El ítem manual no tiene {@code quotationItemId}. No adivina origen en cotización.
      */
     public void addItem(String productName, int quantity, String fabric, String color, Money unitPrice) {
+        addItem(productName, quantity, fabric, null, color, unitPrice, ProductSpecification.empty());
+    }
+
+    public void addItem(
+            String productName,
+            int quantity,
+            String fabric,
+            String secondaryFabric,
+            String color,
+            Money unitPrice,
+            ProductSpecification productSpecification
+    ) {
         ensureCommercialContentEditable();
         validateQuantity(quantity);
         validateUnitPrice(unitPrice);
 
-        OrderItem item = OrderItem.create(productName, quantity, fabric, color, unitPrice);
-        items.add(item);
+        items.add(OrderItem.create(
+                productName,
+                quantity,
+                fabric,
+                secondaryFabric,
+                color,
+                unitPrice,
+                productSpecification,
+                List.of()
+        ));
         recalculateCommercialState();
+    }
+
+    /**
+     * Actualiza cantidad y precio unitario de un ítem. No cambia {@code quotationItemId}.
+     */
+    public void updateItemCommercialCommitment(UUID itemId, int quantity, Money unitPrice) {
+        ensureCommercialContentEditable();
+        requireItem(itemId).updateCommercialCommitment(quantity, unitPrice);
+        recalculateCommercialState();
+    }
+
+    /**
+     * Reemplaza la especificación comercial de un ítem. No cambia total ni trazabilidad.
+     */
+    public void assignItemProductSpecification(UUID itemId, ProductSpecification productSpecification) {
+        ensureCommercialContentEditable();
+        requireItem(itemId).assignProductSpecification(productSpecification);
+    }
+
+    /**
+     * Reemplaza las tallas de un ítem. No cambia cantidad comercial ni trazabilidad.
+     */
+    public void replaceItemSizes(UUID itemId, List<SizeBreakdown> sizeBreakdowns) {
+        ensureCommercialContentEditable();
+        requireItem(itemId).replaceSizeBreakdowns(sizeBreakdowns);
+    }
+
+    /**
+     * Aplica un descuento sobre el subtotal. No altera precios unitarios.
+     */
+    public void applyDiscount(Money discount) {
+        ensureCommercialContentEditable();
+        Money resolvedDiscount = discount == null ? Money.zero() : discount;
+        Money newTotal = calculateTotal(this.items, resolvedDiscount);
+        this.discount = resolvedDiscount;
+        this.total = newTotal;
+        synchronizePaymentSummary();
     }
 
     /**
      * Elimina un producto comprometido de la Orden.
      * <p>
-     * Solo permitido mientras el estado sea {@link OrderStatus#CONFIRMED}.
      * La Orden nunca puede quedarse sin productos.
+     * No muta el QuotationItem de origen si existía trazabilidad.
      */
     public void removeItem(UUID itemId) {
         ensureCommercialContentEditable();
         Objects.requireNonNull(itemId, "Item id must not be null");
 
-        boolean removed = items.removeIf(item -> item.getId().equals(itemId));
-        if (!removed) {
+        boolean exists = items.stream().anyMatch(item -> item.getId().equals(itemId));
+        if (!exists) {
             throw new OrderDomainException("Order item not found: " + itemId);
         }
+        if (items.size() == 1) {
+            throw new OrderDomainException("An order must have at least one product");
+        }
 
-        ensureHasAtLeastOneProduct();
+        items.removeIf(item -> item.getId().equals(itemId));
         recalculateCommercialState();
+    }
+
+    /**
+     * Rechaza un total comercial inferior al monto ya pagado. No modifica pagos.
+     */
+    public void ensureTotalCoversAmountPaid(Money amountAlreadyPaid) {
+        Objects.requireNonNull(amountAlreadyPaid, "Amount already paid must not be null");
+        if (amountAlreadyPaid.isGreaterThan(total)) {
+            throw new OrderDomainException(
+                    "The new order total cannot be lower than the amount already paid. New total: "
+                            + total.getAmount()
+                            + ", already paid: "
+                            + amountAlreadyPaid.getAmount()
+            );
+        }
     }
 
     public UUID getId() {
@@ -454,12 +529,21 @@ public class Order {
     }
 
     private void ensureCommercialContentEditable() {
-        if (status != OrderStatus.CONFIRMED) {
+        if (!status.allowsCommercialContentEditing()) {
             throw new OrderDomainException(
-                    "Commercial content can only be modified while order status is CONFIRMED. Current status: "
+                    "Commercial content can only be modified while order status is CONFIRMED, "
+                            + "IN_PRODUCTION or READY_FOR_DELIVERY. Current status: "
                             + status
             );
         }
+    }
+
+    private OrderItem requireItem(UUID itemId) {
+        Objects.requireNonNull(itemId, "Item id must not be null");
+        return items.stream()
+                .filter(item -> item.getId().equals(itemId))
+                .findFirst()
+                .orElseThrow(() -> new OrderDomainException("Order item not found: " + itemId));
     }
 
     private void recalculateCommercialState() {

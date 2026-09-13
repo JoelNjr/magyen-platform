@@ -32,18 +32,11 @@ public class ReplaceOrderItemSizesUseCase {
                         "Order not found: " + command.orderId()
                 ));
 
-        OrderItem orderItem = order.getItems().stream()
-                .filter(item -> item.getId().equals(command.orderItemId()))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Order item not found in order: " + command.orderItemId()
-                ));
-
         List<SizeBreakdown> sizeBreakdowns = command.sizes().stream()
                 .map(this::toSizeBreakdown)
                 .toList();
 
-        orderItem.replaceSizeBreakdowns(sizeBreakdowns);
+        order.replaceItemSizes(command.orderItemId(), sizeBreakdowns);
 
         Order savedOrder = orderRepository.save(order);
 

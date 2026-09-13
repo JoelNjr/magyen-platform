@@ -1,5 +1,9 @@
 package com.magyen.platform.commercial.presentation.order.mapper;
 
+import com.magyen.platform.commercial.application.dto.AddOrderItemCommand;
+import com.magyen.platform.commercial.application.dto.AddOrderItemResult;
+import com.magyen.platform.commercial.application.dto.ApplyOrderDiscountCommand;
+import com.magyen.platform.commercial.application.dto.ApplyOrderDiscountResult;
 import com.magyen.platform.commercial.application.dto.CreateOrderFromQuotationCommand;
 import com.magyen.platform.commercial.application.dto.CreateOrderFromQuotationResult;
 import com.magyen.platform.commercial.application.dto.GetOrderCommand;
@@ -12,16 +16,25 @@ import com.magyen.platform.commercial.application.dto.OrderItemResult;
 import com.magyen.platform.commercial.application.dto.OrderResult;
 import com.magyen.platform.commercial.application.dto.ProductSpecificationCommand;
 import com.magyen.platform.commercial.application.dto.ProductSpecificationResult;
+import com.magyen.platform.commercial.application.dto.RemoveOrderItemCommand;
+import com.magyen.platform.commercial.application.dto.RemoveOrderItemResult;
 import com.magyen.platform.commercial.application.dto.ReplaceOrderItemSizesCommand;
 import com.magyen.platform.commercial.application.dto.ReplaceOrderItemSizesResult;
 import com.magyen.platform.commercial.application.dto.SizeBreakdownCommand;
 import com.magyen.platform.commercial.application.dto.SizeBreakdownResult;
+import com.magyen.platform.commercial.application.dto.UpdateOrderItemCommand;
 import com.magyen.platform.commercial.application.dto.UpdateOrderItemProductSpecificationCommand;
 import com.magyen.platform.commercial.application.dto.UpdateOrderItemProductSpecificationResult;
+import com.magyen.platform.commercial.application.dto.UpdateOrderItemResult;
+import com.magyen.platform.commercial.presentation.order.request.AddOrderItemRequest;
+import com.magyen.platform.commercial.presentation.order.request.ApplyOrderDiscountRequest;
 import com.magyen.platform.commercial.presentation.order.request.CreateOrderRequest;
 import com.magyen.platform.commercial.presentation.order.request.ReplaceOrderItemSizesRequest;
 import com.magyen.platform.commercial.presentation.order.request.SizeBreakdownRequest;
 import com.magyen.platform.commercial.presentation.order.request.UpdateOrderItemProductSpecificationRequest;
+import com.magyen.platform.commercial.presentation.order.request.UpdateOrderItemRequest;
+import com.magyen.platform.commercial.presentation.order.response.AddOrderItemResponse;
+import com.magyen.platform.commercial.presentation.order.response.ApplyOrderDiscountResponse;
 import com.magyen.platform.commercial.presentation.order.response.CreateOrderResponse;
 import com.magyen.platform.commercial.presentation.order.response.GetOrderProfitabilityListResponse;
 import com.magyen.platform.commercial.presentation.order.response.GetOrderProfitabilityResponse;
@@ -31,9 +44,12 @@ import com.magyen.platform.commercial.presentation.order.response.GetOrderRespon
 import com.magyen.platform.commercial.presentation.order.response.GetOrdersResponse;
 import com.magyen.platform.commercial.presentation.order.response.GetOrdersResponse.OrderResponse;
 import com.magyen.platform.commercial.presentation.order.response.OrderItemResponse;
+import com.magyen.platform.commercial.presentation.order.response.RemoveOrderItemResponse;
 import com.magyen.platform.commercial.presentation.order.response.ReplaceOrderItemSizesResponse;
 import com.magyen.platform.commercial.presentation.order.response.SizeBreakdownResponse;
 import com.magyen.platform.commercial.presentation.order.response.UpdateOrderItemProductSpecificationResponse;
+import com.magyen.platform.commercial.presentation.order.response.UpdateOrderItemResponse;
+import com.magyen.platform.commercial.presentation.quotation.request.ProductSpecificationRequest;
 import com.magyen.platform.commercial.presentation.quotation.response.ProductSpecificationResponse;
 
 import java.util.Collections;
@@ -226,6 +242,99 @@ public class OrderPresentationMapper {
         );
     }
 
+    public AddOrderItemCommand toAddOrderItemCommand(UUID orderId, AddOrderItemRequest request) {
+        Objects.requireNonNull(orderId, "Order id must not be null");
+        Objects.requireNonNull(request, "AddOrderItemRequest must not be null");
+
+        return new AddOrderItemCommand(
+                orderId,
+                request.productName(),
+                request.quantity(),
+                request.fabric(),
+                request.secondaryFabric(),
+                request.color(),
+                request.unitPrice(),
+                toProductSpecificationCommand(request.productSpecification())
+        );
+    }
+
+    public AddOrderItemResponse toResponse(AddOrderItemResult result) {
+        Objects.requireNonNull(result, "AddOrderItemResult must not be null");
+        return new AddOrderItemResponse(
+                result.orderId(),
+                result.itemId(),
+                result.subtotalAmount(),
+                result.discountAmount(),
+                result.totalAmount()
+        );
+    }
+
+    public UpdateOrderItemCommand toUpdateOrderItemCommand(
+            UUID orderId,
+            UUID itemId,
+            UpdateOrderItemRequest request
+    ) {
+        Objects.requireNonNull(orderId, "Order id must not be null");
+        Objects.requireNonNull(itemId, "Item id must not be null");
+        Objects.requireNonNull(request, "UpdateOrderItemRequest must not be null");
+
+        return new UpdateOrderItemCommand(
+                orderId,
+                itemId,
+                request.quantity(),
+                request.unitPrice()
+        );
+    }
+
+    public UpdateOrderItemResponse toResponse(UpdateOrderItemResult result) {
+        Objects.requireNonNull(result, "UpdateOrderItemResult must not be null");
+        return new UpdateOrderItemResponse(
+                result.orderId(),
+                result.itemId(),
+                result.quantity(),
+                result.unitPrice(),
+                result.itemSubtotal(),
+                result.subtotalAmount(),
+                result.discountAmount(),
+                result.totalAmount()
+        );
+    }
+
+    public RemoveOrderItemCommand toRemoveOrderItemCommand(UUID orderId, UUID itemId) {
+        Objects.requireNonNull(orderId, "Order id must not be null");
+        Objects.requireNonNull(itemId, "Item id must not be null");
+        return new RemoveOrderItemCommand(orderId, itemId);
+    }
+
+    public RemoveOrderItemResponse toResponse(RemoveOrderItemResult result) {
+        Objects.requireNonNull(result, "RemoveOrderItemResult must not be null");
+        return new RemoveOrderItemResponse(
+                result.orderId(),
+                result.subtotalAmount(),
+                result.discountAmount(),
+                result.totalAmount()
+        );
+    }
+
+    public ApplyOrderDiscountCommand toApplyOrderDiscountCommand(
+            UUID orderId,
+            ApplyOrderDiscountRequest request
+    ) {
+        Objects.requireNonNull(orderId, "Order id must not be null");
+        Objects.requireNonNull(request, "ApplyOrderDiscountRequest must not be null");
+        return new ApplyOrderDiscountCommand(orderId, request.discountAmount());
+    }
+
+    public ApplyOrderDiscountResponse toResponse(ApplyOrderDiscountResult result) {
+        Objects.requireNonNull(result, "ApplyOrderDiscountResult must not be null");
+        return new ApplyOrderDiscountResponse(
+                result.orderId(),
+                result.subtotalAmount(),
+                result.discountAmount(),
+                result.totalAmount()
+        );
+    }
+
     public UpdateOrderItemProductSpecificationCommand toUpdateOrderItemProductSpecificationCommand(
             UUID orderId,
             UUID orderItemId,
@@ -295,6 +404,28 @@ public class OrderPresentationMapper {
 
     private SizeBreakdownResponse toSizeBreakdownResponse(SizeBreakdownResult result) {
         return new SizeBreakdownResponse(result.size(), result.quantity());
+    }
+
+    private ProductSpecificationCommand toProductSpecificationCommand(ProductSpecificationRequest request) {
+        if (request == null) {
+            return null;
+        }
+
+        return new ProductSpecificationCommand(
+                request.garmentType(),
+                request.collarType(),
+                request.sleeveType(),
+                request.cuffRequired(),
+                booleanOrFalse(request.sublimationRequired()),
+                booleanOrFalse(request.embroideryRequired()),
+                booleanOrFalse(request.dtfRequired()),
+                request.decorationNotes(),
+                booleanOrFalse(request.includesNames()),
+                booleanOrFalse(request.includesNumbers()),
+                booleanOrFalse(request.includesLogos()),
+                request.personalizationNotes(),
+                request.itemObservations()
+        );
     }
 
     private ProductSpecificationResponse toProductSpecificationResponse(ProductSpecificationResult result) {

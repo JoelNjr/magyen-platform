@@ -1,4 +1,7 @@
 import { useEffect, useState } from 'react'
+import AddIcon from '@mui/icons-material/Add'
+import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined'
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined'
 import {
   Alert,
@@ -6,6 +9,7 @@ import {
   Chip,
   Divider,
   Grid,
+  IconButton,
   Paper,
   Skeleton,
   Snackbar,
@@ -16,13 +20,18 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TextField,
+  Tooltip,
   Typography,
 } from '@mui/material'
 import { Link as RouterLink, useLocation, useNavigate, useParams } from 'react-router-dom'
+import AddQuotationItemDialog from '../components/AddQuotationItemDialog'
 import CreateProductionOrderDialog from '../components/CreateProductionOrderDialog'
+import EditOrderItemCommercialDialog from '../components/EditOrderItemCommercialDialog'
 import RegisterOrderPaymentDialog from '../components/RegisterOrderPaymentDialog'
 import ManageOrderItemProductSpecificationDialog from '../components/ManageOrderItemProductSpecificationDialog'
 import ManageOrderItemSizesDialog from '../components/ManageOrderItemSizesDialog'
+import RemoveOrderItemDialog from '../components/RemoveOrderItemDialog'
 import { formatDisplayDate } from '../presentation/formatDisplayDate'
 import {
   formatLaborProductionCost,
@@ -33,7 +42,10 @@ import {
   getOrderProfitabilityStatusAlertSeverity,
   getOrderProfitabilityStatusChipProps,
 } from '../presentation/orderProfitabilityPresentation'
-import { getOrderStatusChipProps } from '../presentation/orderStatusPresentation'
+import {
+  canEditOrderCommercialContent,
+  getOrderStatusChipProps,
+} from '../presentation/orderStatusPresentation'
 import {
   formatCuffRequired,
   formatQuotationNumberDisplay,
@@ -43,12 +55,16 @@ import {
   resolveCustomerName,
 } from '../presentation/resolveCustomerName'
 import {
+  addOrderItem,
+  applyOrderDiscount,
   downloadOrderRemissionPdf,
   getCustomers,
   getOrder,
   getOrderProfitability,
   getPaymentsByOrder,
   registerOrderPayment,
+  removeOrderItem,
+  updateOrderItem,
 } from '../services/commercialService'
 import PageHeader, { BrandAccentLine } from '../../../layout/PageHeader'
 import {
@@ -129,7 +145,7 @@ function DetailField({ label, children }) {
   )
 }
 
-function ProductSpecificationSection({ item, onEdit }) {
+function ProductSpecificationSection({ item, onEdit, canEdit }) {
   const specification = item.productSpecification
 
   return (
@@ -143,14 +159,16 @@ function ProductSpecificationSection({ item, onEdit }) {
         <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
           Especificaciones
         </Typography>
-        <Button
-          type="button"
-          variant="outlined"
-          size="small"
-          onClick={() => onEdit(item)}
-        >
-          Editar especificaciones
-        </Button>
+        {canEdit ? (
+          <Button
+            type="button"
+            variant="outlined"
+            size="small"
+            onClick={() => onEdit(item)}
+          >
+            Editar especificaciones
+          </Button>
+        ) : null}
       </Stack>
 
       {!specification ? (
@@ -238,7 +256,7 @@ function ProductSpecificationSection({ item, onEdit }) {
   )
 }
 
-function OrderItemSizesSection({ item, onManage }) {
+function OrderItemSizesSection({ item, onManage, canEdit }) {
   const sizes = Array.isArray(item.sizes) ? item.sizes : []
   const registeredQuantity = sumRegisteredSizes(sizes)
   const hasSizes = sizes.length > 0
@@ -266,15 +284,17 @@ function OrderItemSizesSection({ item, onManage }) {
         Tallas registradas: {registeredQuantity} / {item.quantity}
       </Typography>
 
-      <Button
-        type="button"
-        variant="outlined"
-        size="small"
-        onClick={() => onManage(item)}
-        sx={{ alignSelf: 'flex-start' }}
-      >
-        {buttonLabel}
-      </Button>
+      {canEdit ? (
+        <Button
+          type="button"
+          variant="outlined"
+          size="small"
+          onClick={() => onManage(item)}
+          sx={{ alignSelf: 'flex-start' }}
+        >
+          {buttonLabel}
+        </Button>
+      ) : null}
     </Stack>
   )
 }
@@ -334,6 +354,18 @@ function OrderDetailPage() {
   const [successMessage, setSuccessMessage] = useState('')
   const [sizesDialogItem, setSizesDialogItem] = useState(null)
   const [specificationDialogItem, setSpecificationDialogItem] = useState(null)
+  const [addItemOpen, setAddItemOpen] = useState(false)
+  const [addingItem, setAddingItem] = useState(false)
+  const [addItemError, setAddItemError] = useState(false)
+  const [editItem, setEditItem] = useState(null)
+  const [updatingItem, setUpdatingItem] = useState(false)
+  const [editItemError, setEditItemError] = useState('')
+  const [removeItem, setRemoveItem] = useState(null)
+  const [removingItem, setRemovingItem] = useState(false)
+  const [removeItemError, setRemoveItemError] = useState('')
+  const [discountInput, setDiscountInput] = useState('')
+  const [applyingDiscount, setApplyingDiscount] = useState(false)
+  const [discountError, setDiscountError] = useState('')
   const [linkedProductionOrderId, setLinkedProductionOrderId] = useState(null)
   const [productionLookupFailed, setProductionLookupFailed] = useState(false)
   const [createProductionDialogOpen, setCreateProductionDialogOpen] =
@@ -486,6 +518,85 @@ function OrderDetailPage() {
     await refreshOrderAfterSave('Especificaciones actualizadas correctamente.')
   }
 
+  async function handleAddOrderItem(payload) {
+    if (addingItem || !order) {
+      return
+    }
+
+    setAddingItem(true)
+    setAddItemError(false)
+    try {
+      await addOrderItem(order.orderId, payload)
+      setAddItemOpen(false)
+      await refreshOrderAfterSave('Producto agregado a la orden.')
+    } catch {
+      setAddItemError(true)
+    } finally {
+      setAddingItem(false)
+    }
+  }
+
+  async function handleUpdateOrderItem(payload) {
+    if (updatingItem || !order || !editItem) {
+      return
+    }
+
+    setUpdatingItem(true)
+    setEditItemError('')
+    try {
+      await updateOrderItem(order.orderId, editItem.itemId, payload)
+      setEditItem(null)
+      await refreshOrderAfterSave('Producto de la orden actualizado.')
+    } catch (error) {
+      setEditItemError(
+        resolveApiErrorMessage(error, 'No fue posible actualizar el producto.')
+      )
+    } finally {
+      setUpdatingItem(false)
+    }
+  }
+
+  async function handleRemoveOrderItem() {
+    if (removingItem || !order || !removeItem) {
+      return
+    }
+
+    setRemovingItem(true)
+    setRemoveItemError('')
+    try {
+      await removeOrderItem(order.orderId, removeItem.itemId)
+      setRemoveItem(null)
+      await refreshOrderAfterSave('Producto eliminado de la orden.')
+    } catch (error) {
+      setRemoveItemError(
+        resolveApiErrorMessage(error, 'No fue posible eliminar el producto.')
+      )
+    } finally {
+      setRemovingItem(false)
+    }
+  }
+
+  async function handleApplyDiscount() {
+    if (applyingDiscount || !order) {
+      return
+    }
+
+    setApplyingDiscount(true)
+    setDiscountError('')
+    try {
+      await applyOrderDiscount(order.orderId, {
+        discountAmount: Number(discountInput),
+      })
+      await refreshOrderAfterSave('Descuento de la orden actualizado.')
+    } catch (error) {
+      setDiscountError(
+        resolveApiErrorMessage(error, 'No fue posible aplicar el descuento.')
+      )
+    } finally {
+      setApplyingDiscount(false)
+    }
+  }
+
   function openCreateProductionDialog() {
     if (creatingProductionOrder) {
       return
@@ -603,6 +714,7 @@ function OrderDetailPage() {
   const deliveryCommitment = order?.deliveryCommitment
   const paymentSummary = order?.paymentSummary
   const isConfirmedOrder = order?.status === 'CONFIRMED'
+  const canEditCommercialContent = canEditOrderCommercialContent(order?.status)
   const canCreateProductionOrder =
     isConfirmedOrder && !linkedProductionOrderId
   const showProductionSection =
@@ -980,7 +1092,26 @@ function OrderDetailPage() {
 
           <Paper sx={{ p: 3 }}>
             <Stack spacing={3}>
-              <Typography variant="h5">Productos</Typography>
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                spacing={1.5}
+                justifyContent="space-between"
+                alignItems={{ xs: 'stretch', sm: 'center' }}
+              >
+                <Typography variant="h5">Productos</Typography>
+                {canEditCommercialContent ? (
+                  <Button
+                    variant="outlined"
+                    startIcon={<AddIcon />}
+                    onClick={() => {
+                      setAddItemError(false)
+                      setAddItemOpen(true)
+                    }}
+                  >
+                    Agregar producto
+                  </Button>
+                ) : null}
+              </Stack>
 
               {items.length === 0 ? (
                 <Stack spacing={1.5} alignItems="center" sx={{ py: 3 }}>
@@ -992,6 +1123,18 @@ function OrderDetailPage() {
                   <Typography color="text.secondary" textAlign="center">
                     El snapshot comercial no contiene líneas de producto.
                   </Typography>
+                  {canEditCommercialContent ? (
+                    <Button
+                      variant="outlined"
+                      startIcon={<AddIcon />}
+                      onClick={() => {
+                        setAddItemError(false)
+                        setAddItemOpen(true)
+                      }}
+                    >
+                      Agregar producto
+                    </Button>
+                  ) : null}
                 </Stack>
               ) : (
                 <Stack spacing={3}>
@@ -1012,6 +1155,11 @@ function OrderDetailPage() {
                           <TableCell align="right" sx={headerCellSx}>
                             Subtotal
                           </TableCell>
+                          {canEditCommercialContent ? (
+                            <TableCell align="right" sx={headerCellSx}>
+                              Acciones
+                            </TableCell>
+                          ) : null}
                         </TableRow>
                       </TableHead>
                       <TableBody>
@@ -1028,6 +1176,44 @@ function OrderDetailPage() {
                             <TableCell align="right">
                               {formatCurrency(item.subtotal)}
                             </TableCell>
+                            {canEditCommercialContent ? (
+                              <TableCell align="right">
+                                <Stack
+                                  direction="row"
+                                  spacing={0.5}
+                                  justifyContent="flex-end"
+                                >
+                                  <Tooltip title="Editar cantidad y precio">
+                                    <span>
+                                      <IconButton
+                                        aria-label="Editar producto"
+                                        size="small"
+                                        onClick={() => {
+                                          setEditItemError('')
+                                          setEditItem(item)
+                                        }}
+                                      >
+                                        <EditOutlinedIcon fontSize="small" />
+                                      </IconButton>
+                                    </span>
+                                  </Tooltip>
+                                  <Tooltip title="Eliminar">
+                                    <span>
+                                      <IconButton
+                                        aria-label="Eliminar producto"
+                                        size="small"
+                                        onClick={() => {
+                                          setRemoveItemError('')
+                                          setRemoveItem(item)
+                                        }}
+                                      >
+                                        <DeleteOutlinedIcon fontSize="small" />
+                                      </IconButton>
+                                    </span>
+                                  </Tooltip>
+                                </Stack>
+                              </TableCell>
+                            ) : null}
                           </TableRow>
                         ))}
                       </TableBody>
@@ -1056,6 +1242,7 @@ function OrderDetailPage() {
                         <ProductSpecificationSection
                           item={item}
                           onEdit={setSpecificationDialogItem}
+                          canEdit={canEditCommercialContent}
                         />
 
                         <Divider />
@@ -1063,6 +1250,7 @@ function OrderDetailPage() {
                         <OrderItemSizesSection
                           item={item}
                           onManage={setSizesDialogItem}
+                          canEdit={canEditCommercialContent}
                         />
                       </Stack>
                     </Paper>
@@ -1094,6 +1282,32 @@ function OrderDetailPage() {
                     {formatCurrency(order.discountAmount ?? 0)}
                   </Typography>
                 </Stack>
+                {canEditCommercialContent ? (
+                  <Stack
+                    direction={{ xs: 'column', sm: 'row' }}
+                    spacing={1.5}
+                    alignItems={{ sm: 'center' }}
+                  >
+                    <TextField
+                      label="Descuento sobre el total"
+                      type="number"
+                      size="small"
+                      value={discountInput}
+                      onChange={(event) => setDiscountInput(event.target.value)}
+                      disabled={applyingDiscount}
+                      inputProps={{ min: 0, step: '0.01' }}
+                      sx={{ maxWidth: { sm: 220 } }}
+                    />
+                    <Button
+                      variant="outlined"
+                      onClick={handleApplyDiscount}
+                      disabled={applyingDiscount}
+                    >
+                      {applyingDiscount ? 'Aplicando...' : 'Aplicar descuento'}
+                    </Button>
+                  </Stack>
+                ) : null}
+                {discountError ? <Alert severity="error">{discountError}</Alert> : null}
                 <Stack
                   direction="row"
                   justifyContent="space-between"
@@ -1165,6 +1379,47 @@ function OrderDetailPage() {
           )}
         </>
       )}
+
+      <AddQuotationItemDialog
+        open={addItemOpen}
+        onClose={() => {
+          if (!addingItem) {
+            setAddItemOpen(false)
+            setAddItemError(false)
+          }
+        }}
+        onSubmit={handleAddOrderItem}
+        submitting={addingItem}
+        error={addItemError}
+      />
+
+      <EditOrderItemCommercialDialog
+        open={Boolean(editItem)}
+        item={editItem}
+        submitting={updatingItem}
+        errorMessage={editItemError}
+        onClose={() => {
+          if (!updatingItem) {
+            setEditItem(null)
+            setEditItemError('')
+          }
+        }}
+        onSubmit={handleUpdateOrderItem}
+      />
+
+      <RemoveOrderItemDialog
+        open={Boolean(removeItem)}
+        productName={removeItem?.productName}
+        submitting={removingItem}
+        errorMessage={removeItemError}
+        onClose={() => {
+          if (!removingItem) {
+            setRemoveItem(null)
+            setRemoveItemError('')
+          }
+        }}
+        onConfirm={handleRemoveOrderItem}
+      />
 
       <ManageOrderItemSizesDialog
         open={Boolean(sizesDialogItem)}

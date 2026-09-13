@@ -9,5 +9,12 @@ public enum OrderStatus {
     IN_PRODUCTION,
     READY_FOR_DELIVERY,
     DELIVERED,
-    CLOSED
+    CLOSED;
+
+    /**
+     * Contenido comercial editable hasta la entrega. DELIVERED y CLOSED quedan congelados.
+     */
+    public boolean allowsCommercialContentEditing() {
+        return this == CONFIRMED || this == IN_PRODUCTION || this == READY_FOR_DELIVERY;
+    }
 }
