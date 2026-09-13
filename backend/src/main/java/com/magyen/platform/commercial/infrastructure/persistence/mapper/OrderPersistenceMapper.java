@@ -86,6 +86,7 @@ public class OrderPersistenceMapper {
 
         OrderItemEntity itemEntity = new OrderItemEntity();
         itemEntity.setId(item.getId());
+        itemEntity.setQuotationItemId(item.getQuotationItemId());
         itemEntity.setProductName(item.getProductName());
         itemEntity.setQuantity(item.getQuantity());
         itemEntity.setFabric(item.getFabric());
@@ -123,7 +124,8 @@ public class OrderPersistenceMapper {
                 itemEntity.getColor(),
                 toMoney(itemEntity.getUnitPrice()),
                 toProductSpecification(itemEntity),
-                sizeBreakdowns
+                sizeBreakdowns,
+                itemEntity.getQuotationItemId()
         );
     }
 

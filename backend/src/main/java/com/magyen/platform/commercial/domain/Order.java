@@ -7,8 +7,10 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -67,6 +69,7 @@ public class Order {
         this.paymentSummary = Objects.requireNonNull(paymentSummary, "Payment summary must not be null");
 
         ensureHasAtLeastOneProduct();
+        ensureUniqueQuotationItemReferences();
         ensurePaymentSummaryMatchesTotal();
     }
 
@@ -479,6 +482,19 @@ public class Order {
     private void ensureHasAtLeastOneProduct() {
         if (items.isEmpty()) {
             throw new OrderDomainException("An order must have at least one product");
+        }
+    }
+
+    private void ensureUniqueQuotationItemReferences() {
+        Set<UUID> referencedQuotationItemIds = new HashSet<>();
+        for (OrderItem item : items) {
+            UUID quotationItemId = item.getQuotationItemId();
+            if (quotationItemId != null && !referencedQuotationItemIds.add(quotationItemId)) {
+                throw new OrderDomainException(
+                        "An order cannot reference the same quotation item more than once: "
+                                + quotationItemId
+                );
+            }
         }
     }
 

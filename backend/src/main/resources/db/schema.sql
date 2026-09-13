@@ -113,6 +113,7 @@ CREATE TABLE orders (
 CREATE TABLE order_items (
     id                      uuid            NOT NULL,
     order_id                uuid            NOT NULL,
+    quotation_item_id       uuid            NULL,
     product_name            varchar(255)    NOT NULL,
     quantity                integer         NOT NULL,
     fabric                  varchar(255)    NOT NULL,
@@ -153,6 +154,12 @@ CREATE TABLE order_item_sizes (
         REFERENCES order_items (id)
         ON DELETE CASCADE
 );
+
+-- Soft UUID: no FK to quotation_items (same pattern as orders.quotation_id).
+-- NULL = historical order item created before commercial traceability.
+CREATE UNIQUE INDEX uq_order_items_quotation_item_id
+    ON order_items (quotation_item_id)
+    WHERE quotation_item_id IS NOT NULL;
 
 CREATE INDEX idx_orders_status
     ON orders (status);

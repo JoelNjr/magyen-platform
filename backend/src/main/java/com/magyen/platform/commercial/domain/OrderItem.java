@@ -22,6 +22,7 @@ import java.util.UUID;
 public class OrderItem {
 
     private final UUID id;
+    private final UUID quotationItemId;
     private final String productName;
     private final int quantity;
     private final String fabric;
@@ -43,7 +44,34 @@ public class OrderItem {
             ProductSpecification productSpecification,
             List<SizeBreakdown> sizeBreakdowns
     ) {
+        this(
+                id,
+                productName,
+                quantity,
+                fabric,
+                secondaryFabric,
+                color,
+                unitPrice,
+                productSpecification,
+                sizeBreakdowns,
+                null
+        );
+    }
+
+    OrderItem(
+            UUID id,
+            String productName,
+            int quantity,
+            String fabric,
+            String secondaryFabric,
+            String color,
+            Money unitPrice,
+            ProductSpecification productSpecification,
+            List<SizeBreakdown> sizeBreakdowns,
+            UUID quotationItemId
+    ) {
         this.id = Objects.requireNonNull(id, "Item id must not be null");
+        this.quotationItemId = quotationItemId;
         this.productName = requireNonBlank(productName, "Product name must not be blank");
         this.quantity = quantity;
         this.fabric = requireNonBlank(fabric, "Fabric must not be blank");
@@ -139,7 +167,8 @@ public class OrderItem {
                 color,
                 unitPrice,
                 productSpecification,
-                sizeBreakdowns
+                sizeBreakdowns,
+                null
         );
     }
 
@@ -165,7 +194,33 @@ public class OrderItem {
                 color,
                 unitPrice,
                 productSpecification,
-                sizeBreakdowns
+                sizeBreakdowns,
+                null
+        );
+    }
+
+    public static OrderItem reconstitute(
+            UUID id,
+            String productName,
+            int quantity,
+            String fabric,
+            String color,
+            Money unitPrice,
+            ProductSpecification productSpecification,
+            List<SizeBreakdown> sizeBreakdowns,
+            UUID quotationItemId
+    ) {
+        return reconstitute(
+                id,
+                productName,
+                quantity,
+                fabric,
+                null,
+                color,
+                unitPrice,
+                productSpecification,
+                sizeBreakdowns,
+                quotationItemId
         );
     }
 
@@ -180,6 +235,32 @@ public class OrderItem {
             ProductSpecification productSpecification,
             List<SizeBreakdown> sizeBreakdowns
     ) {
+        return reconstitute(
+                id,
+                productName,
+                quantity,
+                fabric,
+                secondaryFabric,
+                color,
+                unitPrice,
+                productSpecification,
+                sizeBreakdowns,
+                null
+        );
+    }
+
+    public static OrderItem reconstitute(
+            UUID id,
+            String productName,
+            int quantity,
+            String fabric,
+            String secondaryFabric,
+            String color,
+            Money unitPrice,
+            ProductSpecification productSpecification,
+            List<SizeBreakdown> sizeBreakdowns,
+            UUID quotationItemId
+    ) {
         return new OrderItem(
                 id,
                 productName,
@@ -189,7 +270,8 @@ public class OrderItem {
                 color,
                 unitPrice,
                 productSpecification,
-                sizeBreakdowns
+                sizeBreakdowns,
+                quotationItemId
         );
     }
 
@@ -217,6 +299,13 @@ public class OrderItem {
 
     public UUID getId() {
         return id;
+    }
+
+    /**
+     * Identidad de origen en la cotización. Null en órdenes históricas o ítems creados en la orden.
+     */
+    public UUID getQuotationItemId() {
+        return quotationItemId;
     }
 
     public String getProductName() {

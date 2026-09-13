@@ -30,6 +30,9 @@ public class OrderItemEntity {
     @JoinColumn(name = "order_id", nullable = false)
     private OrderEntity order;
 
+    @Column(name = "quotation_item_id", nullable = true, updatable = false)
+    private UUID quotationItemId;
+
     @Column(name = "product_name", nullable = false, length = 255)
     private String productName;
 
@@ -110,6 +113,14 @@ public class OrderItemEntity {
 
     public void setOrder(OrderEntity order) {
         this.order = order;
+    }
+
+    public UUID getQuotationItemId() {
+        return quotationItemId;
+    }
+
+    public void setQuotationItemId(UUID quotationItemId) {
+        this.quotationItemId = quotationItemId;
     }
 
     public String getProductName() {

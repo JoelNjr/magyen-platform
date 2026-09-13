@@ -23,6 +23,8 @@ import java.util.UUID;
  * <p>
  * El número de orden es el consecutivo ya reservado por la cotización de origen.
  * No se acepta un número escrito por el cliente ni se abre una secuencia nueva.
+ * Cada OrderItem nuevo guarda {@code quotationItemId} para trazabilidad comercial.
+ * No sincroniza cotizaciones ya convertidas ni muta producción.
  */
 public class CreateOrderFromQuotationUseCase {
 
@@ -122,7 +124,8 @@ public class CreateOrderFromQuotationUseCase {
                 quotationItem.getColor(),
                 quotationItem.getUnitPrice(),
                 quotationItem.getProductSpecification(),
-                List.of()
+                List.of(),
+                quotationItem.getId()
         );
     }
 }
