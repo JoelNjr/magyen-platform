@@ -59,7 +59,7 @@ class RemoveQuotationItemUseCaseTest {
     }
 
     @Test
-    void rejectsRemovalWhenQuotationIsApproved() {
+    void rejectsRemovingLastItemWhenQuotationIsApproved() {
         Quotation quotation = approvedQuotation();
         UUID itemId = quotation.getItems().getFirst().getId();
         when(quotationRepository.findById(quotation.getId())).thenReturn(Optional.of(quotation));

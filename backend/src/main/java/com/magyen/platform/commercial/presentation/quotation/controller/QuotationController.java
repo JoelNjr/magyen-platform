@@ -1,5 +1,7 @@
 package com.magyen.platform.commercial.presentation.quotation.controller;
 
+import com.magyen.platform.commercial.application.dto.ApplyQuotationChangesToOrderCommand;
+import com.magyen.platform.commercial.application.dto.ApplyQuotationChangesToOrderResult;
 import com.magyen.platform.commercial.application.dto.ApplyQuotationDiscountCommand;
 import com.magyen.platform.commercial.application.dto.ApplyQuotationDiscountResult;
 import com.magyen.platform.commercial.application.dto.AddQuotationItemCommand;
@@ -13,10 +15,13 @@ import com.magyen.platform.commercial.application.dto.GetQuotationResult;
 import com.magyen.platform.commercial.application.dto.GetQuotationsQuery;
 import com.magyen.platform.commercial.application.dto.GetQuotationsResult;
 import com.magyen.platform.commercial.application.dto.CommercialDocumentPdfResult;
+import com.magyen.platform.commercial.application.dto.PreviewQuotationOrderSynchronizationQuery;
+import com.magyen.platform.commercial.application.dto.PreviewQuotationOrderSynchronizationResult;
 import com.magyen.platform.commercial.application.dto.RemoveQuotationItemCommand;
 import com.magyen.platform.commercial.application.dto.RemoveQuotationItemResult;
 import com.magyen.platform.commercial.application.dto.UpdateQuotationItemCommand;
 import com.magyen.platform.commercial.application.dto.UpdateQuotationItemResult;
+import com.magyen.platform.commercial.application.usecase.ApplyQuotationChangesToOrderUseCase;
 import com.magyen.platform.commercial.application.usecase.ApplyQuotationDiscountUseCase;
 import com.magyen.platform.commercial.application.usecase.AddQuotationItemUseCase;
 import com.magyen.platform.commercial.application.usecase.ApproveQuotationUseCase;
@@ -24,16 +29,19 @@ import com.magyen.platform.commercial.application.usecase.CreateQuotationUseCase
 import com.magyen.platform.commercial.application.usecase.GetQuotationUseCase;
 import com.magyen.platform.commercial.application.usecase.GetQuotationsUseCase;
 import com.magyen.platform.commercial.application.usecase.GenerateQuotationPdfUseCase;
+import com.magyen.platform.commercial.application.usecase.PreviewQuotationOrderSynchronizationUseCase;
 import com.magyen.platform.commercial.application.usecase.RemoveQuotationItemUseCase;
 import com.magyen.platform.commercial.application.usecase.UpdateQuotationItemUseCase;
 import com.magyen.platform.commercial.presentation.quotation.mapper.QuotationPresentationMapper;
 import com.magyen.platform.commercial.presentation.quotation.request.ApplyQuotationDiscountRequest;
 import com.magyen.platform.commercial.presentation.quotation.request.AddQuotationItemRequest;
 import com.magyen.platform.commercial.presentation.quotation.request.CreateQuotationRequest;
+import com.magyen.platform.commercial.presentation.quotation.response.ApplyQuotationChangesToOrderResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.ApplyQuotationDiscountResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.AddQuotationItemResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.ApproveQuotationResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.CreateQuotationResponse;
+import com.magyen.platform.commercial.presentation.quotation.response.PreviewQuotationOrderSynchronizationResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.GetQuotationResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.GetQuotationsResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.RemoveQuotationItemResponse;
@@ -75,6 +83,8 @@ public class QuotationController {
     private final GetQuotationUseCase getQuotationUseCase;
     private final GenerateQuotationPdfUseCase generateQuotationPdfUseCase;
     private final ApplyQuotationDiscountUseCase applyQuotationDiscountUseCase;
+    private final PreviewQuotationOrderSynchronizationUseCase previewQuotationOrderSynchronizationUseCase;
+    private final ApplyQuotationChangesToOrderUseCase applyQuotationChangesToOrderUseCase;
     private final QuotationPresentationMapper quotationPresentationMapper;
 
     public QuotationController(
@@ -87,6 +97,8 @@ public class QuotationController {
             GetQuotationUseCase getQuotationUseCase,
             GenerateQuotationPdfUseCase generateQuotationPdfUseCase,
             ApplyQuotationDiscountUseCase applyQuotationDiscountUseCase,
+            PreviewQuotationOrderSynchronizationUseCase previewQuotationOrderSynchronizationUseCase,
+            ApplyQuotationChangesToOrderUseCase applyQuotationChangesToOrderUseCase,
             QuotationPresentationMapper quotationPresentationMapper
     ) {
         this.createQuotationUseCase = createQuotationUseCase;
@@ -98,6 +110,8 @@ public class QuotationController {
         this.getQuotationUseCase = getQuotationUseCase;
         this.generateQuotationPdfUseCase = generateQuotationPdfUseCase;
         this.applyQuotationDiscountUseCase = applyQuotationDiscountUseCase;
+        this.previewQuotationOrderSynchronizationUseCase = previewQuotationOrderSynchronizationUseCase;
+        this.applyQuotationChangesToOrderUseCase = applyQuotationChangesToOrderUseCase;
         this.quotationPresentationMapper = quotationPresentationMapper;
     }
 
@@ -193,6 +207,27 @@ public class QuotationController {
                 quotationPresentationMapper.toApplyDiscountCommand(quotationId, request);
         ApplyQuotationDiscountResult result = applyQuotationDiscountUseCase.execute(command);
         return ResponseEntity.ok(quotationPresentationMapper.toApplyDiscountResponse(result));
+    }
+
+    @GetMapping("/{quotationId}/order-synchronization")
+    public ResponseEntity<PreviewQuotationOrderSynchronizationResponse> previewOrderSynchronization(
+            @PathVariable UUID quotationId
+    ) {
+        PreviewQuotationOrderSynchronizationQuery query =
+                quotationPresentationMapper.toPreviewSynchronizationQuery(quotationId);
+        PreviewQuotationOrderSynchronizationResult result =
+                previewQuotationOrderSynchronizationUseCase.execute(query);
+        return ResponseEntity.ok(quotationPresentationMapper.toResponse(result));
+    }
+
+    @PostMapping("/{quotationId}/apply-to-order")
+    public ResponseEntity<ApplyQuotationChangesToOrderResponse> applyQuotationChangesToOrder(
+            @PathVariable UUID quotationId
+    ) {
+        ApplyQuotationChangesToOrderCommand command =
+                quotationPresentationMapper.toApplyQuotationChangesToOrderCommand(quotationId);
+        ApplyQuotationChangesToOrderResult result = applyQuotationChangesToOrderUseCase.execute(command);
+        return ResponseEntity.ok(quotationPresentationMapper.toResponse(result));
     }
 
     @PatchMapping("/{quotationId}/approve")

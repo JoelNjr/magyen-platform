@@ -1,5 +1,7 @@
 package com.magyen.platform.commercial.presentation.quotation.mapper;
 
+import com.magyen.platform.commercial.application.dto.ApplyQuotationChangesToOrderCommand;
+import com.magyen.platform.commercial.application.dto.ApplyQuotationChangesToOrderResult;
 import com.magyen.platform.commercial.application.dto.ApplyQuotationDiscountCommand;
 import com.magyen.platform.commercial.application.dto.ApplyQuotationDiscountResult;
 import com.magyen.platform.commercial.application.dto.AddQuotationItemCommand;
@@ -15,17 +17,23 @@ import com.magyen.platform.commercial.application.dto.ProductSpecificationComman
 import com.magyen.platform.commercial.application.dto.ProductSpecificationResult;
 import com.magyen.platform.commercial.application.dto.RemoveQuotationItemCommand;
 import com.magyen.platform.commercial.application.dto.RemoveQuotationItemResult;
+import com.magyen.platform.commercial.application.dto.PreviewQuotationOrderSynchronizationQuery;
+import com.magyen.platform.commercial.application.dto.PreviewQuotationOrderSynchronizationResult;
+import com.magyen.platform.commercial.application.dto.SizeBreakdownResult;
 import com.magyen.platform.commercial.application.dto.UpdateQuotationItemCommand;
 import com.magyen.platform.commercial.application.dto.UpdateQuotationItemResult;
 import com.magyen.platform.commercial.presentation.quotation.request.ApplyQuotationDiscountRequest;
 import com.magyen.platform.commercial.presentation.quotation.request.AddQuotationItemRequest;
 import com.magyen.platform.commercial.presentation.quotation.request.CreateQuotationRequest;
 import com.magyen.platform.commercial.presentation.quotation.request.ProductSpecificationRequest;
+import com.magyen.platform.commercial.presentation.order.response.SizeBreakdownResponse;
+import com.magyen.platform.commercial.presentation.quotation.response.ApplyQuotationChangesToOrderResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.ApplyQuotationDiscountResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.AddQuotationItemResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.ApproveQuotationResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.CreateQuotationResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.GetQuotationResponse;
+import com.magyen.platform.commercial.presentation.quotation.response.PreviewQuotationOrderSynchronizationResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.GetQuotationsResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.GetQuotationsResponse.QuotationResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.ProductSpecificationResponse;
@@ -287,5 +295,113 @@ public class QuotationPresentationMapper {
 
     private boolean booleanOrFalse(Boolean value) {
         return value != null && value;
+    }
+
+    public PreviewQuotationOrderSynchronizationQuery toPreviewSynchronizationQuery(UUID quotationId) {
+        Objects.requireNonNull(quotationId, "Quotation id must not be null");
+        return new PreviewQuotationOrderSynchronizationQuery(quotationId);
+    }
+
+    public ApplyQuotationChangesToOrderCommand toApplyQuotationChangesToOrderCommand(UUID quotationId) {
+        Objects.requireNonNull(quotationId, "Quotation id must not be null");
+        return new ApplyQuotationChangesToOrderCommand(quotationId);
+    }
+
+    public PreviewQuotationOrderSynchronizationResponse toResponse(
+            PreviewQuotationOrderSynchronizationResult result
+    ) {
+        Objects.requireNonNull(result, "Preview result must not be null");
+        return new PreviewQuotationOrderSynchronizationResponse(
+                result.orderExists(),
+                result.orderId(),
+                result.orderNumber(),
+                result.orderStatus(),
+                result.applyAllowed(),
+                result.unavailableReason(),
+                result.legacyUntraced(),
+                result.paymentFloorViolation(),
+                result.sizeConstraintViolation(),
+                result.matchedChanges().stream().map(this::toMatchedChange).toList(),
+                result.additions().stream().map(this::toAddition).toList(),
+                result.orphanRemovals().stream().map(this::toOrphan).toList(),
+                result.manualsPreserved().stream().map(this::toManual).toList(),
+                result.currentSubtotal(),
+                result.proposedSubtotal(),
+                result.currentDiscount(),
+                result.proposedDiscount(),
+                result.currentTotal(),
+                result.proposedTotal(),
+                result.collectedAmount(),
+                result.proposedOutstanding()
+        );
+    }
+
+    public ApplyQuotationChangesToOrderResponse toResponse(ApplyQuotationChangesToOrderResult result) {
+        Objects.requireNonNull(result, "Apply result must not be null");
+        return new ApplyQuotationChangesToOrderResponse(
+                result.orderId(),
+                result.subtotalAmount(),
+                result.discountAmount(),
+                result.totalAmount()
+        );
+    }
+
+    private PreviewQuotationOrderSynchronizationResponse.MatchedItemChangeResponse toMatchedChange(
+            PreviewQuotationOrderSynchronizationResult.MatchedItemChange change
+    ) {
+        return new PreviewQuotationOrderSynchronizationResponse.MatchedItemChangeResponse(
+                change.orderItemId(),
+                change.quotationItemId(),
+                change.productName(),
+                change.currentQuantity(),
+                change.proposedQuantity(),
+                change.currentUnitPrice(),
+                change.proposedUnitPrice(),
+                change.currentSubtotal(),
+                change.proposedSubtotal(),
+                change.sizes().stream().map(this::toSizeResponse).toList()
+        );
+    }
+
+    private PreviewQuotationOrderSynchronizationResponse.QuotationOnlyAdditionResponse toAddition(
+            PreviewQuotationOrderSynchronizationResult.QuotationOnlyAddition addition
+    ) {
+        return new PreviewQuotationOrderSynchronizationResponse.QuotationOnlyAdditionResponse(
+                addition.quotationItemId(),
+                addition.productName(),
+                addition.quantity(),
+                addition.unitPrice(),
+                addition.subtotal()
+        );
+    }
+
+    private PreviewQuotationOrderSynchronizationResponse.OrphanRemovalResponse toOrphan(
+            PreviewQuotationOrderSynchronizationResult.OrphanRemoval removal
+    ) {
+        return new PreviewQuotationOrderSynchronizationResponse.OrphanRemovalResponse(
+                removal.orderItemId(),
+                removal.quotationItemId(),
+                removal.productName(),
+                removal.quantity(),
+                removal.unitPrice(),
+                removal.subtotal(),
+                removal.sizes().stream().map(this::toSizeResponse).toList()
+        );
+    }
+
+    private PreviewQuotationOrderSynchronizationResponse.ManualItemPreservedResponse toManual(
+            PreviewQuotationOrderSynchronizationResult.ManualItemPreserved manual
+    ) {
+        return new PreviewQuotationOrderSynchronizationResponse.ManualItemPreservedResponse(
+                manual.orderItemId(),
+                manual.productName(),
+                manual.quantity(),
+                manual.unitPrice(),
+                manual.subtotal()
+        );
+    }
+
+    private SizeBreakdownResponse toSizeResponse(SizeBreakdownResult size) {
+        return new SizeBreakdownResponse(size.size(), size.quantity());
     }
 }

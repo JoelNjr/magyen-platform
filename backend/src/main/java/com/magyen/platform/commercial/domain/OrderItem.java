@@ -23,11 +23,11 @@ public class OrderItem {
 
     private final UUID id;
     private final UUID quotationItemId;
-    private final String productName;
+    private String productName;
     private int quantity;
-    private final String fabric;
-    private final String secondaryFabric;
-    private final String color;
+    private String fabric;
+    private String secondaryFabric;
+    private String color;
     private Money unitPrice;
     private Money subtotal;
     private ProductSpecification productSpecification;
@@ -173,6 +173,25 @@ public class OrderItem {
     }
 
     /**
+     * Crea un ítem trazado desde una cotización. Tallas vacías. No adivina origen.
+     */
+    static OrderItem createFromQuotation(QuotationItem quotationItem) {
+        Objects.requireNonNull(quotationItem, "Quotation item must not be null");
+        return new OrderItem(
+                UUID.randomUUID(),
+                quotationItem.getProductName(),
+                quotationItem.getQuantity(),
+                quotationItem.getFabric(),
+                quotationItem.getSecondaryFabric(),
+                quotationItem.getColor(),
+                quotationItem.getUnitPrice(),
+                quotationItem.getProductSpecification(),
+                List.of(),
+                quotationItem.getId()
+        );
+    }
+
+    /**
      * Reconstruye un ítem desde persistencia. No aplica lógica de creación de negocio.
      */
     public static OrderItem reconstitute(
@@ -301,6 +320,50 @@ public class OrderItem {
         this.quantity = quantity;
         this.unitPrice = unitPrice;
         this.subtotal = unitPrice.multiply(quantity);
+    }
+
+    /**
+     * Copia los campos comerciales equivalentes de un QuotationItem.
+     * <p>
+     * No cambia {@code id}, {@code quotationItemId} ni tallas.
+     * Rechaza una cantidad menor que la suma de tallas ya registradas.
+     */
+    void applyQuotationCommercialSource(QuotationItem quotationItem) {
+        Objects.requireNonNull(quotationItem, "Quotation item must not be null");
+        if (quotationItemId == null || !quotationItemId.equals(quotationItem.getId())) {
+            throw new OrderDomainException(
+                    "Order item is not traced to the supplied quotation item: " + quotationItem.getId()
+            );
+        }
+
+        int newQuantity = quotationItem.getQuantity();
+        Money newUnitPrice = quotationItem.getUnitPrice();
+        if (newQuantity <= 0) {
+            throw new OrderDomainException("Quantity must be greater than zero");
+        }
+        Objects.requireNonNull(newUnitPrice, "Unit price must not be null");
+        if (newUnitPrice.getAmount().signum() <= 0) {
+            throw new OrderDomainException("Unit price must be greater than zero");
+        }
+
+        int assignedSizeQuantity = getAssignedSizeQuantity();
+        if (assignedSizeQuantity > newQuantity) {
+            throw new OrderDomainException(
+                    "Total size quantity must not exceed order item quantity. "
+                            + "Assigned: " + assignedSizeQuantity + ", item quantity: " + newQuantity
+            );
+        }
+
+        this.productName = requireNonBlank(quotationItem.getProductName(), "Product name must not be blank");
+        this.fabric = requireNonBlank(quotationItem.getFabric(), "Fabric must not be blank");
+        this.secondaryFabric = blankToNull(quotationItem.getSecondaryFabric());
+        this.color = requireNonBlank(quotationItem.getColor(), "Color must not be blank");
+        this.quantity = newQuantity;
+        this.unitPrice = newUnitPrice;
+        this.subtotal = newUnitPrice.multiply(newQuantity);
+        this.productSpecification = quotationItem.getProductSpecification() == null
+                ? ProductSpecification.empty()
+                : quotationItem.getProductSpecification();
     }
 
     /**

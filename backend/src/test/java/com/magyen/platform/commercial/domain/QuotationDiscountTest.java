@@ -59,13 +59,24 @@ class QuotationDiscountTest {
     }
 
     @Test
-    void approvedQuotationCannotReceiveDiscount() {
+    void approvedQuotationCanReceiveDiscount() {
         Quotation quotation = draftWithItem();
         quotation.approve();
+        quotation.applyDiscount(Money.of(new BigDecimal("10000.00")));
+        assertEquals(new BigDecimal("990000.00"), quotation.getTotal().getAmount());
+        assertEquals(QuotationStatus.APPROVED, quotation.getStatus());
+    }
+
+    @Test
+    void rejectedDiscountLeavesAggregateUnchanged() {
+        Quotation quotation = draftWithItem();
+        quotation.applyDiscount(Money.of(new BigDecimal("100000.00")));
         assertThrows(
                 QuotationDomainException.class,
-                () -> quotation.applyDiscount(Money.of(new BigDecimal("10000.00")))
+                () -> quotation.applyDiscount(Money.of(new BigDecimal("1000001.00")))
         );
+        assertEquals(new BigDecimal("100000.00"), quotation.getDiscount().getAmount());
+        assertEquals(new BigDecimal("900000.00"), quotation.getTotal().getAmount());
     }
 
     @Test

@@ -169,12 +169,6 @@ public class Quotation {
             Money unitPrice,
             ProductSpecification productSpecification
     ) {
-        if (status != QuotationStatus.DRAFT) {
-            throw new QuotationDomainException(
-                    "Items can only be added while the quotation is draft. Current status: " + status
-            );
-        }
-
         validateQuantity(quantity);
         validateUnitPrice(unitPrice);
 
@@ -187,8 +181,12 @@ public class Quotation {
                 unitPrice,
                 productSpecification
         );
+        List<QuotationItem> proposedItems = new ArrayList<>(items);
+        proposedItems.add(item);
+        Money newTotal = totalFor(proposedItems, this.discount);
+
         items.add(item);
-        recalculateTotal();
+        this.total = newTotal;
     }
 
     public void updateItem(
@@ -201,12 +199,6 @@ public class Quotation {
             Money unitPrice,
             ProductSpecification productSpecification
     ) {
-        if (status != QuotationStatus.DRAFT) {
-            throw new QuotationDomainException(
-                    "Items can only be updated while the quotation is draft. Current status: " + status
-            );
-        }
-
         Objects.requireNonNull(itemId, "Item id must not be null");
         validateQuantity(quantity);
         validateUnitPrice(unitPrice);
@@ -216,7 +208,7 @@ public class Quotation {
             throw new QuotationDomainException("Quotation item not found: " + itemId);
         }
 
-        items.set(index, QuotationItem.reconstitute(
+        QuotationItem updatedItem = QuotationItem.reconstitute(
                 itemId,
                 productName,
                 quantity,
@@ -225,40 +217,48 @@ public class Quotation {
                 color,
                 unitPrice,
                 productSpecification
-        ));
-        recalculateTotal();
+        );
+        List<QuotationItem> proposedItems = new ArrayList<>(items);
+        proposedItems.set(index, updatedItem);
+        Money newTotal = totalFor(proposedItems, this.discount);
+
+        items.set(index, updatedItem);
+        this.total = newTotal;
     }
 
     public void removeItem(UUID itemId) {
         Objects.requireNonNull(itemId, "Item id must not be null");
 
-        if (status != QuotationStatus.DRAFT) {
-            throw new QuotationDomainException(
-                    "Items can only be removed while the quotation is draft. Current status: " + status
-            );
-        }
-
-        boolean removed = items.removeIf(item -> item.getId().equals(itemId));
-        if (!removed) {
+        int index = indexOfItem(itemId);
+        if (index < 0) {
             throw new QuotationDomainException("Quotation item not found: " + itemId);
         }
 
-        recalculateTotal();
+        if (status != QuotationStatus.DRAFT && items.size() == 1) {
+            throw new QuotationDomainException(
+                    "The last product cannot be removed unless the quotation is draft. Current status: "
+                            + status
+            );
+        }
+
+        List<QuotationItem> proposedItems = new ArrayList<>(items);
+        proposedItems.remove(index);
+        Money newTotal = totalFor(proposedItems, this.discount);
+
+        items.remove(index);
+        this.total = newTotal;
     }
 
     /**
      * Aplica un descuento sobre el subtotal de productos. No altera precios unitarios.
      * <p>
-     * Solo permitido en {@link QuotationStatus#DRAFT}.
+     * Valida el descuento antes de asignarlo. Si se rechaza, el agregado no cambia.
      */
     public void applyDiscount(Money discount) {
-        if (status != QuotationStatus.DRAFT) {
-            throw new QuotationDomainException(
-                    "Discount can only be applied while the quotation is draft. Current status: " + status
-            );
-        }
-        this.discount = discount == null ? Money.zero() : discount;
-        recalculateTotal();
+        Money resolvedDiscount = discount == null ? Money.zero() : discount;
+        Money newTotal = totalFor(this.items, resolvedDiscount);
+        this.discount = resolvedDiscount;
+        this.total = newTotal;
     }
 
     /**
@@ -392,17 +392,26 @@ public class Quotation {
     }
 
     private void recalculateTotal() {
-        Money subtotal = calculateSubtotal();
-        if (discount.isGreaterThan(subtotal)) {
-            throw new QuotationDomainException("Discount must not exceed quotation subtotal");
-        }
-        this.total = subtotal.subtract(discount);
+        this.total = totalFor(this.items, this.discount);
     }
 
     private Money calculateSubtotal() {
-        return items.stream()
+        return calculateSubtotal(items);
+    }
+
+    private static Money calculateSubtotal(List<QuotationItem> quotationItems) {
+        return quotationItems.stream()
                 .map(QuotationItem::getSubtotal)
                 .reduce(Money.zero(), Money::add);
+    }
+
+    private static Money totalFor(List<QuotationItem> quotationItems, Money discount) {
+        Money subtotal = calculateSubtotal(quotationItems);
+        Money resolvedDiscount = discount == null ? Money.zero() : discount;
+        if (resolvedDiscount.isGreaterThan(subtotal)) {
+            throw new QuotationDomainException("Discount must not exceed quotation subtotal");
+        }
+        return subtotal.subtract(resolvedDiscount);
     }
 
     private void ensureHasAtLeastOneProduct() {

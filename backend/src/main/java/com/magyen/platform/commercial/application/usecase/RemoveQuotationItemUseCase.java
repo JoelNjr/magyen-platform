@@ -10,7 +10,7 @@ import java.util.Objects;
 /**
  * Caso de uso que coordina la eliminación de un producto de una cotización existente.
  * <p>
- * El dominio solo permite mutar ítems en {@code DRAFT}. Recalcula el total del agregado.
+ * El dominio permite eliminar ítems en cualquier estado. Un no-DRAFT no puede quedar vacío.
  */
 public class RemoveQuotationItemUseCase {
 

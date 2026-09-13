@@ -10,7 +10,7 @@ import com.magyen.platform.shared.domain.Money;
 import java.util.Objects;
 
 /**
- * Aplica un descuento sobre el subtotal de una cotización DRAFT.
+ * Aplica un descuento sobre el subtotal de una cotización.
  * <p>
  * No altera precios unitarios. El total se recalcula en el dominio.
  */

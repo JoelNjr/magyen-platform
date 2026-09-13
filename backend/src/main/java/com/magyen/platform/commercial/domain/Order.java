@@ -437,6 +437,114 @@ public class Order {
         }
     }
 
+    /**
+     * Indica si al menos un ítem tiene trazabilidad a un QuotationItem.
+     */
+    public boolean hasTracedItems() {
+        return items.stream().anyMatch(item -> item.getQuotationItemId() != null);
+    }
+
+    /**
+     * Aplica el contenido comercial actual de una cotización sobre ítems trazados.
+     * <p>
+     * Solo usa {@code QuotationItem.id ↔ OrderItem.quotationItemId}.
+     * No toca ítems manuales ({@code quotationItemId == null}).
+     * No modifica tallas. No adivina origen. Si alguna validación falla, no persiste
+     * (el llamador no debe guardar). Las validaciones que pueden rechazar se ejecutan
+     * antes de mutar el agregado.
+     */
+    public void applyQuotationCommercialSource(List<QuotationItem> quotationItems, Money discount) {
+        ensureCommercialContentEditable();
+        Objects.requireNonNull(quotationItems, "Quotation items must not be null");
+        if (!hasTracedItems()) {
+            throw new OrderDomainException(
+                    "Quotation changes cannot be applied to an order without item traceability"
+            );
+        }
+
+        Set<UUID> quotationItemIds = new HashSet<>();
+        for (QuotationItem quotationItem : quotationItems) {
+            Objects.requireNonNull(quotationItem, "Quotation item must not be null");
+            if (!quotationItemIds.add(quotationItem.getId())) {
+                throw new OrderDomainException(
+                        "Duplicate quotation item in synchronization source: " + quotationItem.getId()
+                );
+            }
+        }
+
+        List<OrderItem> orphans = new ArrayList<>();
+        List<OrderItem> manuals = new ArrayList<>();
+        for (OrderItem item : items) {
+            UUID tracedId = item.getQuotationItemId();
+            if (tracedId == null) {
+                manuals.add(item);
+            } else if (!quotationItemIds.contains(tracedId)) {
+                orphans.add(item);
+            }
+        }
+
+        List<QuotationItem> additions = new ArrayList<>();
+        List<QuotationItem> matchedSources = new ArrayList<>();
+        for (QuotationItem quotationItem : quotationItems) {
+            OrderItem matched = findItemByQuotationItemId(quotationItem.getId());
+            if (matched == null) {
+                additions.add(quotationItem);
+            } else {
+                matchedSources.add(quotationItem);
+            }
+        }
+
+        int remainingCount = items.size() - orphans.size() + additions.size();
+        if (remainingCount < 1) {
+            throw new OrderDomainException("An order must have at least one product");
+        }
+
+        for (QuotationItem matchedSource : matchedSources) {
+            OrderItem matchedItem = findItemByQuotationItemId(matchedSource.getId());
+            if (matchedItem.getAssignedSizeQuantity() > matchedSource.getQuantity()) {
+                throw new OrderDomainException(
+                        "Total size quantity must not exceed order item quantity. "
+                                + "Assigned: " + matchedItem.getAssignedSizeQuantity()
+                                + ", item quantity: " + matchedSource.getQuantity()
+                );
+            }
+        }
+
+        Money proposedSubtotal = Money.zero();
+        for (OrderItem manual : manuals) {
+            proposedSubtotal = proposedSubtotal.add(manual.getSubtotal());
+        }
+        for (QuotationItem matchedSource : matchedSources) {
+            proposedSubtotal = proposedSubtotal.add(
+                    matchedSource.getUnitPrice().multiply(matchedSource.getQuantity())
+            );
+        }
+        for (QuotationItem addition : additions) {
+            proposedSubtotal = proposedSubtotal.add(
+                    addition.getUnitPrice().multiply(addition.getQuantity())
+            );
+        }
+        Money resolvedDiscount = discount == null ? Money.zero() : discount;
+        if (resolvedDiscount.isGreaterThan(proposedSubtotal)) {
+            throw new OrderDomainException("Discount must not exceed order subtotal");
+        }
+
+        for (QuotationItem matchedSource : matchedSources) {
+            findItemByQuotationItemId(matchedSource.getId()).applyQuotationCommercialSource(matchedSource);
+        }
+        for (QuotationItem addition : additions) {
+            items.add(OrderItem.createFromQuotation(addition));
+        }
+        for (OrderItem orphan : orphans) {
+            items.removeIf(item -> item.getId().equals(orphan.getId()));
+        }
+
+        this.discount = resolvedDiscount;
+        recalculateCommercialState();
+        ensureUniqueQuotationItemReferences();
+        ensureHasAtLeastOneProduct();
+    }
+
     public UUID getId() {
         return id;
     }
@@ -544,6 +652,16 @@ public class Order {
                 .filter(item -> item.getId().equals(itemId))
                 .findFirst()
                 .orElseThrow(() -> new OrderDomainException("Order item not found: " + itemId));
+    }
+
+    private OrderItem findItemByQuotationItemId(UUID quotationItemId) {
+        if (quotationItemId == null) {
+            return null;
+        }
+        return items.stream()
+                .filter(item -> quotationItemId.equals(item.getQuotationItemId()))
+                .findFirst()
+                .orElse(null);
     }
 
     private void recalculateCommercialState() {

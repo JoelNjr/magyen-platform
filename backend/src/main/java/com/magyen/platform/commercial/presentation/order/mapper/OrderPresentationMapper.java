@@ -393,7 +393,8 @@ public class OrderPresentationMapper {
                 item.unitPrice(),
                 item.subtotal(),
                 toProductSpecificationResponse(item.productSpecification()),
-                sizes
+                sizes,
+                item.quotationItemId()
         );
     }
 

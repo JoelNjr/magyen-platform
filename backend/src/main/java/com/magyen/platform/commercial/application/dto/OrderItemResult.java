@@ -17,7 +17,8 @@ public record OrderItemResult(
         BigDecimal unitPrice,
         BigDecimal subtotal,
         ProductSpecificationResult productSpecification,
-        List<SizeBreakdownResult> sizes
+        List<SizeBreakdownResult> sizes,
+        UUID quotationItemId
 ) {
     public OrderItemResult(
             UUID itemId,
@@ -40,7 +41,35 @@ public record OrderItemResult(
                 unitPrice,
                 subtotal,
                 productSpecification,
-                sizes
+                sizes,
+                null
+        );
+    }
+
+    public OrderItemResult(
+            UUID itemId,
+            String productName,
+            int quantity,
+            String fabric,
+            String secondaryFabric,
+            String color,
+            BigDecimal unitPrice,
+            BigDecimal subtotal,
+            ProductSpecificationResult productSpecification,
+            List<SizeBreakdownResult> sizes
+    ) {
+        this(
+                itemId,
+                productName,
+                quantity,
+                fabric,
+                secondaryFabric,
+                color,
+                unitPrice,
+                subtotal,
+                productSpecification,
+                sizes,
+                null
         );
     }
 }

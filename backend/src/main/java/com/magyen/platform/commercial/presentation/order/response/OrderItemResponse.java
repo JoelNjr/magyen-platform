@@ -19,6 +19,7 @@ public record OrderItemResponse(
         BigDecimal unitPrice,
         BigDecimal subtotal,
         ProductSpecificationResponse productSpecification,
-        List<SizeBreakdownResponse> sizes
+        List<SizeBreakdownResponse> sizes,
+        UUID quotationItemId
 ) {
 }

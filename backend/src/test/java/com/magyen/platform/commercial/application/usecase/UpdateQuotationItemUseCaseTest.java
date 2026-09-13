@@ -72,29 +72,28 @@ class UpdateQuotationItemUseCaseTest {
     }
 
     @Test
-    void rejectsUpdateWhenQuotationIsApproved() {
+    void updatesItemWhenQuotationIsApproved() {
         Quotation quotation = approvedQuotation();
         UUID itemId = quotation.getItems().getFirst().getId();
         stubCatalog();
         when(quotationRepository.findById(quotation.getId())).thenReturn(Optional.of(quotation));
+        when(quotationRepository.save(quotation)).thenReturn(quotation);
 
-        assertThrows(
-                QuotationDomainException.class,
-                () -> useCase.execute(new UpdateQuotationItemCommand(
-                        quotation.getId(),
-                        itemId,
-                        "Camiseta polo",
-                        5,
-                        "Sudáfrica",
-                        null,
-                        "Blanco",
-                        new BigDecimal("30000"),
-                        emptySpecificationCommand()
-                ))
-        );
+        UpdateQuotationItemResult result = useCase.execute(new UpdateQuotationItemCommand(
+                quotation.getId(),
+                itemId,
+                "Camiseta polo",
+                5,
+                "Sudáfrica",
+                null,
+                "Blanco",
+                new BigDecimal("30000"),
+                emptySpecificationCommand()
+        ));
 
-        verify(quotationRepository, never()).save(any());
-        assertEquals(new BigDecimal("400000.00"), quotation.getTotal().getAmount());
+        assertEquals(itemId, result.itemId());
+        assertEquals(new BigDecimal("350000.00"), result.totalAmount());
+        verify(quotationRepository).save(quotation);
     }
 
     private void stubCatalog() {

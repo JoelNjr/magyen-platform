@@ -114,7 +114,8 @@ public class GetOrderUseCase {
                 toProductSpecificationResult(item.getProductSpecification()),
                 item.getSizeBreakdowns().stream()
                         .map(this::toSizeBreakdownResult)
-                        .toList()
+                        .toList(),
+                item.getQuotationItemId()
         );
     }
 

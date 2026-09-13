@@ -13,6 +13,7 @@ import com.magyen.platform.commercial.application.port.ProductionOrderCostPort;
 import com.magyen.platform.commercial.application.usecase.AddOrderItemUseCase;
 import com.magyen.platform.commercial.application.usecase.AddQuotationItemUseCase;
 import com.magyen.platform.commercial.application.usecase.ApplyOrderDiscountUseCase;
+import com.magyen.platform.commercial.application.usecase.ApplyQuotationChangesToOrderUseCase;
 import com.magyen.platform.commercial.application.usecase.ApplyQuotationDiscountUseCase;
 import com.magyen.platform.commercial.application.usecase.ApproveQuotationUseCase;
 import com.magyen.platform.commercial.application.usecase.CreateCustomerUseCase;
@@ -29,6 +30,7 @@ import com.magyen.platform.commercial.application.usecase.GetOrderUseCase;
 import com.magyen.platform.commercial.application.usecase.GetOrdersUseCase;
 import com.magyen.platform.commercial.application.usecase.GetQuotationUseCase;
 import com.magyen.platform.commercial.application.usecase.GetQuotationsUseCase;
+import com.magyen.platform.commercial.application.usecase.PreviewQuotationOrderSynchronizationUseCase;
 import com.magyen.platform.commercial.application.usecase.GenerateOrderRemissionPdfUseCase;
 import com.magyen.platform.commercial.application.usecase.GenerateQuotationPdfUseCase;
 import com.magyen.platform.commercial.application.usecase.ReplaceOrderItemSizesUseCase;
@@ -423,5 +425,31 @@ public class CommercialConfiguration {
             CommercialCatalogValidator commercialCatalogValidator
     ) {
         return new UpdateOrderItemProductSpecificationUseCase(orderRepository, commercialCatalogValidator);
+    }
+
+    @Bean
+    public PreviewQuotationOrderSynchronizationUseCase previewQuotationOrderSynchronizationUseCase(
+            QuotationRepository quotationRepository,
+            OrderRepository orderRepository,
+            OrderPaymentCollectionPort orderPaymentCollectionPort
+    ) {
+        return new PreviewQuotationOrderSynchronizationUseCase(
+                quotationRepository,
+                orderRepository,
+                orderPaymentCollectionPort
+        );
+    }
+
+    @Bean
+    public ApplyQuotationChangesToOrderUseCase applyQuotationChangesToOrderUseCase(
+            QuotationRepository quotationRepository,
+            OrderRepository orderRepository,
+            OrderPaymentFloorGuard orderPaymentFloorGuard
+    ) {
+        return new ApplyQuotationChangesToOrderUseCase(
+                quotationRepository,
+                orderRepository,
+                orderPaymentFloorGuard
+        );
     }
 }

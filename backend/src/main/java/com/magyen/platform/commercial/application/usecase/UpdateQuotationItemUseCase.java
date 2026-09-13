@@ -13,7 +13,7 @@ import java.util.Objects;
  * Caso de uso que coordina la edición de un producto en una cotización existente.
  * <p>
  * Reutiliza las mismas validaciones de catálogo, cantidad y precio que la adición.
- * El dominio solo permite mutar ítems en {@code DRAFT}.
+ * El dominio permite mutar ítems en cualquier estado de la cotización.
  */
 public class UpdateQuotationItemUseCase {
 

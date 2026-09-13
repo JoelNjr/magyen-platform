@@ -11,6 +11,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class QuotationItemMutationTest {
 
@@ -50,33 +51,30 @@ class QuotationItemMutationTest {
     }
 
     @Test
-    void rejectsUpdateWhenQuotationIsApproved() {
+    void updatesItemWhenQuotationIsApprovedKeepingIdentity() {
         Quotation quotation = approvedQuotation();
         UUID itemId = quotation.getItems().getFirst().getId();
+        Long quotationNumber = quotation.getQuotationNumber().getValue();
 
-        QuotationDomainException exception = assertThrows(
-                QuotationDomainException.class,
-                () -> quotation.updateItem(
-                        itemId,
-                        "Camiseta",
-                        2,
-                        "Sudáfrica",
-                        null,
-                        "Blanco",
-                        Money.of(new BigDecimal("15000")),
-                        ProductSpecification.empty()
-                )
+        quotation.updateItem(
+                itemId,
+                "Camiseta",
+                2,
+                "Sudáfrica",
+                null,
+                "Blanco",
+                Money.of(new BigDecimal("15000")),
+                ProductSpecification.empty()
         );
 
-        assertEquals(
-                "Items can only be updated while the quotation is draft. Current status: APPROVED",
-                exception.getMessage()
-        );
-        assertEquals(new BigDecimal("400000.00"), quotation.getTotal().getAmount());
+        assertEquals(itemId, quotation.getItems().getFirst().getId());
+        assertEquals(quotationNumber, quotation.getQuotationNumber().getValue());
+        assertEquals(2, quotation.getItems().getFirst().getQuantity());
+        assertEquals(new BigDecimal("30000.00"), quotation.getTotal().getAmount());
     }
 
     @Test
-    void rejectsRemovalWhenQuotationIsApproved() {
+    void rejectsRemovingLastItemWhenQuotationIsApprovedAndLeavesAggregateUnchanged() {
         Quotation quotation = approvedQuotation();
         UUID itemId = quotation.getItems().getFirst().getId();
 
@@ -85,11 +83,9 @@ class QuotationItemMutationTest {
                 () -> quotation.removeItem(itemId)
         );
 
-        assertEquals(
-                "Items can only be removed while the quotation is draft. Current status: APPROVED",
-                exception.getMessage()
-        );
+        assertTrue(exception.getMessage().contains("last product"));
         assertEquals(1, quotation.getItems().size());
+        assertEquals(itemId, quotation.getItems().getFirst().getId());
         assertEquals(new BigDecimal("400000.00"), quotation.getTotal().getAmount());
     }
 

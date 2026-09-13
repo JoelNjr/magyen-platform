@@ -26,9 +26,14 @@ import {
 } from '@mui/material'
 import { useNavigate, useParams } from 'react-router-dom'
 import AddQuotationItemDialog from '../components/AddQuotationItemDialog'
+import ApplyQuotationToOrderDialog from '../components/ApplyQuotationToOrderDialog'
 import ApproveQuotationDialog from '../components/ApproveQuotationDialog'
 import CreateOrderFromQuotationDialog from '../components/CreateOrderFromQuotationDialog'
 import RemoveQuotationItemDialog from '../components/RemoveQuotationItemDialog'
+import {
+  canShowApplyQuotationToOrder,
+  getQuotationOrderSynchronizationNotes,
+} from '../presentation/quotationOrderSynchronizationPresentation'
 import { formatDisplayDate } from '../presentation/formatDisplayDate'
 import { formatQuotationNumber } from '../presentation/formatQuotationNumber'
 import {
@@ -37,12 +42,14 @@ import {
 } from '../presentation/resolveCustomerName'
 import {
   addQuotationItem,
+  applyQuotationChangesToOrder,
   applyQuotationDiscount,
   approveQuotation,
   createOrder,
   downloadQuotationPdf,
   getCustomers,
   getQuotation,
+  previewQuotationOrderSynchronization,
   removeQuotationItem,
   updateQuotationItem,
 } from '../services/commercialService'
@@ -71,8 +78,14 @@ function getStatusChipProps(status) {
       return { label: 'Aprobada', color: 'success' }
     case 'PENDING':
       return { label: 'Pendiente', color: 'warning' }
+    case 'SENT':
+      return { label: 'Enviada', color: 'info' }
     case 'REJECTED':
       return { label: 'Rechazada', color: 'error' }
+    case 'EXPIRED':
+      return { label: 'Vencida', color: 'warning' }
+    case 'CLOSED':
+      return { label: 'Cerrada', color: 'default' }
     default:
       return { label: 'Estado desconocido', color: 'default' }
   }
@@ -192,6 +205,10 @@ function QuotationDetailPage() {
   const [discountInput, setDiscountInput] = useState('')
   const [applyingDiscount, setApplyingDiscount] = useState(false)
   const [discountError, setDiscountError] = useState('')
+  const [orderSyncPreview, setOrderSyncPreview] = useState(null)
+  const [applyDialogOpen, setApplyDialogOpen] = useState(false)
+  const [applyingToOrder, setApplyingToOrder] = useState(false)
+  const [applyToOrderError, setApplyToOrderError] = useState('')
 
   const pageBusy =
     submittingItem ||
@@ -199,7 +216,8 @@ function QuotationDetailPage() {
     approving ||
     creatingOrder ||
     generatingPdf ||
-    applyingDiscount
+    applyingDiscount ||
+    applyingToOrder
 
   useEffect(() => {
     setLoading(true)
@@ -213,6 +231,13 @@ function QuotationDetailPage() {
         setDiscountInput(
           data?.discountAmount == null ? '0' : String(data.discountAmount)
         )
+        if (data?.orderId) {
+          previewQuotationOrderSynchronization(data.quotationId)
+            .then(setOrderSyncPreview)
+            .catch(() => setOrderSyncPreview(null))
+        } else {
+          setOrderSyncPreview(null)
+        }
         setLoading(false)
       })
       .catch((error) => {
@@ -244,10 +269,21 @@ function QuotationDetailPage() {
         ? '0'
         : String(refreshedQuotation.discountAmount)
     )
+    if (refreshedQuotation?.orderId) {
+      try {
+        setOrderSyncPreview(
+          await previewQuotationOrderSynchronization(refreshedQuotation.quotationId)
+        )
+      } catch {
+        setOrderSyncPreview(null)
+      }
+    } else {
+      setOrderSyncPreview(null)
+    }
   }
 
   async function handleApplyDiscount() {
-    if (pageBusy || quotation.status !== 'DRAFT') {
+    if (pageBusy) {
       return
     }
     const amount = Number(discountInput)
@@ -313,7 +349,7 @@ function QuotationDetailPage() {
   }
 
   function openAddDialog() {
-    if (pageBusy || quotation.status !== 'DRAFT') {
+    if (pageBusy) {
       return
     }
 
@@ -323,7 +359,7 @@ function QuotationDetailPage() {
   }
 
   function openEditDialog(item) {
-    if (pageBusy || quotation.status !== 'DRAFT') {
+    if (pageBusy) {
       return
     }
 
@@ -333,7 +369,13 @@ function QuotationDetailPage() {
   }
 
   function openRemoveDialog(item) {
-    if (pageBusy || quotation.status !== 'DRAFT') {
+    if (pageBusy) {
+      return
+    }
+    if (
+      quotation.status !== 'DRAFT' &&
+      quotation.items.length === 1
+    ) {
       return
     }
 
@@ -491,6 +533,56 @@ function QuotationDetailPage() {
     }
   }
 
+  async function openApplyToOrderDialog() {
+    if (pageBusy || !quotation?.orderId) {
+      return
+    }
+    setApplyToOrderError('')
+    try {
+      const preview = await previewQuotationOrderSynchronization(quotation.quotationId)
+      setOrderSyncPreview(preview)
+      setApplyDialogOpen(true)
+    } catch (error) {
+      setApplyToOrderError(
+        resolveApiErrorMessage(error, 'No fue posible preparar la aplicación a la orden.')
+      )
+    }
+  }
+
+  function closeApplyToOrderDialog() {
+    if (applyingToOrder) {
+      return
+    }
+    setApplyDialogOpen(false)
+    setApplyToOrderError('')
+  }
+
+  async function handleApplyToOrderConfirm() {
+    if (applyingToOrder || !quotation) {
+      return
+    }
+    setApplyToOrderError('')
+    setApplyingToOrder(true)
+    try {
+      await applyQuotationChangesToOrder(quotation.quotationId)
+      await refreshQuotation()
+      setApplyDialogOpen(false)
+      setSuccessMessage('Cambios aplicados a la orden.')
+      setSuccessOpen(true)
+    } catch (error) {
+      setApplyToOrderError(
+        resolveApiErrorMessage(error, 'No fue posible aplicar los cambios a la orden.')
+      )
+    } finally {
+      setApplyingToOrder(false)
+    }
+  }
+
+  const synchronizationNotes = getQuotationOrderSynchronizationNotes(orderSyncPreview)
+  const showApplyToOrder = canShowApplyQuotationToOrder(orderSyncPreview)
+  const canRemoveLastQuotationItem =
+    quotation?.status === 'DRAFT' || (quotation?.items?.length || 0) > 1
+
   return (
     <Stack spacing={3}>
       <Button
@@ -581,7 +673,7 @@ function QuotationDetailPage() {
                   Crear orden
                 </Button>
               )}
-              {quotation.status === 'APPROVED' && quotation.orderId && (
+              {quotation.orderId && (
                 <Stack
                   direction={{ xs: 'column', sm: 'row' }}
                   spacing={1.5}
@@ -597,10 +689,28 @@ function QuotationDetailPage() {
                   >
                     Ver orden
                   </Button>
+                  {showApplyToOrder ? (
+                    <Button
+                      variant="contained"
+                      disabled={pageBusy}
+                      onClick={openApplyToOrderDialog}
+                    >
+                      Aplicar cambios a la orden
+                    </Button>
+                  ) : null}
                 </Stack>
               )}
             </Stack>
           </Stack>
+
+          {synchronizationNotes.map((note) => (
+            <Alert key={note.message} severity={note.severity}>
+              {note.message}
+            </Alert>
+          ))}
+          {applyToOrderError && !applyDialogOpen ? (
+            <Alert severity="error">{applyToOrderError}</Alert>
+          ) : null}
 
           <Paper sx={{ p: 3 }}>
             <Grid container spacing={3}>
@@ -657,7 +767,7 @@ function QuotationDetailPage() {
                 {quotation.items.length > 0 && (
                   <Button
                     variant="outlined"
-                    disabled={quotation.status !== 'DRAFT' || pageBusy}
+                    disabled={pageBusy}
                     startIcon={<AddIcon />}
                     onClick={openAddDialog}
                   >
@@ -678,7 +788,7 @@ function QuotationDetailPage() {
                   </Typography>
                   <Button
                     variant="outlined"
-                    disabled={quotation.status !== 'DRAFT' || pageBusy}
+                    disabled={pageBusy}
                     startIcon={<AddIcon />}
                     onClick={openAddDialog}
                   >
@@ -703,11 +813,9 @@ function QuotationDetailPage() {
                         <TableCell align="right" sx={headerCellSx}>
                           Subtotal
                         </TableCell>
-                        {quotation.status === 'DRAFT' && (
-                          <TableCell align="right" sx={headerCellSx}>
-                            Acciones
-                          </TableCell>
-                        )}
+                        <TableCell align="right" sx={headerCellSx}>
+                          Acciones
+                        </TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -724,40 +832,38 @@ function QuotationDetailPage() {
                           <TableCell align="right">
                             {formatCurrency(item.subtotal)}
                           </TableCell>
-                          {quotation.status === 'DRAFT' && (
-                            <TableCell align="right">
-                              <Stack
-                                direction="row"
-                                spacing={0.5}
-                                justifyContent="flex-end"
-                              >
-                                <Tooltip title="Editar">
-                                  <span>
-                                    <IconButton
-                                      aria-label="Editar producto"
-                                      size="small"
-                                      disabled={pageBusy}
-                                      onClick={() => openEditDialog(item)}
-                                    >
-                                      <EditOutlinedIcon fontSize="small" />
-                                    </IconButton>
-                                  </span>
-                                </Tooltip>
-                                <Tooltip title="Eliminar">
-                                  <span>
-                                    <IconButton
-                                      aria-label="Eliminar producto"
-                                      size="small"
-                                      disabled={pageBusy}
-                                      onClick={() => openRemoveDialog(item)}
-                                    >
-                                      <DeleteOutlinedIcon fontSize="small" />
-                                    </IconButton>
-                                  </span>
-                                </Tooltip>
-                              </Stack>
-                            </TableCell>
-                          )}
+                          <TableCell align="right">
+                            <Stack
+                              direction="row"
+                              spacing={0.5}
+                              justifyContent="flex-end"
+                            >
+                              <Tooltip title="Editar">
+                                <span>
+                                  <IconButton
+                                    aria-label="Editar producto"
+                                    size="small"
+                                    disabled={pageBusy}
+                                    onClick={() => openEditDialog(item)}
+                                  >
+                                    <EditOutlinedIcon fontSize="small" />
+                                  </IconButton>
+                                </span>
+                              </Tooltip>
+                              <Tooltip title="Eliminar">
+                                <span>
+                                  <IconButton
+                                    aria-label="Eliminar producto"
+                                    size="small"
+                                    disabled={pageBusy || !canRemoveLastQuotationItem}
+                                    onClick={() => openRemoveDialog(item)}
+                                  >
+                                    <DeleteOutlinedIcon fontSize="small" />
+                                  </IconButton>
+                                </span>
+                              </Tooltip>
+                            </Stack>
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -789,31 +895,29 @@ function QuotationDetailPage() {
                     {formatCurrency(quotation.discountAmount ?? 0)}
                   </Typography>
                 </Stack>
-                {quotation.status === 'DRAFT' ? (
-                  <Stack
-                    direction={{ xs: 'column', sm: 'row' }}
-                    spacing={1.5}
-                    alignItems={{ sm: 'center' }}
+                <Stack
+                  direction={{ xs: 'column', sm: 'row' }}
+                  spacing={1.5}
+                  alignItems={{ sm: 'center' }}
+                >
+                  <TextField
+                    label="Descuento sobre el total"
+                    type="number"
+                    size="small"
+                    value={discountInput}
+                    onChange={(event) => setDiscountInput(event.target.value)}
+                    disabled={pageBusy}
+                    inputProps={{ min: 0, step: '0.01' }}
+                    sx={{ maxWidth: { sm: 220 } }}
+                  />
+                  <Button
+                    variant="outlined"
+                    onClick={handleApplyDiscount}
+                    disabled={pageBusy}
                   >
-                    <TextField
-                      label="Descuento sobre el total"
-                      type="number"
-                      size="small"
-                      value={discountInput}
-                      onChange={(event) => setDiscountInput(event.target.value)}
-                      disabled={pageBusy}
-                      inputProps={{ min: 0, step: '0.01' }}
-                      sx={{ maxWidth: { sm: 220 } }}
-                    />
-                    <Button
-                      variant="outlined"
-                      onClick={handleApplyDiscount}
-                      disabled={pageBusy}
-                    >
-                      {applyingDiscount ? 'Aplicando...' : 'Aplicar descuento'}
-                    </Button>
-                  </Stack>
-                ) : null}
+                    {applyingDiscount ? 'Aplicando...' : 'Aplicar descuento'}
+                  </Button>
+                </Stack>
                 {discountError ? <Alert severity="error">{discountError}</Alert> : null}
                 <Stack
                   direction="row"
@@ -867,6 +971,15 @@ function QuotationDetailPage() {
             deliveryDate={quotation.deliveryDate}
             sellerName={quotation.sellerName}
             quotationNumber={quotation.quotationNumber}
+          />
+
+          <ApplyQuotationToOrderDialog
+            open={applyDialogOpen}
+            preview={orderSyncPreview}
+            submitting={applyingToOrder}
+            errorMessage={applyToOrderError}
+            onClose={closeApplyToOrderDialog}
+            onConfirm={handleApplyToOrderConfirm}
           />
         </>
       )}

@@ -78,6 +78,20 @@ export async function applyQuotationDiscount(quotationId, payload) {
   return response.data
 }
 
+export async function previewQuotationOrderSynchronization(quotationId) {
+  const response = await httpClient.get(
+    `/quotations/${quotationId}/order-synchronization`
+  )
+  return response.data
+}
+
+export async function applyQuotationChangesToOrder(quotationId) {
+  const response = await httpClient.post(
+    `/quotations/${quotationId}/apply-to-order`
+  )
+  return response.data
+}
+
 export async function approveQuotation(quotationId) {
   const response = await httpClient.patch(`/quotations/${quotationId}/approve`)
   return response.data
