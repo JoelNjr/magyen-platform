@@ -4,6 +4,7 @@ import com.magyen.platform.inventory.application.dto.GetInventoryItemsQuery;
 import com.magyen.platform.inventory.application.dto.GetInventoryItemsResult;
 import com.magyen.platform.inventory.domain.InventoryItem;
 import com.magyen.platform.inventory.domain.InventoryItemRepository;
+import com.magyen.platform.inventory.domain.InventoryItemStatus;
 import com.magyen.platform.inventory.domain.InventoryMaterialType;
 
 import java.math.BigDecimal;
@@ -31,7 +32,8 @@ public class GetInventoryItemsUseCase {
     public GetInventoryItemsResult execute(GetInventoryItemsQuery query) {
         Objects.requireNonNull(query, "Query must not be null");
 
-        Stream<InventoryItem> stream = inventoryItemRepository.findAll().stream();
+        Stream<InventoryItem> stream = inventoryItemRepository.findAll().stream()
+                .filter(item -> item.getStatus() == InventoryItemStatus.ACTIVE);
 
         if (query.materialType() != null && !query.materialType().isBlank()) {
             InventoryMaterialType materialType = InventoryMaterialType.of(query.materialType());

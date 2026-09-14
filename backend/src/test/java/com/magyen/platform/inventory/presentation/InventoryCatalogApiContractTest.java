@@ -2,6 +2,7 @@ package com.magyen.platform.inventory.presentation;
 
 import com.magyen.platform.inventory.domain.InventoryItem;
 import com.magyen.platform.inventory.domain.InventoryItemRepository;
+import com.magyen.platform.inventory.domain.InventoryItemStatus;
 import com.magyen.platform.inventory.domain.InventoryMaterialType;
 import com.magyen.platform.inventory.domain.MaterialCode;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,6 +19,7 @@ import java.util.UUID;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -93,6 +95,37 @@ class InventoryCatalogApiContractTest {
                 .andExpect(jsonPath("$.items[?(@.inventoryItemId == '" + firstRoll.getId() + "')].plotterPaperRoll")
                         .value(org.hamcrest.Matchers.contains(true)))
                 .andExpect(jsonPath("$.items[?(@.materialCode == '" + ink.getMaterialCode().getValue() + "')]", hasSize(0)));
+    }
+
+    @Test
+    void deactivatesZeroStockMaterialAndKeepsHistoricalDetail() throws Exception {
+        InventoryItem removable = inventoryItemRepository.save(
+                ink("OFF-" + UUID.randomUUID().toString().substring(0, 8), "0.0000")
+        );
+
+        mockMvc.perform(patch("/api/v1/inventory/materials/{materialCode}/deactivate",
+                        removable.getMaterialCode().getValue()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.materialCode").value(removable.getMaterialCode().getValue()))
+                .andExpect(jsonPath("$.status").value(InventoryItemStatus.INACTIVE.name()))
+                .andExpect(jsonPath("$.deactivatedUnitCount").value(1));
+
+        mockMvc.perform(get("/api/v1/inventory/materials"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath(
+                        "$.materials[?(@.materialCode == '" + removable.getMaterialCode().getValue() + "')]",
+                        hasSize(0)
+                ));
+
+        mockMvc.perform(get("/api/v1/inventory/materials/{materialCode}",
+                        removable.getMaterialCode().getValue()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.material.status").value(InventoryItemStatus.INACTIVE.name()));
+
+        mockMvc.perform(patch("/api/v1/inventory/materials/{materialCode}/deactivate",
+                        removable.getMaterialCode().getValue()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(InventoryItemStatus.INACTIVE.name()));
     }
 
     @Test

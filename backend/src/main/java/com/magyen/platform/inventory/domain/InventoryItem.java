@@ -324,6 +324,12 @@ public class InventoryItem {
             );
         }
 
+        if (status == InventoryItemStatus.INACTIVE && movementType != InventoryMovementType.OUT) {
+            throw new InventoryDomainException(
+                    "Cannot increase stock of an inactive inventory material"
+            );
+        }
+
         BigDecimal nextStock = switch (movementType) {
             case IN -> applyIn(quantity);
             case OUT -> applyOut(quantity);
@@ -364,6 +370,12 @@ public class InventoryItem {
         Objects.requireNonNull(purchaseUnitCost, "Purchase unit cost must not be null");
         Objects.requireNonNull(movementDate, "Movement date must not be null");
         Objects.requireNonNull(purchaseId, "Purchase id must not be null");
+
+        if (status == InventoryItemStatus.INACTIVE) {
+            throw new InventoryDomainException(
+                    "Cannot increase stock of an inactive inventory material"
+            );
+        }
 
         if (purchaseUnitCost.compareTo(BigDecimal.ZERO) <= 0) {
             throw new InventoryDomainException("Purchase unit cost must be greater than zero");

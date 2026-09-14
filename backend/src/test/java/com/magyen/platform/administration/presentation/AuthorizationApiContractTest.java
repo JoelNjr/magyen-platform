@@ -76,6 +76,7 @@ class AuthorizationApiContractTest {
 
         mockMvc.perform(authorized(get("/api/v1/auth/me"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/home/dashboard"), accessToken)).andExpect(status().isOk());
+        mockMvc.perform(authorized(get("/api/v1/home/profitability"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/customers"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/quotations"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/quotations/" + UNKNOWN_ID + "/pdf"), accessToken))
@@ -129,6 +130,8 @@ class AuthorizationApiContractTest {
                 .andExpect(status().isBadRequest());
         mockMvc.perform(authorized(get("/api/v1/production/labor-operators"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/inventory"), accessToken)).andExpect(status().isOk());
+        mockMvc.perform(authorized(patch("/api/v1/inventory/materials/MISSING-MAT/deactivate"), accessToken))
+                .andExpect(status().isBadRequest());
         mockMvc.perform(authorized(get("/api/v1/plotter/jobs"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/orders/profitability"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/plotter/profitability"), accessToken)).andExpect(status().isOk());
@@ -149,6 +152,11 @@ class AuthorizationApiContractTest {
                 .andExpect(jsonPath("$.completedReceivables").doesNotExist())
                 .andExpect(jsonPath("$.commitments").doesNotExist())
                 .andExpect(jsonPath("$.productionSummary").doesNotExist())
+                .andExpect(jsonPath("$.profitabilitySummary").doesNotExist());
+
+        mockMvc.perform(authorized(get("/api/v1/home/profitability"), accessToken))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403))
                 .andExpect(jsonPath("$.profitabilitySummary").doesNotExist());
     }
 
@@ -242,6 +250,12 @@ class AuthorizationApiContractTest {
     @Test
     void unauthenticatedRequestIsUnauthorized() throws Exception {
         mockMvc.perform(get("/api/v1/home/dashboard"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401));
+        mockMvc.perform(get("/api/v1/home/profitability"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401));
+        mockMvc.perform(patch("/api/v1/inventory/materials/MISSING-MAT/deactivate"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.status").value(401));
         mockMvc.perform(get("/api/v1/quotations/" + UNKNOWN_ID + "/pdf"))

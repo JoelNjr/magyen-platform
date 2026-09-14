@@ -31,7 +31,8 @@ import SectionHeader from '../components/SectionHeader'
 import PageHeader from '../../../layout/PageHeader'
 import RegisterOrderPaymentDialog from '../../commercial/components/RegisterOrderPaymentDialog'
 import { registerOrderPayment } from '../../commercial/services/commercialService'
-import { getHomeDashboard } from '../services/homeService'
+import { getHomeDashboard, getHomeProfitability } from '../services/homeService'
+import MonthPeriodNavigator from '../../../shared/period/MonthPeriodNavigator'
 import {
   filterGeneralInventoryAlertItems,
   formatCustomerLabel,
@@ -90,6 +91,14 @@ function HomePage() {
   const [toDate, setToDate] = useState(initialMonth.toDate)
   const [periodError, setPeriodError] = useState('')
 
+  const [profitabilityFromDate, setProfitabilityFromDate] = useState(initialMonth.fromDate)
+  const [profitabilityToDate, setProfitabilityToDate] = useState(initialMonth.toDate)
+  const [profitability, setProfitability] = useState(null)
+  const [profitabilityPeriod, setProfitabilityPeriod] = useState(null)
+  const [profitabilityLoading, setProfitabilityLoading] = useState(true)
+  const [profitabilityFailed, setProfitabilityFailed] = useState(false)
+  const [profitabilityError, setProfitabilityError] = useState('')
+
   const [dashboard, setDashboard] = useState(null)
   const [loading, setLoading] = useState(true)
   const [failed, setFailed] = useState(false)
@@ -124,11 +133,42 @@ function HomePage() {
     }
   }, [])
 
+  const loadProfitability = useCallback(async (rangeFrom, rangeTo) => {
+    setProfitabilityLoading(true)
+    setProfitabilityFailed(false)
+    setProfitabilityError('')
+    try {
+      const data = await getHomeProfitability({
+        fromDate: rangeFrom,
+        toDate: rangeTo,
+      })
+      setProfitability(data?.profitabilitySummary ?? null)
+      setProfitabilityPeriod({
+        fromDate: data?.fromDate ?? rangeFrom,
+        toDate: data?.toDate ?? rangeTo,
+      })
+      setProfitabilityFromDate(rangeFrom)
+      setProfitabilityToDate(rangeTo)
+    } catch (error) {
+      setProfitability(null)
+      setProfitabilityFailed(true)
+      setProfitabilityError(
+        resolveApiErrorMessage(
+          error,
+          'No fue posible cargar la rentabilidad del mes seleccionado.'
+        )
+      )
+    } finally {
+      setProfitabilityLoading(false)
+    }
+  }, [])
+
   useEffect(() => {
     loadDashboard(initialMonth.fromDate, initialMonth.toDate)
+    loadProfitability(initialMonth.fromDate, initialMonth.toDate)
     // Solo carga inicial con el mes calendario actual.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loadDashboard])
+  }, [loadDashboard, loadProfitability])
 
   function applyPeriod(nextFrom, nextTo) {
     if (!nextFrom || !nextTo) {
@@ -220,7 +260,6 @@ function HomePage() {
   const inventoryAlerts = dashboard?.inventoryAlerts
   const paperRollAlerts = dashboard?.paperRollAlerts
   const production = dashboard?.productionSummary
-  const profitability = dashboard?.profitabilitySummary
 
   const receivableItems = Array.isArray(receivables?.items) ? receivables.items : []
   const commitmentItems = Array.isArray(commitments?.items) ? commitments.items : []
@@ -266,7 +305,14 @@ function HomePage() {
         <Alert
           severity="error"
           action={
-            <Button color="inherit" size="small" onClick={() => applyPeriod(fromDate, toDate)}>
+            <Button
+              color="inherit"
+              size="small"
+              onClick={() => {
+                applyPeriod(fromDate, toDate)
+                loadProfitability(profitabilityFromDate, profitabilityToDate)
+              }}
+            >
               Reintentar
             </Button>
           }
@@ -433,7 +479,28 @@ function HomePage() {
             </Button>
           }
         />
-        {loading ? (
+        <MonthPeriodNavigator
+          fromDate={profitabilityFromDate}
+          disabled={profitabilityLoading}
+          onPeriodChange={(period) => loadProfitability(period.fromDate, period.toDate)}
+        />
+        {profitabilityFailed ? (
+          <Alert
+            severity="error"
+            action={
+              <Button
+                color="inherit"
+                size="small"
+                onClick={() => loadProfitability(profitabilityFromDate, profitabilityToDate)}
+              >
+                Reintentar
+              </Button>
+            }
+          >
+            {profitabilityError || 'No fue posible cargar la rentabilidad del mes seleccionado.'}
+          </Alert>
+        ) : null}
+        {profitabilityLoading ? (
           <Box
             sx={{
               display: 'grid',
@@ -445,7 +512,7 @@ function HomePage() {
               <Skeleton key={`prof-sk-${index}`} variant="rounded" height={88} />
             ))}
           </Box>
-        ) : failed ? null : (profitability?.evaluatedOrderCount ?? 0) === 0 ? (
+        ) : profitabilityFailed ? null : (profitability?.evaluatedOrderCount ?? 0) === 0 ? (
           <EmptyState
             icon={<ReceiptLongOutlinedIcon color="disabled" fontSize="large" />}
             message="No hay información de rentabilidad disponible."
@@ -508,6 +575,9 @@ function HomePage() {
               />
             </Box>
             <Typography variant="caption" color="text.secondary">
+              {profitabilityPeriod?.fromDate && profitabilityPeriod?.toDate
+                ? `Mes consultado: ${formatFinanceDate(profitabilityPeriod.fromDate)} – ${formatFinanceDate(profitabilityPeriod.toDate)}. `
+                : ''}
               {HOME_PROFITABILITY_BACKEND_CAPTION}
             </Typography>
           </>
@@ -826,9 +896,9 @@ function HomePage() {
           {periodError ? <Alert severity="warning">{periodError}</Alert> : null}
           {!loading && !failed && dashboard?.fromDate && dashboard?.toDate ? (
             <Typography variant="caption" color="text.secondary">
-              Período: {formatFinanceDate(dashboard.fromDate)} –{' '}
-              {formatFinanceDate(dashboard.toDate)}. Finanzas por fecha de
-              movimiento; rentabilidad por entrega programada.
+              Período financiero: {formatFinanceDate(dashboard.fromDate)} –{' '}
+              {formatFinanceDate(dashboard.toDate)}. Solo afecta el resumen
+              financiero (fecha del movimiento).
             </Typography>
           ) : null}
         </Stack>

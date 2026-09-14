@@ -149,6 +149,32 @@ class HomeDashboardApiContractTest {
     }
 
     @Test
+    void profitabilityEndpointUsesCurrentMonthAndExplicitBounds() throws Exception {
+        mockMvc.perform(get("/api/v1/home/profitability"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.fromDate").value("2026-08-01"))
+                .andExpect(jsonPath("$.toDate").value("2026-08-31"))
+                .andExpect(jsonPath("$.generatedAt").exists())
+                .andExpect(jsonPath("$.profitabilitySummary.evaluatedOrderCount").isNumber())
+                .andExpect(jsonPath("$.profitabilitySummary.totalOrderValue").isNumber())
+                .andExpect(jsonPath("$.financialSummary").doesNotExist());
+
+        mockMvc.perform(get("/api/v1/home/profitability")
+                        .param("fromDate", "2026-09-01")
+                        .param("toDate", "2026-09-30"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.fromDate").value("2026-09-01"))
+                .andExpect(jsonPath("$.toDate").value("2026-09-30"));
+
+        mockMvc.perform(get("/api/v1/home/profitability")
+                        .param("fromDate", "2026-10-01")
+                        .param("toDate", "2026-10-31"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.fromDate").value("2026-10-01"))
+                .andExpect(jsonPath("$.toDate").value("2026-10-31"));
+    }
+
+    @Test
     void dashboardExposesCommitmentsStructureWithPendingOccurrence() throws Exception {
         CreateRecurringFinancialObligationResult obligation = createObligationUseCase.execute(
                 new CreateRecurringFinancialObligationCommand(

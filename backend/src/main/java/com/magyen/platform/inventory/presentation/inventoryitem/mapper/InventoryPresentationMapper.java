@@ -1,6 +1,8 @@
 package com.magyen.platform.inventory.presentation.inventoryitem.mapper;
 
 import com.magyen.platform.inventory.application.dto.CreateInventoryItemCommand;
+import com.magyen.platform.inventory.application.dto.DeactivateInventoryMaterialCommand;
+import com.magyen.platform.inventory.application.dto.DeactivateInventoryMaterialResult;
 import com.magyen.platform.inventory.application.dto.CreateInventoryItemResult;
 import com.magyen.platform.inventory.application.dto.DecreaseInventoryStockCommand;
 import com.magyen.platform.inventory.application.dto.DecreaseInventoryStockResult;
@@ -36,6 +38,7 @@ import com.magyen.platform.inventory.presentation.inventoryitem.request.Register
 import com.magyen.platform.inventory.presentation.inventoryitem.request.UpdateInventoryMinimumStockRequest;
 import com.magyen.platform.inventory.presentation.inventoryitem.request.UpdateInventoryUnitCostRequest;
 import com.magyen.platform.inventory.presentation.inventoryitem.response.CreateInventoryItemResponse;
+import com.magyen.platform.inventory.presentation.inventoryitem.response.DeactivateInventoryMaterialResponse;
 import com.magyen.platform.inventory.presentation.inventoryitem.response.DecreaseInventoryStockResponse;
 import com.magyen.platform.inventory.presentation.inventoryitem.response.GetInventoryCatalogItemResponse;
 import com.magyen.platform.inventory.presentation.inventoryitem.response.GetInventoryCatalogResponse;
@@ -148,6 +151,20 @@ public class InventoryPresentationMapper {
                 result.items().stream()
                         .map(this::toResponse)
                         .toList()
+        );
+    }
+
+    public DeactivateInventoryMaterialCommand toDeactivateMaterialCommand(String materialCode) {
+        return new DeactivateInventoryMaterialCommand(materialCode);
+    }
+
+    public DeactivateInventoryMaterialResponse toResponse(DeactivateInventoryMaterialResult result) {
+        Objects.requireNonNull(result, "Deactivate inventory material result must not be null");
+        return new DeactivateInventoryMaterialResponse(
+                result.materialCode(),
+                result.status().name(),
+                result.deactivatedUnitCount(),
+                result.aggregatedStock()
         );
     }
 

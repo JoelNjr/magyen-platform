@@ -2,6 +2,7 @@ package com.magyen.platform.inventory.infrastructure.configuration;
 
 import com.magyen.platform.inventory.application.usecase.ConsumeInventoryMaterialUseCase;
 import com.magyen.platform.inventory.application.usecase.CreateInventoryItemUseCase;
+import com.magyen.platform.inventory.application.usecase.DeactivateInventoryMaterialUseCase;
 import com.magyen.platform.inventory.application.usecase.DecreaseInventoryStockUseCase;
 import com.magyen.platform.inventory.application.usecase.GetInventoryCatalogUseCase;
 import com.magyen.platform.inventory.application.usecase.GetInventoryItemUseCase;
@@ -72,6 +73,13 @@ public class InventoryConfiguration {
     @Bean
     public GetInventoryMaterialUseCase getInventoryMaterialUseCase(InventoryItemRepository inventoryItemRepository) {
         return new GetInventoryMaterialUseCase(inventoryItemRepository);
+    }
+
+    @Bean
+    public DeactivateInventoryMaterialUseCase deactivateInventoryMaterialUseCase(
+            InventoryItemRepository inventoryItemRepository
+    ) {
+        return new DeactivateInventoryMaterialUseCase(inventoryItemRepository);
     }
 
     @Bean

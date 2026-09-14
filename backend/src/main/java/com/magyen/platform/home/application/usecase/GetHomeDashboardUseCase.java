@@ -1,5 +1,7 @@
 package com.magyen.platform.home.application.usecase;
 
+import com.magyen.platform.home.application.HomePeriodResolver;
+import com.magyen.platform.home.application.HomePeriodResolver.ResolvedPeriod;
 import com.magyen.platform.home.application.dto.GetHomeDashboardQuery;
 import com.magyen.platform.home.application.dto.GetHomeDashboardResult;
 import com.magyen.platform.home.application.dto.HomeCommitmentItem;
@@ -18,7 +20,6 @@ import com.magyen.platform.home.application.port.CommercialDashboardPort;
 import com.magyen.platform.home.application.port.FinanceDashboardPort;
 import com.magyen.platform.home.application.port.InventoryDashboardPort;
 import com.magyen.platform.home.application.port.ProductionDashboardPort;
-import com.magyen.platform.home.domain.exception.HomeDomainException;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -68,7 +69,7 @@ public class GetHomeDashboardUseCase {
 
     public GetHomeDashboardResult execute(GetHomeDashboardQuery query) {
         Objects.requireNonNull(query, "Query must not be null");
-        ResolvedPeriod period = resolvePeriod(query);
+        ResolvedPeriod period = HomePeriodResolver.resolve(query.fromDate(), query.toDate(), clock);
 
         FinanceDashboardPort.FinancePeriodSummary summary = financeDashboardPort.getPeriodSummary(
                 period.fromDate(),
@@ -238,28 +239,4 @@ public class GetHomeDashboardUseCase {
         );
     }
 
-    private ResolvedPeriod resolvePeriod(GetHomeDashboardQuery query) {
-        LocalDate fromDate = query.fromDate();
-        LocalDate toDate = query.toDate();
-
-        if (fromDate == null && toDate == null) {
-            LocalDate today = LocalDate.now(clock);
-            LocalDate monthStart = today.withDayOfMonth(1);
-            LocalDate monthEnd = today.withDayOfMonth(today.lengthOfMonth());
-            return new ResolvedPeriod(monthStart, monthEnd);
-        }
-
-        if (fromDate == null || toDate == null) {
-            throw new HomeDomainException("Both fromDate and toDate must be provided together");
-        }
-
-        if (fromDate.isAfter(toDate)) {
-            throw new HomeDomainException("From date must not be after to date");
-        }
-
-        return new ResolvedPeriod(fromDate, toDate);
-    }
-
-    private record ResolvedPeriod(LocalDate fromDate, LocalDate toDate) {
-    }
 }

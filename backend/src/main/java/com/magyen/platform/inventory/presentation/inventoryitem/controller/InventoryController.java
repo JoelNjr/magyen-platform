@@ -2,6 +2,8 @@ package com.magyen.platform.inventory.presentation.inventoryitem.controller;
 
 import com.magyen.platform.inventory.application.dto.CreateInventoryItemCommand;
 import com.magyen.platform.inventory.application.dto.CreateInventoryItemResult;
+import com.magyen.platform.inventory.application.dto.DeactivateInventoryMaterialCommand;
+import com.magyen.platform.inventory.application.dto.DeactivateInventoryMaterialResult;
 import com.magyen.platform.inventory.application.dto.DecreaseInventoryStockCommand;
 import com.magyen.platform.inventory.application.dto.DecreaseInventoryStockResult;
 import com.magyen.platform.inventory.application.dto.GetInventoryCatalogResult;
@@ -21,6 +23,7 @@ import com.magyen.platform.inventory.application.dto.RegisterInventoryPurchaseRe
 import com.magyen.platform.inventory.application.dto.UpdateInventoryMinimumStockCommand;
 import com.magyen.platform.inventory.application.dto.UpdateInventoryUnitCostCommand;
 import com.magyen.platform.inventory.application.usecase.CreateInventoryItemUseCase;
+import com.magyen.platform.inventory.application.usecase.DeactivateInventoryMaterialUseCase;
 import com.magyen.platform.inventory.application.usecase.DecreaseInventoryStockUseCase;
 import com.magyen.platform.inventory.application.usecase.GetInventoryCatalogUseCase;
 import com.magyen.platform.inventory.application.usecase.GetInventoryItemUseCase;
@@ -41,6 +44,7 @@ import com.magyen.platform.inventory.presentation.inventoryitem.request.Register
 import com.magyen.platform.inventory.presentation.inventoryitem.request.UpdateInventoryMinimumStockRequest;
 import com.magyen.platform.inventory.presentation.inventoryitem.request.UpdateInventoryUnitCostRequest;
 import com.magyen.platform.inventory.presentation.inventoryitem.response.CreateInventoryItemResponse;
+import com.magyen.platform.inventory.presentation.inventoryitem.response.DeactivateInventoryMaterialResponse;
 import com.magyen.platform.inventory.presentation.inventoryitem.response.DecreaseInventoryStockResponse;
 import com.magyen.platform.inventory.presentation.inventoryitem.response.GetInventoryCatalogResponse;
 import com.magyen.platform.inventory.presentation.inventoryitem.response.GetInventoryItemResponse;
@@ -82,6 +86,7 @@ public class InventoryController {
     private final DecreaseInventoryStockUseCase decreaseInventoryStockUseCase;
     private final RegisterInventoryMovementUseCase registerInventoryMovementUseCase;
     private final RegisterInventoryPurchaseUseCase registerInventoryPurchaseUseCase;
+    private final DeactivateInventoryMaterialUseCase deactivateInventoryMaterialUseCase;
     private final InventoryPresentationMapper inventoryPresentationMapper;
 
     public InventoryController(
@@ -97,6 +102,7 @@ public class InventoryController {
             DecreaseInventoryStockUseCase decreaseInventoryStockUseCase,
             RegisterInventoryMovementUseCase registerInventoryMovementUseCase,
             RegisterInventoryPurchaseUseCase registerInventoryPurchaseUseCase,
+            DeactivateInventoryMaterialUseCase deactivateInventoryMaterialUseCase,
             InventoryPresentationMapper inventoryPresentationMapper
     ) {
         this.createInventoryItemUseCase = createInventoryItemUseCase;
@@ -111,6 +117,7 @@ public class InventoryController {
         this.decreaseInventoryStockUseCase = decreaseInventoryStockUseCase;
         this.registerInventoryMovementUseCase = registerInventoryMovementUseCase;
         this.registerInventoryPurchaseUseCase = registerInventoryPurchaseUseCase;
+        this.deactivateInventoryMaterialUseCase = deactivateInventoryMaterialUseCase;
         this.inventoryPresentationMapper = inventoryPresentationMapper;
     }
 
@@ -155,6 +162,16 @@ public class InventoryController {
         GetInventoryMaterialResponse response = inventoryPresentationMapper.toResponse(result);
 
         return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/materials/{materialCode}/deactivate")
+    public ResponseEntity<DeactivateInventoryMaterialResponse> deactivateInventoryMaterial(
+            @PathVariable String materialCode
+    ) {
+        DeactivateInventoryMaterialCommand command =
+                inventoryPresentationMapper.toDeactivateMaterialCommand(materialCode);
+        DeactivateInventoryMaterialResult result = deactivateInventoryMaterialUseCase.execute(command);
+        return ResponseEntity.ok(inventoryPresentationMapper.toResponse(result));
     }
 
     @GetMapping("/{inventoryItemId}")

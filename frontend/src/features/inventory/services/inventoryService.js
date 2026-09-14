@@ -60,6 +60,13 @@ export async function registerInventoryPurchase(inventoryItemId, payload) {
   return response.data
 }
 
+export async function deactivateInventoryMaterial(materialCode) {
+  const response = await httpClient.patch(
+    `/inventory/materials/${encodeURIComponent(materialCode)}/deactivate`
+  )
+  return response.data
+}
+
 export async function registerInventoryMovement(inventoryItemId, payload) {
   const response = await httpClient.post(
     `/inventory/${inventoryItemId}/movements`,

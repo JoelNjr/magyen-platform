@@ -19,6 +19,7 @@ import {
 } from '@mui/material'
 import { useNavigate, useParams } from 'react-router-dom'
 import CreateInventoryItemDialog from '../components/CreateInventoryItemDialog'
+import DeactivateInventoryMaterialDialog from '../components/DeactivateInventoryMaterialDialog'
 import RegisterInventoryPurchaseDialog from '../components/RegisterInventoryPurchaseDialog'
 import {
   formatCatalogMinimumStockLabel,
@@ -38,7 +39,11 @@ import {
   formatInventoryMovementType,
 } from '../presentation/inventoryMovementPresentation'
 import {
+  canDeactivateInventoryMaterial,
+} from '../presentation/inventoryDeactivationPresentation'
+import {
   createInventoryItem,
+  deactivateInventoryMaterial,
   getInventoryMaterial,
   getInventoryMovements,
   registerInventoryPurchase,
@@ -85,7 +90,13 @@ function InventoryMaterialDetailPage() {
   const [successOpen, setSuccessOpen] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
 
-  const pageBusy = creating || purchasing
+  const [deactivateDialogOpen, setDeactivateDialogOpen] = useState(false)
+  const [deactivating, setDeactivating] = useState(false)
+  const [deactivateError, setDeactivateError] = useState('')
+
+  const pageBusy = creating || purchasing || deactivating
+  const materialInactive = material?.status === 'INACTIVE'
+  const canDeactivate = canDeactivateInventoryMaterial(material)
   const showUnits = Boolean(material?.paperMaterial) || units.length > 1
   const holdingUnit =
     units.find((unit) => unit.inventoryItemId === material?.stockHoldingItemId) ||
@@ -196,6 +207,48 @@ function InventoryMaterialDetailPage() {
     setPurchaseError('')
   }
 
+  function openDeactivateDialog() {
+    if (pageBusy || !material || materialInactive) {
+      return
+    }
+    setDeactivateError('')
+    setDeactivateDialogOpen(true)
+  }
+
+  function closeDeactivateDialog() {
+    if (deactivating) {
+      return
+    }
+    setDeactivateDialogOpen(false)
+    setDeactivateError('')
+  }
+
+  async function handleDeactivateMaterial() {
+    if (deactivating || !material?.materialCode) {
+      return
+    }
+    setDeactivateError('')
+    setDeactivating(true)
+    try {
+      await deactivateInventoryMaterial(material.materialCode)
+      await loadMaterial()
+      setDeactivateDialogOpen(false)
+      setSuccessMessage(
+        'El material se eliminó del inventario activo. El historial y el gasto financiero se conservan.'
+      )
+      setSuccessOpen(true)
+    } catch (error) {
+      setDeactivateError(
+        resolveApiErrorMessage(
+          error,
+          'No fue posible eliminar el material del inventario activo.'
+        )
+      )
+    } finally {
+      setDeactivating(false)
+    }
+  }
+
   async function handleRegisterPurchase(payload) {
     setPurchaseError('')
     setPurchasing(true)
@@ -292,7 +345,7 @@ function InventoryMaterialDetailPage() {
                     <Button
                       variant="contained"
                       onClick={openCreateDialog}
-                      disabled={pageBusy}
+                      disabled={pageBusy || materialInactive}
                     >
                       Nuevo rollo
                     </Button>
@@ -301,7 +354,7 @@ function InventoryMaterialDetailPage() {
                       <Button
                         variant="contained"
                         onClick={openPurchaseDialog}
-                        disabled={pageBusy || !holdingUnit}
+                        disabled={pageBusy || !holdingUnit || materialInactive}
                       >
                         Registrar entrada de material
                       </Button>
@@ -318,6 +371,16 @@ function InventoryMaterialDetailPage() {
                       ) : null}
                     </>
                   )}
+                  {!materialInactive ? (
+                    <Button
+                      color="error"
+                      variant="outlined"
+                      onClick={openDeactivateDialog}
+                      disabled={pageBusy}
+                    >
+                      Eliminar material del inventario activo
+                    </Button>
+                  ) : null}
                 </Stack>
               </Stack>
 
@@ -359,6 +422,18 @@ function InventoryMaterialDetailPage() {
                   </DetailField>
                 </Grid>
               </Grid>
+
+              {materialInactive ? (
+                <Alert severity="info" sx={{ mt: 2 }}>
+                  Este material ya no aparece en el inventario activo. Las
+                  compras, el gasto financiero y el historial se conservan.
+                </Alert>
+              ) : !canDeactivate ? (
+                <Alert severity="warning" sx={{ mt: 2 }}>
+                  No se puede eliminar del inventario activo mientras quede
+                  stock físico.
+                </Alert>
+              ) : null}
 
               {material.paperMaterial && (
                 <Alert severity="info" sx={{ mt: 2 }}>
@@ -519,6 +594,15 @@ function InventoryMaterialDetailPage() {
         errorMessage={createError}
         initialMaterialType="PAPER"
         lockMaterialType
+      />
+
+      <DeactivateInventoryMaterialDialog
+        open={deactivateDialogOpen}
+        material={material}
+        onClose={closeDeactivateDialog}
+        onConfirm={handleDeactivateMaterial}
+        submitting={deactivating}
+        errorMessage={deactivateError}
       />
 
       <RegisterInventoryPurchaseDialog

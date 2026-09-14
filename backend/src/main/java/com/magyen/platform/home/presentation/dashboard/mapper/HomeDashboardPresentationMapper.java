@@ -2,6 +2,7 @@ package com.magyen.platform.home.presentation.dashboard.mapper;
 
 import com.magyen.platform.home.application.dto.GetHomeDashboardQuery;
 import com.magyen.platform.home.application.dto.GetHomeDashboardResult;
+import com.magyen.platform.home.application.dto.GetHomeProfitabilityResult;
 import com.magyen.platform.home.application.dto.HomeCommitmentsSummary;
 import com.magyen.platform.home.application.dto.HomeFinancialSummary;
 import com.magyen.platform.home.application.dto.HomeInventoryAlertsSummary;
@@ -20,6 +21,7 @@ import com.magyen.platform.home.presentation.dashboard.response.HomePaperRollAle
 import com.magyen.platform.home.presentation.dashboard.response.HomePaperRollAlertsResponse;
 import com.magyen.platform.home.presentation.dashboard.response.HomeProductionItemResponse;
 import com.magyen.platform.home.presentation.dashboard.response.HomeProductionSummaryResponse;
+import com.magyen.platform.home.presentation.dashboard.response.HomeProfitabilityResponse;
 import com.magyen.platform.home.presentation.dashboard.response.HomeProfitabilitySummaryResponse;
 import com.magyen.platform.home.presentation.dashboard.response.HomeReceivableItemResponse;
 import com.magyen.platform.home.presentation.dashboard.response.HomeReceivablesResponse;
@@ -130,17 +132,33 @@ public class HomeDashboardPresentationMapper {
                                 ))
                                 .toList()
                 ),
-                new HomeProfitabilitySummaryResponse(
-                        profitabilitySummary.evaluatedOrderCount(),
-                        profitabilitySummary.completeOrderCount(),
-                        profitabilitySummary.partiallyUnvaluedOrderCount(),
-                        profitabilitySummary.noCostDataOrderCount(),
-                        profitabilitySummary.totalOrderValue(),
-                        profitabilitySummary.totalDirectCost(),
-                        profitabilitySummary.totalDirectProfit(),
-                        profitabilitySummary.averageMarginPercentage(),
-                        profitabilitySummary.unvaluedCostCount()
-                )
+                toProfitabilitySummaryResponse(profitabilitySummary)
+        );
+    }
+
+    public HomeProfitabilityResponse toProfitabilityResponse(GetHomeProfitabilityResult result) {
+        Objects.requireNonNull(result, "Profitability result must not be null");
+        return new HomeProfitabilityResponse(
+                result.fromDate(),
+                result.toDate(),
+                result.generatedAt(),
+                toProfitabilitySummaryResponse(result.profitabilitySummary())
+        );
+    }
+
+    private static HomeProfitabilitySummaryResponse toProfitabilitySummaryResponse(
+            HomeProfitabilitySummary profitabilitySummary
+    ) {
+        return new HomeProfitabilitySummaryResponse(
+                profitabilitySummary.evaluatedOrderCount(),
+                profitabilitySummary.completeOrderCount(),
+                profitabilitySummary.partiallyUnvaluedOrderCount(),
+                profitabilitySummary.noCostDataOrderCount(),
+                profitabilitySummary.totalOrderValue(),
+                profitabilitySummary.totalDirectCost(),
+                profitabilitySummary.totalDirectProfit(),
+                profitabilitySummary.averageMarginPercentage(),
+                profitabilitySummary.unvaluedCostCount()
         );
     }
 

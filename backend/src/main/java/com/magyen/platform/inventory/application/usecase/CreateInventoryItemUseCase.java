@@ -6,6 +6,7 @@ import com.magyen.platform.inventory.application.dto.InventoryAcquisitionCommand
 import com.magyen.platform.inventory.application.dto.RegisterInventoryPurchaseCommand;
 import com.magyen.platform.inventory.domain.InventoryItem;
 import com.magyen.platform.inventory.domain.InventoryItemRepository;
+import com.magyen.platform.inventory.domain.InventoryItemStatus;
 import com.magyen.platform.inventory.domain.InventoryMaterialType;
 import com.magyen.platform.inventory.domain.InventoryUnitOfMeasure;
 import com.magyen.platform.inventory.domain.MaterialCode;
@@ -106,8 +107,11 @@ public class CreateInventoryItemUseCase {
 
     private MaterialCode resolveMaterialCode(InventoryMaterialType materialType) {
         if (materialType == InventoryMaterialType.PAPER) {
-            return inventoryItemRepository.findFirstByMaterialType(InventoryMaterialType.PAPER)
+            return inventoryItemRepository.findAll().stream()
+                    .filter(item -> item.getMaterialType() == InventoryMaterialType.PAPER)
+                    .filter(item -> item.getStatus() == InventoryItemStatus.ACTIVE)
                     .map(InventoryItem::getMaterialCode)
+                    .findFirst()
                     .orElseGet(materialCodeGenerator::nextMaterialCode);
         }
 

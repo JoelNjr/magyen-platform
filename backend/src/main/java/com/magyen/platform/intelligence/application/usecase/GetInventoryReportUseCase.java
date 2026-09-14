@@ -4,12 +4,15 @@ import com.magyen.platform.intelligence.application.dto.GetInventoryReportResult
 import com.magyen.platform.intelligence.application.dto.GetInventoryReportResult.LowStockItem;
 import com.magyen.platform.inventory.domain.InventoryItem;
 import com.magyen.platform.inventory.domain.InventoryItemRepository;
+import com.magyen.platform.inventory.domain.InventoryItemStatus;
 
 import java.util.List;
 import java.util.Objects;
 
 /**
- * Caso de uso que consolida el reporte de inventario con materiales bajo el stock mínimo.
+ * Caso de uso que consolida el reporte operativo de stock bajo el mínimo.
+ * <p>
+ * Solo incluye materiales {@code ACTIVE}. Un material inactivo no es alerta operativa.
  * <p>
  * Solo consulta información existente; no modifica el estado del negocio.
  */
@@ -28,6 +31,7 @@ public class GetInventoryReportUseCase {
         List<InventoryItem> inventoryItems = inventoryItemRepository.findAll();
 
         List<LowStockItem> lowStockItems = inventoryItems.stream()
+                .filter(item -> item.getStatus() == InventoryItemStatus.ACTIVE)
                 .filter(item -> item.getMinimumStock() != null
                         && item.getStock().compareTo(item.getMinimumStock()) < 0)
                 .map(this::toLowStockItem)

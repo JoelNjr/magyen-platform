@@ -196,6 +196,23 @@ class InventoryItemMovementTest {
         assertEquals(InventoryItemStatus.ACTIVE, inventoryItem.getStatus());
     }
 
+    @Test
+    void inactiveItemRejectsStockIncreaseAndPurchase() {
+        InventoryItem inventoryItem = createFabric(BigDecimal.ZERO);
+        inventoryItem.deactivate();
+
+        assertThrows(InventoryDomainException.class, () -> inventoryItem.increaseStock(BigDecimal.ONE));
+        assertThrows(InventoryDomainException.class, () -> inventoryItem.registerPurchase(
+                BigDecimal.ONE,
+                new BigDecimal("1000.00"),
+                null,
+                LocalDateTime.now(),
+                java.util.UUID.randomUUID()
+        ));
+        assertEquals(0, inventoryItem.getStock().compareTo(BigDecimal.ZERO));
+        assertEquals(InventoryItemStatus.INACTIVE, inventoryItem.getStatus());
+    }
+
     private InventoryItem createFabric(BigDecimal stock) {
         return InventoryItem.create(
                 MaterialCode.of("TELA-" + java.util.UUID.randomUUID().toString().substring(0, 8)),

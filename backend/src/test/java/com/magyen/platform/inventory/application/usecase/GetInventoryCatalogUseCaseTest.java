@@ -203,6 +203,22 @@ class GetInventoryCatalogUseCaseTest {
     }
 
     @Test
+    void inactiveMaterialIsExcludedFromActiveCatalogButDetailRemains() {
+        InventoryItem active = ink("MAT-ACT", "2.0000");
+        InventoryItem inactive = ink("MAT-OFF", "0.0000");
+        inactive.deactivate();
+        InMemoryInventoryItemRepository repository = new InMemoryInventoryItemRepository(active, inactive);
+
+        GetInventoryCatalogResult catalog = new GetInventoryCatalogUseCase(repository).execute();
+        assertEquals(1, catalog.materials().size());
+        assertEquals("MAT-ACT", catalog.materials().getFirst().materialCode());
+
+        GetInventoryMaterialResult detail = new GetInventoryMaterialUseCase(repository)
+                .execute(new GetInventoryMaterialQuery("MAT-OFF"));
+        assertEquals(InventoryItemStatus.INACTIVE, detail.material().status());
+    }
+
+    @Test
     void unknownMaterialCodeIsRejected() {
         GetInventoryMaterialUseCase useCase = new GetInventoryMaterialUseCase(new InMemoryInventoryItemRepository());
 

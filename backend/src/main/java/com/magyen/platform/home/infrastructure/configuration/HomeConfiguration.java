@@ -12,6 +12,7 @@ import com.magyen.platform.home.application.port.FinanceDashboardPort;
 import com.magyen.platform.home.application.port.InventoryDashboardPort;
 import com.magyen.platform.home.application.port.ProductionDashboardPort;
 import com.magyen.platform.home.application.usecase.GetHomeDashboardUseCase;
+import com.magyen.platform.home.application.usecase.GetHomeProfitabilityUseCase;
 import com.magyen.platform.home.infrastructure.commercial.CommercialDashboardAdapter;
 import com.magyen.platform.home.infrastructure.finance.FinanceDashboardAdapter;
 import com.magyen.platform.home.infrastructure.inventory.InventoryDashboardAdapter;
@@ -91,5 +92,13 @@ public class HomeConfiguration {
                 productionDashboardPort,
                 clock
         );
+    }
+
+    @Bean
+    public GetHomeProfitabilityUseCase getHomeProfitabilityUseCase(
+            CommercialDashboardPort commercialDashboardPort,
+            Clock clock
+    ) {
+        return new GetHomeProfitabilityUseCase(commercialDashboardPort, clock);
     }
 }
