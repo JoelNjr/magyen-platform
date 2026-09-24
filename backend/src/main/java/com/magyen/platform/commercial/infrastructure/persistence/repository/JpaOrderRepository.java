@@ -101,4 +101,23 @@ public class JpaOrderRepository implements OrderRepository {
                 .map(orderPersistenceMapper::toDomain)
                 .toList();
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Order> findForIndividualProfitabilityMonth(
+            LocalDate fromDate,
+            LocalDate toDate,
+            boolean includeUndeliveredEligible
+    ) {
+        Objects.requireNonNull(fromDate, "From date must not be null");
+        Objects.requireNonNull(toDate, "To date must not be null");
+
+        return springDataOrderRepository.findForIndividualProfitabilityMonth(
+                        fromDate,
+                        toDate,
+                        includeUndeliveredEligible
+                ).stream()
+                .map(orderPersistenceMapper::toDomain)
+                .toList();
+    }
 }

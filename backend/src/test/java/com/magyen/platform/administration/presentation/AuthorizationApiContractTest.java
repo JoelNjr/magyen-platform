@@ -88,6 +88,16 @@ class AuthorizationApiContractTest {
         mockMvc.perform(authorized(get("/api/v1/inventory"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/plotter/jobs"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/orders/profitability"), accessToken)).andExpect(status().isOk());
+        mockMvc.perform(authorized(patch("/api/v1/orders/" + UNKNOWN_ID + "/deliver"), accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"deliveryDate\":\"2026-09-01\"}"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(authorized(patch("/api/v1/orders/" + UNKNOWN_ID + "/start-production"), accessToken))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(authorized(patch("/api/v1/orders/" + UNKNOWN_ID + "/ready-for-delivery"), accessToken))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(authorized(patch("/api/v1/orders/" + UNKNOWN_ID + "/close"), accessToken))
+                .andExpect(status().isBadRequest());
         mockMvc.perform(authorized(get("/api/v1/plotter/profitability"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/finance/transactions"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/finance/payroll/employees"), accessToken)).andExpect(status().isOk());
@@ -134,6 +144,16 @@ class AuthorizationApiContractTest {
                 .andExpect(status().isBadRequest());
         mockMvc.perform(authorized(get("/api/v1/plotter/jobs"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/orders/profitability"), accessToken)).andExpect(status().isOk());
+        mockMvc.perform(authorized(patch("/api/v1/orders/" + UNKNOWN_ID + "/deliver"), accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"deliveryDate\":\"2026-09-01\"}"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(authorized(patch("/api/v1/orders/" + UNKNOWN_ID + "/start-production"), accessToken))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(authorized(patch("/api/v1/orders/" + UNKNOWN_ID + "/ready-for-delivery"), accessToken))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(authorized(patch("/api/v1/orders/" + UNKNOWN_ID + "/close"), accessToken))
+                .andExpect(status().isBadRequest());
         mockMvc.perform(authorized(get("/api/v1/plotter/profitability"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/commercial-catalogs"), accessToken)).andExpect(status().isOk());
     }
@@ -262,6 +282,18 @@ class AuthorizationApiContractTest {
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.status").value(401));
         mockMvc.perform(get("/api/v1/orders/" + UNKNOWN_ID + "/remission/pdf"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401));
+        mockMvc.perform(patch("/api/v1/orders/" + UNKNOWN_ID + "/deliver"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401));
+        mockMvc.perform(patch("/api/v1/orders/" + UNKNOWN_ID + "/start-production"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401));
+        mockMvc.perform(patch("/api/v1/orders/" + UNKNOWN_ID + "/ready-for-delivery"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401));
+        mockMvc.perform(patch("/api/v1/orders/" + UNKNOWN_ID + "/close"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.status").value(401));
         mockMvc.perform(put("/api/v1/production-orders/" + UNKNOWN_ID + "/reference-image"))

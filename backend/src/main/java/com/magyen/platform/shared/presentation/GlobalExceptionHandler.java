@@ -5,6 +5,7 @@ import com.magyen.platform.administration.domain.exception.AuthenticationFailedE
 import com.magyen.platform.administration.domain.exception.AuthenticationUsernameAlreadyExistsException;
 import com.magyen.platform.administration.domain.exception.CatalogNameAlreadyExistsException;
 import com.magyen.platform.commercial.domain.exception.OrderAlreadyExistsForQuotationException;
+import com.magyen.platform.commercial.domain.exception.OrderDeliveryDateConflictException;
 import com.magyen.platform.commercial.domain.exception.OrderDomainException;
 import com.magyen.platform.commercial.domain.exception.QuotationDomainException;
 import com.magyen.platform.finance.domain.exception.FinanceDomainException;
@@ -147,6 +148,22 @@ public class GlobalExceptionHandler {
         );
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
+
+    @ExceptionHandler(OrderDeliveryDateConflictException.class)
+    public ResponseEntity<ErrorResponse> handleOrderDeliveryDateConflictException(
+            OrderDeliveryDateConflictException exception,
+            HttpServletRequest request
+    ) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.CONFLICT.value(),
+                HttpStatus.CONFLICT.getReasonPhrase(),
+                exception.getMessage(),
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
     }
 
     @ExceptionHandler(OrderDomainException.class)

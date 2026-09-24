@@ -16,9 +16,11 @@ import com.magyen.platform.commercial.application.usecase.ApplyOrderDiscountUseC
 import com.magyen.platform.commercial.application.usecase.ApplyQuotationChangesToOrderUseCase;
 import com.magyen.platform.commercial.application.usecase.ApplyQuotationDiscountUseCase;
 import com.magyen.platform.commercial.application.usecase.ApproveQuotationUseCase;
+import com.magyen.platform.commercial.application.usecase.CloseOrderUseCase;
 import com.magyen.platform.commercial.application.usecase.CreateCustomerUseCase;
 import com.magyen.platform.commercial.application.usecase.CreateOrderFromQuotationUseCase;
 import com.magyen.platform.commercial.application.usecase.CreateQuotationUseCase;
+import com.magyen.platform.commercial.application.usecase.DeliverOrderUseCase;
 import com.magyen.platform.commercial.application.usecase.GetCommercialCatalogsUseCase;
 import com.magyen.platform.commercial.application.usecase.GetCustomersUseCase;
 import com.magyen.platform.commercial.application.usecase.GetSellerCommissionPerformanceUseCase;
@@ -30,12 +32,14 @@ import com.magyen.platform.commercial.application.usecase.GetOrderUseCase;
 import com.magyen.platform.commercial.application.usecase.GetOrdersUseCase;
 import com.magyen.platform.commercial.application.usecase.GetQuotationUseCase;
 import com.magyen.platform.commercial.application.usecase.GetQuotationsUseCase;
+import com.magyen.platform.commercial.application.usecase.MarkOrderReadyForDeliveryUseCase;
 import com.magyen.platform.commercial.application.usecase.PreviewQuotationOrderSynchronizationUseCase;
 import com.magyen.platform.commercial.application.usecase.GenerateOrderRemissionPdfUseCase;
 import com.magyen.platform.commercial.application.usecase.GenerateQuotationPdfUseCase;
 import com.magyen.platform.commercial.application.usecase.ReplaceOrderItemSizesUseCase;
 import com.magyen.platform.commercial.application.usecase.RemoveOrderItemUseCase;
 import com.magyen.platform.commercial.application.usecase.RemoveQuotationItemUseCase;
+import com.magyen.platform.commercial.application.usecase.StartOrderProductionUseCase;
 import com.magyen.platform.commercial.application.usecase.UpdateCustomerUseCase;
 import com.magyen.platform.commercial.application.usecase.UpdateOrderItemProductSpecificationUseCase;
 import com.magyen.platform.commercial.application.usecase.UpdateOrderItemUseCase;
@@ -68,6 +72,8 @@ import com.magyen.platform.plotter.application.usecase.GetInternalPlotterOrderCo
 import com.magyen.platform.production.application.usecase.GetProductionCostsByCommercialOrderUseCase;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import java.time.Clock;
 
 /**
  * Ensambla los beans del módulo comercial que no se registran por estereotipos Spring.
@@ -351,10 +357,11 @@ public class CommercialConfiguration {
 
     @Bean
     public GetOrderProfitabilityListUseCase getOrderProfitabilityListUseCase(
-            GetOrdersUseCase getOrdersUseCase,
-            GetOrderProfitabilityUseCase getOrderProfitabilityUseCase
+            OrderRepository orderRepository,
+            GetOrderProfitabilityUseCase getOrderProfitabilityUseCase,
+            Clock clock
     ) {
-        return new GetOrderProfitabilityListUseCase(getOrdersUseCase, getOrderProfitabilityUseCase);
+        return new GetOrderProfitabilityListUseCase(orderRepository, getOrderProfitabilityUseCase, clock);
     }
 
     @Bean
@@ -412,6 +419,29 @@ public class CommercialConfiguration {
             OrderPaymentFloorGuard orderPaymentFloorGuard
     ) {
         return new ApplyOrderDiscountUseCase(orderRepository, orderPaymentFloorGuard);
+    }
+
+    @Bean
+    public StartOrderProductionUseCase startOrderProductionUseCase(OrderRepository orderRepository) {
+        return new StartOrderProductionUseCase(orderRepository);
+    }
+
+    @Bean
+    public MarkOrderReadyForDeliveryUseCase markOrderReadyForDeliveryUseCase(OrderRepository orderRepository) {
+        return new MarkOrderReadyForDeliveryUseCase(orderRepository);
+    }
+
+    @Bean
+    public DeliverOrderUseCase deliverOrderUseCase(OrderRepository orderRepository, Clock clock) {
+        return new DeliverOrderUseCase(orderRepository, clock);
+    }
+
+    @Bean
+    public CloseOrderUseCase closeOrderUseCase(
+            OrderRepository orderRepository,
+            OrderPaymentCollectionPort orderPaymentCollectionPort
+    ) {
+        return new CloseOrderUseCase(orderRepository, orderPaymentCollectionPort);
     }
 
     @Bean

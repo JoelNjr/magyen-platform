@@ -7,6 +7,7 @@ import com.magyen.platform.commercial.application.port.OrderPaymentCollectionPor
 import com.magyen.platform.commercial.application.port.PlotterOrderCostPort;
 import com.magyen.platform.commercial.application.port.ProductionOrderCostPort;
 import com.magyen.platform.commercial.domain.Order;
+import com.magyen.platform.commercial.domain.OrderIndividualProfitabilityMonthPolicy;
 import com.magyen.platform.commercial.domain.OrderProfitabilityStatus;
 import com.magyen.platform.commercial.domain.OrderRepository;
 
@@ -116,7 +117,9 @@ public class GetOrderProfitabilityUseCase {
                 customerNameResolver.resolveName(order.getCustomerId()),
                 order.getDeliveryCommitment().getPromisedDeliveryDate(),
                 internalPlotterServiceCost,
-                otherCost
+                otherCost,
+                order.getActualDeliveryDate(),
+                OrderIndividualProfitabilityMonthPolicy.deliveryDateSource(order)
         );
     }
 

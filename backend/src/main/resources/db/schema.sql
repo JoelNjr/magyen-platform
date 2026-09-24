@@ -96,6 +96,7 @@ CREATE TABLE orders (
     confirmation_date           date            NOT NULL,
     status                      varchar(30)     NOT NULL,
     promised_delivery_date      date            NOT NULL,
+    actual_delivery_date        date            NULL,
     delivery_observations       varchar(2000)   NULL,
     advance_acknowledged        boolean         NOT NULL,
     final_payment_acknowledged  boolean         NOT NULL,

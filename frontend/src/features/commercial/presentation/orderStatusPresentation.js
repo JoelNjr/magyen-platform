@@ -9,6 +9,29 @@ export function canEditOrderCommercialContent(status) {
   )
 }
 
+export function canStartOrderProduction(status) {
+  return status === 'CONFIRMED'
+}
+
+export function canMarkOrderReadyForDelivery(status) {
+  return status === 'IN_PRODUCTION'
+}
+
+export function canDeliverOrder(status) {
+  return status === 'READY_FOR_DELIVERY'
+}
+
+export function canCloseOrder(status) {
+  return status === 'DELIVERED'
+}
+
+export function canCreateProductionOrder(status, hasProductionOrder) {
+  if (hasProductionOrder) {
+    return false
+  }
+  return status === 'CONFIRMED' || status === 'IN_PRODUCTION'
+}
+
 export function getOrderStatusChipProps(status) {
   switch (status) {
     case 'CONFIRMED':

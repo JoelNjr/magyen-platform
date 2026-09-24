@@ -41,6 +41,7 @@ public class OrderPersistenceMapper {
         orderEntity.setTotalAmount(toAmount(order.getTotal()));
 
         mapDeliveryCommitment(orderEntity, order.getDeliveryCommitment());
+        orderEntity.setActualDeliveryDate(order.getActualDeliveryDate());
         mapPaymentSummary(orderEntity, order.getPaymentSummary());
 
         List<OrderItemEntity> itemEntities = new ArrayList<>();
@@ -77,7 +78,8 @@ public class OrderPersistenceMapper {
                 items,
                 toMoney(orderEntity.getDiscountAmount() == null
                         ? BigDecimal.ZERO
-                        : orderEntity.getDiscountAmount())
+                        : orderEntity.getDiscountAmount()),
+                orderEntity.getActualDeliveryDate()
         );
     }
 

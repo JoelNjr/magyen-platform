@@ -1,3 +1,5 @@
+import { formatDisplayDate } from './formatDisplayDate.js'
+
 export function formatProfitabilityMoney(value) {
   if (value === null || value === undefined || value === '') {
     return '—'
@@ -136,4 +138,24 @@ export function formatLaborProductionCost(profitability) {
     return '—'
   }
   return formatProfitabilityMoney(profitability.laborCost)
+}
+
+export const ORDER_PROFITABILITY_PERIOD_SUBTITLE =
+  'Los pedidos entregados se clasifican por la fecha real de entrega. Si un pedido histórico entregado no tiene fecha real, se usa la fecha programada solo como compatibilidad. Los pedidos no entregados aparecen en el mes actual.'
+
+export function formatOrderProfitabilityDeliveryCaption(order) {
+  if (!order) {
+    return '—'
+  }
+  if (order.deliveryDateSource === 'ACTUAL') {
+    const actualDate = formatDisplayDate(order.actualDeliveryDate)
+    return actualDate ? `Entrega real: ${actualDate}` : 'Entrega real: —'
+  }
+  if (order.deliveryDateSource === 'HISTORICAL_FALLBACK') {
+    const promisedDate = formatDisplayDate(order.promisedDeliveryDate)
+    return promisedDate
+      ? `Entrega programada: ${promisedDate}`
+      : 'Entrega programada: —'
+  }
+  return 'En curso (mes actual)'
 }

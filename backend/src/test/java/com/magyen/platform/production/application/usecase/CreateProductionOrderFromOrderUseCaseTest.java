@@ -11,6 +11,7 @@ import com.magyen.platform.commercial.domain.Order;
 import com.magyen.platform.commercial.domain.OrderItem;
 import com.magyen.platform.commercial.domain.OrderNumber;
 import com.magyen.platform.commercial.domain.OrderRepository;
+import com.magyen.platform.commercial.domain.OrderStatus;
 import com.magyen.platform.commercial.domain.ProductSpecification;
 import com.magyen.platform.commercial.domain.SizeBreakdown;
 import com.magyen.platform.production.application.dto.AddProductionOperationCommand;
@@ -289,28 +290,53 @@ class CreateProductionOrderFromOrderUseCaseTest {
     }
 
     @Test
-    void rejectsCreationWhenCommercialOrderIsNotConfirmed() {
-        Order commercialOrder = persistConfirmedOrderWithTwoItems();
-        commercialOrder.startProduction();
-        orderRepository.save(commercialOrder);
-        entityManager.flush();
-        entityManager.clear();
+    void createsProductionOrderFromInProductionWithoutChangingCommercialStatus() {
+        Order commercialOrder = persistOrderInStatus(OrderStatus.IN_PRODUCTION);
 
-        ProductionDomainException exception = assertThrows(
-                ProductionDomainException.class,
-                () -> createProductionOrderFromOrderUseCase.execute(
-                        new CreateProductionOrderCommand(
-                                commercialOrder.getId(),
-                                ProductionPriority.NORMAL,
-                                null,
-                                null,
-                                null
-                        )
+        CreateProductionOrderResult result = createProductionOrderFromOrderUseCase.execute(
+                new CreateProductionOrderCommand(
+                        commercialOrder.getId(),
+                        ProductionPriority.NORMAL,
+                        null,
+                        null,
+                        null
                 )
         );
 
-        assertTrue(exception.getMessage().contains("CONFIRMED"));
-        assertTrue(productionOrderRepository.findByOrderId(commercialOrder.getId()).isEmpty());
+        assertEquals(commercialOrder.getId(), result.orderId());
+        assertEquals(
+                OrderStatus.IN_PRODUCTION,
+                orderRepository.findById(commercialOrder.getId()).orElseThrow().getStatus()
+        );
+        assertTrue(productionOrderRepository.findByOrderId(commercialOrder.getId()).isPresent());
+    }
+
+    @Test
+    void rejectsCreationWhenCommercialOrderIsReadyDeliveredOrClosed() {
+        for (OrderStatus status : List.of(
+                OrderStatus.READY_FOR_DELIVERY,
+                OrderStatus.DELIVERED,
+                OrderStatus.CLOSED
+        )) {
+            Order commercialOrder = persistOrderInStatus(status);
+
+            ProductionDomainException exception = assertThrows(
+                    ProductionDomainException.class,
+                    () -> createProductionOrderFromOrderUseCase.execute(
+                            new CreateProductionOrderCommand(
+                                    commercialOrder.getId(),
+                                    ProductionPriority.NORMAL,
+                                    null,
+                                    null,
+                                    null
+                            )
+                    )
+            );
+
+            assertTrue(exception.getMessage().contains(status.name()));
+            assertTrue(productionOrderRepository.findByOrderId(commercialOrder.getId()).isEmpty());
+            assertEquals(status, orderRepository.findById(commercialOrder.getId()).orElseThrow().getStatus());
+        }
     }
 
     @Test
@@ -408,6 +434,10 @@ class CreateProductionOrderFromOrderUseCaseTest {
                         com.magyen.platform.production.domain.SizeBreakdown::getSize,
                         com.magyen.platform.production.domain.SizeBreakdown::getQuantity
                 )));
+        assertEquals(
+                OrderStatus.CONFIRMED,
+                orderRepository.findById(commercialOrder.getId()).orElseThrow().getStatus()
+        );
     }
 
     @Test
@@ -489,6 +519,35 @@ class CreateProductionOrderFromOrderUseCaseTest {
         );
 
         return persistConfirmedOrder(List.of(firstItem, secondItem));
+    }
+
+    private Order persistOrderInStatus(OrderStatus status) {
+        Order confirmed = persistConfirmedOrderWithTwoItems();
+        if (status == OrderStatus.CONFIRMED) {
+            return confirmed;
+        }
+        Order reconstituted = Order.reconstitute(
+                confirmed.getId(),
+                confirmed.getOrderNumber(),
+                confirmed.getCustomerId(),
+                confirmed.getQuotationId(),
+                confirmed.getConfirmationDate(),
+                status,
+                confirmed.getDeliveryCommitment(),
+                confirmed.getPaymentSummary(),
+                confirmed.getSellerId(),
+                confirmed.getObservations(),
+                confirmed.getDescription(),
+                confirmed.getItems(),
+                confirmed.getDiscount(),
+                status == OrderStatus.DELIVERED || status == OrderStatus.CLOSED
+                        ? confirmed.getConfirmationDate()
+                        : null
+        );
+        Order saved = orderRepository.save(reconstituted);
+        entityManager.flush();
+        entityManager.clear();
+        return orderRepository.findById(saved.getId()).orElseThrow();
     }
 
     private Order persistConfirmedOrder(List<OrderItem> items) {

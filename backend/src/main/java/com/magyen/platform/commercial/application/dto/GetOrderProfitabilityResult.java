@@ -1,5 +1,6 @@
 package com.magyen.platform.commercial.application.dto;
 
+import com.magyen.platform.commercial.domain.OrderProfitabilityDeliveryDateSource;
 import com.magyen.platform.commercial.domain.OrderProfitabilityStatus;
 
 import java.math.BigDecimal;
@@ -13,6 +14,7 @@ import java.util.UUID;
  * {@code plotterMaterialCost} es el snapshot histórico de papel INTERNAL_MAGYEN.
  * {@code plotterCostAttributable=true} cuando hay trabajos internos y todos tienen costo valorado.
  * Las etiquetas de pedido/cliente son de lectura; no son UUIDs de negocio.
+ * {@code deliveryDateSource} distingue entrega real de fallback histórico; no reclasifica Home.
  */
 public record GetOrderProfitabilityResult(
         UUID orderId,
@@ -33,7 +35,9 @@ public record GetOrderProfitabilityResult(
         String customerName,
         LocalDate promisedDeliveryDate,
         BigDecimal internalPlotterServiceCost,
-        BigDecimal otherDirectCost
+        BigDecimal otherDirectCost,
+        LocalDate actualDeliveryDate,
+        OrderProfitabilityDeliveryDateSource deliveryDateSource
 ) {
     public GetOrderProfitabilityResult(
             UUID orderId,
@@ -69,7 +73,9 @@ public record GetOrderProfitabilityResult(
                 null,
                 null,
                 BigDecimal.ZERO.setScale(2),
-                BigDecimal.ZERO.setScale(2)
+                BigDecimal.ZERO.setScale(2),
+                null,
+                null
         );
     }
 }

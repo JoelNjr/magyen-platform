@@ -5,7 +5,9 @@ import com.magyen.platform.commercial.application.dto.ApplyQuotationDiscountResu
 import com.magyen.platform.commercial.application.dto.CreateOrderFromQuotationCommand;
 import com.magyen.platform.commercial.application.dto.CreateOrderFromQuotationResult;
 import com.magyen.platform.commercial.domain.Order;
+import com.magyen.platform.commercial.domain.OrderProfitabilityEligibility;
 import com.magyen.platform.commercial.domain.OrderRepository;
+import com.magyen.platform.commercial.domain.OrderStatus;
 import com.magyen.platform.commercial.domain.Quotation;
 import com.magyen.platform.commercial.domain.QuotationNumber;
 import com.magyen.platform.commercial.domain.QuotationRepository;
@@ -165,6 +167,26 @@ class ApplyQuotationDiscountUseCaseTest {
                     .filter(order -> {
                         LocalDate promised = order.getDeliveryCommitment().getPromisedDeliveryDate();
                         return !promised.isBefore(fromDate) && !promised.isAfter(toDate);
+                    })
+                    .toList();
+        }
+
+        @Override
+        public List<Order> findForIndividualProfitabilityMonth(
+                LocalDate fromDate,
+                LocalDate toDate,
+                boolean includeUndeliveredEligible
+        ) {
+            return orders.values().stream()
+                    .filter(order -> OrderProfitabilityEligibility.includes(order.getStatus()))
+                    .filter(order -> {
+                        if (order.getStatus() == OrderStatus.DELIVERED) {
+                            LocalDate classificationDate = order.getActualDeliveryDate() != null
+                                    ? order.getActualDeliveryDate()
+                                    : order.getDeliveryCommitment().getPromisedDeliveryDate();
+                            return !classificationDate.isBefore(fromDate) && !classificationDate.isAfter(toDate);
+                        }
+                        return includeUndeliveredEligible;
                     })
                     .toList();
         }

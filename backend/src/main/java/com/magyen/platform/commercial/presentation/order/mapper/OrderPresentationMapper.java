@@ -6,7 +6,16 @@ import com.magyen.platform.commercial.application.dto.ApplyOrderDiscountCommand;
 import com.magyen.platform.commercial.application.dto.ApplyOrderDiscountResult;
 import com.magyen.platform.commercial.application.dto.CreateOrderFromQuotationCommand;
 import com.magyen.platform.commercial.application.dto.CreateOrderFromQuotationResult;
+import com.magyen.platform.commercial.application.dto.CloseOrderCommand;
+import com.magyen.platform.commercial.application.dto.CloseOrderResult;
+import com.magyen.platform.commercial.application.dto.DeliverOrderCommand;
+import com.magyen.platform.commercial.application.dto.DeliverOrderResult;
 import com.magyen.platform.commercial.application.dto.GetOrderCommand;
+import com.magyen.platform.commercial.application.dto.GetOrderProfitabilityListQuery;
+import com.magyen.platform.commercial.application.dto.MarkOrderReadyForDeliveryCommand;
+import com.magyen.platform.commercial.application.dto.MarkOrderReadyForDeliveryResult;
+import com.magyen.platform.commercial.application.dto.StartOrderProductionCommand;
+import com.magyen.platform.commercial.application.dto.StartOrderProductionResult;
 import com.magyen.platform.commercial.application.dto.GetOrderProfitabilityListResult;
 import com.magyen.platform.commercial.application.dto.GetOrderProfitabilityQuery;
 import com.magyen.platform.commercial.application.dto.GetOrderProfitabilityResult;
@@ -29,13 +38,16 @@ import com.magyen.platform.commercial.application.dto.UpdateOrderItemResult;
 import com.magyen.platform.commercial.presentation.order.request.AddOrderItemRequest;
 import com.magyen.platform.commercial.presentation.order.request.ApplyOrderDiscountRequest;
 import com.magyen.platform.commercial.presentation.order.request.CreateOrderRequest;
+import com.magyen.platform.commercial.presentation.order.request.DeliverOrderRequest;
 import com.magyen.platform.commercial.presentation.order.request.ReplaceOrderItemSizesRequest;
 import com.magyen.platform.commercial.presentation.order.request.SizeBreakdownRequest;
 import com.magyen.platform.commercial.presentation.order.request.UpdateOrderItemProductSpecificationRequest;
 import com.magyen.platform.commercial.presentation.order.request.UpdateOrderItemRequest;
 import com.magyen.platform.commercial.presentation.order.response.AddOrderItemResponse;
 import com.magyen.platform.commercial.presentation.order.response.ApplyOrderDiscountResponse;
+import com.magyen.platform.commercial.presentation.order.response.CloseOrderResponse;
 import com.magyen.platform.commercial.presentation.order.response.CreateOrderResponse;
+import com.magyen.platform.commercial.presentation.order.response.DeliverOrderResponse;
 import com.magyen.platform.commercial.presentation.order.response.GetOrderProfitabilityListResponse;
 import com.magyen.platform.commercial.presentation.order.response.GetOrderProfitabilityResponse;
 import com.magyen.platform.commercial.presentation.order.response.GetOrderResponse;
@@ -43,15 +55,18 @@ import com.magyen.platform.commercial.presentation.order.response.GetOrderRespon
 import com.magyen.platform.commercial.presentation.order.response.GetOrderResponse.PaymentSummaryResponse;
 import com.magyen.platform.commercial.presentation.order.response.GetOrdersResponse;
 import com.magyen.platform.commercial.presentation.order.response.GetOrdersResponse.OrderResponse;
+import com.magyen.platform.commercial.presentation.order.response.MarkOrderReadyForDeliveryResponse;
 import com.magyen.platform.commercial.presentation.order.response.OrderItemResponse;
 import com.magyen.platform.commercial.presentation.order.response.RemoveOrderItemResponse;
 import com.magyen.platform.commercial.presentation.order.response.ReplaceOrderItemSizesResponse;
 import com.magyen.platform.commercial.presentation.order.response.SizeBreakdownResponse;
+import com.magyen.platform.commercial.presentation.order.response.StartOrderProductionResponse;
 import com.magyen.platform.commercial.presentation.order.response.UpdateOrderItemProductSpecificationResponse;
 import com.magyen.platform.commercial.presentation.order.response.UpdateOrderItemResponse;
 import com.magyen.platform.commercial.presentation.quotation.request.ProductSpecificationRequest;
 import com.magyen.platform.commercial.presentation.quotation.response.ProductSpecificationResponse;
 
+import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -103,6 +118,65 @@ public class OrderPresentationMapper {
         return new GetOrderCommand(orderId);
     }
 
+    public GetOrderProfitabilityListQuery toGetOrderProfitabilityListQuery(
+            LocalDate fromDate,
+            LocalDate toDate
+    ) {
+        return new GetOrderProfitabilityListQuery(fromDate, toDate);
+    }
+
+    public DeliverOrderCommand toDeliverOrderCommand(UUID orderId, DeliverOrderRequest request) {
+        Objects.requireNonNull(orderId, "Order id must not be null");
+        Objects.requireNonNull(request, "Deliver order request must not be null");
+        if (request.deliveryDate() == null) {
+            throw new IllegalArgumentException("Delivery date must not be null");
+        }
+        return new DeliverOrderCommand(orderId, request.deliveryDate());
+    }
+
+    public CloseOrderCommand toCloseOrderCommand(UUID orderId) {
+        Objects.requireNonNull(orderId, "Order id must not be null");
+        return new CloseOrderCommand(orderId);
+    }
+
+    public CloseOrderResponse toResponse(CloseOrderResult result) {
+        Objects.requireNonNull(result, "Close order result must not be null");
+        return new CloseOrderResponse(
+                result.orderId(),
+                result.status().name(),
+                result.finalPaymentAcknowledged()
+        );
+    }
+
+    public DeliverOrderResponse toResponse(DeliverOrderResult result) {
+        Objects.requireNonNull(result, "Deliver order result must not be null");
+        return new DeliverOrderResponse(
+                result.orderId(),
+                result.status().name(),
+                result.actualDeliveryDate()
+        );
+    }
+
+    public StartOrderProductionCommand toStartOrderProductionCommand(UUID orderId) {
+        Objects.requireNonNull(orderId, "Order id must not be null");
+        return new StartOrderProductionCommand(orderId);
+    }
+
+    public StartOrderProductionResponse toResponse(StartOrderProductionResult result) {
+        Objects.requireNonNull(result, "Start order production result must not be null");
+        return new StartOrderProductionResponse(result.orderId(), result.status().name());
+    }
+
+    public MarkOrderReadyForDeliveryCommand toMarkOrderReadyForDeliveryCommand(UUID orderId) {
+        Objects.requireNonNull(orderId, "Order id must not be null");
+        return new MarkOrderReadyForDeliveryCommand(orderId);
+    }
+
+    public MarkOrderReadyForDeliveryResponse toResponse(MarkOrderReadyForDeliveryResult result) {
+        Objects.requireNonNull(result, "Mark order ready for delivery result must not be null");
+        return new MarkOrderReadyForDeliveryResponse(result.orderId(), result.status().name());
+    }
+
     public GetOrderProfitabilityQuery toGetOrderProfitabilityQuery(UUID orderId) {
         Objects.requireNonNull(orderId, "Order id must not be null");
 
@@ -118,6 +192,8 @@ public class OrderPresentationMapper {
                 result.description(),
                 result.customerName(),
                 result.promisedDeliveryDate(),
+                result.actualDeliveryDate(),
+                result.deliveryDateSource() == null ? null : result.deliveryDateSource().name(),
                 result.orderValue(),
                 result.collectedAmount(),
                 result.outstandingAmount(),
@@ -148,7 +224,9 @@ public class OrderPresentationMapper {
                 summary.totalDirectCost(),
                 summary.totalDirectProfit(),
                 summary.weightedMarginPercentage(),
-                summary.unvaluedCostCount()
+                summary.unvaluedCostCount(),
+                result.fromDate(),
+                result.toDate()
         );
     }
 
@@ -174,6 +252,7 @@ public class OrderPresentationMapper {
                         result.deliveryCommitment().promisedDeliveryDate(),
                         result.deliveryCommitment().deliveryObservations()
                 ),
+                result.actualDeliveryDate(),
                 new PaymentSummaryResponse(
                         result.paymentSummary().advanceAcknowledged(),
                         result.paymentSummary().finalPaymentAcknowledged(),

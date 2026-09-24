@@ -27,6 +27,7 @@ public class Order {
     private final LocalDate confirmationDate;
     private OrderStatus status;
     private final DeliveryCommitment deliveryCommitment;
+    private LocalDate actualDeliveryDate;
     private PaymentSummary paymentSummary;
     private final UUID sellerId;
     private final String observations;
@@ -48,7 +49,8 @@ public class Order {
             String observations,
             String description,
             List<OrderItem> items,
-            Money discount
+            Money discount,
+            LocalDate actualDeliveryDate
     ) {
         this.id = Objects.requireNonNull(id, "Order id must not be null");
         this.orderNumber = Objects.requireNonNull(orderNumber, "Order number must not be null");
@@ -67,6 +69,8 @@ public class Order {
         this.discount = discount == null ? Money.zero() : discount;
         this.total = calculateTotal(this.items, this.discount);
         this.paymentSummary = Objects.requireNonNull(paymentSummary, "Payment summary must not be null");
+        this.actualDeliveryDate = actualDeliveryDate;
+        ensureActualDeliveryDateNotBeforeConfirmation();
 
         ensureHasAtLeastOneProduct();
         ensureUniqueQuotationItemReferences();
@@ -160,7 +164,8 @@ public class Order {
                 observations,
                 description,
                 committedItems,
-                resolvedDiscount
+                resolvedDiscount,
+                null
         );
     }
 
@@ -244,6 +249,40 @@ public class Order {
             List<OrderItem> items,
             Money discount
     ) {
+        return reconstitute(
+                id,
+                orderNumber,
+                customerId,
+                quotationId,
+                confirmationDate,
+                status,
+                deliveryCommitment,
+                paymentSummary,
+                sellerId,
+                observations,
+                description,
+                items,
+                discount,
+                null
+        );
+    }
+
+    public static Order reconstitute(
+            UUID id,
+            OrderNumber orderNumber,
+            UUID customerId,
+            UUID quotationId,
+            LocalDate confirmationDate,
+            OrderStatus status,
+            DeliveryCommitment deliveryCommitment,
+            PaymentSummary paymentSummary,
+            UUID sellerId,
+            String observations,
+            String description,
+            List<OrderItem> items,
+            Money discount,
+            LocalDate actualDeliveryDate
+    ) {
         validateDeliveryCommitment(confirmationDate, deliveryCommitment);
 
         return new Order(
@@ -259,7 +298,8 @@ public class Order {
                 observations,
                 description,
                 items,
-                discount
+                discount,
+                actualDeliveryDate
         );
     }
 
@@ -282,12 +322,25 @@ public class Order {
     }
 
     /**
-     * Marca la Orden como entregada al cliente.
+     * Marca la Orden como entregada al cliente y registra la fecha real de entrega.
      * <p>
      * Transición válida: {@link OrderStatus#READY_FOR_DELIVERY} → {@link OrderStatus#DELIVERED}.
+     * {@code businessToday} llega desde la aplicación. El agregado no consulta el reloj.
+     * Una entrega ya registrada no se reescribe aquí: el caso de uso resuelve la repetición.
      */
-    public void deliver() {
+    public void deliver(LocalDate actualDeliveryDate, LocalDate businessToday) {
+        Objects.requireNonNull(actualDeliveryDate, "Actual delivery date must not be null");
+        Objects.requireNonNull(businessToday, "Business today must not be null");
+
+        if (actualDeliveryDate.isBefore(confirmationDate)) {
+            throw new OrderDomainException("Actual delivery date must not be before confirmation date");
+        }
+        if (actualDeliveryDate.isAfter(businessToday)) {
+            throw new OrderDomainException("Actual delivery date must not be after the current business date");
+        }
+
         transitionTo(OrderStatus.READY_FOR_DELIVERY, OrderStatus.DELIVERED);
+        this.actualDeliveryDate = actualDeliveryDate;
     }
 
     /**
@@ -573,6 +626,10 @@ public class Order {
         return deliveryCommitment;
     }
 
+    public LocalDate getActualDeliveryDate() {
+        return actualDeliveryDate;
+    }
+
     public PaymentSummary getPaymentSummary() {
         return paymentSummary;
     }
@@ -623,10 +680,6 @@ public class Order {
     }
 
     private void transitionTo(OrderStatus expectedCurrentStatus, OrderStatus nextStatus) {
-        if (status == nextStatus) {
-            return;
-        }
-
         if (status != expectedCurrentStatus) {
             throw new OrderDomainException(
                     "Invalid order status transition from " + status + " to " + nextStatus
@@ -743,6 +796,12 @@ public class Order {
         Objects.requireNonNull(unitPrice, "Unit price must not be null");
         if (unitPrice.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
             throw new OrderDomainException("Unit price must be greater than zero");
+        }
+    }
+
+    private void ensureActualDeliveryDateNotBeforeConfirmation() {
+        if (actualDeliveryDate != null && actualDeliveryDate.isBefore(confirmationDate)) {
+            throw new OrderDomainException("Actual delivery date must not be before confirmation date");
         }
     }
 

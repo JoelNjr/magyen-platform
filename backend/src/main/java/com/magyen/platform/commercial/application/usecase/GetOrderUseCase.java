@@ -90,6 +90,7 @@ public class GetOrderUseCase {
                 order.getConfirmationDate(),
                 order.getStatus(),
                 toDeliveryCommitmentResult(order.getDeliveryCommitment()),
+                order.getActualDeliveryDate(),
                 toPaymentSummaryResult(order.getPaymentSummary()),
                 order.getSellerId(),
                 sellerNameResolver.resolveName(order.getSellerId()),

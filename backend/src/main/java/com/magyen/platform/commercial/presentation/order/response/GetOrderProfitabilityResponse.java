@@ -13,6 +13,8 @@ public record GetOrderProfitabilityResponse(
         String description,
         String customerName,
         LocalDate promisedDeliveryDate,
+        LocalDate actualDeliveryDate,
+        String deliveryDateSource,
         BigDecimal orderValue,
         BigDecimal collectedAmount,
         BigDecimal outstandingAmount,

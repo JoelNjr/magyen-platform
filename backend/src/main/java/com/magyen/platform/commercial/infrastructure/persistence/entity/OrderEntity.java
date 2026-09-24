@@ -46,6 +46,9 @@ public class OrderEntity {
     @Column(name = "promised_delivery_date", nullable = false)
     private LocalDate promisedDeliveryDate;
 
+    @Column(name = "actual_delivery_date")
+    private LocalDate actualDeliveryDate;
+
     @Column(name = "delivery_observations", length = 2000)
     private String deliveryObservations;
 
@@ -136,6 +139,14 @@ public class OrderEntity {
 
     public void setPromisedDeliveryDate(LocalDate promisedDeliveryDate) {
         this.promisedDeliveryDate = promisedDeliveryDate;
+    }
+
+    public LocalDate getActualDeliveryDate() {
+        return actualDeliveryDate;
+    }
+
+    public void setActualDeliveryDate(LocalDate actualDeliveryDate) {
+        this.actualDeliveryDate = actualDeliveryDate;
     }
 
     public String getDeliveryObservations() {

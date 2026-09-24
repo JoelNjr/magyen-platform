@@ -85,10 +85,10 @@ public class CreateProductionOrderFromOrderUseCase {
     }
 
     private void validateOrderEligibility(GetOrderResult order) {
-        if (order.status() != OrderStatus.CONFIRMED) {
+        if (order.status() != OrderStatus.CONFIRMED && order.status() != OrderStatus.IN_PRODUCTION) {
             throw new ProductionDomainException(
-                    "A production order can only be created from a CONFIRMED commercial order. Current status: "
-                            + order.status()
+                    "A production order can only be created from a CONFIRMED or IN_PRODUCTION commercial order. "
+                            + "Current status: " + order.status()
             );
         }
 

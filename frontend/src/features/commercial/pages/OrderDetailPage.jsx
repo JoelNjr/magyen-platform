@@ -26,7 +26,9 @@ import {
 } from '@mui/material'
 import { Link as RouterLink, useLocation, useNavigate, useParams } from 'react-router-dom'
 import AddQuotationItemDialog from '../components/AddQuotationItemDialog'
+import CloseOrderDialog from '../components/CloseOrderDialog'
 import CreateProductionOrderDialog from '../components/CreateProductionOrderDialog'
+import DeliverOrderDialog from '../components/DeliverOrderDialog'
 import EditOrderItemCommercialDialog from '../components/EditOrderItemCommercialDialog'
 import RegisterOrderPaymentDialog from '../components/RegisterOrderPaymentDialog'
 import ManageOrderItemProductSpecificationDialog from '../components/ManageOrderItemProductSpecificationDialog'
@@ -43,7 +45,12 @@ import {
   getOrderProfitabilityStatusChipProps,
 } from '../presentation/orderProfitabilityPresentation'
 import {
+  canCloseOrder,
+  canCreateProductionOrder,
+  canDeliverOrder,
   canEditOrderCommercialContent,
+  canMarkOrderReadyForDelivery,
+  canStartOrderProduction,
   getOrderStatusChipProps,
 } from '../presentation/orderStatusPresentation'
 import {
@@ -57,13 +64,17 @@ import {
 import {
   addOrderItem,
   applyOrderDiscount,
+  closeOrder,
+  deliverOrder,
   downloadOrderRemissionPdf,
   getCustomers,
   getOrder,
   getOrderProfitability,
   getPaymentsByOrder,
+  markOrderReadyForDelivery,
   registerOrderPayment,
   removeOrderItem,
+  startOrderProduction,
   updateOrderItem,
 } from '../services/commercialService'
 import PageHeader, { BrandAccentLine } from '../../../layout/PageHeader'
@@ -386,6 +397,12 @@ function OrderDetailPage() {
   const [registerPaymentError, setRegisterPaymentError] = useState('')
   const [generatingRemission, setGeneratingRemission] = useState(false)
   const [remissionError, setRemissionError] = useState('')
+  const [lifecycleBusy, setLifecycleBusy] = useState(false)
+  const [lifecycleError, setLifecycleError] = useState('')
+  const [deliverDialogOpen, setDeliverDialogOpen] = useState(false)
+  const [deliverDialogError, setDeliverDialogError] = useState('')
+  const [closeDialogOpen, setCloseDialogOpen] = useState(false)
+  const [closeDialogError, setCloseDialogError] = useState('')
 
   async function loadProfitability(commercialOrderId) {
     setProfitabilityLoading(true)
@@ -709,16 +726,84 @@ function OrderDetailPage() {
     }
   }
 
+  async function handleCommercialLifecycle(action) {
+    if (lifecycleBusy || generatingRemission || registeringPayment || creatingProductionOrder || !order) {
+      return
+    }
+
+    setLifecycleError('')
+    setLifecycleBusy(true)
+    try {
+      if (action === 'start-production') {
+        await startOrderProduction(order.orderId)
+        await refreshOrderAfterSave('Pedido marcado en producción.')
+      } else if (action === 'ready-for-delivery') {
+        await markOrderReadyForDelivery(order.orderId)
+        await refreshOrderAfterSave('Pedido marcado como listo para entrega.')
+      }
+    } catch (error) {
+      setLifecycleError(
+        resolveApiErrorMessage(error, 'No fue posible actualizar el estado del pedido.')
+      )
+    } finally {
+      setLifecycleBusy(false)
+    }
+  }
+
+  async function handleDeliverOrder(deliveryDate) {
+    if (lifecycleBusy || !order) {
+      return
+    }
+
+    setDeliverDialogError('')
+    setLifecycleError('')
+    setLifecycleBusy(true)
+    try {
+      await deliverOrder(order.orderId, deliveryDate)
+      setDeliverDialogOpen(false)
+      await refreshOrderAfterSave('Entrega registrada.')
+    } catch (error) {
+      setDeliverDialogError(
+        resolveApiErrorMessage(error, 'No fue posible registrar la entrega.')
+      )
+    } finally {
+      setLifecycleBusy(false)
+    }
+  }
+
+  async function handleCloseOrder() {
+    if (lifecycleBusy || !order) {
+      return
+    }
+
+    setCloseDialogError('')
+    setLifecycleError('')
+    setLifecycleBusy(true)
+    try {
+      await closeOrder(order.orderId)
+      setCloseDialogOpen(false)
+      await refreshOrderAfterSave('Pedido cerrado.')
+    } catch (error) {
+      setCloseDialogError(
+        resolveApiErrorMessage(
+          error,
+          'No fue posible cerrar el pedido. Los pagos registrados no cubren el total.'
+        )
+      )
+    } finally {
+      setLifecycleBusy(false)
+    }
+  }
+
   const statusChip = order ? getOrderStatusChipProps(order.status) : null
   const items = order?.items ?? []
   const deliveryCommitment = order?.deliveryCommitment
   const paymentSummary = order?.paymentSummary
-  const isConfirmedOrder = order?.status === 'CONFIRMED'
   const canEditCommercialContent = canEditOrderCommercialContent(order?.status)
-  const canCreateProductionOrder =
-    isConfirmedOrder && !linkedProductionOrderId
+  const canCreateProduction =
+    canCreateProductionOrder(order?.status, Boolean(linkedProductionOrderId))
   const showProductionSection =
-    Boolean(order) && (isConfirmedOrder || Boolean(linkedProductionOrderId))
+    Boolean(order) && (canCreateProduction || Boolean(linkedProductionOrderId))
 
   return (
     <Stack spacing={3}>
@@ -754,6 +839,12 @@ function OrderDetailPage() {
             </Alert>
           ) : null}
 
+          {lifecycleError ? (
+            <Alert severity="error" onClose={() => setLifecycleError('')}>
+              {lifecycleError}
+            </Alert>
+          ) : null}
+
           <Stack
             direction={{ xs: 'column', md: 'row' }}
             spacing={1.5}
@@ -781,15 +872,63 @@ function OrderDetailPage() {
                 {order.description || 'Sin descripción del pedido'}
               </Typography>
             </Stack>
-            <Button
-              variant="outlined"
-              disabled={generatingRemission || registeringPayment || creatingProductionOrder}
-              onClick={handleGenerateRemission}
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              spacing={1.5}
+              alignItems={{ xs: 'stretch', sm: 'center' }}
             >
-              {generatingRemission
-                ? 'Generando remisión…'
-                : ORDER_REMISSION_ACTION_LABEL}
-            </Button>
+              {canStartOrderProduction(order.status) ? (
+                <Button
+                  variant="contained"
+                  disabled={lifecycleBusy || generatingRemission || registeringPayment}
+                  onClick={() => handleCommercialLifecycle('start-production')}
+                >
+                  {lifecycleBusy ? 'Actualizando…' : 'Marcar en producción'}
+                </Button>
+              ) : null}
+              {canMarkOrderReadyForDelivery(order.status) ? (
+                <Button
+                  variant="contained"
+                  disabled={lifecycleBusy || generatingRemission || registeringPayment}
+                  onClick={() => handleCommercialLifecycle('ready-for-delivery')}
+                >
+                  {lifecycleBusy ? 'Actualizando…' : 'Marcar lista para entrega'}
+                </Button>
+              ) : null}
+              {canDeliverOrder(order.status) ? (
+                <Button
+                  variant="contained"
+                  disabled={lifecycleBusy || generatingRemission || registeringPayment}
+                  onClick={() => {
+                    setDeliverDialogError('')
+                    setDeliverDialogOpen(true)
+                  }}
+                >
+                  Registrar entrega
+                </Button>
+              ) : null}
+              {canCloseOrder(order.status) ? (
+                <Button
+                  variant="contained"
+                  disabled={lifecycleBusy || generatingRemission || registeringPayment}
+                  onClick={() => {
+                    setCloseDialogError('')
+                    setCloseDialogOpen(true)
+                  }}
+                >
+                  Cerrar pedido
+                </Button>
+              ) : null}
+              <Button
+                variant="outlined"
+                disabled={generatingRemission || registeringPayment || creatingProductionOrder || lifecycleBusy}
+                onClick={handleGenerateRemission}
+              >
+                {generatingRemission
+                  ? 'Generando remisión…'
+                  : ORDER_REMISSION_ACTION_LABEL}
+              </Button>
+            </Stack>
           </Stack>
 
           <Paper sx={{ p: 3 }}>
@@ -831,11 +970,21 @@ function OrderDetailPage() {
               </Grid>
 
               <Grid size={{ xs: 12, md: 6 }}>
-                <DetailField label="Fecha de entrega">
+                <DetailField label="Fecha de entrega programada">
                   <Typography>
                     {formatDisplayDate(
                       deliveryCommitment?.promisedDeliveryDate
                     )}
+                  </Typography>
+                </DetailField>
+              </Grid>
+
+              <Grid size={{ xs: 12, md: 6 }}>
+                <DetailField label={order.actualDeliveryDate ? 'Fecha de entrega' : 'Fecha de entrega real'}>
+                  <Typography>
+                    {order.actualDeliveryDate
+                      ? `Fecha de entrega: ${formatDisplayDate(order.actualDeliveryDate)}`
+                      : '—'}
                   </Typography>
                 </DetailField>
               </Grid>
@@ -1361,7 +1510,7 @@ function OrderDetailPage() {
                         producción asociada.
                       </Alert>
                     )}
-                    {canCreateProductionOrder && (
+                    {canCreateProduction && (
                       <Button
                         type="button"
                         variant="contained"
@@ -1460,6 +1609,38 @@ function OrderDetailPage() {
         onConfirm={handleCreateProductionOrder}
         submitting={creatingProductionOrder}
         errorMessage={createProductionError}
+      />
+
+      <DeliverOrderDialog
+        open={deliverDialogOpen}
+        confirmationDate={order?.confirmationDate}
+        onClose={() => {
+          if (!lifecycleBusy) {
+            setDeliverDialogOpen(false)
+            setDeliverDialogError('')
+          }
+        }}
+        onSubmit={handleDeliverOrder}
+        submitting={lifecycleBusy}
+        errorMessage={deliverDialogError}
+      />
+
+      <CloseOrderDialog
+        open={closeDialogOpen}
+        orderNumber={order?.orderNumber}
+        totalAmount={order?.totalAmount}
+        totalPaid={paymentsTotalPaid}
+        paymentsFailed={paymentsFailed}
+        formatCurrency={formatCurrency}
+        onClose={() => {
+          if (!lifecycleBusy) {
+            setCloseDialogOpen(false)
+            setCloseDialogError('')
+          }
+        }}
+        onSubmit={handleCloseOrder}
+        submitting={lifecycleBusy}
+        errorMessage={closeDialogError}
       />
 
       <Snackbar

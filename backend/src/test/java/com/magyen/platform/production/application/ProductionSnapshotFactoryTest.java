@@ -137,6 +137,7 @@ class ProductionSnapshotFactoryTest {
                 today,
                 status,
                 new DeliveryCommitmentResult(today.plusDays(10), null),
+                null,
                 new PaymentSummaryResult(true, false, new BigDecimal("900000"), new BigDecimal("900000")),
                 UUID.randomUUID(),
                 "Snapshot Tester",

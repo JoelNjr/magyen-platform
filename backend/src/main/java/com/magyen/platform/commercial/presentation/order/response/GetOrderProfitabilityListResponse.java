@@ -1,6 +1,7 @@
 package com.magyen.platform.commercial.presentation.order.response;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -16,6 +17,8 @@ public record GetOrderProfitabilityListResponse(
         BigDecimal totalDirectCost,
         BigDecimal totalDirectProfit,
         BigDecimal weightedMarginPercentage,
-        int unvaluedCostCount
+        int unvaluedCostCount,
+        LocalDate fromDate,
+        LocalDate toDate
 ) {
 }

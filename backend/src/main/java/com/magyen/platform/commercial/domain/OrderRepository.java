@@ -26,4 +26,17 @@ public interface OrderRepository {
      * El filtro se aplica en persistencia. No sustituye el listado por {@code confirmationDate}.
      */
     List<Order> findByPromisedDeliveryDateBetween(LocalDate fromDate, LocalDate toDate);
+
+    /**
+     * Candidatos de rentabilidad individual para el período.
+     * <p>
+     * Entregados: fecha real en el período, o fallback histórico de fecha programada si la real es null.
+     * No entregados elegibles: solo si {@code includeUndeliveredEligible} (mes calendario actual).
+     * CLOSED no se incluye.
+     */
+    List<Order> findForIndividualProfitabilityMonth(
+            LocalDate fromDate,
+            LocalDate toDate,
+            boolean includeUndeliveredEligible
+    );
 }

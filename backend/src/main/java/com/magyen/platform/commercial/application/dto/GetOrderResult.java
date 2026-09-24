@@ -22,6 +22,7 @@ public record GetOrderResult(
         LocalDate confirmationDate,
         OrderStatus status,
         DeliveryCommitmentResult deliveryCommitment,
+        LocalDate actualDeliveryDate,
         PaymentSummaryResult paymentSummary,
         UUID sellerId,
         String sellerName,

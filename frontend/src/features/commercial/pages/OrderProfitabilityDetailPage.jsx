@@ -10,10 +10,10 @@ import {
   Typography,
 } from '@mui/material'
 import { useNavigate, useParams } from 'react-router-dom'
-import { formatDisplayDate } from '../presentation/formatDisplayDate'
 import {
   formatLaborProductionCost,
   formatMaterialProductionCost,
+  formatOrderProfitabilityDeliveryCaption,
   formatPlotterPhysicalPaperCost,
   formatPlotterProductionCost,
   formatProfitabilityMoney,
@@ -191,7 +191,7 @@ function OrderProfitabilityDetailPage() {
             <Chip
               size="small"
               variant="outlined"
-              label={`Entrega: ${formatDisplayDate(profitability.promisedDeliveryDate) || '—'}`}
+              label={formatOrderProfitabilityDeliveryCaption(profitability)}
             />
           </Stack>
 

@@ -125,8 +125,13 @@ export async function downloadOrderRemissionPdf(orderId) {
   triggerBrowserPdfDownload(response, 'Remision.pdf')
 }
 
-export async function getOrderProfitabilityList() {
-  const response = await httpClient.get('/orders/profitability')
+export async function getOrderProfitabilityList(params = {}) {
+  const response = await httpClient.get('/orders/profitability', {
+    params: {
+      fromDate: params.fromDate || undefined,
+      toDate: params.toDate || undefined,
+    },
+  })
   return response.data
 }
 
@@ -170,6 +175,28 @@ export async function removeOrderItem(orderId, itemId) {
 
 export async function applyOrderDiscount(orderId, payload) {
   const response = await httpClient.patch(`/orders/${orderId}/discount`, payload)
+  return response.data
+}
+
+export async function startOrderProduction(orderId) {
+  const response = await httpClient.patch(`/orders/${orderId}/start-production`)
+  return response.data
+}
+
+export async function markOrderReadyForDelivery(orderId) {
+  const response = await httpClient.patch(`/orders/${orderId}/ready-for-delivery`)
+  return response.data
+}
+
+export async function deliverOrder(orderId, deliveryDate) {
+  const response = await httpClient.patch(`/orders/${orderId}/deliver`, {
+    deliveryDate,
+  })
+  return response.data
+}
+
+export async function closeOrder(orderId) {
+  const response = await httpClient.patch(`/orders/${orderId}/close`)
   return response.data
 }
 

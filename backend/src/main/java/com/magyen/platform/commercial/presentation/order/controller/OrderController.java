@@ -6,50 +6,64 @@ import com.magyen.platform.commercial.application.dto.ApplyOrderDiscountCommand;
 import com.magyen.platform.commercial.application.dto.ApplyOrderDiscountResult;
 import com.magyen.platform.commercial.application.dto.CreateOrderFromQuotationCommand;
 import com.magyen.platform.commercial.application.dto.CreateOrderFromQuotationResult;
+import com.magyen.platform.commercial.application.dto.CommercialDocumentPdfResult;
+import com.magyen.platform.commercial.application.dto.CloseOrderCommand;
+import com.magyen.platform.commercial.application.dto.DeliverOrderCommand;
 import com.magyen.platform.commercial.application.dto.GetOrderCommand;
+import com.magyen.platform.commercial.application.dto.GetOrderProfitabilityListQuery;
 import com.magyen.platform.commercial.application.dto.GetOrderProfitabilityListResult;
 import com.magyen.platform.commercial.application.dto.GetOrderProfitabilityQuery;
 import com.magyen.platform.commercial.application.dto.GetOrderProfitabilityResult;
 import com.magyen.platform.commercial.application.dto.GetOrderResult;
 import com.magyen.platform.commercial.application.dto.GetOrdersQuery;
 import com.magyen.platform.commercial.application.dto.GetOrdersResult;
-import com.magyen.platform.commercial.application.dto.CommercialDocumentPdfResult;
+import com.magyen.platform.commercial.application.dto.MarkOrderReadyForDeliveryCommand;
 import com.magyen.platform.commercial.application.dto.RemoveOrderItemCommand;
 import com.magyen.platform.commercial.application.dto.RemoveOrderItemResult;
 import com.magyen.platform.commercial.application.dto.ReplaceOrderItemSizesCommand;
 import com.magyen.platform.commercial.application.dto.ReplaceOrderItemSizesResult;
+import com.magyen.platform.commercial.application.dto.StartOrderProductionCommand;
 import com.magyen.platform.commercial.application.dto.UpdateOrderItemCommand;
 import com.magyen.platform.commercial.application.dto.UpdateOrderItemProductSpecificationCommand;
 import com.magyen.platform.commercial.application.dto.UpdateOrderItemProductSpecificationResult;
 import com.magyen.platform.commercial.application.dto.UpdateOrderItemResult;
 import com.magyen.platform.commercial.application.usecase.AddOrderItemUseCase;
 import com.magyen.platform.commercial.application.usecase.ApplyOrderDiscountUseCase;
+import com.magyen.platform.commercial.application.usecase.CloseOrderUseCase;
 import com.magyen.platform.commercial.application.usecase.CreateOrderFromQuotationUseCase;
+import com.magyen.platform.commercial.application.usecase.DeliverOrderUseCase;
 import com.magyen.platform.commercial.application.usecase.GetOrderProfitabilityListUseCase;
 import com.magyen.platform.commercial.application.usecase.GetOrderProfitabilityUseCase;
 import com.magyen.platform.commercial.application.usecase.GetOrderUseCase;
 import com.magyen.platform.commercial.application.usecase.GetOrdersUseCase;
 import com.magyen.platform.commercial.application.usecase.GenerateOrderRemissionPdfUseCase;
+import com.magyen.platform.commercial.application.usecase.MarkOrderReadyForDeliveryUseCase;
 import com.magyen.platform.commercial.application.usecase.RemoveOrderItemUseCase;
 import com.magyen.platform.commercial.application.usecase.ReplaceOrderItemSizesUseCase;
+import com.magyen.platform.commercial.application.usecase.StartOrderProductionUseCase;
 import com.magyen.platform.commercial.application.usecase.UpdateOrderItemProductSpecificationUseCase;
 import com.magyen.platform.commercial.application.usecase.UpdateOrderItemUseCase;
 import com.magyen.platform.commercial.presentation.order.mapper.OrderPresentationMapper;
 import com.magyen.platform.commercial.presentation.order.request.AddOrderItemRequest;
 import com.magyen.platform.commercial.presentation.order.request.ApplyOrderDiscountRequest;
 import com.magyen.platform.commercial.presentation.order.request.CreateOrderRequest;
+import com.magyen.platform.commercial.presentation.order.request.DeliverOrderRequest;
 import com.magyen.platform.commercial.presentation.order.request.ReplaceOrderItemSizesRequest;
 import com.magyen.platform.commercial.presentation.order.request.UpdateOrderItemProductSpecificationRequest;
 import com.magyen.platform.commercial.presentation.order.request.UpdateOrderItemRequest;
 import com.magyen.platform.commercial.presentation.order.response.AddOrderItemResponse;
 import com.magyen.platform.commercial.presentation.order.response.ApplyOrderDiscountResponse;
+import com.magyen.platform.commercial.presentation.order.response.CloseOrderResponse;
 import com.magyen.platform.commercial.presentation.order.response.CreateOrderResponse;
+import com.magyen.platform.commercial.presentation.order.response.DeliverOrderResponse;
 import com.magyen.platform.commercial.presentation.order.response.GetOrderProfitabilityListResponse;
 import com.magyen.platform.commercial.presentation.order.response.GetOrderProfitabilityResponse;
 import com.magyen.platform.commercial.presentation.order.response.GetOrderResponse;
 import com.magyen.platform.commercial.presentation.order.response.GetOrdersResponse;
+import com.magyen.platform.commercial.presentation.order.response.MarkOrderReadyForDeliveryResponse;
 import com.magyen.platform.commercial.presentation.order.response.RemoveOrderItemResponse;
 import com.magyen.platform.commercial.presentation.order.response.ReplaceOrderItemSizesResponse;
+import com.magyen.platform.commercial.presentation.order.response.StartOrderProductionResponse;
 import com.magyen.platform.commercial.presentation.order.response.UpdateOrderItemProductSpecificationResponse;
 import com.magyen.platform.commercial.presentation.order.response.UpdateOrderItemResponse;
 import org.springframework.http.HttpHeaders;
@@ -92,6 +106,10 @@ public class OrderController {
     private final UpdateOrderItemUseCase updateOrderItemUseCase;
     private final RemoveOrderItemUseCase removeOrderItemUseCase;
     private final ApplyOrderDiscountUseCase applyOrderDiscountUseCase;
+    private final StartOrderProductionUseCase startOrderProductionUseCase;
+    private final MarkOrderReadyForDeliveryUseCase markOrderReadyForDeliveryUseCase;
+    private final DeliverOrderUseCase deliverOrderUseCase;
+    private final CloseOrderUseCase closeOrderUseCase;
     private final OrderPresentationMapper orderPresentationMapper;
 
     public OrderController(
@@ -107,6 +125,10 @@ public class OrderController {
             UpdateOrderItemUseCase updateOrderItemUseCase,
             RemoveOrderItemUseCase removeOrderItemUseCase,
             ApplyOrderDiscountUseCase applyOrderDiscountUseCase,
+            StartOrderProductionUseCase startOrderProductionUseCase,
+            MarkOrderReadyForDeliveryUseCase markOrderReadyForDeliveryUseCase,
+            DeliverOrderUseCase deliverOrderUseCase,
+            CloseOrderUseCase closeOrderUseCase,
             OrderPresentationMapper orderPresentationMapper
     ) {
         this.createOrderFromQuotationUseCase = createOrderFromQuotationUseCase;
@@ -121,6 +143,10 @@ public class OrderController {
         this.updateOrderItemUseCase = updateOrderItemUseCase;
         this.removeOrderItemUseCase = removeOrderItemUseCase;
         this.applyOrderDiscountUseCase = applyOrderDiscountUseCase;
+        this.startOrderProductionUseCase = startOrderProductionUseCase;
+        this.markOrderReadyForDeliveryUseCase = markOrderReadyForDeliveryUseCase;
+        this.deliverOrderUseCase = deliverOrderUseCase;
+        this.closeOrderUseCase = closeOrderUseCase;
         this.orderPresentationMapper = orderPresentationMapper;
     }
 
@@ -135,8 +161,15 @@ public class OrderController {
     }
 
     @GetMapping("/profitability")
-    public ResponseEntity<GetOrderProfitabilityListResponse> getOrderProfitabilityList() {
-        GetOrderProfitabilityListResult result = getOrderProfitabilityListUseCase.execute();
+    public ResponseEntity<GetOrderProfitabilityListResponse> getOrderProfitabilityList(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate
+    ) {
+        GetOrderProfitabilityListQuery query = orderPresentationMapper.toGetOrderProfitabilityListQuery(
+                fromDate,
+                toDate
+        );
+        GetOrderProfitabilityListResult result = getOrderProfitabilityListUseCase.execute(query);
         return ResponseEntity.ok(orderPresentationMapper.toResponse(result));
     }
 
@@ -170,6 +203,36 @@ public class OrderController {
         GetOrderProfitabilityResponse response = orderPresentationMapper.toResponse(result);
 
         return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/{orderId}/start-production")
+    public ResponseEntity<StartOrderProductionResponse> startOrderProduction(@PathVariable UUID orderId) {
+        StartOrderProductionCommand command = orderPresentationMapper.toStartOrderProductionCommand(orderId);
+        return ResponseEntity.ok(orderPresentationMapper.toResponse(startOrderProductionUseCase.execute(command)));
+    }
+
+    @PatchMapping("/{orderId}/ready-for-delivery")
+    public ResponseEntity<MarkOrderReadyForDeliveryResponse> markOrderReadyForDelivery(
+            @PathVariable UUID orderId
+    ) {
+        MarkOrderReadyForDeliveryCommand command =
+                orderPresentationMapper.toMarkOrderReadyForDeliveryCommand(orderId);
+        return ResponseEntity.ok(orderPresentationMapper.toResponse(markOrderReadyForDeliveryUseCase.execute(command)));
+    }
+
+    @PatchMapping("/{orderId}/deliver")
+    public ResponseEntity<DeliverOrderResponse> deliverOrder(
+            @PathVariable UUID orderId,
+            @RequestBody DeliverOrderRequest request
+    ) {
+        DeliverOrderCommand command = orderPresentationMapper.toDeliverOrderCommand(orderId, request);
+        return ResponseEntity.ok(orderPresentationMapper.toResponse(deliverOrderUseCase.execute(command)));
+    }
+
+    @PatchMapping("/{orderId}/close")
+    public ResponseEntity<CloseOrderResponse> closeOrder(@PathVariable UUID orderId) {
+        CloseOrderCommand command = orderPresentationMapper.toCloseOrderCommand(orderId);
+        return ResponseEntity.ok(orderPresentationMapper.toResponse(closeOrderUseCase.execute(command)));
     }
 
     @PostMapping("/{orderId}/items")
