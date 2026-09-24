@@ -257,6 +257,15 @@ class AuthorizationApiContractTest {
     void operatorCannotPayPayroll() throws Exception {
         String accessToken = loginAs(AuthenticationRole.OPERATOR);
 
+        mockMvc.perform(authorized(post("/api/v1/finance/payroll/employees/" + UNKNOWN_ID + "/commission-settlements"), accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "periodStart": "2026-09-01",
+                                  "paymentDate": "2026-09-30"
+                                }
+                                """))
+                .andExpect(status().isForbidden());
         mockMvc.perform(authorized(patch("/api/v1/finance/payroll/periods/" + UNKNOWN_ID + "/pay"), accessToken))
                 .andExpect(status().isForbidden());
     }
@@ -271,6 +280,16 @@ class AuthorizationApiContractTest {
 
     @Test
     void unauthenticatedRequestIsUnauthorized() throws Exception {
+        mockMvc.perform(post("/api/v1/finance/payroll/employees/" + UNKNOWN_ID + "/commission-settlements")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "periodStart": "2026-09-01",
+                                  "paymentDate": "2026-09-30"
+                                }
+                                """))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401));
         mockMvc.perform(get("/api/v1/home/dashboard"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.status").value(401));

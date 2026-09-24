@@ -38,6 +38,7 @@ import com.magyen.platform.finance.application.usecase.GetRecurringFinancialObli
 import com.magyen.platform.finance.application.usecase.GetRecurringFinancialObligationsUseCase;
 import com.magyen.platform.finance.application.usecase.GetUpcomingFinancialObligationOccurrencesUseCase;
 import com.magyen.platform.finance.application.usecase.PayPayrollPeriodUseCase;
+import com.magyen.platform.finance.application.usecase.PaySellerCommissionSettlementUseCase;
 import com.magyen.platform.finance.application.usecase.PayRecurringFinancialObligationOccurrenceUseCase;
 import com.magyen.platform.finance.application.usecase.RegisterFinancialTransactionUseCase;
 import com.magyen.platform.finance.application.usecase.RegisterPaymentUseCase;
@@ -57,11 +58,13 @@ import com.magyen.platform.finance.domain.PayrollEmployeeRepository;
 import com.magyen.platform.finance.domain.PayrollPeriodRepository;
 import com.magyen.platform.finance.domain.RecurringFinancialObligationOccurrenceRepository;
 import com.magyen.platform.finance.domain.RecurringFinancialObligationRepository;
+import com.magyen.platform.finance.domain.SellerCommissionSettlementRepository;
 import com.magyen.platform.finance.infrastructure.persistence.mapper.FinancialTransactionPersistenceMapper;
 import com.magyen.platform.finance.infrastructure.persistence.mapper.PaymentPersistenceMapper;
 import com.magyen.platform.finance.infrastructure.persistence.mapper.PayrollDeductionPersistenceMapper;
 import com.magyen.platform.finance.infrastructure.persistence.mapper.PayrollEmployeePersistenceMapper;
 import com.magyen.platform.finance.infrastructure.persistence.mapper.PayrollPeriodPersistenceMapper;
+import com.magyen.platform.finance.infrastructure.persistence.mapper.SellerCommissionSettlementPersistenceMapper;
 import com.magyen.platform.finance.infrastructure.production.PayrollEmployeeProductionEarningsAdapter;
 import com.magyen.platform.finance.infrastructure.commercial.PayrollEmployeeSellerCommissionsAdapter;
 import com.magyen.platform.finance.infrastructure.persistence.mapper.RecurringFinancialObligationOccurrencePersistenceMapper;
@@ -377,6 +380,11 @@ public class FinanceConfiguration {
     }
 
     @Bean
+    public SellerCommissionSettlementPersistenceMapper sellerCommissionSettlementPersistenceMapper() {
+        return new SellerCommissionSettlementPersistenceMapper();
+    }
+
+    @Bean
     public CreatePayrollEmployeeUseCase createPayrollEmployeeUseCase(
             PayrollEmployeeRepository payrollEmployeeRepository
     ) {
@@ -542,22 +550,26 @@ public class FinanceConfiguration {
     @Bean
     public GetPayrollEmployeeCommissionsUseCase getPayrollEmployeeCommissionsUseCase(
             PayrollEmployeeRepository payrollEmployeeRepository,
-            EmployeeSellerCommissionsPort employeeSellerCommissionsPort
+            EmployeeSellerCommissionsPort employeeSellerCommissionsPort,
+            SellerCommissionSettlementRepository sellerCommissionSettlementRepository
     ) {
         return new GetPayrollEmployeeCommissionsUseCase(
                 payrollEmployeeRepository,
-                employeeSellerCommissionsPort
+                employeeSellerCommissionsPort,
+                sellerCommissionSettlementRepository
         );
     }
 
     @Bean
     public GetPayrollEmployeePerformanceUseCase getPayrollEmployeePerformanceUseCase(
             PayrollEmployeeRepository payrollEmployeeRepository,
-            EmployeeSellerCommissionsPort employeeSellerCommissionsPort
+            EmployeeSellerCommissionsPort employeeSellerCommissionsPort,
+            SellerCommissionSettlementRepository sellerCommissionSettlementRepository
     ) {
         return new GetPayrollEmployeePerformanceUseCase(
                 payrollEmployeeRepository,
-                employeeSellerCommissionsPort
+                employeeSellerCommissionsPort,
+                sellerCommissionSettlementRepository
         );
     }
 
@@ -574,6 +586,23 @@ public class FinanceConfiguration {
                 getPayrollEmployeeCommissionsUseCase,
                 getPayrollEmployeeProductionEarningsUseCase,
                 getPayrollDeductionsUseCase,
+                clock
+        );
+    }
+
+    @Bean
+    public PaySellerCommissionSettlementUseCase paySellerCommissionSettlementUseCase(
+            PayrollEmployeeRepository payrollEmployeeRepository,
+            SellerCommissionSettlementRepository sellerCommissionSettlementRepository,
+            EmployeeSellerCommissionsPort employeeSellerCommissionsPort,
+            FinancialTransactionRepository financialTransactionRepository,
+            Clock clock
+    ) {
+        return new PaySellerCommissionSettlementUseCase(
+                payrollEmployeeRepository,
+                sellerCommissionSettlementRepository,
+                employeeSellerCommissionsPort,
+                financialTransactionRepository,
                 clock
         );
     }

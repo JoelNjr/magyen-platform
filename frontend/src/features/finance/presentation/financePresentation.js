@@ -168,11 +168,42 @@ export function calendarMonthBoundsFromInput(yearMonth) {
 export function commissionSettlementLabel(status) {
   if (status === 'CALCULATED') return 'Comisión calculada'
   if (status === 'HISTORICAL') return 'Histórico / no pagable'
+  if (status === 'PAID') return 'Comisión pagada'
   return '—'
 }
 
-export function commissionPaymentAvailable() {
-  return false
+export function canPaySellerCommission(seller) {
+  if (!seller || seller.settlementStatus !== 'CALCULATED') {
+    return false
+  }
+  const amount = Number(seller.accumulatedCommission)
+  return Number.isFinite(amount) && amount > 0
+}
+
+export function sellerCommissionHasVariance(seller) {
+  if (!seller || seller.settlementStatus !== 'PAID' || seller.paidCommissionSnapshot == null) {
+    return false
+  }
+  return Number(seller.accumulatedCommission) !== Number(seller.paidCommissionSnapshot)
+}
+
+export function sellerCommissionPaymentDescription(seller, periodStart) {
+  const monthLabel = commissionMonthLabel(periodStart)
+  const amount = seller?.paidCommissionSnapshot ?? seller?.accumulatedCommission
+  return `Vas a registrar el pago de la comisión de ${monthLabel} a ${seller?.displayName || 'el vendedor'} por ${formatFinanceMoney(amount)}. Esta acción registrará un gasto financiero de comisión y no registra un pago del cliente.`
+}
+
+export function commissionMonthLabel(periodStart) {
+  if (!periodStart) {
+    return 'este mes'
+  }
+  const [yearText, monthText] = String(periodStart).split('-')
+  const date = new Date(Number(yearText), Number(monthText) - 1, 1)
+  return date.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' })
+}
+
+export function sellerCommissionAlreadyPaidMessage() {
+  return 'La comisión de este vendedor para este mes ya fue pagada.'
 }
 
 export function sumCommissionAmounts(orders) {
@@ -197,6 +228,7 @@ export function getSourceTypeLabel(sourceType) {
   if (sourceType === 'PLOTTER') return 'Pago de Plotter'
   if (sourceType === 'PRODUCTION') return 'Producción'
   if (sourceType === 'PAYROLL') return 'Pago de nómina'
+  if (sourceType === 'SELLER_COMMISSION') return 'Comisión de vendedor'
   if (sourceType === 'SERVICE') return 'Servicio'
   if (sourceType === 'CREDIT') return 'Crédito'
   if (sourceType === 'INVENTORY_PURCHASE') return 'Compra de inventario'

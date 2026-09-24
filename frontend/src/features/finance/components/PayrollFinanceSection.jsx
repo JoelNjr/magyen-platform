@@ -18,6 +18,7 @@ import {
   Typography,
 } from '@mui/material'
 import ConfirmFinanceActionDialog from './ConfirmFinanceActionDialog'
+import SellerCommissionPaymentDialog from './SellerCommissionPaymentDialog'
 import CreatePayrollEmployeeDialog from './CreatePayrollEmployeeDialog'
 import GeneratePayrollPeriodsDialog from './GeneratePayrollPeriodsDialog'
 import PayrollEmployeeDeductionsDialog from './PayrollEmployeeDeductionsDialog'
@@ -29,12 +30,16 @@ import {
   formatFinanceMoney,
   formatPayrollPeriodRange,
   calendarMonthBoundsFromInput,
+  canPaySellerCommission,
   commissionSettlementLabel,
   getOccurrenceStatusChipColor,
   getOccurrenceStatusLabel,
   getPayrollCompensationTypeLabel,
   resolveApiErrorMessage,
   selectSellerCommission,
+  sellerCommissionAlreadyPaidMessage,
+  sellerCommissionHasVariance,
+  sellerCommissionPaymentDescription,
   sumCommissionAmounts,
   yearMonthInputValue,
 } from '../presentation/financePresentation'
@@ -48,6 +53,7 @@ import {
   getPayrollEmployeePerformance,
   getPayrollPeriods,
   payPayrollPeriod,
+  paySellerCommissionSettlement,
   updatePayrollEmployeeCompensation,
 } from '../services/financeService'
 import SectionHeader from '../../home/components/SectionHeader'
@@ -127,6 +133,9 @@ function PayrollFinanceSection({
   const [performanceFailed, setPerformanceFailed] = useState(false)
   const [commissionMonth, setCommissionMonth] = useState(() => yearMonthInputValue())
   const [selectedSellerId, setSelectedSellerId] = useState(null)
+  const [commissionPayOpen, setCommissionPayOpen] = useState(false)
+  const [payingCommission, setPayingCommission] = useState(false)
+  const [commissionPayError, setCommissionPayError] = useState('')
 
   const loadEmployees = useCallback(async () => {
     setEmployeesLoading(true)
@@ -314,6 +323,36 @@ function PayrollFinanceSection({
   }
 
   const selectedSeller = selectSellerCommission(sellerPerformance, selectedSellerId)
+  const selectedPeriod = calendarMonthBoundsFromInput(commissionMonth)
+
+  async function handlePayCommission(paymentDate) {
+    if (!selectedSeller || payingCommission) {
+      return
+    }
+    setPayingCommission(true)
+    setCommissionPayError('')
+    try {
+      await paySellerCommissionSettlement(selectedSeller.employeeId, {
+        periodStart: selectedPeriod.fromDate,
+        paymentDate,
+        observation: null,
+      })
+      setCommissionPayOpen(false)
+      await loadPerformance()
+      showSuccess(`Comisión pagada: ${selectedSeller.displayName}.`)
+    } catch (error) {
+      if (error?.response?.status === 409) {
+        setCommissionPayError(sellerCommissionAlreadyPaidMessage())
+        await loadPerformance()
+        return
+      }
+      setCommissionPayError(
+        resolveApiErrorMessage(error, 'No fue posible pagar la comisión.')
+      )
+    } finally {
+      setPayingCommission(false)
+    }
+  }
 
   return (
     <>
@@ -545,7 +584,14 @@ function PayrollFinanceSection({
           </TableContainer>
         )}
         {selectedSeller ? (
-          <SellerCommissionDetail seller={selectedSeller} />
+          <SellerCommissionDetail
+            seller={selectedSeller}
+            paying={payingCommission}
+            onPay={() => {
+              setCommissionPayError('')
+              setCommissionPayOpen(true)
+            }}
+          />
         ) : null}
       </Stack>
 
@@ -761,24 +807,70 @@ function PayrollFinanceSection({
         submitting={cancelling}
         errorMessage={cancelError}
       />
+
+      <SellerCommissionPaymentDialog
+        open={commissionPayOpen && Boolean(selectedSeller)}
+        description={
+          selectedSeller
+            ? sellerCommissionPaymentDescription(selectedSeller, selectedPeriod.fromDate)
+            : ''
+        }
+        submitting={payingCommission}
+        errorMessage={commissionPayError}
+        onClose={() => {
+          if (!payingCommission) {
+            setCommissionPayOpen(false)
+            setCommissionPayError('')
+          }
+        }}
+        onConfirm={handlePayCommission}
+      />
     </>
   )
 }
 
 export default PayrollFinanceSection
 
-function SellerCommissionDetail({ seller }) {
+function SellerCommissionDetail({ seller, paying, onPay }) {
   const lines = Array.isArray(seller.orders) ? seller.orders : []
   const lineTotal = sumCommissionAmounts(lines)
+  const payable = canPaySellerCommission(seller)
+  const paid = seller.settlementStatus === 'PAID'
+  const zeroCommission = seller.settlementStatus === 'CALCULATED' && !payable
+  const variance = sellerCommissionHasVariance(seller)
 
   return (
     <Stack spacing={1}>
-      <Typography fontWeight={600}>
-        {seller.displayName} · {commissionSettlementLabel(seller.settlementStatus)} ·{' '}
-        {seller.numberOfEligibleOrders ?? 0} pedidos · ventas{' '}
-        {formatFinanceMoney(seller.totalSales)} · comisión{' '}
-        {formatFinanceMoney(seller.accumulatedCommission)}
-      </Typography>
+      <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" useFlexGap>
+        <Typography fontWeight={600}>
+          {seller.displayName} · {commissionSettlementLabel(seller.settlementStatus)} ·{' '}
+          {seller.numberOfEligibleOrders ?? 0} pedidos · ventas{' '}
+          {formatFinanceMoney(seller.totalSales)} · comisión{' '}
+          {formatFinanceMoney(seller.accumulatedCommission)}
+        </Typography>
+        {payable ? (
+          <Button size="small" variant="contained" disabled={paying} onClick={onPay}>
+            Pagar comisión
+          </Button>
+        ) : null}
+      </Stack>
+      {paid ? (
+        <Typography variant="body2">
+          Pagada el {formatFinanceDate(seller.actualPaymentDate)} por{' '}
+          {formatFinanceMoney(seller.paidCommissionSnapshot)}.
+        </Typography>
+      ) : null}
+      {variance ? (
+        <Typography variant="body2" color="text.secondary">
+          Valor actual calculado: {formatFinanceMoney(seller.accumulatedCommission)}. Valor pagado:{' '}
+          {formatFinanceMoney(seller.paidCommissionSnapshot)}.
+        </Typography>
+      ) : null}
+      {zeroCommission ? (
+        <Typography variant="body2" color="text.secondary">
+          Una comisión en cero no se puede pagar.
+        </Typography>
+      ) : null}
       <TableContainer component={Paper} variant="outlined" sx={{ overflowX: 'auto' }}>
         <Table size="small">
           <TableHead>
@@ -816,7 +908,10 @@ function SellerCommissionDetail({ seller }) {
         </Table>
       </TableContainer>
       <Typography variant="body2" color="text.secondary">
-        Suma de líneas: {formatFinanceMoney(lineTotal)}. No se registra un gasto de comisión.
+        Suma de líneas: {formatFinanceMoney(lineTotal)}.
+        {paid
+          ? ' El valor pagado queda congelado.'
+          : ' Todavía no se registra un gasto de comisión.'}
       </Typography>
     </Stack>
   )

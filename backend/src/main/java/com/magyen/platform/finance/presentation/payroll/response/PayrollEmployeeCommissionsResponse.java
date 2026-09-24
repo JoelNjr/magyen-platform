@@ -22,6 +22,12 @@ public record PayrollEmployeeCommissionsResponse(
         BigDecimal commissionRate,
         BigDecimal accumulatedCommission,
         String settlementStatus,
-        List<PayrollEmployeeCommissionOrderResponse> orders
+        List<PayrollEmployeeCommissionOrderResponse> orders,
+        UUID settlementId,
+        BigDecimal paidSalesSnapshot,
+        Integer paidOrderCountSnapshot,
+        BigDecimal paidCommissionSnapshot,
+        LocalDate actualPaymentDate,
+        UUID financialTransactionId
 ) {
 }

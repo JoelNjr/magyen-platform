@@ -30,6 +30,7 @@ import java.util.UUID;
 
 import static org.hamcrest.Matchers.hasItem;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -117,6 +118,75 @@ class PayrollEmployeeCommissionApiContractTest {
                 .andExpect(status().isBadRequest());
     }
 
+    @Test
+    void paysSeptemberCommissionAndRejectsDuplicatesAugustAndMissingEmployees() throws Exception {
+        CreatePayrollEmployeeResult seller = createPayrollEmployeeUseCase.execute(new CreatePayrollEmployeeCommand(
+                "API-Pago-" + UUID.randomUUID().toString().substring(0, 8),
+                PayrollCompensationType.FIXED_PAYROLL,
+                new BigDecimal("1500000.00"),
+                LocalDate.of(2026, 8, 1),
+                null,
+                true
+        ));
+        saveOrder(seller.employeeId(), "400000.00", LocalDate.of(2026, 9, 12));
+
+        mockMvc.perform(post("/api/v1/finance/payroll/employees/{employeeId}/commission-settlements", seller.employeeId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "periodStart": "2026-09-01",
+                                  "paymentDate": "2026-09-30",
+                                  "observation": "pago api"
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value("PAID"))
+                .andExpect(jsonPath("$.commissionSnapshot").value(20000.00))
+                .andExpect(jsonPath("$.orderCountSnapshot").value(1))
+                .andExpect(jsonPath("$.salesSnapshot").value(400000.00))
+                .andExpect(jsonPath("$.actualPaymentDate").value("2026-09-30"));
+
+        mockMvc.perform(post("/api/v1/finance/payroll/employees/{employeeId}/commission-settlements", seller.employeeId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "periodStart": "2026-09-01",
+                                  "paymentDate": "2026-10-01"
+                                }
+                                """))
+                .andExpect(status().isConflict());
+
+        mockMvc.perform(post("/api/v1/finance/payroll/employees/{employeeId}/commission-settlements", seller.employeeId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "periodStart": "2026-08-01",
+                                  "paymentDate": "2026-08-31"
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(post("/api/v1/finance/payroll/employees/{employeeId}/commission-settlements", seller.employeeId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "periodStart": "2026-09-15",
+                                  "paymentDate": "2026-09-30"
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(post("/api/v1/finance/payroll/employees/{employeeId}/commission-settlements", UUID.randomUUID())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "periodStart": "2026-09-01",
+                                  "paymentDate": "2026-09-30"
+                                }
+                                """))
+                .andExpect(status().isNotFound());
+    }
+
     private void saveDeliveredOrder(UUID sellerId, String unitPrice) {
         LocalDate confirmationDate = LocalDate.of(2026, 8, 8);
         OrderItem item = OrderItem.reconstitute(
@@ -142,6 +212,34 @@ class PayrollEmployeeCommissionApiContractTest {
                 sellerId,
                 null,
                 "Pedido API comisión",
+                List.of(item)
+        ));
+    }
+
+    private void saveOrder(UUID sellerId, String unitPrice, LocalDate confirmationDate) {
+        OrderItem item = OrderItem.reconstitute(
+                UUID.randomUUID(),
+                "Producto API pago",
+                1,
+                "Sudáfrica",
+                "Blanco",
+                Money.of(new BigDecimal(unitPrice)),
+                ProductSpecification.empty(),
+                List.of()
+        );
+        Money total = item.getSubtotal();
+        orderRepository.save(Order.reconstitute(
+                UUID.randomUUID(),
+                OrderNumber.of("ORD-PAY-" + UUID.randomUUID().toString().substring(0, 8)),
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                confirmationDate,
+                OrderStatus.CONFIRMED,
+                DeliveryCommitment.of(confirmationDate.plusDays(7)),
+                PaymentSummary.forConfirmedOrder(total),
+                sellerId,
+                null,
+                "Pedido API pago",
                 List.of(item)
         ));
     }

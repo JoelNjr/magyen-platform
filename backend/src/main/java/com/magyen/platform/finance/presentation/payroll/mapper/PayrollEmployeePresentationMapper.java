@@ -14,6 +14,8 @@ import com.magyen.platform.finance.application.dto.GetPayrollEmployeePerformance
 import com.magyen.platform.finance.application.dto.GetPayrollEmployeePerformanceResult;
 import com.magyen.platform.finance.application.dto.GetPayrollEmployeeProductionEarningsQuery;
 import com.magyen.platform.finance.application.dto.GetPayrollEmployeeProductionEarningsResult;
+import com.magyen.platform.finance.application.dto.PaySellerCommissionSettlementCommand;
+import com.magyen.platform.finance.application.dto.PaySellerCommissionSettlementResult;
 import com.magyen.platform.finance.application.dto.GetPayrollEmployeeQuery;
 import com.magyen.platform.finance.application.dto.GetPayrollEmployeeResult;
 import com.magyen.platform.finance.application.dto.GetPayrollEmployeesQuery;
@@ -23,10 +25,12 @@ import com.magyen.platform.finance.application.dto.UpdatePayrollEmployeeCompensa
 import com.magyen.platform.finance.domain.PayrollCompensationType;
 import com.magyen.platform.finance.domain.exception.FinanceDomainException;
 import com.magyen.platform.finance.presentation.payroll.request.CreatePayrollEmployeeRequest;
+import com.magyen.platform.finance.presentation.payroll.request.PaySellerCommissionSettlementRequest;
 import com.magyen.platform.finance.presentation.payroll.request.UpdatePayrollEmployeeCompensationRequest;
 import com.magyen.platform.finance.presentation.payroll.response.ActivatePayrollEmployeeResponse;
 import com.magyen.platform.finance.presentation.payroll.response.DeactivatePayrollEmployeeResponse;
 import com.magyen.platform.finance.presentation.payroll.response.GetPayrollEmployeesResponse;
+import com.magyen.platform.finance.presentation.payroll.response.PaySellerCommissionSettlementResponse;
 import com.magyen.platform.finance.presentation.payroll.response.PayrollEmployeeCommissionOrderResponse;
 import com.magyen.platform.finance.presentation.payroll.response.PayrollEmployeeCommissionsResponse;
 import com.magyen.platform.finance.presentation.payroll.response.PayrollEmployeeFinancialSummaryResponse;
@@ -97,6 +101,39 @@ public class PayrollEmployeePresentationMapper {
         return new GetPayrollEmployeeCommissionsQuery(employeeId, fromDate, toDate);
     }
 
+    public PaySellerCommissionSettlementCommand toPayCommissionCommand(
+            UUID employeeId,
+            PaySellerCommissionSettlementRequest request
+    ) {
+        Objects.requireNonNull(employeeId, "Employee id must not be null");
+        Objects.requireNonNull(request, "Pay seller commission request must not be null");
+        return new PaySellerCommissionSettlementCommand(
+                employeeId,
+                request.periodStart(),
+                request.paymentDate(),
+                request.observation()
+        );
+    }
+
+    public PaySellerCommissionSettlementResponse toResponse(PaySellerCommissionSettlementResult result) {
+        Objects.requireNonNull(result, "Pay seller commission result must not be null");
+        return new PaySellerCommissionSettlementResponse(
+                result.settlementId(),
+                result.employeeId(),
+                result.displayName(),
+                result.periodStart(),
+                result.periodEnd(),
+                result.salesSnapshot(),
+                result.orderCountSnapshot(),
+                result.commissionSnapshot(),
+                result.status().name(),
+                result.actualPaymentDate(),
+                result.paidAt(),
+                result.financialTransactionId(),
+                result.observation()
+        );
+    }
+
     public GetPayrollEmployeePerformanceQuery toPerformanceQuery(
             java.time.LocalDate fromDate,
             java.time.LocalDate toDate
@@ -158,7 +195,13 @@ public class PayrollEmployeePresentationMapper {
                                 line.commissionRate(),
                                 line.commissionAmount()
                         ))
-                        .toList()
+                        .toList(),
+                result.settlementId(),
+                result.paidSalesSnapshot(),
+                result.paidOrderCountSnapshot(),
+                result.paidCommissionSnapshot(),
+                result.actualPaymentDate(),
+                result.financialTransactionId()
         );
     }
 

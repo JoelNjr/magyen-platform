@@ -11,6 +11,8 @@ import com.magyen.platform.commercial.domain.exception.QuotationDomainException;
 import com.magyen.platform.finance.domain.exception.FinanceDomainException;
 import com.magyen.platform.finance.domain.exception.PayrollPeriodAlreadyExistsException;
 import com.magyen.platform.finance.domain.exception.PayrollPeriodAlreadyPaidException;
+import com.magyen.platform.finance.domain.exception.SellerCommissionAlreadyPaidException;
+import com.magyen.platform.finance.domain.exception.PayrollEmployeeNotFoundException;
 import com.magyen.platform.finance.domain.exception.RecurringObligationOccurrenceAlreadyExistsException;
 import com.magyen.platform.finance.domain.exception.RecurringObligationOccurrenceAlreadyPaidException;
 import com.magyen.platform.home.domain.exception.HomeDomainException;
@@ -327,6 +329,18 @@ public class GlobalExceptionHandler {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(conflictResponse);
         }
 
+        if (normalizedDetail.contains("uq_seller_commission_settlements_employee_period")
+                || normalizedDetail.contains("uq_financial_transactions_seller_commission_source")) {
+            ErrorResponse conflictResponse = new ErrorResponse(
+                    LocalDateTime.now(),
+                    HttpStatus.CONFLICT.value(),
+                    HttpStatus.CONFLICT.getReasonPhrase(),
+                    SellerCommissionAlreadyPaidException.DEFAULT_MESSAGE,
+                    request.getRequestURI()
+            );
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(conflictResponse);
+        }
+
         ErrorResponse errorResponse = new ErrorResponse(
                 LocalDateTime.now(),
                 HttpStatus.BAD_REQUEST.value(),
@@ -496,6 +510,36 @@ public class GlobalExceptionHandler {
         );
 
         return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+    }
+
+    @ExceptionHandler(SellerCommissionAlreadyPaidException.class)
+    public ResponseEntity<ErrorResponse> handleSellerCommissionAlreadyPaidException(
+            SellerCommissionAlreadyPaidException exception,
+            HttpServletRequest request
+    ) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.CONFLICT.value(),
+                HttpStatus.CONFLICT.getReasonPhrase(),
+                exception.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+    }
+
+    @ExceptionHandler(PayrollEmployeeNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handlePayrollEmployeeNotFoundException(
+            PayrollEmployeeNotFoundException exception,
+            HttpServletRequest request
+    ) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.NOT_FOUND.value(),
+                HttpStatus.NOT_FOUND.getReasonPhrase(),
+                exception.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
     }
 
     @ExceptionHandler(ProductionLaborWorkAlreadyPaidException.class)

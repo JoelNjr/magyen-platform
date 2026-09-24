@@ -150,6 +150,14 @@ export async function getPayrollEmployeePerformance(params = {}) {
   return response.data
 }
 
+export async function paySellerCommissionSettlement(employeeId, payload) {
+  const response = await httpClient.post(
+    `/finance/payroll/employees/${employeeId}/commission-settlements`,
+    payload
+  )
+  return response.data
+}
+
 export async function getPayrollEmployeeDeductions(employeeId, params = {}) {
   const response = await httpClient.get(
     `/finance/payroll/employees/${employeeId}/deductions`,

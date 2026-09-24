@@ -42,6 +42,13 @@ public enum FinancialTransactionSourceType {
     PAYROLL,
 
     /**
+     * Gasto de la comisión mensual pagada a un vendedor.
+     * {@code sourceId} = sellerCommissionSettlementId.
+     * No reutiliza {@link #PAYROLL}: ese origen ya identifica sueldo y mano de obra semanal.
+     */
+    SELLER_COMMISSION,
+
+    /**
      * Movimiento asociado a un servicio.
      */
     SERVICE,

@@ -14,6 +14,8 @@ import com.magyen.platform.finance.application.dto.GetPayrollEmployeePerformance
 import com.magyen.platform.finance.application.dto.GetPayrollEmployeePerformanceResult;
 import com.magyen.platform.finance.application.dto.GetPayrollEmployeeProductionEarningsQuery;
 import com.magyen.platform.finance.application.dto.GetPayrollEmployeeProductionEarningsResult;
+import com.magyen.platform.finance.application.dto.PaySellerCommissionSettlementCommand;
+import com.magyen.platform.finance.application.dto.PaySellerCommissionSettlementResult;
 import com.magyen.platform.finance.application.dto.GetPayrollEmployeeQuery;
 import com.magyen.platform.finance.application.dto.GetPayrollEmployeeResult;
 import com.magyen.platform.finance.application.dto.GetPayrollEmployeesQuery;
@@ -29,13 +31,16 @@ import com.magyen.platform.finance.application.usecase.GetPayrollEmployeePerform
 import com.magyen.platform.finance.application.usecase.GetPayrollEmployeeProductionEarningsUseCase;
 import com.magyen.platform.finance.application.usecase.GetPayrollEmployeeUseCase;
 import com.magyen.platform.finance.application.usecase.GetPayrollEmployeesUseCase;
+import com.magyen.platform.finance.application.usecase.PaySellerCommissionSettlementUseCase;
 import com.magyen.platform.finance.application.usecase.UpdatePayrollEmployeeCompensationUseCase;
 import com.magyen.platform.finance.presentation.payroll.mapper.PayrollEmployeePresentationMapper;
 import com.magyen.platform.finance.presentation.payroll.request.CreatePayrollEmployeeRequest;
+import com.magyen.platform.finance.presentation.payroll.request.PaySellerCommissionSettlementRequest;
 import com.magyen.platform.finance.presentation.payroll.request.UpdatePayrollEmployeeCompensationRequest;
 import com.magyen.platform.finance.presentation.payroll.response.ActivatePayrollEmployeeResponse;
 import com.magyen.platform.finance.presentation.payroll.response.DeactivatePayrollEmployeeResponse;
 import com.magyen.platform.finance.presentation.payroll.response.GetPayrollEmployeesResponse;
+import com.magyen.platform.finance.presentation.payroll.response.PaySellerCommissionSettlementResponse;
 import com.magyen.platform.finance.presentation.payroll.response.PayrollEmployeeCommissionsResponse;
 import com.magyen.platform.finance.presentation.payroll.response.PayrollEmployeeFinancialSummaryResponse;
 import com.magyen.platform.finance.presentation.payroll.response.PayrollEmployeePerformanceResponse;
@@ -77,6 +82,7 @@ public class PayrollEmployeeController {
     private final UpdatePayrollEmployeeCompensationUseCase updatePayrollEmployeeCompensationUseCase;
     private final ActivatePayrollEmployeeUseCase activatePayrollEmployeeUseCase;
     private final DeactivatePayrollEmployeeUseCase deactivatePayrollEmployeeUseCase;
+    private final PaySellerCommissionSettlementUseCase paySellerCommissionSettlementUseCase;
     private final PayrollEmployeePresentationMapper payrollEmployeePresentationMapper;
 
     public PayrollEmployeeController(
@@ -90,6 +96,7 @@ public class PayrollEmployeeController {
             UpdatePayrollEmployeeCompensationUseCase updatePayrollEmployeeCompensationUseCase,
             ActivatePayrollEmployeeUseCase activatePayrollEmployeeUseCase,
             DeactivatePayrollEmployeeUseCase deactivatePayrollEmployeeUseCase,
+            PaySellerCommissionSettlementUseCase paySellerCommissionSettlementUseCase,
             PayrollEmployeePresentationMapper payrollEmployeePresentationMapper
     ) {
         this.createPayrollEmployeeUseCase = createPayrollEmployeeUseCase;
@@ -102,6 +109,7 @@ public class PayrollEmployeeController {
         this.updatePayrollEmployeeCompensationUseCase = updatePayrollEmployeeCompensationUseCase;
         this.activatePayrollEmployeeUseCase = activatePayrollEmployeeUseCase;
         this.deactivatePayrollEmployeeUseCase = deactivatePayrollEmployeeUseCase;
+        this.paySellerCommissionSettlementUseCase = paySellerCommissionSettlementUseCase;
         this.payrollEmployeePresentationMapper = payrollEmployeePresentationMapper;
     }
 
@@ -165,6 +173,18 @@ public class PayrollEmployeeController {
                 payrollEmployeePresentationMapper.toCommissionsQuery(employeeId, fromDate, toDate);
         GetPayrollEmployeeCommissionsResult result = getPayrollEmployeeCommissionsUseCase.execute(query);
         return ResponseEntity.ok(payrollEmployeePresentationMapper.toResponse(result));
+    }
+
+    @PostMapping("/{employeeId}/commission-settlements")
+    public ResponseEntity<PaySellerCommissionSettlementResponse> payCommissionSettlement(
+            @PathVariable UUID employeeId,
+            @RequestBody PaySellerCommissionSettlementRequest request
+    ) {
+        PaySellerCommissionSettlementCommand command =
+                payrollEmployeePresentationMapper.toPayCommissionCommand(employeeId, request);
+        PaySellerCommissionSettlementResult result = paySellerCommissionSettlementUseCase.execute(command);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(payrollEmployeePresentationMapper.toResponse(result));
     }
 
     @GetMapping("/{employeeId}/summary")

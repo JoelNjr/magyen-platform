@@ -659,6 +659,34 @@ CREATE UNIQUE INDEX uq_financial_transactions_payroll_source
     WHERE source_type = 'PAYROLL'
       AND source_id IS NOT NULL;
 
+-- Aggregate: SellerCommissionSettlement (comisión mensual pagada — soft refs, no FK)
+CREATE TABLE seller_commission_settlements (
+    id                          uuid            NOT NULL,
+    employee_id                 uuid            NOT NULL,
+    period_start                date            NOT NULL,
+    period_end                  date            NOT NULL,
+    sales_snapshot              numeric(19, 2)  NOT NULL,
+    order_count_snapshot        integer         NOT NULL,
+    commission_snapshot         numeric(19, 2)  NOT NULL,
+    status                      varchar(30)     NOT NULL,
+    actual_payment_date         date            NOT NULL,
+    paid_at                     timestamp       NOT NULL,
+    financial_transaction_id    uuid            NOT NULL,
+    observation                 varchar(2000)   NULL,
+    CONSTRAINT seller_commission_settlements_pkey PRIMARY KEY (id)
+);
+
+CREATE UNIQUE INDEX uq_seller_commission_settlements_employee_period
+    ON seller_commission_settlements (employee_id, period_start);
+
+CREATE INDEX idx_seller_commission_settlements_employee_id
+    ON seller_commission_settlements (employee_id);
+
+CREATE UNIQUE INDEX uq_financial_transactions_seller_commission_source
+    ON financial_transactions (source_type, source_id)
+    WHERE source_type = 'SELLER_COMMISSION'
+      AND source_id IS NOT NULL;
+
 -- Un costo adicional de producción no puede generar dos gastos del ledger.
 CREATE UNIQUE INDEX uq_financial_transactions_production_source
     ON financial_transactions (source_type, source_id)
