@@ -2,10 +2,11 @@ package com.magyen.platform.finance.presentation.payroll.response;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 /**
- * Comisión analítica HTTP de un empleado vendedor.
+ * Comisión mensual HTTP de un empleado. No es un gasto de Finanzas ni una liquidación.
  */
 public record PayrollEmployeeCommissionsResponse(
         UUID employeeId,
@@ -19,6 +20,8 @@ public record PayrollEmployeeCommissionsResponse(
         int numberOfEligibleOrders,
         BigDecimal totalSales,
         BigDecimal commissionRate,
-        BigDecimal accumulatedCommission
+        BigDecimal accumulatedCommission,
+        String settlementStatus,
+        List<PayrollEmployeeCommissionOrderResponse> orders
 ) {
 }

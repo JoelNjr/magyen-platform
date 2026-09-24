@@ -4,17 +4,18 @@ import com.magyen.platform.finance.application.dto.GetPayrollEmployeeCommissions
 import com.magyen.platform.finance.application.dto.GetPayrollEmployeeCommissionsResult;
 import com.magyen.platform.finance.application.port.EmployeeSellerCommissionsPort;
 import com.magyen.platform.finance.application.port.EmployeeSellerCommissionsPort.EmployeeSellerCommissionsSnapshot;
-import com.magyen.platform.finance.domain.PayrollCompensationType;
 import com.magyen.platform.finance.domain.PayrollEmployee;
 import com.magyen.platform.finance.domain.PayrollEmployeeRepository;
 import com.magyen.platform.finance.domain.exception.FinanceDomainException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.util.List;
 import java.util.Objects;
 
 /**
- * Comisión analítica 5 % de un empleado FIXED_PAYROLL. No crea asientos ni paga nómina.
+ * Comisión mensual 5 % de un empleado. No crea asientos ni paga la comisión.
  */
 public class GetPayrollEmployeeCommissionsUseCase {
 
@@ -41,68 +42,60 @@ public class GetPayrollEmployeeCommissionsUseCase {
     public GetPayrollEmployeeCommissionsResult execute(GetPayrollEmployeeCommissionsQuery query) {
         Objects.requireNonNull(query, "Query must not be null");
         Objects.requireNonNull(query.employeeId(), "Employee id must not be null");
-        validateRange(query.fromDate(), query.toDate());
+        requireCalendarMonth(query.fromDate(), query.toDate());
 
-        PayrollEmployee employee = payrollEmployeeRepository.findById(query.employeeId())
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Payroll employee not found: " + query.employeeId()
-                ));
-
-        if (employee.getCompensationType() != PayrollCompensationType.FIXED_PAYROLL) {
-            return empty(employee, query);
-        }
-
+        PayrollEmployee employee = load(query.employeeId());
         EmployeeSellerCommissionsSnapshot snapshot = employeeSellerCommissionsPort.findCommissions(
                 employee.getId(),
                 query.fromDate(),
                 query.toDate()
         );
+        return toResult(employee, snapshot);
+    }
 
+    public GetPayrollEmployeeCommissionsResult executeUnbounded(GetPayrollEmployeeCommissionsQuery query) {
+        Objects.requireNonNull(query, "Query must not be null");
+        Objects.requireNonNull(query.employeeId(), "Employee id must not be null");
+        PayrollEmployee employee = load(query.employeeId());
+        return toResult(employee, employeeSellerCommissionsPort.findUnboundedCommissions(employee.getId()));
+    }
+
+    public static void requireCalendarMonth(LocalDate fromDate, LocalDate toDate) {
+        if (fromDate == null || toDate == null) {
+            throw new FinanceDomainException("A commission month requires fromDate and toDate");
+        }
+        LocalDate monthStart = fromDate.withDayOfMonth(1);
+        LocalDate monthEnd = fromDate.withDayOfMonth(fromDate.lengthOfMonth());
+        if (!fromDate.equals(monthStart) || !toDate.equals(monthEnd)) {
+            throw new FinanceDomainException("Commission period must be exactly one calendar month");
+        }
+    }
+
+    private PayrollEmployee load(java.util.UUID employeeId) {
+        return payrollEmployeeRepository.findById(employeeId)
+                .orElseThrow(() -> new IllegalArgumentException("Payroll employee not found: " + employeeId));
+    }
+
+    private static GetPayrollEmployeeCommissionsResult toResult(
+            PayrollEmployee employee,
+            EmployeeSellerCommissionsSnapshot snapshot
+    ) {
+        boolean applicable = employee.isSalesParticipant() || snapshot.numberOfEligibleOrders() > 0;
         return new GetPayrollEmployeeCommissionsResult(
                 employee.getId(),
                 employee.getDisplayName(),
                 employee.getCompensationType(),
-                true,
+                applicable,
                 employee.isActive(),
                 employee.isEligibleAsSeller(),
                 snapshot.fromDate(),
                 snapshot.toDate(),
                 snapshot.numberOfEligibleOrders(),
                 snapshot.totalSales(),
-                snapshot.commissionRate(),
-                snapshot.accumulatedCommission()
+                snapshot.commissionRate() == null ? COMMISSION_RATE_PERCENTAGE : snapshot.commissionRate(),
+                snapshot.accumulatedCommission() == null ? ZERO_MONEY : snapshot.accumulatedCommission(),
+                snapshot.settlementStatus(),
+                snapshot.orders() == null ? List.of() : snapshot.orders()
         );
-    }
-
-    private static GetPayrollEmployeeCommissionsResult empty(
-            PayrollEmployee employee,
-            GetPayrollEmployeeCommissionsQuery query
-    ) {
-        return new GetPayrollEmployeeCommissionsResult(
-                employee.getId(),
-                employee.getDisplayName(),
-                employee.getCompensationType(),
-                false,
-                employee.isActive(),
-                false,
-                query.fromDate(),
-                query.toDate(),
-                0,
-                ZERO_MONEY,
-                COMMISSION_RATE_PERCENTAGE,
-                ZERO_MONEY
-        );
-    }
-
-    static void validateRange(java.time.LocalDate fromDate, java.time.LocalDate toDate) {
-        if (fromDate == null && toDate == null) {
-            return;
-        }
-        if (fromDate == null || toDate == null) {
-            throw new FinanceDomainException("Both fromDate and toDate must be provided together");
-        }
-        if (fromDate.isAfter(toDate)) {
-            throw new FinanceDomainException("From date must not be after to date");
-        }
     }
 }

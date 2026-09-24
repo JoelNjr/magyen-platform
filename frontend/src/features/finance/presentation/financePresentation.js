@@ -152,6 +152,43 @@ export function formatPayrollPeriodRange(periodStart, periodEnd) {
   return `${formatFinanceDate(periodStart)} – ${formatFinanceDate(periodEnd)}`
 }
 
+export function yearMonthInputValue(referenceDate = new Date()) {
+  const year = referenceDate.getFullYear()
+  const month = String(referenceDate.getMonth() + 1).padStart(2, '0')
+  return `${year}-${month}`
+}
+
+export function calendarMonthBoundsFromInput(yearMonth) {
+  const [yearText, monthText] = String(yearMonth).split('-')
+  const year = Number(yearText)
+  const monthIndex = Number(monthText) - 1
+  return getCalendarMonthRange(new Date(year, monthIndex, 1))
+}
+
+export function commissionSettlementLabel(status) {
+  if (status === 'CALCULATED') return 'Comisión calculada'
+  if (status === 'HISTORICAL') return 'Histórico / no pagable'
+  return '—'
+}
+
+export function commissionPaymentAvailable() {
+  return false
+}
+
+export function sumCommissionAmounts(orders) {
+  return (orders ?? []).reduce((total, line) => {
+    const amount = Number(line.commissionAmount)
+    return total + (Number.isFinite(amount) ? amount : 0)
+  }, 0)
+}
+
+export function selectSellerCommission(sellers, employeeId) {
+  if (!employeeId) {
+    return null
+  }
+  return (sellers ?? []).find((seller) => seller.employeeId === employeeId) ?? null
+}
+
 export function getSourceTypeLabel(sourceType) {
   if (!sourceType) return '—'
   if (sourceType === 'MANUAL') return 'Manual'

@@ -30,6 +30,9 @@ public class PayrollEmployeeEntity {
     @Column(name = "active", nullable = false)
     private boolean active;
 
+    @Column(name = "sales_participant", nullable = false)
+    private boolean salesParticipant;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "compensation_type", nullable = false, length = 30)
     private PayrollCompensationType compensationType;
@@ -72,6 +75,14 @@ public class PayrollEmployeeEntity {
 
     public void setActive(boolean active) {
         this.active = active;
+    }
+
+    public boolean isSalesParticipant() {
+        return salesParticipant;
+    }
+
+    public void setSalesParticipant(boolean salesParticipant) {
+        this.salesParticipant = salesParticipant;
     }
 
     public PayrollCompensationType getCompensationType() {

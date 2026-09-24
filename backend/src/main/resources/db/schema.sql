@@ -601,6 +601,7 @@ CREATE TABLE payroll_employees (
     id                  uuid            NOT NULL,
     display_name        varchar(255)    NOT NULL,
     active              boolean         NOT NULL,
+    sales_participant   boolean         NOT NULL DEFAULT false,
     compensation_type   varchar(30)     NOT NULL,
     fixed_amount        numeric(19, 2)  NULL,
     frequency           varchar(30)     NULL,

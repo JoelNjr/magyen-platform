@@ -14,6 +14,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TextField,
   Typography,
 } from '@mui/material'
 import ConfirmFinanceActionDialog from './ConfirmFinanceActionDialog'
@@ -27,10 +28,15 @@ import {
   formatFinanceDate,
   formatFinanceMoney,
   formatPayrollPeriodRange,
+  calendarMonthBoundsFromInput,
+  commissionSettlementLabel,
   getOccurrenceStatusChipColor,
   getOccurrenceStatusLabel,
   getPayrollCompensationTypeLabel,
   resolveApiErrorMessage,
+  selectSellerCommission,
+  sumCommissionAmounts,
+  yearMonthInputValue,
 } from '../presentation/financePresentation'
 import {
   activatePayrollEmployee,
@@ -119,6 +125,8 @@ function PayrollFinanceSection({
   const [sellerPerformance, setSellerPerformance] = useState([])
   const [performanceLoading, setPerformanceLoading] = useState(true)
   const [performanceFailed, setPerformanceFailed] = useState(false)
+  const [commissionMonth, setCommissionMonth] = useState(() => yearMonthInputValue())
+  const [selectedSellerId, setSelectedSellerId] = useState(null)
 
   const loadEmployees = useCallback(async () => {
     setEmployeesLoading(true)
@@ -138,7 +146,8 @@ function PayrollFinanceSection({
     setPerformanceLoading(true)
     setPerformanceFailed(false)
     try {
-      const data = await getPayrollEmployeePerformance()
+      const period = calendarMonthBoundsFromInput(commissionMonth)
+      const data = await getPayrollEmployeePerformance(period)
       setSellerPerformance(Array.isArray(data?.sellers) ? data.sellers : [])
     } catch {
       setSellerPerformance([])
@@ -146,7 +155,7 @@ function PayrollFinanceSection({
     } finally {
       setPerformanceLoading(false)
     }
-  }, [])
+  }, [commissionMonth])
 
   const loadPeriods = useCallback(async () => {
     setPeriodsLoading(true)
@@ -304,6 +313,8 @@ function PayrollFinanceSection({
     }
   }
 
+  const selectedSeller = selectSellerCommission(sellerPerformance, selectedSellerId)
+
   return (
     <>
       <Stack spacing={2}>
@@ -444,7 +455,20 @@ function PayrollFinanceSection({
       <Stack spacing={2}>
         <SectionHeader
           title="Desempeño de vendedores"
-          subtitle="Comisión del 5% sobre pedidos confirmados, en producción, listos, entregados o cerrados, según la fecha de confirmación. Es analítico: no crea un gasto de Finanzas ni depende de generar nómina."
+          subtitle="Comisión del 5% sobre el total de cada pedido, en el mes de su confirmación. Un pedido confirmado en septiembre sigue en septiembre aunque se entregue o se cierre después. La comisión calculada no crea un gasto de Finanzas."
+          actions={
+            <TextField
+              label="Mes"
+              type="month"
+              size="small"
+              value={commissionMonth}
+              onChange={(event) => {
+                setCommissionMonth(event.target.value)
+                setSelectedSellerId(null)
+              }}
+              InputLabelProps={{ shrink: true }}
+            />
+          }
         />
         {performanceFailed ? (
           <Alert
@@ -464,16 +488,16 @@ function PayrollFinanceSection({
               <TableHead>
                 <TableRow>
                   <TableCell sx={headerCellSx}>Vendedor</TableCell>
-                  <TableCell sx={headerCellSx}>Estado</TableCell>
+                  <TableCell align="right" sx={headerCellSx}>
+                    Pedidos
+                  </TableCell>
                   <TableCell align="right" sx={headerCellSx}>
                     Ventas
                   </TableCell>
                   <TableCell align="right" sx={headerCellSx}>
-                    Total vendido
+                    Comisión 5%
                   </TableCell>
-                  <TableCell align="right" sx={headerCellSx}>
-                  Comisión 5% acumulada
-                  </TableCell>
+                  <TableCell sx={headerCellSx}>Estado</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -482,22 +506,21 @@ function PayrollFinanceSection({
                 ) : sellerPerformance.length === 0 ? (
                   <EmptyRow
                     columns={5}
-                    message="No hay empleados de sueldo fijo para evaluar comisión."
+                    message="No hay vendedores con pedidos confirmados en este mes."
                   />
                 ) : (
                   sellerPerformance.map((seller) => (
-                    <TableRow key={seller.employeeId}>
+                    <TableRow
+                      key={seller.employeeId}
+                      hover
+                      selected={seller.employeeId === selectedSellerId}
+                      onClick={() => setSelectedSellerId(seller.employeeId)}
+                      sx={{ cursor: 'pointer' }}
+                    >
                       <TableCell>
                         <Typography fontWeight={600}>
                           {seller.displayName || '—'}
                         </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          size="small"
-                          color={seller.active ? 'success' : 'default'}
-                          label={seller.active ? 'Activo' : 'Inactivo'}
-                        />
                       </TableCell>
                       <TableCell align="right">
                         {seller.numberOfEligibleOrders ?? 0}
@@ -508,6 +531,12 @@ function PayrollFinanceSection({
                       <TableCell align="right">
                         {formatFinanceMoney(seller.accumulatedCommission)}
                       </TableCell>
+                      <TableCell>
+                        <Chip
+                          size="small"
+                          label={commissionSettlementLabel(seller.settlementStatus)}
+                        />
+                      </TableCell>
                     </TableRow>
                   ))
                 )}
@@ -515,6 +544,9 @@ function PayrollFinanceSection({
             </Table>
           </TableContainer>
         )}
+        {selectedSeller ? (
+          <SellerCommissionDetail seller={selectedSeller} />
+        ) : null}
       </Stack>
 
       <Stack spacing={2}>
@@ -734,3 +766,58 @@ function PayrollFinanceSection({
 }
 
 export default PayrollFinanceSection
+
+function SellerCommissionDetail({ seller }) {
+  const lines = Array.isArray(seller.orders) ? seller.orders : []
+  const lineTotal = sumCommissionAmounts(lines)
+
+  return (
+    <Stack spacing={1}>
+      <Typography fontWeight={600}>
+        {seller.displayName} · {commissionSettlementLabel(seller.settlementStatus)} ·{' '}
+        {seller.numberOfEligibleOrders ?? 0} pedidos · ventas{' '}
+        {formatFinanceMoney(seller.totalSales)} · comisión{' '}
+        {formatFinanceMoney(seller.accumulatedCommission)}
+      </Typography>
+      <TableContainer component={Paper} variant="outlined" sx={{ overflowX: 'auto' }}>
+        <Table size="small">
+          <TableHead>
+            <TableRow>
+              <TableCell sx={headerCellSx}>Pedido</TableCell>
+              <TableCell sx={headerCellSx}>Cliente</TableCell>
+              <TableCell sx={headerCellSx}>Confirmación</TableCell>
+              <TableCell align="right" sx={headerCellSx}>
+                Total
+              </TableCell>
+              <TableCell align="right" sx={headerCellSx}>
+                5%
+              </TableCell>
+              <TableCell align="right" sx={headerCellSx}>
+                Comisión
+              </TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {lines.length === 0 ? (
+              <EmptyRow columns={6} message="Este mes no tiene pedidos." />
+            ) : (
+              lines.map((line) => (
+                <TableRow key={line.orderId}>
+                  <TableCell>{line.orderNumber || '—'}</TableCell>
+                  <TableCell>{line.customerName || '—'}</TableCell>
+                  <TableCell>{formatFinanceDate(line.confirmationDate)}</TableCell>
+                  <TableCell align="right">{formatFinanceMoney(line.orderTotal)}</TableCell>
+                  <TableCell align="right">5%</TableCell>
+                  <TableCell align="right">{formatFinanceMoney(line.commissionAmount)}</TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
+      <Typography variant="body2" color="text.secondary">
+        Suma de líneas: {formatFinanceMoney(lineTotal)}. No se registra un gasto de comisión.
+      </Typography>
+    </Stack>
+  )
+}

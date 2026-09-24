@@ -22,7 +22,8 @@ final class PayrollEmployeeReadMapper {
                 employee.getFixedAmount() == null ? null : employee.getFixedAmount().getValue(),
                 employee.getFrequency(),
                 employee.getEffectiveFrom(),
-                employee.getEffectiveTo()
+                employee.getEffectiveTo(),
+                employee.isSalesParticipant()
         );
     }
 
@@ -35,7 +36,8 @@ final class PayrollEmployeeReadMapper {
                 employee.getFixedAmount() == null ? null : employee.getFixedAmount().getValue(),
                 employee.getFrequency(),
                 employee.getEffectiveFrom(),
-                employee.getEffectiveTo()
+                employee.getEffectiveTo(),
+                employee.isSalesParticipant()
         );
     }
 
@@ -48,7 +50,8 @@ final class PayrollEmployeeReadMapper {
                 employee.getFixedAmount() == null ? null : employee.getFixedAmount().getValue(),
                 employee.getFrequency(),
                 employee.getEffectiveFrom(),
-                employee.getEffectiveTo()
+                employee.getEffectiveTo(),
+                employee.isSalesParticipant()
         );
     }
 }

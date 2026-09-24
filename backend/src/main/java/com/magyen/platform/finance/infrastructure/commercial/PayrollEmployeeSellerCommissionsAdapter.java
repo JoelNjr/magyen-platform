@@ -2,10 +2,12 @@ package com.magyen.platform.finance.infrastructure.commercial;
 
 import com.magyen.platform.commercial.application.dto.GetSellerCommissionQuery;
 import com.magyen.platform.commercial.application.dto.GetSellerCommissionResult;
+import com.magyen.platform.commercial.application.dto.SellerCommissionOrderLine;
 import com.magyen.platform.commercial.application.usecase.GetSellerCommissionPerformanceUseCase;
 import com.magyen.platform.finance.application.port.EmployeeSellerCommissionsPort;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -31,9 +33,29 @@ public class PayrollEmployeeSellerCommissionsAdapter implements EmployeeSellerCo
             LocalDate fromDate,
             LocalDate toDate
     ) {
-        GetSellerCommissionResult result = getSellerCommissionPerformanceUseCase.execute(
+        return toSnapshot(getSellerCommissionPerformanceUseCase.execute(
                 new GetSellerCommissionQuery(sellerEmployeeId, fromDate, toDate)
-        );
+        ));
+    }
+
+    @Override
+    public List<EmployeeSellerCommissionsSnapshot> findCommissionsForMonth(LocalDate fromDate, LocalDate toDate) {
+        return getSellerCommissionPerformanceUseCase.listForMonth(fromDate, toDate).stream()
+                .map(PayrollEmployeeSellerCommissionsAdapter::toSnapshot)
+                .toList();
+    }
+
+    @Override
+    public EmployeeSellerCommissionsSnapshot findUnboundedCommissions(UUID sellerEmployeeId) {
+        return toSnapshot(getSellerCommissionPerformanceUseCase.executeUnbounded(
+                new GetSellerCommissionQuery(sellerEmployeeId, null, null)
+        ));
+    }
+
+    private static EmployeeSellerCommissionsSnapshot toSnapshot(GetSellerCommissionResult result) {
+        List<CommissionOrderLine> orders = result.orders().stream()
+                .map(PayrollEmployeeSellerCommissionsAdapter::toLine)
+                .toList();
         return new EmployeeSellerCommissionsSnapshot(
                 result.sellerEmployeeId(),
                 result.fromDate(),
@@ -41,7 +63,21 @@ public class PayrollEmployeeSellerCommissionsAdapter implements EmployeeSellerCo
                 result.numberOfEligibleOrders(),
                 result.totalSales(),
                 result.commissionRate(),
-                result.accumulatedCommission()
+                result.accumulatedCommission(),
+                result.settlementStatus().name(),
+                orders
+        );
+    }
+
+    private static CommissionOrderLine toLine(SellerCommissionOrderLine line) {
+        return new CommissionOrderLine(
+                line.orderId(),
+                line.orderNumber(),
+                line.customerName(),
+                line.confirmationDate(),
+                line.orderTotal(),
+                line.commissionRate(),
+                line.commissionAmount()
         );
     }
 }

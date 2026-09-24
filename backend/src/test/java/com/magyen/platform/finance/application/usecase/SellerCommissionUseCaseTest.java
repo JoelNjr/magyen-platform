@@ -52,6 +52,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Transactional
 class SellerCommissionUseCaseTest {
 
+    private static final LocalDate AUGUST_FROM = LocalDate.of(2026, 8, 1);
+    private static final LocalDate AUGUST_TO = LocalDate.of(2026, 8, 31);
+    private static final LocalDate SEPTEMBER_FROM = LocalDate.of(2026, 9, 1);
+    private static final LocalDate SEPTEMBER_TO = LocalDate.of(2026, 9, 30);
+    private static final LocalDate OCTOBER_FROM = LocalDate.of(2026, 10, 1);
+    private static final LocalDate OCTOBER_TO = LocalDate.of(2026, 10, 31);
+
     @Autowired
     private CreatePayrollEmployeeUseCase createPayrollEmployeeUseCase;
 
@@ -105,14 +112,23 @@ class SellerCommissionUseCaseTest {
 
         long financeBefore = financialTransactionRepository.findAllNewestFirst().size();
         GetPayrollEmployeeCommissionsResult result = getPayrollEmployeeCommissionsUseCase.execute(
-                new GetPayrollEmployeeCommissionsQuery(seller.employeeId(), null, null)
+                new GetPayrollEmployeeCommissionsQuery(seller.employeeId(), AUGUST_FROM, AUGUST_TO)
         );
 
         assertTrue(result.sellerCommissionApplicable());
+        assertFalse(result.eligibleForNewQuotations());
         assertEquals(2, result.numberOfEligibleOrders());
         assertEquals(new BigDecimal("900000.00"), result.totalSales());
         assertEquals(new BigDecimal("5.00"), result.commissionRate());
         assertEquals(new BigDecimal("45000.00"), result.accumulatedCommission());
+        assertEquals("HISTORICAL", result.settlementStatus());
+        assertEquals(2, result.orders().size());
+        assertEquals(
+                result.accumulatedCommission(),
+                result.orders().stream()
+                        .map(line -> line.commissionAmount())
+                        .reduce(BigDecimal.ZERO, BigDecimal::add)
+        );
         assertEquals(financeBefore, financialTransactionRepository.findAllNewestFirst().size());
 
         GetOrderProfitabilityResult profitability = getOrderProfitabilityUseCase.execute(
@@ -124,7 +140,7 @@ class SellerCommissionUseCaseTest {
 
     @Test
     void quotationWithoutOrderDoesNotGenerateCommission() {
-        CreatePayrollEmployeeResult seller = createFixed("Vendedor-H-inc-" + suffix());
+        CreatePayrollEmployeeResult seller = createParticipant("Vendedor-H-inc-" + suffix());
         var customer = createCustomerUseCase.execute(new CreateCustomerCommand("Cliente H " + suffix()));
         var quotation = createQuotationUseCase.execute(new CreateQuotationCommand(
                 customer.customerId(),
@@ -144,7 +160,7 @@ class SellerCommissionUseCaseTest {
         ));
 
         GetPayrollEmployeeCommissionsResult result = getPayrollEmployeeCommissionsUseCase.execute(
-                new GetPayrollEmployeeCommissionsQuery(seller.employeeId(), null, null)
+                new GetPayrollEmployeeCommissionsQuery(seller.employeeId(), AUGUST_FROM, AUGUST_TO)
         );
         assertEquals(0, result.numberOfEligibleOrders());
         assertEquals(new BigDecimal("0.00"), result.totalSales());
@@ -159,7 +175,7 @@ class SellerCommissionUseCaseTest {
         saveOrder(seller.employeeId(), OrderStatus.READY_FOR_DELIVERY, "100000.00", LocalDate.of(2026, 8, 13));
 
         GetPayrollEmployeeCommissionsResult result = getPayrollEmployeeCommissionsUseCase.execute(
-                new GetPayrollEmployeeCommissionsQuery(seller.employeeId(), null, null)
+                new GetPayrollEmployeeCommissionsQuery(seller.employeeId(), AUGUST_FROM, AUGUST_TO)
         );
         assertEquals(3, result.numberOfEligibleOrders());
         assertEquals(new BigDecimal("1100000.00"), result.totalSales());
@@ -170,7 +186,7 @@ class SellerCommissionUseCaseTest {
     void productionBasedEmployeeHasNoSellerCommission() {
         CreatePayrollEmployeeResult operator = createProduction("Operario-H-" + suffix());
         GetPayrollEmployeeCommissionsResult result = getPayrollEmployeeCommissionsUseCase.execute(
-                new GetPayrollEmployeeCommissionsQuery(operator.employeeId(), null, null)
+                new GetPayrollEmployeeCommissionsQuery(operator.employeeId(), AUGUST_FROM, AUGUST_TO)
         );
         assertFalse(result.sellerCommissionApplicable());
         assertEquals(new BigDecimal("0.00"), result.accumulatedCommission());
@@ -185,7 +201,7 @@ class SellerCommissionUseCaseTest {
         deactivatePayrollEmployeeUseCase.execute(new DeactivatePayrollEmployeeCommand(seller.employeeId()));
 
         GetPayrollEmployeeCommissionsResult result = getPayrollEmployeeCommissionsUseCase.execute(
-                new GetPayrollEmployeeCommissionsQuery(seller.employeeId(), null, null)
+                new GetPayrollEmployeeCommissionsQuery(seller.employeeId(), AUGUST_FROM, AUGUST_TO)
         );
         assertEquals(new BigDecimal("10000.00"), result.accumulatedCommission());
         assertFalse(result.eligibleForNewQuotations());
@@ -196,19 +212,34 @@ class SellerCommissionUseCaseTest {
     @Test
     void dateRangeIncludesOnlyOrdersConfirmedInsidePeriod() {
         CreatePayrollEmployeeResult seller = createFixed("Vendedor-H-rango-" + suffix());
-        saveOrder(seller.employeeId(), OrderStatus.DELIVERED, "300000.00", LocalDate.of(2026, 3, 10));
+        saveOrder(seller.employeeId(), OrderStatus.CONFIRMED, "300000.00", LocalDate.of(2026, 3, 10));
         saveOrder(seller.employeeId(), OrderStatus.DELIVERED, "700000.00", LocalDate.of(2026, 8, 10));
+        saveOrder(seller.employeeId(), OrderStatus.CONFIRMED, "100000.00", LocalDate.of(2026, 9, 15));
 
         GetPayrollEmployeeCommissionsResult august = getPayrollEmployeeCommissionsUseCase.execute(
                 new GetPayrollEmployeeCommissionsQuery(
                         seller.employeeId(),
-                        LocalDate.of(2026, 8, 1),
-                        LocalDate.of(2026, 8, 31)
+                        AUGUST_FROM,
+                        AUGUST_TO
                 )
         );
         assertEquals(1, august.numberOfEligibleOrders());
         assertEquals(new BigDecimal("700000.00"), august.totalSales());
         assertEquals(new BigDecimal("35000.00"), august.accumulatedCommission());
+        assertEquals("HISTORICAL", august.settlementStatus());
+
+        GetPayrollEmployeeCommissionsResult september = getPayrollEmployeeCommissionsUseCase.execute(
+                new GetPayrollEmployeeCommissionsQuery(seller.employeeId(), SEPTEMBER_FROM, SEPTEMBER_TO)
+        );
+        assertEquals(1, september.numberOfEligibleOrders());
+        assertEquals(new BigDecimal("5000.00"), september.accumulatedCommission());
+        assertEquals("CALCULATED", september.settlementStatus());
+
+        GetPayrollEmployeeCommissionsResult october = getPayrollEmployeeCommissionsUseCase.execute(
+                new GetPayrollEmployeeCommissionsQuery(seller.employeeId(), OCTOBER_FROM, OCTOBER_TO)
+        );
+        assertEquals(0, october.numberOfEligibleOrders());
+        assertEquals(new BigDecimal("0.00"), october.accumulatedCommission());
     }
 
     @Test
@@ -224,15 +255,16 @@ class SellerCommissionUseCaseTest {
         ));
 
         GetPayrollEmployeeCommissionsResult empty = getPayrollEmployeeCommissionsUseCase.execute(
-                new GetPayrollEmployeeCommissionsQuery(seller.employeeId(), null, null)
+                new GetPayrollEmployeeCommissionsQuery(seller.employeeId(), AUGUST_FROM, AUGUST_TO)
         );
         assertEquals(0, empty.numberOfEligibleOrders());
         assertEquals(new BigDecimal("0.00"), empty.accumulatedCommission());
+        assertFalse(empty.sellerCommissionApplicable());
 
         GetPayrollEmployeeFinancialSummaryResult sellerSummary = getPayrollEmployeeFinancialSummaryUseCase.execute(
                 new GetPayrollEmployeeFinancialSummaryQuery(seller.employeeId(), null, null)
         );
-        assertTrue(sellerSummary.sellerCommissionApplicable());
+        assertFalse(sellerSummary.sellerCommissionApplicable());
         assertFalse(sellerSummary.productionLaborApplicable());
         assertEquals(1, sellerSummary.activeDeductionCount());
         assertEquals(new BigDecimal("80000.00"), sellerSummary.activeDeductionTotal());
@@ -249,8 +281,8 @@ class SellerCommissionUseCaseTest {
         assertEquals(new BigDecimal("0.00"), production.totalCalculatedAmount());
 
         assertTrue(getPayrollEmployeePerformanceUseCase.execute(
-                new GetPayrollEmployeePerformanceQuery(null, null)
-        ).sellers().stream().anyMatch(item -> seller.employeeId().equals(item.employeeId())));
+                new GetPayrollEmployeePerformanceQuery(AUGUST_FROM, AUGUST_TO)
+        ).sellers().stream().noneMatch(item -> seller.employeeId().equals(item.employeeId())));
 
         assertEquals(1, getPayrollDeductionsUseCase.execute(
                 new GetPayrollDeductionsQuery(seller.employeeId(), null)
@@ -266,9 +298,10 @@ class SellerCommissionUseCaseTest {
         saveOrder(inactiveSeller.employeeId(), OrderStatus.CLOSED, "400000.00", LocalDate.of(2026, 8, 6));
         deactivatePayrollEmployeeUseCase.execute(new DeactivatePayrollEmployeeCommand(inactiveSeller.employeeId()));
 
+        CreatePayrollEmployeeResult idleFixed = createFixed("Vendedor-I-idle-" + suffix());
         long financeBefore = financialTransactionRepository.findAllNewestFirst().size();
         var result = getPayrollEmployeePerformanceUseCase.execute(
-                new GetPayrollEmployeePerformanceQuery(null, null)
+                new GetPayrollEmployeePerformanceQuery(AUGUST_FROM, AUGUST_TO)
         );
         assertEquals(financeBefore, financialTransactionRepository.findAllNewestFirst().size());
 
@@ -291,6 +324,9 @@ class SellerCommissionUseCaseTest {
 
         assertTrue(result.sellers().stream()
                 .noneMatch(item -> operator.employeeId().equals(item.employeeId())));
+        assertTrue(result.sellers().stream()
+                .noneMatch(item -> idleFixed.employeeId().equals(item.employeeId())));
+        assertEquals("HISTORICAL", activeRow.settlementStatus());
     }
 
     private Order saveOrder(UUID sellerId, OrderStatus status, String unitPrice, LocalDate confirmationDate) {
@@ -320,6 +356,17 @@ class SellerCommissionUseCaseTest {
                 List.of(item)
         );
         return orderRepository.save(order);
+    }
+
+    private CreatePayrollEmployeeResult createParticipant(String name) {
+        return createPayrollEmployeeUseCase.execute(new CreatePayrollEmployeeCommand(
+                name,
+                PayrollCompensationType.FIXED_PAYROLL,
+                new BigDecimal("1500000.00"),
+                LocalDate.of(2026, 8, 1),
+                null,
+                true
+        ));
     }
 
     private CreatePayrollEmployeeResult createFixed(String name) {

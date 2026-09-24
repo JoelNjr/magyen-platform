@@ -66,6 +66,8 @@ class PayrollEmployeeCommissionApiContractTest {
 
         mockMvc.perform(
                         get("/api/v1/finance/payroll/employees/{employeeId}/commissions", seller.employeeId())
+                                .param("fromDate", "2026-08-01")
+                                .param("toDate", "2026-08-31")
                                 .accept(MediaType.APPLICATION_JSON)
                 )
                 .andExpect(status().isOk())
@@ -73,7 +75,10 @@ class PayrollEmployeeCommissionApiContractTest {
                 .andExpect(jsonPath("$.numberOfEligibleOrders").value(1))
                 .andExpect(jsonPath("$.totalSales").value(200000.00))
                 .andExpect(jsonPath("$.commissionRate").value(5.00))
-                .andExpect(jsonPath("$.accumulatedCommission").value(10000.00));
+                .andExpect(jsonPath("$.accumulatedCommission").value(10000.00))
+                .andExpect(jsonPath("$.settlementStatus").value("HISTORICAL"))
+                .andExpect(jsonPath("$.orders[0].commissionAmount").value(10000.00))
+                .andExpect(jsonPath("$.orders[0].orderTotal").value(200000.00));
 
         mockMvc.perform(
                         get("/api/v1/finance/payroll/employees/{employeeId}/summary", seller.employeeId())
@@ -85,7 +90,10 @@ class PayrollEmployeeCommissionApiContractTest {
                 .andExpect(jsonPath("$.productionLaborApplicable").value(false))
                 .andExpect(jsonPath("$.activeDeductionTotal").value(0.00));
 
-        mockMvc.perform(get("/api/v1/finance/payroll/employees/performance").accept(MediaType.APPLICATION_JSON))
+        mockMvc.perform(get("/api/v1/finance/payroll/employees/performance")
+                        .param("fromDate", "2026-08-01")
+                        .param("toDate", "2026-08-31")
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.sellers[*].employeeId", hasItem(seller.employeeId().toString())))
                 .andExpect(jsonPath("$.sellers[?(@.employeeId=='" + seller.employeeId()

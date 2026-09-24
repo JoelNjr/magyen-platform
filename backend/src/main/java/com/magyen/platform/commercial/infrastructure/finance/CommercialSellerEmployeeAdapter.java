@@ -8,7 +8,6 @@ import com.magyen.platform.finance.application.dto.GetPayrollEmployeesQuery;
 import com.magyen.platform.finance.application.dto.GetPayrollEmployeesResult;
 import com.magyen.platform.finance.application.usecase.GetPayrollEmployeeUseCase;
 import com.magyen.platform.finance.application.usecase.GetPayrollEmployeesUseCase;
-import com.magyen.platform.finance.domain.PayrollCompensationType;
 
 import java.util.Collection;
 import java.util.List;
@@ -51,9 +50,9 @@ public class CommercialSellerEmployeeAdapter implements CommercialSellerEmployee
             throw new IllegalArgumentException("Seller employee not found: " + sellerEmployeeId);
         }
 
-        if (!employee.active() || employee.compensationType() != PayrollCompensationType.FIXED_PAYROLL) {
+        if (!employee.active() || !employee.salesParticipant()) {
             throw new IllegalArgumentException(
-                    "Only active FIXED_PAYROLL employees can be selected as seller"
+                    "Only active sales participants can be selected as seller"
             );
         }
 
@@ -72,7 +71,7 @@ public class CommercialSellerEmployeeAdapter implements CommercialSellerEmployee
 
         return result.employees().stream()
                 .filter(GetPayrollEmployeeResult::active)
-                .filter(employee -> employee.compensationType() == PayrollCompensationType.FIXED_PAYROLL)
+                .filter(employee -> employee.salesParticipant())
                 .map(employee -> new CommercialSellerEmployeeInfo(
                         employee.employeeId(),
                         employee.displayName(),

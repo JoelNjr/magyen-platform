@@ -101,7 +101,9 @@ class AuthorizationApiContractTest {
         mockMvc.perform(authorized(get("/api/v1/plotter/profitability"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/finance/transactions"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/finance/payroll/employees"), accessToken)).andExpect(status().isOk());
-        mockMvc.perform(authorized(get("/api/v1/finance/payroll/employees/performance"), accessToken))
+        mockMvc.perform(authorized(get("/api/v1/finance/payroll/employees/performance"), accessToken)
+                        .param("fromDate", "2026-09-01")
+                        .param("toDate", "2026-09-30"))
                 .andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/finance/payroll/employees/" + UNKNOWN_ID + "/deductions"), accessToken))
                 .andExpect(status().isBadRequest());

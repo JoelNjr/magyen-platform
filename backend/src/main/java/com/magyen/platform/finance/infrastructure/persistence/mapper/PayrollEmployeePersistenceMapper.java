@@ -18,6 +18,7 @@ public class PayrollEmployeePersistenceMapper {
         entity.setId(employee.getId());
         entity.setDisplayName(employee.getDisplayName());
         entity.setActive(employee.isActive());
+        entity.setSalesParticipant(employee.isSalesParticipant());
         entity.setCompensationType(employee.getCompensationType());
         entity.setFixedAmount(
                 employee.getFixedAmount() == null ? null : employee.getFixedAmount().getValue()
@@ -39,7 +40,8 @@ public class PayrollEmployeePersistenceMapper {
                 entity.getFixedAmount() == null ? null : FinancialAmount.of(entity.getFixedAmount()),
                 entity.getFrequency(),
                 entity.getEffectiveFrom(),
-                entity.getEffectiveTo()
+                entity.getEffectiveTo(),
+                entity.isSalesParticipant()
         );
     }
 }

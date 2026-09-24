@@ -64,16 +64,17 @@ public class GetPayrollEmployeeFinancialSummaryUseCase {
     public GetPayrollEmployeeFinancialSummaryResult execute(GetPayrollEmployeeFinancialSummaryQuery query) {
         Objects.requireNonNull(query, "Query must not be null");
         Objects.requireNonNull(query.employeeId(), "Employee id must not be null");
-        GetPayrollEmployeeCommissionsUseCase.validateRange(query.fromDate(), query.toDate());
-
         PayrollEmployee employee = payrollEmployeeRepository.findById(query.employeeId())
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Payroll employee not found: " + query.employeeId()
                 ));
-
-        GetPayrollEmployeeCommissionsResult commissions = getPayrollEmployeeCommissionsUseCase.execute(
-                new GetPayrollEmployeeCommissionsQuery(query.employeeId(), query.fromDate(), query.toDate())
-        );
+        GetPayrollEmployeeCommissionsResult commissions = query.fromDate() == null
+                ? getPayrollEmployeeCommissionsUseCase.executeUnbounded(
+                        new GetPayrollEmployeeCommissionsQuery(query.employeeId(), null, null)
+                )
+                : getPayrollEmployeeCommissionsUseCase.execute(
+                        new GetPayrollEmployeeCommissionsQuery(query.employeeId(), query.fromDate(), query.toDate())
+                );
 
         LocalDate productionFrom = query.fromDate() == null ? HISTORICAL_FROM : query.fromDate();
         LocalDate productionTo = query.toDate() == null ? LocalDate.now(clock) : query.toDate();

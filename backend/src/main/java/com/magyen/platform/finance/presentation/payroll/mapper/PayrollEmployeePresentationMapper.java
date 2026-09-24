@@ -27,6 +27,7 @@ import com.magyen.platform.finance.presentation.payroll.request.UpdatePayrollEmp
 import com.magyen.platform.finance.presentation.payroll.response.ActivatePayrollEmployeeResponse;
 import com.magyen.platform.finance.presentation.payroll.response.DeactivatePayrollEmployeeResponse;
 import com.magyen.platform.finance.presentation.payroll.response.GetPayrollEmployeesResponse;
+import com.magyen.platform.finance.presentation.payroll.response.PayrollEmployeeCommissionOrderResponse;
 import com.magyen.platform.finance.presentation.payroll.response.PayrollEmployeeCommissionsResponse;
 import com.magyen.platform.finance.presentation.payroll.response.PayrollEmployeeFinancialSummaryResponse;
 import com.magyen.platform.finance.presentation.payroll.response.PayrollEmployeePerformanceResponse;
@@ -145,7 +146,19 @@ public class PayrollEmployeePresentationMapper {
                 result.numberOfEligibleOrders(),
                 result.totalSales(),
                 result.commissionRate(),
-                result.accumulatedCommission()
+                result.accumulatedCommission(),
+                result.settlementStatus(),
+                result.orders().stream()
+                        .map(line -> new PayrollEmployeeCommissionOrderResponse(
+                                line.orderId(),
+                                line.orderNumber(),
+                                line.customerName(),
+                                line.confirmationDate(),
+                                line.orderTotal(),
+                                line.commissionRate(),
+                                line.commissionAmount()
+                        ))
+                        .toList()
         );
     }
 
@@ -202,7 +215,8 @@ public class PayrollEmployeePresentationMapper {
                 result.fixedAmount(),
                 result.frequency() == null ? null : result.frequency().name(),
                 result.effectiveFrom(),
-                result.effectiveTo()
+                result.effectiveTo(),
+                result.salesParticipant()
         );
     }
 
@@ -216,7 +230,8 @@ public class PayrollEmployeePresentationMapper {
                 result.fixedAmount(),
                 result.frequency() == null ? null : result.frequency().name(),
                 result.effectiveFrom(),
-                result.effectiveTo()
+                result.effectiveTo(),
+                result.salesParticipant()
         );
     }
 
@@ -230,7 +245,8 @@ public class PayrollEmployeePresentationMapper {
                 result.fixedAmount(),
                 result.frequency() == null ? null : result.frequency().name(),
                 result.effectiveFrom(),
-                result.effectiveTo()
+                result.effectiveTo(),
+                result.salesParticipant()
         );
     }
 
@@ -259,9 +275,9 @@ public class PayrollEmployeePresentationMapper {
             java.math.BigDecimal fixedAmount,
             String frequency,
             java.time.LocalDate effectiveFrom,
-            java.time.LocalDate effectiveTo
+            java.time.LocalDate effectiveTo,
+            boolean salesParticipant
     ) {
-        boolean canSell = "FIXED_PAYROLL".equals(compensationType);
         boolean canDoProduction = "PRODUCTION_BASED".equals(compensationType);
         return new PayrollEmployeeResponse(
                 employeeId,
@@ -272,7 +288,7 @@ public class PayrollEmployeePresentationMapper {
                 frequency,
                 effectiveFrom,
                 effectiveTo,
-                canSell,
+                salesParticipant,
                 canDoProduction
         );
     }

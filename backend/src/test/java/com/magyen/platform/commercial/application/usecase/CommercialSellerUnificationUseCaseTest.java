@@ -69,24 +69,28 @@ class CommercialSellerUnificationUseCaseTest {
     private ListEligibleProductionLaborOperatorsUseCase listEligibleProductionLaborOperatorsUseCase;
 
     @Test
-    void selectorIncludesOnlyActiveFixedEmployees() {
-        CreatePayrollEmployeeResult fixed = createFixed("Vendedor-" + suffix());
+    void selectorIncludesOnlyActiveSalesParticipants() {
+        CreatePayrollEmployeeResult participant = createParticipant("Vendedor-" + suffix());
+        CreatePayrollEmployeeResult fixedWithoutSales = createFixed("Fijo-No-" + suffix());
         CreatePayrollEmployeeResult production = createProduction("Operario-" + suffix());
-        CreatePayrollEmployeeResult inactive = createFixed("Inactivo-" + suffix());
+        CreatePayrollEmployeeResult inactive = createParticipant("Inactivo-" + suffix());
         deactivatePayrollEmployeeUseCase.execute(new DeactivatePayrollEmployeeCommand(inactive.employeeId()));
 
         var sellerIds = getSellersUseCase.execute().sellers().stream()
                 .map(seller -> seller.sellerId())
                 .toList();
 
-        assertTrue(sellerIds.contains(fixed.employeeId()));
+        assertTrue(sellerIds.contains(participant.employeeId()));
+        assertFalse(sellerIds.contains(fixedWithoutSales.employeeId()));
         assertFalse(sellerIds.contains(production.employeeId()));
         assertFalse(sellerIds.contains(inactive.employeeId()));
 
-        CommercialSellerEmployeeInfo eligible = sellerNameResolver.requireEligibleSeller(fixed.employeeId());
-        assertEquals(fixed.displayName(), eligible.displayName());
+        CommercialSellerEmployeeInfo eligible = sellerNameResolver.requireEligibleSeller(participant.employeeId());
+        assertEquals(participant.displayName(), eligible.displayName());
         assertThrows(IllegalArgumentException.class, () ->
                 sellerNameResolver.requireEligibleSeller(production.employeeId()));
+        assertThrows(IllegalArgumentException.class, () ->
+                sellerNameResolver.requireEligibleSeller(fixedWithoutSales.employeeId()));
         assertThrows(IllegalArgumentException.class, () ->
                 sellerNameResolver.requireEligibleSeller(inactive.employeeId()));
     }
@@ -106,7 +110,7 @@ class CommercialSellerUnificationUseCaseTest {
 
     @Test
     void newQuotationStoresEmployeeIdAndResolvesNameFromFinance() {
-        CreatePayrollEmployeeResult seller = createFixed("Empleado Vendedor-" + suffix());
+        CreatePayrollEmployeeResult seller = createParticipant("Empleado Vendedor-" + suffix());
         Customer customer = customerRepository.save(Customer.create("Cliente-Unif-" + suffix()));
 
         UUID quotationId = createQuotationUseCase.execute(new CreateQuotationCommand(
@@ -144,6 +148,17 @@ class CommercialSellerUnificationUseCaseTest {
                 .map(seller -> seller.sellerId())
                 .toList();
         assertFalse(sellerIds.contains(leftover.getId()));
+    }
+
+    private CreatePayrollEmployeeResult createParticipant(String name) {
+        return createPayrollEmployeeUseCase.execute(new CreatePayrollEmployeeCommand(
+                name,
+                PayrollCompensationType.FIXED_PAYROLL,
+                new BigDecimal("1500000.00"),
+                LocalDate.of(2026, 8, 1),
+                null,
+                true
+        ));
     }
 
     private CreatePayrollEmployeeResult createFixed(String name) {

@@ -553,11 +553,11 @@ public class FinanceConfiguration {
     @Bean
     public GetPayrollEmployeePerformanceUseCase getPayrollEmployeePerformanceUseCase(
             PayrollEmployeeRepository payrollEmployeeRepository,
-            GetPayrollEmployeeCommissionsUseCase getPayrollEmployeeCommissionsUseCase
+            EmployeeSellerCommissionsPort employeeSellerCommissionsPort
     ) {
         return new GetPayrollEmployeePerformanceUseCase(
                 payrollEmployeeRepository,
-                getPayrollEmployeeCommissionsUseCase
+                employeeSellerCommissionsPort
         );
     }
 

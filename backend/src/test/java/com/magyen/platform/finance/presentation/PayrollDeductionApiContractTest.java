@@ -68,7 +68,7 @@ class PayrollDeductionApiContractTest {
 
         mockMvc.perform(get("/api/v1/finance/payroll/employees/{employeeId}", employee.employeeId()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.canSell").value(true))
+                .andExpect(jsonPath("$.canSell").value(false))
                 .andExpect(jsonPath("$.canDoProduction").value(false));
 
         MvcResult created = mockMvc.perform(

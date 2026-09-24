@@ -1,11 +1,14 @@
 package com.magyen.platform.commercial.application.dto;
 
+import com.magyen.platform.commercial.domain.SellerCommissionReadStatus;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 /**
- * Acumulación analítica de comisión. No es un asiento Finance.
+ * Comisión mensual de un vendedor. No es un asiento Finance ni una liquidación.
  */
 public record GetSellerCommissionResult(
         UUID sellerEmployeeId,
@@ -14,6 +17,8 @@ public record GetSellerCommissionResult(
         int numberOfEligibleOrders,
         BigDecimal totalSales,
         BigDecimal commissionRate,
-        BigDecimal accumulatedCommission
+        BigDecimal accumulatedCommission,
+        SellerCommissionReadStatus settlementStatus,
+        List<SellerCommissionOrderLine> orders
 ) {
 }

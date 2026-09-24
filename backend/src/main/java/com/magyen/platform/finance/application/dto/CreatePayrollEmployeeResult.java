@@ -18,6 +18,7 @@ public record CreatePayrollEmployeeResult(
         BigDecimal fixedAmount,
         PayrollFrequency frequency,
         LocalDate effectiveFrom,
-        LocalDate effectiveTo
+        LocalDate effectiveTo,
+        boolean salesParticipant
 ) {
 }

@@ -1,13 +1,15 @@
 package com.magyen.platform.finance.application.dto;
 
+import com.magyen.platform.finance.application.port.EmployeeSellerCommissionsPort.CommissionOrderLine;
 import com.magyen.platform.finance.domain.PayrollCompensationType;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 /**
- * Comisión analítica de un empleado. No es un gasto de Finanzas ni liquidación de nómina.
+ * Comisión mensual de un empleado. No es un gasto de Finanzas ni una liquidación.
  */
 public record GetPayrollEmployeeCommissionsResult(
         UUID employeeId,
@@ -21,6 +23,8 @@ public record GetPayrollEmployeeCommissionsResult(
         int numberOfEligibleOrders,
         BigDecimal totalSales,
         BigDecimal commissionRate,
-        BigDecimal accumulatedCommission
+        BigDecimal accumulatedCommission,
+        String settlementStatus,
+        List<CommissionOrderLine> orders
 ) {
 }

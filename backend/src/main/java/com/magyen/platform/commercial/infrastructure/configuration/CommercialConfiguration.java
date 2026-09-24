@@ -378,9 +378,10 @@ public class CommercialConfiguration {
 
     @Bean
     public GetSellerCommissionPerformanceUseCase getSellerCommissionPerformanceUseCase(
-            OrderRepository orderRepository
+            OrderRepository orderRepository,
+            CustomerNameResolver customerNameResolver
     ) {
-        return new GetSellerCommissionPerformanceUseCase(orderRepository);
+        return new GetSellerCommissionPerformanceUseCase(orderRepository, customerNameResolver);
     }
 
     @Bean

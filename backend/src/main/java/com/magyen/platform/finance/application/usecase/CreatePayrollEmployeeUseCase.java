@@ -46,6 +46,10 @@ public class CreatePayrollEmployeeUseCase {
             );
         }
 
+        if (command.salesParticipant()) {
+            employee.changeSalesParticipation(true);
+        }
+
         PayrollEmployee saved = payrollEmployeeRepository.save(employee);
         return PayrollEmployeeReadMapper.toCreateResult(saved);
     }

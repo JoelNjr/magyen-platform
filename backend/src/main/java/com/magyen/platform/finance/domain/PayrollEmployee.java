@@ -26,6 +26,7 @@ public class PayrollEmployee {
     private PayrollFrequency frequency;
     private LocalDate effectiveFrom;
     private LocalDate effectiveTo;
+    private boolean salesParticipant;
 
     private PayrollEmployee(
             UUID id,
@@ -35,7 +36,8 @@ public class PayrollEmployee {
             FinancialAmount fixedAmount,
             PayrollFrequency frequency,
             LocalDate effectiveFrom,
-            LocalDate effectiveTo
+            LocalDate effectiveTo,
+            boolean salesParticipant
     ) {
         this.id = Objects.requireNonNull(id, "Payroll employee id must not be null");
         this.displayName = requireDisplayName(displayName);
@@ -45,7 +47,9 @@ public class PayrollEmployee {
         this.frequency = frequency;
         this.effectiveFrom = effectiveFrom;
         this.effectiveTo = effectiveTo;
+        this.salesParticipant = salesParticipant;
         validateCompensationShape();
+        validateSalesParticipation();
     }
 
     public static PayrollEmployee createFixed(
@@ -64,7 +68,8 @@ public class PayrollEmployee {
                 fixedAmount,
                 PayrollFrequency.BIWEEKLY,
                 effectiveFrom,
-                effectiveTo
+                effectiveTo,
+                false
         );
     }
 
@@ -77,7 +82,8 @@ public class PayrollEmployee {
                 null,
                 null,
                 null,
-                null
+                null,
+                false
         );
     }
 
@@ -89,7 +95,8 @@ public class PayrollEmployee {
             FinancialAmount fixedAmount,
             PayrollFrequency frequency,
             LocalDate effectiveFrom,
-            LocalDate effectiveTo
+            LocalDate effectiveTo,
+            boolean salesParticipant
     ) {
         return new PayrollEmployee(
                 id,
@@ -99,7 +106,8 @@ public class PayrollEmployee {
                 fixedAmount,
                 frequency,
                 effectiveFrom,
-                effectiveTo
+                effectiveTo,
+                salesParticipant
         );
     }
 
@@ -138,11 +146,17 @@ public class PayrollEmployee {
     }
 
     /**
-     * Capacidad derivada de {@link PayrollCompensationType#FIXED_PAYROLL}.
-     * No es un permiso configurable. La selección nueva también exige {@link #isActive()}.
+     * Participación comercial explícita. No se deduce del tipo de compensación.
+     * Solo un empleado {@link PayrollCompensationType#FIXED_PAYROLL} puede tenerla en true.
+     * La selección de documentos nuevos también exige {@link #isActive()}.
      */
+    public void changeSalesParticipation(boolean salesParticipant) {
+        this.salesParticipant = salesParticipant;
+        validateSalesParticipation();
+    }
+
     public boolean canSell() {
-        return compensationType == PayrollCompensationType.FIXED_PAYROLL;
+        return salesParticipant;
     }
 
     /**
@@ -222,6 +236,10 @@ public class PayrollEmployee {
         return compensationType;
     }
 
+    public boolean isSalesParticipant() {
+        return salesParticipant;
+    }
+
     public FinancialAmount getFixedAmount() {
         return fixedAmount;
     }
@@ -278,6 +296,14 @@ public class PayrollEmployee {
         if (fixedAmount != null || frequency != null || effectiveFrom != null || effectiveTo != null) {
             throw new FinanceDomainException(
                     "PRODUCTION_BASED employees must not have fixed payroll compensation fields"
+            );
+        }
+    }
+
+    private void validateSalesParticipation() {
+        if (salesParticipant && compensationType != PayrollCompensationType.FIXED_PAYROLL) {
+            throw new FinanceDomainException(
+                    "Only FIXED_PAYROLL employees can be sales participants"
             );
         }
     }
