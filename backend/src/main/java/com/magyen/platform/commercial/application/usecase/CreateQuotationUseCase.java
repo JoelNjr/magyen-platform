@@ -4,13 +4,17 @@ import com.magyen.platform.commercial.application.SellerNameResolver;
 import com.magyen.platform.commercial.application.port.CommercialSellerEmployeeInfo;
 import com.magyen.platform.commercial.application.dto.CreateQuotationCommand;
 import com.magyen.platform.commercial.application.dto.CreateQuotationResult;
+import com.magyen.platform.commercial.domain.Customer;
+import com.magyen.platform.commercial.domain.CustomerRepository;
 import com.magyen.platform.commercial.domain.Quotation;
 import com.magyen.platform.commercial.domain.QuotationNumber;
 import com.magyen.platform.commercial.domain.QuotationNumberGenerator;
 import com.magyen.platform.commercial.domain.QuotationRepository;
+import com.magyen.platform.commercial.domain.exception.QuotationDomainException;
 
 import java.time.LocalDate;
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Caso de uso que coordina la creación de una nueva cotización.
@@ -20,11 +24,13 @@ public class CreateQuotationUseCase {
     private final QuotationRepository quotationRepository;
     private final QuotationNumberGenerator quotationNumberGenerator;
     private final SellerNameResolver sellerNameResolver;
+    private final CustomerRepository customerRepository;
 
     public CreateQuotationUseCase(
             QuotationRepository quotationRepository,
             QuotationNumberGenerator quotationNumberGenerator,
-            SellerNameResolver sellerNameResolver
+            SellerNameResolver sellerNameResolver,
+            CustomerRepository customerRepository
     ) {
         this.quotationRepository = Objects.requireNonNull(quotationRepository, "Quotation repository must not be null");
         this.quotationNumberGenerator = Objects.requireNonNull(
@@ -35,11 +41,16 @@ public class CreateQuotationUseCase {
                 sellerNameResolver,
                 "Seller name resolver must not be null"
         );
+        this.customerRepository = Objects.requireNonNull(
+                customerRepository,
+                "Customer repository must not be null"
+        );
     }
 
     public CreateQuotationResult execute(CreateQuotationCommand command) {
         Objects.requireNonNull(command, "Command must not be null");
         validateCommand(command);
+        requireMagyenCustomer(command.customerId());
 
         CommercialSellerEmployeeInfo seller = sellerNameResolver.requireEligibleSeller(command.sellerId());
         LocalDate creationDate = command.quotationDate() != null
@@ -82,6 +93,14 @@ public class CreateQuotationUseCase {
         }
         if (command.sellerId() == null) {
             throw new IllegalArgumentException("Seller id must not be null");
+        }
+    }
+
+    private void requireMagyenCustomer(UUID customerId) {
+        Customer customer = customerRepository.findById(customerId)
+                .orElseThrow(() -> new IllegalArgumentException("Customer not found: " + customerId));
+        if (!customer.getCategory().allowsNewQuotation()) {
+            throw new QuotationDomainException("Quotations require a Magyen customer");
         }
     }
 }

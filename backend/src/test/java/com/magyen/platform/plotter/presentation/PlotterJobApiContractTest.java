@@ -12,6 +12,7 @@ import com.magyen.platform.commercial.application.usecase.CreateOrderFromQuotati
 import com.magyen.platform.commercial.application.usecase.CreateQuotationUseCase;
 import com.magyen.platform.finance.application.usecase.CreatePayrollEmployeeUseCase;
 import com.magyen.platform.shared.testsupport.FixedSellerEmployeeFixture;
+import com.magyen.platform.shared.testsupport.PlotterCustomerFixture;
 import com.magyen.platform.inventory.application.dto.CreateInventoryItemCommand;
 import com.magyen.platform.inventory.application.dto.CreateInventoryItemResult;
 import com.magyen.platform.inventory.application.usecase.CreateInventoryItemUseCase;
@@ -86,7 +87,7 @@ class PlotterJobApiContractTest {
 
     @Test
     void createsListsAndGetsPlotterJob() throws Exception {
-        UUID customerId = UUID.randomUUID();
+        UUID customerId = PlotterCustomerFixture.create(createCustomerUseCase);
 
         MvcResult createResult = mockMvc.perform(
                         post("/api/v1/plotter/jobs")
@@ -168,7 +169,7 @@ class PlotterJobApiContractTest {
 
     @Test
     void listExposesExternalPaymentBalanceAndRegistersPaymentThroughTheSameEndpoint() throws Exception {
-        UUID customerId = UUID.randomUUID();
+        UUID customerId = PlotterCustomerFixture.create(createCustomerUseCase);
 
         MvcResult unpaidResult = mockMvc.perform(
                         post("/api/v1/plotter/jobs")
@@ -271,7 +272,7 @@ class PlotterJobApiContractTest {
                 false
         ));
 
-        UUID customerId = UUID.randomUUID();
+        UUID customerId = PlotterCustomerFixture.create(createCustomerUseCase);
 
         mockMvc.perform(
                         post("/api/v1/plotter/jobs")

@@ -13,6 +13,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -21,9 +22,9 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * Genera de forma controlada e idempotente períodos PENDING para empleados fijos activos.
+ * Genera un periodo PENDING por mes calendario para empleados fijos activos.
  * <p>
- * No crea {@code FinancialTransaction}. El monto se congela como snapshot al generarse.
+ * No crea {@code FinancialTransaction}. El monto fijo se congela una vez por mes.
  */
 public class GeneratePayrollPeriodsUseCase {
 
@@ -76,7 +77,7 @@ public class GeneratePayrollPeriodsUseCase {
             }
 
             List<PayrollEmployee.ResolvedPayrollPeriodWindow> windows =
-                    employee.resolveBiweeklyPeriodWindows(fromDate, toDate);
+                    employee.resolveMonthlyPeriodWindows(fromDate, toDate);
             if (windows.isEmpty()) {
                 skippedOutsideValidity++;
                 continue;
@@ -133,7 +134,7 @@ public class GeneratePayrollPeriodsUseCase {
     }
 
     private static String periodKey(java.util.UUID employeeId, LocalDate periodStart) {
-        return employeeId + "|" + periodStart;
+        return employeeId + "|" + YearMonth.from(periodStart);
     }
 
     private void validateCommand(GeneratePayrollPeriodsCommand command) {

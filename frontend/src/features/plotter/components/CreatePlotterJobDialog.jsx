@@ -11,6 +11,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material'
+import { customersForExternalPlotter } from '../../commercial/presentation/customerCategory'
 import {
   calculatePlotterTotalPreview,
   formatPlotterJobTypeLabel,
@@ -57,6 +58,8 @@ function CreatePlotterJobDialog({
   orders,
   paperRolls,
   loadingLookups,
+  createdCustomerId = '',
+  onCreateCustomer,
 }) {
   const [form, setForm] = useState(EMPTY_FORM)
   const [validationError, setValidationError] = useState('')
@@ -74,6 +77,18 @@ function CreatePlotterJobDialog({
       plotterJobId: createPlotterJobId(),
     })
   }, [open])
+
+  useEffect(() => {
+    if (!createdCustomerId) {
+      return
+    }
+    setForm((current) => ({ ...current, customerId: createdCustomerId }))
+  }, [createdCustomerId])
+
+  const plotterCustomers = useMemo(
+    () => customersForExternalPlotter(customers),
+    [customers]
+  )
 
   const selectedOrder = useMemo(
     () => (orders || []).find((order) => order.orderId === form.orderId) || null,
@@ -282,20 +297,31 @@ function CreatePlotterJobDialog({
           )}
 
           {isExternal && (
-            <TextField
-              select
-              label="Cliente"
-              value={form.customerId}
-              onChange={(event) => updateField('customerId', event.target.value)}
-              fullWidth
-              disabled={submitting || loadingLookups}
-            >
-              {(customers || []).map((customer) => (
-                <MenuItem key={customer.customerId} value={customer.customerId}>
-                  {customer.name}
-                </MenuItem>
-              ))}
-            </TextField>
+            <>
+              <TextField
+                select
+                label="Cliente"
+                value={form.customerId}
+                onChange={(event) => updateField('customerId', event.target.value)}
+                fullWidth
+                disabled={submitting || loadingLookups}
+              >
+                {(plotterCustomers || []).map((customer) => (
+                  <MenuItem key={customer.customerId} value={customer.customerId}>
+                    {customer.name}
+                  </MenuItem>
+                ))}
+              </TextField>
+              <Button
+                type="button"
+                variant="text"
+                onClick={onCreateCustomer}
+                disabled={submitting || !onCreateCustomer}
+                sx={{ alignSelf: 'flex-start' }}
+              >
+                + Crear cliente Plotter
+              </Button>
+            </>
           )}
 
           {form.jobType && (

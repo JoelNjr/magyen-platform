@@ -10,6 +10,7 @@ import {
 import { useNavigate } from 'react-router-dom'
 import CreateCustomerDialog from '../components/CreateCustomerDialog'
 import CustomerSelector from '../components/CustomerSelector'
+import { customersForQuotation } from '../presentation/customerCategory'
 import SellerSelector from '../components/SellerSelector'
 import {
   createCustomer,
@@ -106,7 +107,7 @@ function CreateQuotationPage() {
     setCreatingCustomer(true)
 
     try {
-      const createdCustomer = await createCustomer({ name })
+      const createdCustomer = await createCustomer({ name, category: 'MAGYEN' })
 
       try {
         const data = await getCustomers()
@@ -207,7 +208,7 @@ function CreateQuotationPage() {
 
             <Stack spacing={1}>
               <CustomerSelector
-                customers={customers}
+                customers={customersForQuotation(customers)}
                 value={customerId}
                 onChange={(selectedCustomerId) => {
                   setCustomerId(selectedCustomerId)
@@ -308,6 +309,7 @@ function CreateQuotationPage() {
         onCreated={handleCreateCustomer}
         submitting={creatingCustomer}
         error={createCustomerFailed}
+        lockedCategory="MAGYEN"
       />
 
       <Snackbar

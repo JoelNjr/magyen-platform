@@ -127,6 +127,7 @@ function UpdatePayrollEmployeeCompensationDialog({
                 required
                 fullWidth
                 inputProps={{ inputMode: 'decimal' }}
+                helperText="Se paga una vez, por el mes completo."
               />
               <TextField
                 label="Vigencia desde"

@@ -21,6 +21,7 @@ import com.magyen.platform.plotter.application.dto.GetPlotterJobQuery;
 import com.magyen.platform.plotter.application.dto.GetPlotterJobResult;
 import com.magyen.platform.plotter.domain.PlotterJobType;
 import com.magyen.platform.plotter.domain.exception.PlotterDomainException;
+import com.magyen.platform.shared.testsupport.PlotterCustomerFixture;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -181,7 +182,7 @@ class PlotterOrderAttributionUseCaseTest {
         ));
 
         CreatePlotterJobResult created = createPlotterJobUseCase.execute(new CreatePlotterJobCommand(
-                UUID.randomUUID(),
+                PlotterCustomerFixture.create(createCustomerUseCase),
                 null,
                 LocalDate.of(2026, 8, 3),
                 roll.inventoryItemId(),

@@ -28,7 +28,9 @@ import com.magyen.platform.inventory.domain.MaterialCode;
 import com.magyen.platform.inventory.domain.exception.InventoryDomainException;
 import com.magyen.platform.plotter.application.dto.CreatePlotterJobCommand;
 import com.magyen.platform.plotter.application.dto.CreatePlotterJobResult;
+import com.magyen.platform.commercial.application.usecase.CreateCustomerUseCase;
 import com.magyen.platform.plotter.application.usecase.CreatePlotterJobUseCase;
+import com.magyen.platform.shared.testsupport.PlotterCustomerFixture;
 import com.magyen.platform.plotter.domain.PlotterJob;
 import com.magyen.platform.plotter.domain.PlotterJobRepository;
 import org.junit.jupiter.api.Test;
@@ -79,6 +81,9 @@ class DeactivateInventoryMaterialUseCaseTest {
 
     @Autowired
     private GetInventoryMovementsUseCase getInventoryMovementsUseCase;
+
+    @Autowired
+    private CreateCustomerUseCase createCustomerUseCase;
 
     @Autowired
     private CreatePlotterJobUseCase createPlotterJobUseCase;
@@ -190,7 +195,7 @@ class DeactivateInventoryMaterialUseCaseTest {
     void plotterHistoryRemainsValidAfterPaperDeactivation() {
         InventoryItem roll = saveIsolatedPaper(new BigDecimal("10.0000"));
         CreatePlotterJobResult job = createPlotterJobUseCase.execute(new CreatePlotterJobCommand(
-                UUID.randomUUID(),
+                PlotterCustomerFixture.create(createCustomerUseCase),
                 null,
                 null,
                 roll.getId(),

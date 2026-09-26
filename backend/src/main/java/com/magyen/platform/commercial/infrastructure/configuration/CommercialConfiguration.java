@@ -176,12 +176,14 @@ public class CommercialConfiguration {
     public CreateQuotationUseCase createQuotationUseCase(
             QuotationRepository quotationRepository,
             QuotationNumberGenerator quotationNumberGenerator,
-            SellerNameResolver sellerNameResolver
+            SellerNameResolver sellerNameResolver,
+            CustomerRepository customerRepository
     ) {
         return new CreateQuotationUseCase(
                 quotationRepository,
                 quotationNumberGenerator,
-                sellerNameResolver
+                sellerNameResolver,
+                customerRepository
         );
     }
 

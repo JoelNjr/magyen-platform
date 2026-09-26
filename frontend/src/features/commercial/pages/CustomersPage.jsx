@@ -20,6 +20,11 @@ import { useNavigate } from 'react-router-dom'
 import CreateCustomerDialog from '../components/CreateCustomerDialog'
 import UpdateCustomerDialog from '../components/UpdateCustomerDialog'
 import {
+  customersForExternalPlotter,
+  customersForQuotation,
+  customersForReview,
+} from '../presentation/customerCategory'
+import {
   createCustomer,
   getCustomers,
   updateCustomer,
@@ -29,6 +34,45 @@ import EmptyState from '../../home/components/EmptyState'
 
 const headerCellSx = { fontWeight: 'bold' }
 const SKELETON_ROW_COUNT = 4
+
+function CustomerGroup({ title, description, customers, onEdit, disabled }) {
+  return (
+    <Stack spacing={1}>
+      <Typography variant="h6">{title}</Typography>
+      <Typography variant="body2" color="text.secondary">
+        {description}
+      </Typography>
+      {customers.length === 0 ? (
+        <Typography variant="body2">Ninguno.</Typography>
+      ) : (
+        <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
+          <Table>
+            <CustomersTableHead />
+            <TableBody>
+              {customers.map((customer) => (
+                <TableRow key={customer.customerId} hover>
+                  <TableCell>
+                    <Typography variant="body1">{customer.name}</Typography>
+                  </TableCell>
+                  <TableCell align="right">
+                    <Button
+                      type="button"
+                      size="small"
+                      onClick={() => onEdit(customer)}
+                      disabled={disabled}
+                    >
+                      Editar
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
+    </Stack>
+  )
+}
 
 function CustomersTableHead() {
   return (
@@ -93,12 +137,12 @@ function CustomersPage() {
     setCreateCustomerFailed(false)
   }
 
-  async function handleCreateCustomer(name) {
+  async function handleCreateCustomer(name, category) {
     setCreateCustomerFailed(false)
     setCreatingCustomer(true)
 
     try {
-      await createCustomer({ name })
+      await createCustomer({ name, category })
 
       try {
         const data = await getCustomers()
@@ -239,33 +283,29 @@ function CustomersPage() {
         )}
 
         {!loading && !failed && customers.length > 0 && (
-          <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
-            <Table>
-              <CustomersTableHead />
-              <TableBody>
-                {customers.map((customer) => (
-                  <TableRow key={customer.customerId} hover>
-                    <TableCell>
-                      <Typography variant="body1">{customer.name}</Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        ID: {customer.customerId}
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="right">
-                      <Button
-                        type="button"
-                        size="small"
-                        onClick={() => openUpdateDialog(customer)}
-                        disabled={creatingCustomer || updatingCustomer}
-                      >
-                        Editar
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+          <Stack spacing={4}>
+            <CustomerGroup
+              title="Clientes Magyen"
+              description="Se usan al crear cotizaciones."
+              customers={customersForQuotation(customers)}
+              onEdit={openUpdateDialog}
+              disabled={creatingCustomer || updatingCustomer}
+            />
+            <CustomerGroup
+              title="Clientes Plotter"
+              description="Se usan al registrar trabajos externos de Plotter."
+              customers={customersForExternalPlotter(customers)}
+              onEdit={openUpdateDialog}
+              disabled={creatingCustomer || updatingCustomer}
+            />
+            <CustomerGroup
+              title="Sin clasificar"
+              description="Clientes sin actividad suficiente para asignar un grupo. No son un grupo comercial."
+              customers={customersForReview(customers)}
+              onEdit={openUpdateDialog}
+              disabled={creatingCustomer || updatingCustomer}
+            />
+          </Stack>
         )}
       </Stack>
 

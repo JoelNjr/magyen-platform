@@ -13,7 +13,6 @@ import com.magyen.platform.finance.domain.FinancialTransaction;
 import com.magyen.platform.finance.domain.FinancialTransactionRepository;
 import com.magyen.platform.finance.domain.FinancialTransactionSourceType;
 import com.magyen.platform.finance.domain.FinancialTransactionType;
-import com.magyen.platform.finance.domain.PayrollBusinessDayAdjuster;
 import com.magyen.platform.finance.domain.PayrollCompensationType;
 import com.magyen.platform.finance.domain.PayrollPeriod;
 import com.magyen.platform.finance.domain.PayrollPeriodRepository;
@@ -119,27 +118,25 @@ class PayrollFoundationUseCaseTest {
         CreatePayrollEmployeeResult employee = createFixedEmployee(
                 "Luis-" + suffix(),
                 "1500000.00",
-                LocalDate.of(2026, 8, 2)
+                LocalDate.of(2026, 2, 2)
         );
 
         GeneratePayrollPeriodsResult result = generatePayrollPeriodsUseCase.execute(
                 new GeneratePayrollPeriodsCommand(
-                        LocalDate.of(2026, 8, 1),
-                        LocalDate.of(2026, 8, 31)
+                        LocalDate.of(2026, 2, 1),
+                        LocalDate.of(2026, 2, 28)
                 )
         );
 
-        GetPayrollPeriodResult saturdayEnding = result.createdPeriods().stream()
+        GetPayrollPeriodResult august = result.createdPeriods().stream()
                 .filter(period -> period.employeeId().equals(employee.employeeId()))
-                .filter(period -> period.periodEnd().equals(LocalDate.of(2026, 8, 15)))
                 .findFirst()
                 .orElseThrow();
 
-        assertEquals(LocalDate.of(2026, 8, 14), saturdayEnding.expectedPaymentDate());
-        assertEquals(
-                LocalDate.of(2026, 8, 14),
-                PayrollBusinessDayAdjuster.adjustToBusinessDay(LocalDate.of(2026, 8, 15))
-        );
+        assertEquals(LocalDate.of(2026, 2, 1), august.periodStart());
+        assertEquals(LocalDate.of(2026, 2, 28), august.periodEnd());
+        assertEquals(LocalDate.of(2026, 2, 27), august.expectedPaymentDate());
+        assertEquals(1, countCreatedFor(result, Set.of(employee.employeeId())));
     }
 
     @Test
@@ -212,7 +209,7 @@ class PayrollFoundationUseCaseTest {
         List<GetPayrollPeriodResult> joseAugust = august.createdPeriods().stream()
                 .filter(period -> period.employeeId().equals(jose.employeeId()))
                 .toList();
-        assertTrue(joseAugust.size() >= 1);
+        assertEquals(1, joseAugust.size());
         assertTrue(joseAugust.stream()
                 .allMatch(period -> period.amountSnapshot().compareTo(new BigDecimal("1500000.00")) == 0));
 
@@ -254,7 +251,7 @@ class PayrollFoundationUseCaseTest {
         List<GetPayrollPeriodResult> joseSeptember = september.createdPeriods().stream()
                 .filter(period -> period.employeeId().equals(jose.employeeId()))
                 .toList();
-        assertTrue(joseSeptember.size() >= 1);
+        assertEquals(1, joseSeptember.size());
         assertTrue(joseSeptember.stream()
                 .allMatch(period -> period.amountSnapshot().compareTo(new BigDecimal("1700000.00")) == 0));
     }
@@ -368,14 +365,16 @@ class PayrollFoundationUseCaseTest {
         GeneratePayrollPeriodsResult generated = generatePayrollPeriodsUseCase.execute(
                 new GeneratePayrollPeriodsCommand(
                         LocalDate.of(2026, 8, 1),
-                        LocalDate.of(2026, 8, 31)
+                        LocalDate.of(2026, 9, 30)
                 )
         );
 
         List<GetPayrollPeriodResult> periods = generated.createdPeriods().stream()
                 .filter(period -> period.employeeId().equals(employee.employeeId()))
                 .toList();
-        assertTrue(periods.size() >= 2);
+        assertEquals(2, periods.size());
+        assertTrue(periods.stream().allMatch(period ->
+                period.amountSnapshot().compareTo(new BigDecimal("1500000.00")) == 0));
 
         GetPayrollPeriodResult first = periods.get(0);
         GetPayrollPeriodResult second = periods.get(1);
@@ -395,6 +394,39 @@ class PayrollFoundationUseCaseTest {
                 .map(FinancialTransaction::getSourceId)
                 .collect(Collectors.toSet());
         assertEquals(Set.of(first.periodId(), second.periodId()), sourceIds);
+    }
+
+    @Test
+    void historicalFortnightBlocksASecondPeriodInTheSameMonth() {
+        CreatePayrollEmployeeResult employee = createFixedEmployee(
+                "Historico-" + suffix(),
+                "1500000.00",
+                LocalDate.of(2026, 8, 1)
+        );
+        payrollPeriodRepository.save(PayrollPeriod.reconstitute(
+                UUID.randomUUID(),
+                employee.employeeId(),
+                LocalDate.of(2026, 8, 15),
+                LocalDate.of(2026, 8, 28),
+                LocalDate.of(2026, 8, 28),
+                com.magyen.platform.finance.domain.FinancialAmount.of(new BigDecimal("1500000.00")),
+                PayrollPeriodStatus.PENDING,
+                null,
+                null,
+                null
+        ));
+
+        GeneratePayrollPeriodsResult generated = generatePayrollPeriodsUseCase.execute(
+                new GeneratePayrollPeriodsCommand(
+                        LocalDate.of(2026, 8, 1),
+                        LocalDate.of(2026, 8, 31)
+                )
+        );
+
+        assertEquals(0, countCreatedFor(generated, Set.of(employee.employeeId())));
+        assertEquals(1, payrollPeriodRepository.findAllNewestFirst().stream()
+                .filter(period -> period.getEmployeeId().equals(employee.employeeId()))
+                .count());
     }
 
     private CreatePayrollEmployeeResult createFixedEmployee(

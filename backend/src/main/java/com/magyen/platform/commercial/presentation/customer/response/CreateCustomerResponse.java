@@ -1,5 +1,7 @@
 package com.magyen.platform.commercial.presentation.customer.response;
 
+import com.magyen.platform.commercial.domain.CustomerCategory;
+
 import java.util.UUID;
 
 /**
@@ -7,6 +9,7 @@ import java.util.UUID;
  */
 public record CreateCustomerResponse(
         UUID customerId,
-        String name
+        String name,
+        CustomerCategory category
 ) {
 }

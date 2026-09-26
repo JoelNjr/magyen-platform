@@ -149,6 +149,7 @@ function CreatePayrollEmployeeDialog({
                 onChange={(event) =>
                   updateField('fixedAmount', event.target.value)
                 }
+                helperText="Se paga una vez, por el mes completo."
                 required
                 fullWidth
                 inputProps={{ inputMode: 'decimal' }}

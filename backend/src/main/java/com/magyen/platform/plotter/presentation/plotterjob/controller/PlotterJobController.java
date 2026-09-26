@@ -79,9 +79,12 @@ public class PlotterJobController {
     @GetMapping
     public ResponseEntity<GetPlotterJobsResponse> getPlotterJobs(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
+            @RequestParam(required = false) UUID customerId
     ) {
-        GetPlotterJobsResult result = getPlotterJobsUseCase.execute(new GetPlotterJobsQuery(fromDate, toDate));
+        GetPlotterJobsResult result = getPlotterJobsUseCase.execute(
+                new GetPlotterJobsQuery(fromDate, toDate, customerId)
+        );
         return ResponseEntity.ok(plotterPresentationMapper.toGetJobsResponse(result));
     }
 

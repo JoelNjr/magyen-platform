@@ -5,6 +5,7 @@ import {
   Alert,
   Button,
   Chip,
+  MenuItem,
   Paper,
   Skeleton,
   Snackbar,
@@ -15,10 +16,13 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TextField,
   Typography,
 } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
-import { getCustomers, getOrders } from '../../commercial/services/commercialService'
+import CreateCustomerDialog from '../../commercial/components/CreateCustomerDialog'
+import { customersForExternalPlotter } from '../../commercial/presentation/customerCategory'
+import { createCustomer, getCustomers, getOrders } from '../../commercial/services/commercialService'
 import { getInventoryItems, getPlotterPaperRolls } from '../../inventory/services/inventoryService'
 import CreatePlotterJobDialog from '../components/CreatePlotterJobDialog'
 import RegisterPlotterPaymentDialog from '../components/RegisterPlotterPaymentDialog'
@@ -75,6 +79,7 @@ function PlotterJobsPage() {
   const navigate = useNavigate()
   const initialPeriod = useMemo(() => getCalendarMonthRange(), [])
   const [period, setPeriod] = useState(initialPeriod)
+  const [customerId, setCustomerId] = useState('')
   const [jobs, setJobs] = useState([])
   const [customers, setCustomers] = useState([])
   const [orders, setOrders] = useState([])
@@ -91,6 +96,10 @@ function PlotterJobsPage() {
   const [paymentError, setPaymentError] = useState('')
   const [successOpen, setSuccessOpen] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
+  const [createCustomerOpen, setCreateCustomerOpen] = useState(false)
+  const [creatingCustomer, setCreatingCustomer] = useState(false)
+  const [createCustomerFailed, setCreateCustomerFailed] = useState(false)
+  const [createdPlotterCustomerId, setCreatedPlotterCustomerId] = useState('')
 
   const customerNameById = useMemo(() => {
     const map = new Map()
@@ -123,6 +132,7 @@ function PlotterJobsPage() {
       const data = await getPlotterJobs({
         fromDate: period.fromDate,
         toDate: period.toDate,
+        customerId,
       })
       setJobs(Array.isArray(data?.jobs) ? data.jobs : [])
       setLoading(false)
@@ -131,7 +141,7 @@ function PlotterJobsPage() {
       setFailed(true)
       setLoading(false)
     }
-  }, [period.fromDate, period.toDate])
+  }, [period.fromDate, period.toDate, customerId])
 
   async function loadLookups() {
     setLoadingLookups(true)
@@ -168,6 +178,24 @@ function PlotterJobsPage() {
   useEffect(() => {
     loadLookups()
   }, [])
+
+  async function handleCreatePlotterCustomer(name) {
+    setCreateCustomerFailed(false)
+    setCreatingCustomer(true)
+    try {
+      const created = await createCustomer({ name, category: 'PLOTTER' })
+      const data = await getCustomers()
+      setCustomers(Array.isArray(data?.customers) ? data.customers : [])
+      setCreatedPlotterCustomerId(created.customerId)
+      setCreateCustomerOpen(false)
+      setSuccessMessage('Cliente Plotter creado correctamente.')
+      setSuccessOpen(true)
+    } catch {
+      setCreateCustomerFailed(true)
+    } finally {
+      setCreatingCustomer(false)
+    }
+  }
 
   function openCreateDialog() {
     if (creating) {
@@ -262,6 +290,13 @@ function PlotterJobsPage() {
           >
             <Button
               variant="outlined"
+              onClick={() => navigate('/plotter/pending-balances')}
+              disabled={loading}
+            >
+              Saldos pendientes
+            </Button>
+            <Button
+              variant="outlined"
               onClick={() => navigate('/plotter/profitability')}
               disabled={loading}
             >
@@ -279,11 +314,33 @@ function PlotterJobsPage() {
           }
         />
 
-        <MonthPeriodNavigator
-          fromDate={period.fromDate}
-          disabled={loading}
-          onPeriodChange={setPeriod}
-        />
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          spacing={2}
+          sx={{ alignItems: { sm: 'center' } }}
+        >
+          <MonthPeriodNavigator
+            fromDate={period.fromDate}
+            disabled={loading}
+            onPeriodChange={setPeriod}
+          />
+          <TextField
+            select
+            label="Cliente"
+            value={customerId}
+            onChange={(event) => setCustomerId(event.target.value)}
+            disabled={loading || loadingLookups}
+            sx={{ minWidth: { sm: 280 } }}
+            helperText="Incluye trabajos internos de ese cliente. La deuda sigue siendo solo externa."
+          >
+            <MenuItem value="">Todos los clientes</MenuItem>
+            {customers.map((customer) => (
+              <MenuItem key={customer.customerId} value={customer.customerId}>
+                {customer.name}
+              </MenuItem>
+            ))}
+          </TextField>
+        </Stack>
 
         {loading && (
           <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
@@ -417,6 +474,25 @@ function PlotterJobsPage() {
         }))}
         paperRolls={paperRolls}
         loadingLookups={loadingLookups}
+        createdCustomerId={createdPlotterCustomerId}
+        onCreateCustomer={() => {
+          setCreateCustomerFailed(false)
+          setCreateCustomerOpen(true)
+        }}
+      />
+
+      <CreateCustomerDialog
+        open={createCustomerOpen}
+        onClose={() => {
+          if (!creatingCustomer) {
+            setCreateCustomerOpen(false)
+            setCreateCustomerFailed(false)
+          }
+        }}
+        onCreated={handleCreatePlotterCustomer}
+        submitting={creatingCustomer}
+        error={createCustomerFailed}
+        lockedCategory="PLOTTER"
       />
 
       <RegisterPlotterPaymentDialog

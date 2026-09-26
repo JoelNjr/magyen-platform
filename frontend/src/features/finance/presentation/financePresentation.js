@@ -152,6 +152,35 @@ export function formatPayrollPeriodRange(periodStart, periodEnd) {
   return `${formatFinanceDate(periodStart)} – ${formatFinanceDate(periodEnd)}`
 }
 
+export function isFullCalendarPayrollMonth(periodStart, periodEnd) {
+  if (!periodStart || !periodEnd) {
+    return false
+  }
+  const [yearText, monthText, dayText] = String(periodStart).split('-')
+  const year = Number(yearText)
+  const month = Number(monthText)
+  const day = Number(dayText)
+  if (!year || !month || day !== 1) {
+    return false
+  }
+  const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate()
+  const expectedEnd = `${yearText}-${monthText}-${String(lastDay).padStart(2, '0')}`
+  return periodEnd === expectedEnd
+}
+
+export function formatPayrollPeriodLabel(periodStart, periodEnd) {
+  if (!isFullCalendarPayrollMonth(periodStart, periodEnd)) {
+    return formatPayrollPeriodRange(periodStart, periodEnd)
+  }
+  const [yearText, monthText] = String(periodStart).split('-')
+  const label = new Intl.DateTimeFormat('es-CO', {
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(new Date(Date.UTC(Number(yearText), Number(monthText) - 1, 1)))
+  return label.charAt(0).toUpperCase() + label.slice(1)
+}
+
 export function yearMonthInputValue(referenceDate = new Date()) {
   const year = referenceDate.getFullYear()
   const month = String(referenceDate.getMonth() + 1).padStart(2, '0')

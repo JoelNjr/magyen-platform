@@ -5,8 +5,14 @@ export async function getPlotterJobs(params = {}) {
     params: {
       fromDate: params.fromDate || undefined,
       toDate: params.toDate || undefined,
+      customerId: params.customerId || undefined,
     },
   })
+  return response.data
+}
+
+export async function getPlotterPendingBalances() {
+  const response = await httpClient.get('/plotter/pending-balances')
   return response.data
 }
 

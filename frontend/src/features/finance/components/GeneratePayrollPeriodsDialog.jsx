@@ -10,7 +10,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material'
-import { getDefaultGenerationRange } from '../presentation/financePresentation'
+import { calendarMonthBoundsFromInput, yearMonthInputValue } from '../presentation/financePresentation'
 
 function GeneratePayrollPeriodsDialog({
   open,
@@ -20,8 +20,8 @@ function GeneratePayrollPeriodsDialog({
   errorMessage,
   result,
 }) {
-  const [fromDate, setFromDate] = useState('')
-  const [toDate, setToDate] = useState('')
+  const [fromMonth, setFromMonth] = useState('')
+  const [toMonth, setToMonth] = useState('')
   const [validationError, setValidationError] = useState('')
 
   useEffect(() => {
@@ -30,9 +30,9 @@ function GeneratePayrollPeriodsDialog({
       return
     }
 
-    const defaults = getDefaultGenerationRange()
-    setFromDate(defaults.fromDate)
-    setToDate(defaults.toDate)
+    const currentMonth = yearMonthInputValue()
+    setFromMonth(currentMonth)
+    setToMonth(currentMonth)
     setValidationError('')
   }, [open])
 
@@ -48,49 +48,51 @@ function GeneratePayrollPeriodsDialog({
       return
     }
 
-    if (!fromDate || !toDate) {
-      setValidationError('Desde y Hasta son obligatorios.')
+    if (!fromMonth || !toMonth) {
+      setValidationError('El mes inicial y el mes final son obligatorios.')
       return
     }
 
-    if (fromDate > toDate) {
-      setValidationError('Desde no puede ser posterior a Hasta.')
+    if (fromMonth > toMonth) {
+      setValidationError('El mes inicial no puede ser posterior al mes final.')
       return
     }
 
     setValidationError('')
+    const fromDate = calendarMonthBoundsFromInput(fromMonth).fromDate
+    const toDate = calendarMonthBoundsFromInput(toMonth).toDate
     onSubmit({ fromDate, toDate })
   }
 
   return (
     <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
-      <DialogTitle>Generar nómina</DialogTitle>
+      <DialogTitle>Generar nómina mensual</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
           {(validationError || errorMessage) && (
             <Alert severity="error">{validationError || errorMessage}</Alert>
           )}
           <Alert severity="info">
-            Genera períodos PENDING para empleados de nómina fija activos. No
-            crea gastos en el ledger hasta que se pague cada período.
+            Crea un periodo por mes, del día 1 al último día. El pago corresponde
+            a la nómina completa de ese mes. Generar no crea un gasto en caja.
           </Alert>
           <TextField
-            label="Desde"
-            type="date"
-            value={fromDate}
+            label="Mes inicial"
+            type="month"
+            value={fromMonth}
             onChange={(event) => {
-              setFromDate(event.target.value)
+              setFromMonth(event.target.value)
               setValidationError('')
             }}
             fullWidth
             InputLabelProps={{ shrink: true }}
           />
           <TextField
-            label="Hasta"
-            type="date"
-            value={toDate}
+            label="Mes final"
+            type="month"
+            value={toMonth}
             onChange={(event) => {
-              setToDate(event.target.value)
+              setToMonth(event.target.value)
               setValidationError('')
             }}
             fullWidth

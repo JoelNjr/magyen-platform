@@ -4,9 +4,12 @@
 -- Hibernate ddl-auto remains validate; this SQL owns schema creation.
 
 CREATE TABLE customers (
-    id      uuid            NOT NULL,
-    name    varchar(255)    NOT NULL,
-    CONSTRAINT customers_pkey PRIMARY KEY (id)
+    id          uuid            NOT NULL,
+    name        varchar(255)    NOT NULL,
+    category    varchar(30)     NOT NULL DEFAULT 'UNCLASSIFIED',
+    CONSTRAINT customers_pkey PRIMARY KEY (id),
+    CONSTRAINT customers_category_check
+        CHECK (category IN ('MAGYEN', 'PLOTTER', 'UNCLASSIFIED'))
 );
 
 -- Leftover Commercial seller catalog. Not the source of truth.

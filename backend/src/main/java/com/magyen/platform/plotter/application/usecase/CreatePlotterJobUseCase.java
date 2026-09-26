@@ -119,6 +119,8 @@ public class CreatePlotterJobUseCase {
             validateJobDate(creationDate, commercialOrder);
         } else if (orderId != null) {
             throw new PlotterDomainException("External plotter jobs must not reference a commercial order");
+        } else {
+            plotterCommercialOrderPort.requireExternalPlotterCustomer(customerId);
         }
 
         if (!jobType.isWaste() && customerId == null) {

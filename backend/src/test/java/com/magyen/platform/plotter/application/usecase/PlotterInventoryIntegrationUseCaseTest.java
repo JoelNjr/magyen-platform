@@ -4,7 +4,9 @@ import com.magyen.platform.inventory.application.dto.ConsumeInventoryMaterialCom
 import com.magyen.platform.inventory.application.dto.CreateInventoryItemCommand;
 import com.magyen.platform.inventory.application.dto.CreateInventoryItemResult;
 import com.magyen.platform.inventory.application.usecase.ConsumeInventoryMaterialUseCase;
+import com.magyen.platform.commercial.application.usecase.CreateCustomerUseCase;
 import com.magyen.platform.inventory.application.usecase.CreateInventoryItemUseCase;
+import com.magyen.platform.shared.testsupport.PlotterCustomerFixture;
 import com.magyen.platform.inventory.application.usecase.GetInventoryItemUseCase;
 import com.magyen.platform.inventory.application.dto.GetInventoryItemQuery;
 import com.magyen.platform.inventory.domain.InventoryMovementRepository;
@@ -30,6 +32,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class PlotterInventoryIntegrationUseCaseTest {
 
     @Autowired
+    private CreateCustomerUseCase createCustomerUseCase;
+
+    @Autowired
     private CreateInventoryItemUseCase createInventoryItemUseCase;
 
     @Autowired
@@ -52,7 +57,7 @@ class PlotterInventoryIntegrationUseCaseTest {
         CreateInventoryItemResult roll = createPaperRoll(new BigDecimal("100.0000"), new BigDecimal("4500.00"));
 
         CreatePlotterJobResult job = createPlotterJobUseCase.execute(new CreatePlotterJobCommand(
-                UUID.randomUUID(),
+                PlotterCustomerFixture.create(createCustomerUseCase),
                 null,
                 null,
                 roll.inventoryItemId(),
@@ -129,7 +134,7 @@ class PlotterInventoryIntegrationUseCaseTest {
     void samePlotterJobCannotCreateTwoMovements() {
         CreateInventoryItemResult roll = createPaperRoll(new BigDecimal("100.0000"), new BigDecimal("4500.00"));
         CreatePlotterJobResult job = createPlotterJobUseCase.execute(new CreatePlotterJobCommand(
-                UUID.randomUUID(),
+                PlotterCustomerFixture.create(createCustomerUseCase),
                 null,
                 null,
                 roll.inventoryItemId(),

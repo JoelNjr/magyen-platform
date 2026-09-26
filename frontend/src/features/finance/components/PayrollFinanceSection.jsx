@@ -28,7 +28,7 @@ import UpdatePayrollEmployeeCompensationDialog from './UpdatePayrollEmployeeComp
 import {
   formatFinanceDate,
   formatFinanceMoney,
-  formatPayrollPeriodRange,
+  formatPayrollPeriodLabel,
   calendarMonthBoundsFromInput,
   canPaySellerCommission,
   commissionSettlementLabel,
@@ -597,8 +597,8 @@ function PayrollFinanceSection({
 
       <Stack spacing={2}>
         <SectionHeader
-          title="Nómina"
-          subtitle="Generar un período no crea gasto de caja. Solo al pagar se registra el movimiento financiero."
+          title="Nómina mensual"
+          subtitle="Un periodo por mes, del día 1 al último día. Generar no crea gasto de caja. Pagar registra la nómina completa del mes."
           actions={
             <Button
               variant="outlined"
@@ -608,7 +608,7 @@ function PayrollFinanceSection({
                 setGenerateOpen(true)
               }}
             >
-              Generar nómina
+              Generar nómina mensual
             </Button>
           }
         />
@@ -649,7 +649,7 @@ function PayrollFinanceSection({
                         </Typography>
                       </TableCell>
                       <TableCell>
-                        {formatPayrollPeriodRange(
+                        {formatPayrollPeriodLabel(
                           period.periodStart,
                           period.periodEnd
                         )}
@@ -767,13 +767,13 @@ function PayrollFinanceSection({
 
       <ConfirmFinanceActionDialog
         open={Boolean(payTarget)}
-        title="Pagar nómina"
+        title="Pagar nómina del mes"
         description={
           payTarget
-            ? `Empleado: ${payTarget.employeeDisplayName}. Periodo: ${formatPayrollPeriodRange(payTarget.periodStart, payTarget.periodEnd)}. Monto: ${formatFinanceMoney(payTarget.amountSnapshot)}.`
+            ? `Nómina completa del mes: ${formatPayrollPeriodLabel(payTarget.periodStart, payTarget.periodEnd)}. Empleado: ${payTarget.employeeDisplayName}. Monto: ${formatFinanceMoney(payTarget.amountSnapshot)}.`
             : ''
         }
-        confirmLabel="Pagar nómina"
+        confirmLabel="Pagar el mes"
         submittingLabel="Pagando..."
         onClose={() => {
           if (!paying) {
@@ -791,7 +791,7 @@ function PayrollFinanceSection({
         title="Cancelar período de nómina"
         description={
           cancelTarget
-            ? `¿Cancelar el período pendiente de "${cancelTarget.employeeDisplayName}" (${formatPayrollPeriodRange(cancelTarget.periodStart, cancelTarget.periodEnd)})?`
+            ? `¿Cancelar la nómina pendiente de "${cancelTarget.employeeDisplayName}" (${formatPayrollPeriodLabel(cancelTarget.periodStart, cancelTarget.periodEnd)})?`
             : ''
         }
         confirmLabel="Cancelar período"

@@ -14,6 +14,7 @@ import com.magyen.platform.commercial.presentation.customer.request.UpdateCustom
 import com.magyen.platform.commercial.presentation.customer.response.CreateCustomerResponse;
 import com.magyen.platform.commercial.presentation.customer.response.GetCustomersResponse;
 import com.magyen.platform.commercial.presentation.customer.response.UpdateCustomerResponse;
+import com.magyen.platform.commercial.domain.CustomerCategory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
@@ -53,8 +55,12 @@ public class CustomerController {
     }
 
     @GetMapping
-    public ResponseEntity<GetCustomersResponse> getCustomers() {
-        GetCustomersResult result = getCustomersUseCase.execute();
+    public ResponseEntity<GetCustomersResponse> getCustomers(
+            @RequestParam(required = false) String category
+    ) {
+        GetCustomersResult result = category == null || category.isBlank()
+                ? getCustomersUseCase.execute()
+                : getCustomersUseCase.execute(CustomerCategory.of(category));
         GetCustomersResponse response = customerPresentationMapper.toResponse(result);
         return ResponseEntity.ok(response);
     }

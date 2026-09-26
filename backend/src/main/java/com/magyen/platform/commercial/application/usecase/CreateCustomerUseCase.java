@@ -3,7 +3,9 @@ package com.magyen.platform.commercial.application.usecase;
 import com.magyen.platform.commercial.application.dto.CreateCustomerCommand;
 import com.magyen.platform.commercial.application.dto.CreateCustomerResult;
 import com.magyen.platform.commercial.domain.Customer;
+import com.magyen.platform.commercial.domain.CustomerCategory;
 import com.magyen.platform.commercial.domain.CustomerRepository;
+import com.magyen.platform.commercial.domain.exception.QuotationDomainException;
 
 import java.util.Objects;
 
@@ -22,12 +24,22 @@ public class CreateCustomerUseCase {
         Objects.requireNonNull(command, "Command must not be null");
         validateCommand(command);
 
-        Customer customer = Customer.create(command.name());
+        if (command.category() == null) {
+            throw new IllegalArgumentException("Customer category must not be null");
+        }
+        if (command.category() == CustomerCategory.UNCLASSIFIED) {
+            throw new QuotationDomainException(
+                    "New customers must be Magyen or Plotter"
+            );
+        }
+
+        Customer customer = Customer.create(command.name(), command.category());
         Customer savedCustomer = customerRepository.save(customer);
 
         return new CreateCustomerResult(
                 savedCustomer.getId(),
-                savedCustomer.getName()
+                savedCustomer.getName(),
+                savedCustomer.getCategory()
         );
     }
 

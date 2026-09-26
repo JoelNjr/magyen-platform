@@ -67,6 +67,7 @@ public class PayrollPeriod {
             LocalDate expectedPaymentDate,
             FinancialAmount amountSnapshot
     ) {
+        requireFullCalendarMonth(periodStart, periodEnd);
         return new PayrollPeriod(
                 UUID.randomUUID(),
                 employeeId,
@@ -79,6 +80,20 @@ public class PayrollPeriod {
                 null,
                 null
         );
+    }
+
+    /**
+     * Los periodos nuevos cubren un único mes calendario.
+     * La reconstitución de filas históricas no usa esta regla.
+     */
+    public static void requireFullCalendarMonth(LocalDate periodStart, LocalDate periodEnd) {
+        Objects.requireNonNull(periodStart, "Period start must not be null");
+        Objects.requireNonNull(periodEnd, "Period end must not be null");
+        if (periodStart.getDayOfMonth() != 1 || !periodEnd.equals(periodStart.withDayOfMonth(periodStart.lengthOfMonth()))) {
+            throw new FinanceDomainException(
+                    "Payroll period must cover the full calendar month"
+            );
+        }
     }
 
     public static PayrollPeriod reconstitute(

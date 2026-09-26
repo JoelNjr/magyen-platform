@@ -169,7 +169,10 @@ class PlotterInternalExternalUseCaseTest {
     @Test
     void createsExternalJobWithSingleInventoryOutWithoutCommercialOrder() {
         UUID customerId = createCustomerUseCase.execute(
-                new CreateCustomerCommand("Cliente externo IncD-" + UUID.randomUUID().toString().substring(0, 8))
+                new CreateCustomerCommand(
+                        "Cliente externo IncD-" + UUID.randomUUID().toString().substring(0, 8),
+                        com.magyen.platform.commercial.domain.CustomerCategory.PLOTTER
+                )
         ).customerId();
         CreateInventoryItemResult roll = createPaperRoll("80.0000", "8000.00");
         long plotterIncomeBefore = countPlotterIncome();
@@ -289,7 +292,10 @@ class PlotterInternalExternalUseCaseTest {
         assertEquals(1, countInternalIncomes(internalJobId));
 
         UUID customerId = createCustomerUseCase.execute(
-                new CreateCustomerCommand("Retry externo-" + UUID.randomUUID().toString().substring(0, 8))
+                new CreateCustomerCommand(
+                        "Retry externo-" + UUID.randomUUID().toString().substring(0, 8),
+                        com.magyen.platform.commercial.domain.CustomerCategory.PLOTTER
+                )
         ).customerId();
         CreateInventoryItemResult externalRoll = createPaperRoll("80.0000", "8000.00");
         UUID externalJobId = UUID.randomUUID();

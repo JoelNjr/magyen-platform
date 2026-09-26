@@ -18,6 +18,7 @@ public class CustomerPersistenceMapper {
         CustomerEntity customerEntity = new CustomerEntity();
         customerEntity.setId(customer.getId());
         customerEntity.setName(customer.getName());
+        customerEntity.setCategory(customer.getCategory());
         return customerEntity;
     }
 
@@ -26,7 +27,8 @@ public class CustomerPersistenceMapper {
 
         return Customer.reconstitute(
                 customerEntity.getId(),
-                customerEntity.getName()
+                customerEntity.getName(),
+                customerEntity.getCategory()
         );
     }
 }

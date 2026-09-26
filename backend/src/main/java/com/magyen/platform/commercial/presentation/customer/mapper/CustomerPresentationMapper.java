@@ -1,5 +1,6 @@
 package com.magyen.platform.commercial.presentation.customer.mapper;
 
+import com.magyen.platform.commercial.domain.CustomerCategory;
 import com.magyen.platform.commercial.application.dto.CreateCustomerCommand;
 import com.magyen.platform.commercial.application.dto.CreateCustomerResult;
 import com.magyen.platform.commercial.application.dto.CustomerResult;
@@ -27,7 +28,10 @@ public class CustomerPresentationMapper {
     public CreateCustomerCommand toCommand(CreateCustomerRequest request) {
         Objects.requireNonNull(request, "CreateCustomerRequest must not be null");
 
-        return new CreateCustomerCommand(request.name());
+        return new CreateCustomerCommand(
+                request.name(),
+                CustomerCategory.of(request.category())
+        );
     }
 
     public CreateCustomerResponse toResponse(CreateCustomerResult result) {
@@ -35,7 +39,8 @@ public class CustomerPresentationMapper {
 
         return new CreateCustomerResponse(
                 result.customerId(),
-                result.name()
+                result.name(),
+                result.category()
         );
     }
 
@@ -51,7 +56,8 @@ public class CustomerPresentationMapper {
 
         return new UpdateCustomerResponse(
                 result.customerId(),
-                result.name()
+                result.name(),
+                result.category().name()
         );
     }
 
@@ -68,7 +74,8 @@ public class CustomerPresentationMapper {
     private CustomerResponse toCustomerResponse(CustomerResult customer) {
         return new CustomerResponse(
                 customer.customerId(),
-                customer.name()
+                customer.name(),
+                customer.category().name()
         );
     }
 }

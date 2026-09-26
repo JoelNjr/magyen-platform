@@ -12,24 +12,33 @@ public class Customer {
 
     private final UUID id;
     private String name;
+    private final CustomerCategory category;
 
-    private Customer(UUID id, String name) {
+    private Customer(UUID id, String name, CustomerCategory category) {
         this.id = Objects.requireNonNull(id, "Customer id must not be null");
         this.name = requireNonBlank(name, "Customer name must not be blank");
+        this.category = Objects.requireNonNull(category, "Customer category must not be null");
     }
 
     /**
-     * Crea un cliente con identidad nueva.
+     * Crea un cliente Magyen. Los flujos de cotización usan este grupo.
      */
     public static Customer create(String name) {
-        return new Customer(UUID.randomUUID(), name);
+        return create(name, CustomerCategory.MAGYEN);
+    }
+
+    /**
+     * Crea un cliente con identidad nueva y un único grupo comercial.
+     */
+    public static Customer create(String name, CustomerCategory category) {
+        return new Customer(UUID.randomUUID(), name, category);
     }
 
     /**
      * Reconstruye un cliente desde persistencia. No aplica lógica de creación de negocio.
      */
-    public static Customer reconstitute(UUID id, String name) {
-        return new Customer(id, name);
+    public static Customer reconstitute(UUID id, String name, CustomerCategory category) {
+        return new Customer(id, name, category);
     }
 
     /**
@@ -45,6 +54,10 @@ public class Customer {
 
     public String getName() {
         return name;
+    }
+
+    public CustomerCategory getCategory() {
+        return category;
     }
 
     @Override

@@ -2,7 +2,9 @@ package com.magyen.platform.plotter.application.usecase;
 
 import com.magyen.platform.inventory.application.dto.CreateInventoryItemCommand;
 import com.magyen.platform.inventory.application.dto.CreateInventoryItemResult;
+import com.magyen.platform.commercial.application.usecase.CreateCustomerUseCase;
 import com.magyen.platform.inventory.application.usecase.CreateInventoryItemUseCase;
+import com.magyen.platform.shared.testsupport.PlotterCustomerFixture;
 import com.magyen.platform.plotter.application.dto.CreatePlotterJobCommand;
 import com.magyen.platform.plotter.application.dto.CreatePlotterJobResult;
 import com.magyen.platform.plotter.application.dto.GetPlotterJobQuery;
@@ -36,12 +38,15 @@ class PlotterJobUseCaseTest {
     private GetPlotterJobsUseCase getPlotterJobsUseCase;
 
     @Autowired
+    private CreateCustomerUseCase createCustomerUseCase;
+
+    @Autowired
     private CreateInventoryItemUseCase createInventoryItemUseCase;
 
     @Test
     void createsListsAndGetsPlotterJobWithServerCalculatedTotal() {
         CreateInventoryItemResult roll = createPaperRoll();
-        UUID customerId = UUID.randomUUID();
+        UUID customerId = PlotterCustomerFixture.create(createCustomerUseCase);
 
         CreatePlotterJobResult created = createPlotterJobUseCase.execute(new CreatePlotterJobCommand(
                 customerId,

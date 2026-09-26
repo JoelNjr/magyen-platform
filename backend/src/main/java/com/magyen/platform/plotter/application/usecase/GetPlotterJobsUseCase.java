@@ -14,6 +14,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Caso de uso que lista los trabajos de plotter.
@@ -52,6 +53,7 @@ public class GetPlotterJobsUseCase {
         validateRange(query.fromDate(), query.toDate());
 
         List<GetPlotterJobResult> jobs = plotterJobRepository.findAll().stream()
+                .filter(job -> matchesCustomer(job, query.customerId()))
                 .filter(job -> inRange(job.getCreationDate(), query.fromDate(), query.toDate()))
                 .map(this::toResult)
                 .toList();
@@ -68,6 +70,13 @@ public class GetPlotterJobsUseCase {
         if (fromDate.isAfter(toDate)) {
             throw new PlotterDomainException("From date must not be after to date");
         }
+    }
+
+    private static boolean matchesCustomer(PlotterJob job, UUID customerId) {
+        if (customerId == null) {
+            return true;
+        }
+        return customerId.equals(job.getCustomerId());
     }
 
     private static boolean inRange(LocalDate businessDate, LocalDate fromDate, LocalDate toDate) {

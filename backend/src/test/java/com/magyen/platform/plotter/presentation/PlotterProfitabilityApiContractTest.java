@@ -3,6 +3,7 @@ package com.magyen.platform.plotter.presentation;
 import com.magyen.platform.commercial.application.dto.AddQuotationItemCommand;
 import com.magyen.platform.commercial.application.dto.ApproveQuotationCommand;
 import com.magyen.platform.commercial.application.dto.CreateCustomerCommand;
+import com.magyen.platform.commercial.domain.CustomerCategory;
 import com.magyen.platform.commercial.application.dto.CreateOrderFromQuotationCommand;
 import com.magyen.platform.commercial.application.dto.CreateQuotationCommand;
 import com.magyen.platform.commercial.application.usecase.AddQuotationItemUseCase;
@@ -139,7 +140,7 @@ class PlotterProfitabilityApiContractTest {
         ));
 
         createPlotterJobUseCase.execute(new CreatePlotterJobCommand(
-                UUID.randomUUID(),
+                externalPlotterCustomerId(),
                 null,
                 JOB_DATE,
                 roll.inventoryItemId(),
@@ -231,7 +232,7 @@ class PlotterProfitabilityApiContractTest {
         ));
 
         var unpaid = createPlotterJobUseCase.execute(new CreatePlotterJobCommand(
-                UUID.randomUUID(),
+                externalPlotterCustomerId(),
                 null,
                 JOB_DATE,
                 roll.inventoryItemId(),
@@ -242,7 +243,7 @@ class PlotterProfitabilityApiContractTest {
                 null
         ));
         var partial = createPlotterJobUseCase.execute(new CreatePlotterJobCommand(
-                UUID.randomUUID(),
+                externalPlotterCustomerId(),
                 null,
                 JOB_DATE,
                 roll.inventoryItemId(),
@@ -302,5 +303,12 @@ class PlotterProfitabilityApiContractTest {
                 .andExpect(jsonPath("$.externalPaidAmount").value(0.00))
                 .andExpect(jsonPath("$.externalOutstandingAmount").value(0.00))
                 .andExpect(jsonPath("$.wasteJobCount").value(1));
+    }
+
+    private UUID externalPlotterCustomerId() {
+        return createCustomerUseCase.execute(new CreateCustomerCommand(
+                "Externo API " + UUID.randomUUID(),
+                CustomerCategory.PLOTTER
+        )).customerId();
     }
 }

@@ -11,8 +11,12 @@ export async function getQuotations(params = {}) {
   return response.data
 }
 
-export async function getCustomers() {
-  const response = await httpClient.get('/customers')
+export async function getCustomers(params = {}) {
+  const response = await httpClient.get('/customers', {
+    params: {
+      category: params.category || undefined,
+    },
+  })
   return response.data
 }
 

@@ -62,6 +62,22 @@ public class PlotterCommercialOrderAdapter implements PlotterCommercialOrderPort
                 .findFirst();
     }
 
+    @Override
+    public void requireExternalPlotterCustomer(UUID customerId) {
+        Objects.requireNonNull(customerId, "Customer id must not be null");
+        var customer = getCustomersUseCase.execute().customers().stream()
+                .filter(candidate -> customerId.equals(candidate.customerId()))
+                .findFirst()
+                .orElseThrow(() -> new PlotterDomainException(
+                        "External plotter jobs require a Plotter customer"
+                ));
+        if (customer.category() == null || !customer.category().allowsExternalPlotterJob()) {
+            throw new PlotterDomainException(
+                    "External plotter jobs require a Plotter customer"
+            );
+        }
+    }
+
     private static PlotterCommercialOrderView toView(GetOrderResult order) {
         LocalDate deliveryDate = order.deliveryCommitment() == null
                 ? null

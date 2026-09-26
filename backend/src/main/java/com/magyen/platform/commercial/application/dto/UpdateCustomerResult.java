@@ -1,5 +1,7 @@
 package com.magyen.platform.commercial.application.dto;
 
+import com.magyen.platform.commercial.domain.CustomerCategory;
+
 import java.util.UUID;
 
 /**
@@ -7,6 +9,7 @@ import java.util.UUID;
  */
 public record UpdateCustomerResult(
         UUID customerId,
-        String name
+        String name,
+        CustomerCategory category
 ) {
 }

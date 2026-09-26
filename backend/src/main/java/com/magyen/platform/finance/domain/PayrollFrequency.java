@@ -6,22 +6,19 @@ import java.util.Locale;
 import java.util.Objects;
 
 /**
- * Frecuencia de compensación fija.
+ * Frecuencia de la compensación fija.
  * <p>
- * Increment 10 solo soporta nómina quincenal (14 días).
+ * Los periodos nuevos cubren el mes calendario. {@link #BIWEEKLY} permanece
+ * para empleados ya persistidos; la generación no abre un segundo periodo
+ * dentro del mismo mes.
  */
 public enum PayrollFrequency {
 
-    BIWEEKLY(14);
+    MONTHLY,
+    BIWEEKLY;
 
-    private final int periodDays;
-
-    PayrollFrequency(int periodDays) {
-        this.periodDays = periodDays;
-    }
-
-    public int getPeriodDays() {
-        return periodDays;
+    public boolean participatesInFixedPayroll() {
+        return this == MONTHLY || this == BIWEEKLY;
     }
 
     public static PayrollFrequency of(String value) {

@@ -3,6 +3,7 @@ package com.magyen.platform.finance.domain;
 import com.magyen.platform.finance.domain.exception.FinanceDomainException;
 
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -66,7 +67,7 @@ public class PayrollEmployee {
                 true,
                 PayrollCompensationType.FIXED_PAYROLL,
                 fixedAmount,
-                PayrollFrequency.BIWEEKLY,
+                PayrollFrequency.MONTHLY,
                 effectiveFrom,
                 effectiveTo,
                 false
@@ -127,7 +128,7 @@ public class PayrollEmployee {
         Objects.requireNonNull(fixedAmount, "Fixed amount must not be null");
         Objects.requireNonNull(effectiveFrom, "Effective from must not be null");
         this.fixedAmount = fixedAmount;
-        this.frequency = PayrollFrequency.BIWEEKLY;
+        this.frequency = PayrollFrequency.MONTHLY;
         this.effectiveFrom = effectiveFrom;
         this.effectiveTo = effectiveTo;
         validateCompensationShape();
@@ -179,15 +180,17 @@ public class PayrollEmployee {
         return active
                 && compensationType == PayrollCompensationType.FIXED_PAYROLL
                 && fixedAmount != null
-                && frequency == PayrollFrequency.BIWEEKLY
+                && frequency != null
+                && frequency.participatesInFixedPayroll()
                 && effectiveFrom != null;
     }
 
     /**
-     * Resuelve períodos biweekly alineados a {@code effectiveFrom} cuyo
-     * {@code periodEnd} cae en {@code [fromDate, toDate]}.
+     * Un periodo por mes calendario que intersecta {@code [fromDate, toDate]}
+     * y la vigencia del empleado. El monto del periodo es el valor fijo vigente,
+     * una sola vez.
      */
-    public List<ResolvedPayrollPeriodWindow> resolveBiweeklyPeriodWindows(
+    public List<ResolvedPayrollPeriodWindow> resolveMonthlyPeriodWindows(
             LocalDate fromDate,
             LocalDate toDate
     ) {
@@ -198,23 +201,22 @@ public class PayrollEmployee {
         }
 
         List<ResolvedPayrollPeriodWindow> windows = new ArrayList<>();
-        int periodDays = frequency.getPeriodDays();
-        LocalDate cursor = effectiveFrom;
+        YearMonth cursor = YearMonth.from(fromDate);
+        YearMonth last = YearMonth.from(toDate);
 
-        while (!cursor.isAfter(toDate)) {
-            LocalDate periodStart = cursor;
-            LocalDate periodEnd = cursor.plusDays(periodDays - 1L);
-
-            if (effectiveTo != null && periodStart.isAfter(effectiveTo)) {
-                break;
+        while (!cursor.isAfter(last)) {
+            LocalDate periodStart = cursor.atDay(1);
+            LocalDate periodEnd = cursor.atEndOfMonth();
+            boolean overlapsValidity = !effectiveFrom.isAfter(periodEnd)
+                    && (effectiveTo == null || !effectiveTo.isBefore(periodStart));
+            if (overlapsValidity) {
+                windows.add(new ResolvedPayrollPeriodWindow(
+                        periodStart,
+                        periodEnd,
+                        PayrollBusinessDayAdjuster.adjustToBusinessDay(periodEnd)
+                ));
             }
-
-            if (!periodEnd.isBefore(fromDate) && !periodEnd.isAfter(toDate)) {
-                LocalDate expectedPaymentDate = PayrollBusinessDayAdjuster.adjustToBusinessDay(periodEnd);
-                windows.add(new ResolvedPayrollPeriodWindow(periodStart, periodEnd, expectedPaymentDate));
-            }
-
-            cursor = cursor.plusDays(periodDays);
+            cursor = cursor.plusMonths(1);
         }
 
         return List.copyOf(windows);
@@ -281,8 +283,8 @@ public class PayrollEmployee {
             if (frequency == null) {
                 throw new FinanceDomainException("FIXED_PAYROLL requires frequency");
             }
-            if (frequency != PayrollFrequency.BIWEEKLY) {
-                throw new FinanceDomainException("FIXED_PAYROLL currently supports only BIWEEKLY frequency");
+            if (!frequency.participatesInFixedPayroll()) {
+                throw new FinanceDomainException("FIXED_PAYROLL requires a monthly payroll frequency");
             }
             if (effectiveFrom == null) {
                 throw new FinanceDomainException("FIXED_PAYROLL requires effectiveFrom");

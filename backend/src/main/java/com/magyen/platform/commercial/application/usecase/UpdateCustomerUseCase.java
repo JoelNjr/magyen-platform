@@ -32,7 +32,8 @@ public class UpdateCustomerUseCase {
 
         return new UpdateCustomerResult(
                 savedCustomer.getId(),
-                savedCustomer.getName()
+                savedCustomer.getName(),
+                savedCustomer.getCategory()
         );
     }
 

@@ -10,6 +10,8 @@ import com.magyen.platform.finance.domain.FinancialTransactionType;
 import com.magyen.platform.inventory.application.dto.CreateInventoryItemCommand;
 import com.magyen.platform.inventory.application.dto.CreateInventoryItemResult;
 import com.magyen.platform.inventory.application.usecase.CreateInventoryItemUseCase;
+import com.magyen.platform.commercial.application.usecase.CreateCustomerUseCase;
+import com.magyen.platform.shared.testsupport.PlotterCustomerFixture;
 import com.magyen.platform.plotter.application.dto.CreatePlotterJobCommand;
 import com.magyen.platform.plotter.application.dto.CreatePlotterJobResult;
 import com.magyen.platform.plotter.application.dto.GetPlotterJobQuery;
@@ -57,6 +59,9 @@ class PlotterPaymentFinanceIntegrationTest {
 
     @Autowired
     private RegisterPlotterPaymentIncomeUseCase registerPlotterPaymentIncomeUseCase;
+
+    @Autowired
+    private CreateCustomerUseCase createCustomerUseCase;
 
     @Autowired
     private FinancialTransactionRepository financialTransactionRepository;
@@ -224,7 +229,7 @@ class PlotterPaymentFinanceIntegrationTest {
         );
 
         return createPlotterJobUseCase.execute(new CreatePlotterJobCommand(
-                UUID.randomUUID(),
+                PlotterCustomerFixture.create(createCustomerUseCase),
                 null,
                 null,
                 roll.inventoryItemId(),

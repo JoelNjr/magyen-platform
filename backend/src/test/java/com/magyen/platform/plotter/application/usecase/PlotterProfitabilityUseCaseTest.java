@@ -3,6 +3,7 @@ package com.magyen.platform.plotter.application.usecase;
 import com.magyen.platform.commercial.application.dto.AddQuotationItemCommand;
 import com.magyen.platform.commercial.application.dto.ApproveQuotationCommand;
 import com.magyen.platform.commercial.application.dto.CreateCustomerCommand;
+import com.magyen.platform.commercial.domain.CustomerCategory;
 import com.magyen.platform.commercial.application.dto.CreateOrderFromQuotationCommand;
 import com.magyen.platform.commercial.application.dto.CreateQuotationCommand;
 import com.magyen.platform.commercial.application.usecase.AddQuotationItemUseCase;
@@ -95,7 +96,7 @@ class PlotterProfitabilityUseCaseTest {
         CommercialOrderFixture order = createCommercialOrder();
 
         CreatePlotterJobResult external = createPlotterJobUseCase.execute(new CreatePlotterJobCommand(
-                UUID.randomUUID(),
+                externalPlotterCustomerId(),
                 null,
                 JOB_DATE,
                 roll.inventoryItemId(),
@@ -210,7 +211,7 @@ class PlotterProfitabilityUseCaseTest {
         createPurchasedInk("90000.00", LocalDate.of(2099, 2, 10));
 
         CreatePlotterJobResult external = createPlotterJobUseCase.execute(new CreatePlotterJobCommand(
-                UUID.randomUUID(),
+                externalPlotterCustomerId(),
                 null,
                 JOB_DATE,
                 createPaperRoll("5000.00").inventoryItemId(),
@@ -261,7 +262,7 @@ class PlotterProfitabilityUseCaseTest {
     void dateFilterExcludesJobsOutsidePeriod() {
         CreateInventoryItemResult roll = createPaperRoll("5000.00");
         createPlotterJobUseCase.execute(new CreatePlotterJobCommand(
-                UUID.randomUUID(),
+                externalPlotterCustomerId(),
                 null,
                 LocalDate.of(2099, 1, 15),
                 roll.inventoryItemId(),
@@ -288,7 +289,7 @@ class PlotterProfitabilityUseCaseTest {
         );
 
         createPlotterJobUseCase.execute(new CreatePlotterJobCommand(
-                UUID.randomUUID(),
+                externalPlotterCustomerId(),
                 null,
                 LocalDate.of(2099, 5, 4),
                 roll.inventoryItemId(),
@@ -299,7 +300,7 @@ class PlotterProfitabilityUseCaseTest {
                 null
         ));
         CreatePlotterJobResult partial = createPlotterJobUseCase.execute(new CreatePlotterJobCommand(
-                UUID.randomUUID(),
+                externalPlotterCustomerId(),
                 null,
                 LocalDate.of(2099, 5, 5),
                 roll.inventoryItemId(),
@@ -310,7 +311,7 @@ class PlotterProfitabilityUseCaseTest {
                 null
         ));
         CreatePlotterJobResult paid = createPlotterJobUseCase.execute(new CreatePlotterJobCommand(
-                UUID.randomUUID(),
+                externalPlotterCustomerId(),
                 null,
                 LocalDate.of(2099, 5, 6),
                 roll.inventoryItemId(),
@@ -446,6 +447,13 @@ class PlotterProfitabilityUseCaseTest {
                         "compra tinta analítica"
                 )
         ));
+    }
+
+    private UUID externalPlotterCustomerId() {
+        return createCustomerUseCase.execute(new CreateCustomerCommand(
+                "Externo " + UUID.randomUUID(),
+                CustomerCategory.PLOTTER
+        )).customerId();
     }
 
     private CreateInventoryItemResult createPaperRoll(String unitCost) {

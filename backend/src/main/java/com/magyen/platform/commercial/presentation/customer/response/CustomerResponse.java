@@ -7,6 +7,7 @@ import java.util.UUID;
  */
 public record CustomerResponse(
         UUID customerId,
-        String name
+        String name,
+        String category
 ) {
 }

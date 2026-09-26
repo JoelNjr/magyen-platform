@@ -24,6 +24,7 @@ import InventoryMaterialDetailPage from '../features/inventory/pages/InventoryMa
 import InventoryPage from '../features/inventory/pages/InventoryPage'
 import PlotterJobDetailPage from '../features/plotter/pages/PlotterJobDetailPage'
 import PlotterJobsPage from '../features/plotter/pages/PlotterJobsPage'
+import PlotterPendingBalancesPage from '../features/plotter/pages/PlotterPendingBalancesPage'
 import PlotterProfitabilityPage from '../features/plotter/pages/PlotterProfitabilityPage'
 import ProductionOrderDetailPage from '../features/production/pages/ProductionOrderDetailPage'
 import ProductionOrdersPage from '../features/production/pages/ProductionOrdersPage'
@@ -92,6 +93,10 @@ function AppRouter() {
               element={<InventoryDetailPage />}
             />
             <Route path="inventory" element={<InventoryPage />} />
+            <Route
+              path="plotter/pending-balances"
+              element={<PlotterPendingBalancesPage />}
+            />
             <Route
               path="plotter/profitability"
               element={<PlotterProfitabilityPage />}

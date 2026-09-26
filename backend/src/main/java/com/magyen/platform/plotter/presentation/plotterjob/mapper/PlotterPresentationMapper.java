@@ -7,6 +7,7 @@ import com.magyen.platform.plotter.application.dto.GetPlotterJobResult;
 import com.magyen.platform.plotter.application.dto.GetPlotterJobsResult;
 import com.magyen.platform.plotter.application.dto.GetPlotterPaymentsQuery;
 import com.magyen.platform.plotter.application.dto.GetPlotterPaymentsResult;
+import com.magyen.platform.plotter.application.dto.GetPlotterPendingBalancesResult;
 import com.magyen.platform.plotter.application.dto.GetPlotterProfitabilityResult;
 import com.magyen.platform.plotter.application.dto.PlotterInternalOrderCostItem;
 import com.magyen.platform.plotter.application.dto.RegisterPlotterPaymentCommand;
@@ -17,6 +18,7 @@ import com.magyen.platform.plotter.presentation.plotterjob.request.RegisterPlott
 import com.magyen.platform.plotter.presentation.plotterjob.response.CreatePlotterJobResponse;
 import com.magyen.platform.plotter.presentation.plotterjob.response.GetPlotterJobResponse;
 import com.magyen.platform.plotter.presentation.plotterjob.response.GetPlotterJobsResponse;
+import com.magyen.platform.plotter.presentation.plotterjob.response.GetPlotterPendingBalancesResponse;
 import com.magyen.platform.plotter.presentation.plotterjob.response.GetPlotterPaymentResponse;
 import com.magyen.platform.plotter.presentation.plotterjob.response.GetPlotterPaymentsResponse;
 import com.magyen.platform.plotter.presentation.plotterjob.response.GetPlotterProfitabilityResponse;
@@ -157,6 +159,48 @@ public class PlotterPresentationMapper {
                 result.totalAmount(),
                 result.paidAmount(),
                 result.outstandingAmount()
+        );
+    }
+
+    public GetPlotterPendingBalancesResponse toPendingBalancesResponse(GetPlotterPendingBalancesResult result) {
+        Objects.requireNonNull(result, "GetPlotterPendingBalancesResult must not be null");
+        return new GetPlotterPendingBalancesResponse(
+                result.customers().stream()
+                        .map(customer -> new GetPlotterPendingBalancesResponse.CustomerBalanceResponse(
+                                customer.customerId(),
+                                customer.customerName(),
+                                customer.openJobCount(),
+                                customer.billedAmount(),
+                                customer.paidAmount(),
+                                customer.outstandingAmount(),
+                                customer.jobs().stream()
+                                        .map(job -> new GetPlotterPendingBalancesResponse.JobBalanceResponse(
+                                                job.plotterJobId(),
+                                                job.creationDate(),
+                                                job.totalAmount(),
+                                                job.paidAmount(),
+                                                job.outstandingAmount(),
+                                                job.status().name()
+                                        ))
+                                        .toList()
+                        ))
+                        .toList(),
+                result.openJobCount(),
+                result.customerCount(),
+                result.externalBilledAmount(),
+                result.externalPaidAmount(),
+                result.outstandingAmount(),
+                result.negativeBalances().stream()
+                        .map(item -> new GetPlotterPendingBalancesResponse.NegativeBalanceResponse(
+                                item.plotterJobId(),
+                                item.customerId(),
+                                item.customerName(),
+                                item.creationDate(),
+                                item.totalAmount(),
+                                item.paidAmount(),
+                                item.outstandingAmount()
+                        ))
+                        .toList()
         );
     }
 

@@ -22,6 +22,7 @@ import com.magyen.platform.plotter.application.usecase.GetInternalPlotterOrderCo
 import com.magyen.platform.plotter.application.usecase.GetPlotterJobUseCase;
 import com.magyen.platform.plotter.application.usecase.GetPlotterJobsUseCase;
 import com.magyen.platform.plotter.application.usecase.GetPlotterPaymentsUseCase;
+import com.magyen.platform.plotter.application.usecase.GetPlotterPendingBalancesUseCase;
 import com.magyen.platform.plotter.application.usecase.GetPlotterProfitabilityUseCase;
 import com.magyen.platform.plotter.application.usecase.RegisterPlotterPaymentUseCase;
 import com.magyen.platform.plotter.domain.PlotterJobRepository;
@@ -183,6 +184,19 @@ public class PlotterConfiguration {
             PlotterPaymentRepository plotterPaymentRepository
     ) {
         return new GetPlotterPaymentsUseCase(plotterJobRepository, plotterPaymentRepository);
+    }
+
+    @Bean
+    public GetPlotterPendingBalancesUseCase getPlotterPendingBalancesUseCase(
+            PlotterJobRepository plotterJobRepository,
+            PlotterPaymentRepository plotterPaymentRepository,
+            PlotterCommercialOrderPort plotterCommercialOrderPort
+    ) {
+        return new GetPlotterPendingBalancesUseCase(
+                plotterJobRepository,
+                plotterPaymentRepository,
+                plotterCommercialOrderPort
+        );
     }
 
     @Bean

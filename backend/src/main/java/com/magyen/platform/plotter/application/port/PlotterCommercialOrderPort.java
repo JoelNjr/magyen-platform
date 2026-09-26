@@ -16,4 +16,10 @@ public interface PlotterCommercialOrderPort {
     Optional<PlotterCommercialOrderView> findOrder(UUID orderId);
 
     Optional<String> findCustomerName(UUID customerId);
+
+    /**
+     * Exige que el cliente exista y sea del grupo PLOTTER.
+     * Un cliente Magyen o sin clasificar no puede registrar un trabajo externo.
+     */
+    void requireExternalPlotterCustomer(UUID customerId);
 }
