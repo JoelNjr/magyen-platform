@@ -340,6 +340,11 @@ class RecurringFinancialObligationOccurrenceUseCaseTest {
             }
 
             @Override
+            public List<FinancialTransaction> findByOrderId(UUID orderId) {
+                return List.of();
+            }
+
+            @Override
             public BigDecimal sumAmountByTypeBetween(
                     FinancialTransactionType type,
                     LocalDate fromDate,

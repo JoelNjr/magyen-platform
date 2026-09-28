@@ -13,6 +13,8 @@ public record PlotterCommercialOrderView(
         UUID customerId,
         String customerName,
         LocalDate confirmationDate,
-        LocalDate deliveryDate
+        LocalDate deliveryDate,
+        String status,
+        boolean openForPlotterJob
 ) {
 }

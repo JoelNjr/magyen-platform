@@ -62,6 +62,28 @@ export function formatPlotterMoney(value) {
   })}`
 }
 
+export function formatPlotterPendingMonthLabel(year, month) {
+  const monthIndex = Number(month) - 1
+  const labels = [
+    'Enero',
+    'Febrero',
+    'Marzo',
+    'Abril',
+    'Mayo',
+    'Junio',
+    'Julio',
+    'Agosto',
+    'Septiembre',
+    'Octubre',
+    'Noviembre',
+    'Diciembre',
+  ]
+  if (!year || monthIndex < 0 || monthIndex > 11) {
+    return '—'
+  }
+  return `${labels[monthIndex]} ${year}`
+}
+
 export function formatPlotterDate(value) {
   if (!value) {
     return '—'

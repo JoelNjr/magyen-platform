@@ -41,6 +41,7 @@ import com.magyen.platform.finance.application.usecase.PayPayrollPeriodUseCase;
 import com.magyen.platform.finance.application.usecase.PaySellerCommissionSettlementUseCase;
 import com.magyen.platform.finance.application.usecase.PayRecurringFinancialObligationOccurrenceUseCase;
 import com.magyen.platform.finance.application.usecase.RegisterFinancialTransactionUseCase;
+import com.magyen.platform.finance.application.usecase.SumManualOrderExpensesUseCase;
 import com.magyen.platform.finance.application.usecase.RegisterPaymentUseCase;
 import com.magyen.platform.finance.application.usecase.RegisterPlotterPaymentIncomeUseCase;
 import com.magyen.platform.finance.application.usecase.RegisterProductionAdditionalCostExpenseUseCase;
@@ -165,9 +166,17 @@ public class FinanceConfiguration {
 
     @Bean
     public RegisterFinancialTransactionUseCase registerFinancialTransactionUseCase(
+            FinancialTransactionRepository financialTransactionRepository,
+            OrderRepository orderRepository
+    ) {
+        return new RegisterFinancialTransactionUseCase(financialTransactionRepository, orderRepository);
+    }
+
+    @Bean
+    public SumManualOrderExpensesUseCase sumManualOrderExpensesUseCase(
             FinancialTransactionRepository financialTransactionRepository
     ) {
-        return new RegisterFinancialTransactionUseCase(financialTransactionRepository);
+        return new SumManualOrderExpensesUseCase(financialTransactionRepository);
     }
 
     @Bean

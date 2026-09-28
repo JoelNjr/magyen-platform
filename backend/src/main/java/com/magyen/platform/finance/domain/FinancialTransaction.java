@@ -25,6 +25,7 @@ public class FinancialTransaction {
     private final String observation;
     private final FinancialTransactionSourceType sourceType;
     private final UUID sourceId;
+    private final UUID orderId;
 
     private FinancialTransaction(
             UUID id,
@@ -35,7 +36,8 @@ public class FinancialTransaction {
             String description,
             String observation,
             FinancialTransactionSourceType sourceType,
-            UUID sourceId
+            UUID sourceId,
+            UUID orderId
     ) {
         this.id = Objects.requireNonNull(id, "Financial transaction id must not be null");
         this.type = Objects.requireNonNull(type, "Transaction type must not be null");
@@ -46,6 +48,7 @@ public class FinancialTransaction {
         this.observation = normalizeOptionalText(observation, "Observation");
         this.sourceType = Objects.requireNonNull(sourceType, "Source type must not be null");
         this.sourceId = sourceId;
+        this.orderId = orderId;
     }
 
     /**
@@ -61,6 +64,34 @@ public class FinancialTransaction {
             FinancialTransactionSourceType sourceType,
             UUID sourceId
     ) {
+        return create(
+                type,
+                amount,
+                transactionDate,
+                category,
+                description,
+                observation,
+                sourceType,
+                sourceId,
+                null
+        );
+    }
+
+    /**
+     * Registra un movimiento. {@code orderId} es una referencia blanda opcional
+     * a la Orden comercial; no reemplaza {@code sourceId}.
+     */
+    public static FinancialTransaction create(
+            FinancialTransactionType type,
+            FinancialAmount amount,
+            LocalDate transactionDate,
+            String category,
+            String description,
+            String observation,
+            FinancialTransactionSourceType sourceType,
+            UUID sourceId,
+            UUID orderId
+    ) {
         FinancialTransactionSourceType effectiveSourceType = sourceType == null
                 ? FinancialTransactionSourceType.MANUAL
                 : sourceType;
@@ -74,7 +105,8 @@ public class FinancialTransaction {
                 description,
                 observation,
                 effectiveSourceType,
-                sourceId
+                sourceId,
+                orderId
         );
     }
 
@@ -92,6 +124,35 @@ public class FinancialTransaction {
             FinancialTransactionSourceType sourceType,
             UUID sourceId
     ) {
+        return reconstitute(
+                id,
+                type,
+                amount,
+                transactionDate,
+                category,
+                description,
+                observation,
+                sourceType,
+                sourceId,
+                null
+        );
+    }
+
+    /**
+     * Reconstruye un movimiento desde persistencia, incluida la orden asociada.
+     */
+    public static FinancialTransaction reconstitute(
+            UUID id,
+            FinancialTransactionType type,
+            FinancialAmount amount,
+            LocalDate transactionDate,
+            String category,
+            String description,
+            String observation,
+            FinancialTransactionSourceType sourceType,
+            UUID sourceId,
+            UUID orderId
+    ) {
         return new FinancialTransaction(
                 id,
                 type,
@@ -101,7 +162,8 @@ public class FinancialTransaction {
                 description,
                 observation,
                 sourceType == null ? FinancialTransactionSourceType.MANUAL : sourceType,
-                sourceId
+                sourceId,
+                orderId
         );
     }
 
@@ -142,6 +204,13 @@ public class FinancialTransaction {
     }
 
     /**
+     * Orden comercial asociada de forma opcional. {@code null} no atribuye el movimiento.
+     */
+    public UUID getOrderId() {
+        return orderId;
+    }
+
+    /**
      * Reemplaza monto y descripción conservando la identidad del movimiento.
      * <p>
      * Se usa para acumular pagos de mano de obra en el movimiento semanal.
@@ -156,7 +225,8 @@ public class FinancialTransaction {
                 newDescription,
                 observation,
                 sourceType,
-                sourceId
+                sourceId,
+                orderId
         );
     }
 
@@ -177,7 +247,8 @@ public class FinancialTransaction {
                 newDescription,
                 newObservation,
                 sourceType,
-                sourceId
+                sourceId,
+                orderId
         );
     }
 

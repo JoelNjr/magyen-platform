@@ -35,7 +35,8 @@ public class FinancialTransactionPresentationMapper {
                 request.description(),
                 request.observation(),
                 parseSourceType(request.sourceType()),
-                request.sourceId()
+                request.sourceId(),
+                request.orderId()
         );
     }
 
@@ -51,7 +52,8 @@ public class FinancialTransactionPresentationMapper {
                 result.description(),
                 result.observation(),
                 result.sourceType().name(),
-                result.sourceId()
+                result.sourceId(),
+                result.orderId()
         );
     }
 
@@ -72,7 +74,8 @@ public class FinancialTransactionPresentationMapper {
                 result.description(),
                 result.observation(),
                 result.sourceType().name(),
-                result.sourceId()
+                result.sourceId(),
+                result.orderId()
         );
     }
 

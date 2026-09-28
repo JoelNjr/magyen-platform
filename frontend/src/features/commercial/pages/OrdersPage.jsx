@@ -3,9 +3,12 @@ import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined'
 import {
   Alert,
   Button,
-  Chip,
+  FormControl,
+  MenuItem,
   Paper,
+  Select,
   Skeleton,
+  Snackbar,
   Stack,
   Table,
   TableBody,
@@ -15,13 +18,29 @@ import {
   TableRow,
 } from '@mui/material'
 import { Link as RouterLink, useNavigate } from 'react-router-dom'
+import DeliverOrderDialog from '../components/DeliverOrderDialog'
 import { formatDisplayDate } from '../presentation/formatDisplayDate'
-import { getOrderStatusChipProps } from '../presentation/orderStatusPresentation'
+import {
+  applyOrderStatusToList,
+  canSubmitOrderStatusChange,
+  hasNextOrderStatus,
+  orderStatusChangeErrorMessage,
+  orderStatusChangeOptions,
+  orderStatusChangeSuccessMessage,
+  resolveOrderStatusSelection,
+} from '../presentation/orderListStatusChange'
 import {
   buildCustomerNameMap,
   resolveCustomerName,
 } from '../presentation/resolveCustomerName'
-import { getCustomers, getOrders } from '../services/commercialService'
+import {
+  closeOrder,
+  deliverOrder,
+  getCustomers,
+  getOrders,
+  markOrderReadyForDelivery,
+  startOrderProduction,
+} from '../services/commercialService'
 import MonthPeriodNavigator from '../../../shared/period/MonthPeriodNavigator'
 import { formatMonthPeriodLabel, getCalendarMonthRange } from '../../../shared/period/monthPeriod'
 import PageHeader from '../../../layout/PageHeader'
@@ -69,6 +88,12 @@ function OrdersPage() {
   const [customerNameById, setCustomerNameById] = useState({})
   const [loading, setLoading] = useState(true)
   const [failed, setFailed] = useState(false)
+  const [changingOrderId, setChangingOrderId] = useState(null)
+  const [statusError, setStatusError] = useState('')
+  const [successMessage, setSuccessMessage] = useState('')
+  const [successOpen, setSuccessOpen] = useState(false)
+  const [deliverTarget, setDeliverTarget] = useState(null)
+  const [deliverError, setDeliverError] = useState('')
 
   useEffect(() => {
     setLoading(true)
@@ -91,6 +116,95 @@ function OrdersPage() {
         setCustomerNameById({})
       })
   }, [period.fromDate, period.toDate])
+
+  function showStatusSuccess(status) {
+    setStatusError('')
+    setSuccessMessage(orderStatusChangeSuccessMessage(status))
+    setSuccessOpen(true)
+  }
+
+  async function commitStatusChange(order, action) {
+    if (action === 'start-production') {
+      return startOrderProduction(order.orderId)
+    }
+    if (action === 'ready-for-delivery') {
+      return markOrderReadyForDelivery(order.orderId)
+    }
+    if (action === 'close') {
+      return closeOrder(order.orderId)
+    }
+    return null
+  }
+
+  async function handleStatusChange(order, selectedStatus) {
+    if (!canSubmitOrderStatusChange(changingOrderId, order.orderId)) {
+      return
+    }
+    const decision = resolveOrderStatusSelection(order.status, selectedStatus)
+    if (decision.type === 'none') {
+      return
+    }
+    if (decision.type === 'invalid') {
+      setStatusError('Esa transición de estado no está permitida.')
+      return
+    }
+    if (decision.type === 'requires-delivery-date') {
+      setDeliverError('')
+      setDeliverTarget(order)
+      return
+    }
+
+    setStatusError('')
+    setChangingOrderId(order.orderId)
+    try {
+      const updated = await commitStatusChange(order, decision.action)
+      if (!updated?.status) {
+        setStatusError('No fue posible confirmar el nuevo estado del pedido.')
+        return
+      }
+      setOrders((current) =>
+        applyOrderStatusToList(current, order.orderId, updated.status)
+      )
+      showStatusSuccess(updated.status)
+    } catch (error) {
+      setStatusError(
+        orderStatusChangeErrorMessage(
+          error,
+          'No fue posible actualizar el estado del pedido.'
+        )
+      )
+    } finally {
+      setChangingOrderId(null)
+    }
+  }
+
+  async function handleDeliverFromList(deliveryDate) {
+    if (!deliverTarget || !canSubmitOrderStatusChange(changingOrderId, deliverTarget.orderId)) {
+      return
+    }
+    setDeliverError('')
+    setStatusError('')
+    setChangingOrderId(deliverTarget.orderId)
+    try {
+      const updated = await deliverOrder(deliverTarget.orderId, deliveryDate)
+      if (!updated?.status) {
+        setDeliverError('No fue posible confirmar el nuevo estado del pedido.')
+        return
+      }
+      const deliveredOrderId = deliverTarget.orderId
+      setOrders((current) =>
+        applyOrderStatusToList(current, deliveredOrderId, updated.status)
+      )
+      setDeliverTarget(null)
+      showStatusSuccess(updated.status)
+    } catch (error) {
+      setDeliverError(
+        orderStatusChangeErrorMessage(error, 'No fue posible registrar la entrega.')
+      )
+    } finally {
+      setChangingOrderId(null)
+    }
+  }
 
   return (
     <Stack spacing={3}>
@@ -169,6 +283,12 @@ function OrdersPage() {
         </Alert>
       )}
 
+      {statusError ? (
+        <Alert severity="error" onClose={() => setStatusError('')}>
+          {statusError}
+        </Alert>
+      ) : null}
+
       {!loading && !failed && orders.length === 0 && (
         <EmptyState
           icon={<Inventory2OutlinedIcon color="action" sx={{ fontSize: 48 }} />}
@@ -188,7 +308,8 @@ function OrdersPage() {
             <OrdersTableHead />
             <TableBody>
               {orders.map((order) => {
-                const statusChip = getOrderStatusChipProps(order.status)
+                const statusOptions = orderStatusChangeOptions(order.status)
+                const statusBusy = changingOrderId === order.orderId
 
                 return (
                   <TableRow key={order.orderId} hover>
@@ -206,11 +327,20 @@ function OrdersPage() {
                         )}
                     </TableCell>
                     <TableCell align="center">
-                      <Chip
-                        label={statusChip.label}
-                        color={statusChip.color}
-                        size="small"
-                      />
+                      <FormControl size="small" sx={{ minWidth: 180 }}>
+                        <Select
+                          value={order.status}
+                          disabled={Boolean(changingOrderId) || !hasNextOrderStatus(order.status)}
+                          onChange={(event) => handleStatusChange(order, event.target.value)}
+                          inputProps={{ 'aria-label': `Estado de ${order.orderNumber}` }}
+                        >
+                          {statusOptions.map((option) => (
+                            <MenuItem key={option.status} value={option.status}>
+                              {statusBusy && option.current ? 'Actualizando…' : option.label}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
                     </TableCell>
                     <TableCell>
                       {formatDisplayDate(order.confirmationDate)}
@@ -226,6 +356,35 @@ function OrdersPage() {
           </Table>
         </TableContainer>
       )}
+
+      <DeliverOrderDialog
+        open={Boolean(deliverTarget)}
+        confirmationDate={deliverTarget?.confirmationDate}
+        onClose={() => {
+          if (!changingOrderId) {
+            setDeliverTarget(null)
+            setDeliverError('')
+          }
+        }}
+        onSubmit={handleDeliverFromList}
+        submitting={Boolean(changingOrderId)}
+        errorMessage={deliverError}
+      />
+
+      <Snackbar
+        open={successOpen}
+        autoHideDuration={4000}
+        onClose={() => setSuccessOpen(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          severity="success"
+          variant="filled"
+          onClose={() => setSuccessOpen(false)}
+        >
+          {successMessage}
+        </Alert>
+      </Snackbar>
     </Stack>
   )
 }

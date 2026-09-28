@@ -114,7 +114,8 @@ public class CreatePlotterJobUseCase {
             if (orderId == null) {
                 throw new PlotterDomainException("Internal Magyen plotter jobs require a commercial order");
             }
-            PlotterCommercialOrderView commercialOrder = plotterCommercialOrderPort.requireExistingOrder(orderId);
+            PlotterCommercialOrderView commercialOrder =
+                    plotterCommercialOrderPort.requireOrderOpenForPlotterJob(orderId);
             customerId = commercialOrder.customerId();
             validateJobDate(creationDate, commercialOrder);
         } else if (orderId != null) {

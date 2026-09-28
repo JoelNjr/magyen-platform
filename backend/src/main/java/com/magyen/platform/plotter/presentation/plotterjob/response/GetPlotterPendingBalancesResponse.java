@@ -6,10 +6,12 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Deuda all-time de trabajos externos de Plotter. No es un saldo almacenado.
+ * Deuda de trabajos externos de Plotter. No es un saldo almacenado.
+ * {@code months} agrupa por la fecha del trabajo.
  */
 public record GetPlotterPendingBalancesResponse(
         List<CustomerBalanceResponse> customers,
+        List<MonthBalanceResponse> months,
         int openJobCount,
         int customerCount,
         BigDecimal externalBilledAmount,
@@ -17,6 +19,18 @@ public record GetPlotterPendingBalancesResponse(
         BigDecimal outstandingAmount,
         List<NegativeBalanceResponse> negativeBalances
 ) {
+    public record MonthBalanceResponse(
+            int year,
+            int month,
+            List<CustomerBalanceResponse> customers,
+            int openJobCount,
+            int customerCount,
+            BigDecimal billedAmount,
+            BigDecimal paidAmount,
+            BigDecimal outstandingAmount
+    ) {
+    }
+
     public record CustomerBalanceResponse(
             UUID customerId,
             String customerName,

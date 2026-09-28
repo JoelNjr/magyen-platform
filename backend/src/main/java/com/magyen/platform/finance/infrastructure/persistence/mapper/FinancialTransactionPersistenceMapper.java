@@ -25,6 +25,7 @@ public class FinancialTransactionPersistenceMapper {
         entity.setObservation(financialTransaction.getObservation());
         entity.setSourceType(financialTransaction.getSourceType());
         entity.setSourceId(financialTransaction.getSourceId());
+        entity.setOrderId(financialTransaction.getOrderId());
         return entity;
     }
 
@@ -44,7 +45,8 @@ public class FinancialTransactionPersistenceMapper {
                 entity.getDescription(),
                 entity.getObservation(),
                 sourceType,
-                entity.getSourceId()
+                entity.getSourceId(),
+                entity.getOrderId()
         );
     }
 }

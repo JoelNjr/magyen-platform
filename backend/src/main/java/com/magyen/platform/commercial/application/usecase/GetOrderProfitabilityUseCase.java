@@ -3,6 +3,7 @@ package com.magyen.platform.commercial.application.usecase;
 import com.magyen.platform.commercial.application.CustomerNameResolver;
 import com.magyen.platform.commercial.application.dto.GetOrderProfitabilityQuery;
 import com.magyen.platform.commercial.application.dto.GetOrderProfitabilityResult;
+import com.magyen.platform.commercial.application.port.OrderAttributedExpensePort;
 import com.magyen.platform.commercial.application.port.OrderPaymentCollectionPort;
 import com.magyen.platform.commercial.application.port.PlotterOrderCostPort;
 import com.magyen.platform.commercial.application.port.ProductionOrderCostPort;
@@ -25,6 +26,7 @@ import java.util.Objects;
  *   <li>Material = costo histórico Inventory vía atribución Production</li>
  *   <li>Mano de obra = suma PENDING+PAID (CANCELLED excluido)</li>
  *   <li>Plotter interno = valor del servicio interno; el papel físico no se suma encima</li>
+ *   <li>Costos otros = costos adicionales de producción más gastos manuales de Finance con orderId</li>
  * </ul>
  */
 public class GetOrderProfitabilityUseCase {
@@ -37,13 +39,15 @@ public class GetOrderProfitabilityUseCase {
     private final OrderPaymentCollectionPort orderPaymentCollectionPort;
     private final ProductionOrderCostPort productionOrderCostPort;
     private final PlotterOrderCostPort plotterOrderCostPort;
+    private final OrderAttributedExpensePort orderAttributedExpensePort;
 
     public GetOrderProfitabilityUseCase(
             OrderRepository orderRepository,
             CustomerNameResolver customerNameResolver,
             OrderPaymentCollectionPort orderPaymentCollectionPort,
             ProductionOrderCostPort productionOrderCostPort,
-            PlotterOrderCostPort plotterOrderCostPort
+            PlotterOrderCostPort plotterOrderCostPort,
+            OrderAttributedExpensePort orderAttributedExpensePort
     ) {
         this.orderRepository = Objects.requireNonNull(orderRepository, "Order repository must not be null");
         this.customerNameResolver = Objects.requireNonNull(
@@ -61,6 +65,10 @@ public class GetOrderProfitabilityUseCase {
         this.plotterOrderCostPort = Objects.requireNonNull(
                 plotterOrderCostPort,
                 "Plotter order cost port must not be null"
+        );
+        this.orderAttributedExpensePort = Objects.requireNonNull(
+                orderAttributedExpensePort,
+                "Order attributed expense port must not be null"
         );
     }
 
@@ -85,7 +93,8 @@ public class GetOrderProfitabilityUseCase {
 
         BigDecimal materialCost = money(costs.materialCost());
         BigDecimal laborCost = money(costs.laborCost());
-        BigDecimal otherCost = money(costs.otherCost());
+        BigDecimal attributedExpense = money(orderAttributedExpensePort.sumManualExpenses(order.getId()));
+        BigDecimal otherCost = money(costs.otherCost()).add(attributedExpense);
         BigDecimal plotterMaterialCost = money(plotterCosts.plotterMaterialCost());
         BigDecimal internalPlotterServiceCost = money(plotterCosts.internalPlotterServiceCost());
         BigDecimal attributablePlotterCost = money(plotterCosts.attributablePlotterCost());
@@ -96,7 +105,7 @@ public class GetOrderProfitabilityUseCase {
         BigDecimal directMarginPercentage = resolveMarginPercentage(orderValue, directProfit);
 
         int unvaluedCount = costs.unvaluedMaterialConsumptionCount() + plotterCosts.unvaluedJobCount();
-        OrderProfitabilityStatus status = resolveStatus(costs, plotterCosts);
+        OrderProfitabilityStatus status = resolveStatus(costs, plotterCosts, attributedExpense);
 
         return new GetOrderProfitabilityResult(
                 order.getId(),
@@ -142,14 +151,17 @@ public class GetOrderProfitabilityUseCase {
 
     private static OrderProfitabilityStatus resolveStatus(
             ProductionOrderCostPort.ProductionOrderCostSnapshot costs,
-            PlotterOrderCostPort.PlotterOrderCostSnapshot plotterCosts
+            PlotterOrderCostPort.PlotterOrderCostSnapshot plotterCosts,
+            BigDecimal attributedExpense
     ) {
         boolean hasProductionActivity = costs.productionOrderFound()
                 && (costs.materialConsumptionCount() > 0
                 || costs.laborWorkCount() > 0
                 || costs.otherCostCount() > 0);
         boolean hasPlotterActivity = plotterCosts.internalJobCount() > 0;
-        if (!hasProductionActivity && !hasPlotterActivity) {
+        boolean hasAttributedExpense = attributedExpense != null
+                && attributedExpense.compareTo(BigDecimal.ZERO) > 0;
+        if (!hasProductionActivity && !hasPlotterActivity && !hasAttributedExpense) {
             return OrderProfitabilityStatus.NO_COST_DATA;
         }
         if (costs.unvaluedMaterialConsumptionCount() > 0 || plotterCosts.unvaluedJobCount() > 0) {

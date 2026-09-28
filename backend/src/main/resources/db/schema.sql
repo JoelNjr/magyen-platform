@@ -508,7 +508,7 @@ CREATE INDEX idx_payments_order_id
     ON payments (order_id);
 
 -- Aggregate: FinancialTransaction (ledger financiero — SPR-036)
--- Soft refs: source_id (Commercial/Plotter/Production/etc.) — no FKs
+-- Soft refs: source_id (Commercial/Plotter/Production/etc.) and optional order_id — no FKs
 
 CREATE TABLE financial_transactions (
     id                  uuid            NOT NULL,
@@ -520,6 +520,7 @@ CREATE TABLE financial_transactions (
     observation         varchar(2000)   NULL,
     source_type         varchar(30)     NULL,
     source_id           uuid            NULL,
+    order_id            uuid            NULL,
     CONSTRAINT financial_transactions_pkey PRIMARY KEY (id)
 );
 
@@ -528,6 +529,9 @@ CREATE INDEX idx_financial_transactions_transaction_date
 
 CREATE INDEX idx_financial_transactions_source
     ON financial_transactions (source_type, source_id);
+
+CREATE INDEX idx_financial_transactions_order_id
+    ON financial_transactions (order_id);
 
 -- Aggregate: RecurringFinancialObligation (obligaciones fijas/recurrentes — SPR-036 Inc. 2)
 -- No genera financial_transactions automáticamente.

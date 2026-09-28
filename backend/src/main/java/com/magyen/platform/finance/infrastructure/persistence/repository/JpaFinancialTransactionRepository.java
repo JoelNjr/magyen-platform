@@ -70,6 +70,14 @@ public class JpaFinancialTransactionRepository implements FinancialTransactionRe
     }
 
     @Override
+    public List<FinancialTransaction> findByOrderId(UUID orderId) {
+        Objects.requireNonNull(orderId, "Order id must not be null");
+        return springDataFinancialTransactionRepository.findByOrderId(orderId).stream()
+                .map(financialTransactionPersistenceMapper::toDomain)
+                .toList();
+    }
+
+    @Override
     public List<FinancialTransaction> findAllNewestFirst() {
         return springDataFinancialTransactionRepository.findAllByOrderByTransactionDateDescIdDesc()
                 .stream()

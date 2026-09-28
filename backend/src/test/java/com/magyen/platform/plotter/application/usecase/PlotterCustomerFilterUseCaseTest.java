@@ -119,6 +119,43 @@ class PlotterCustomerFilterUseCaseTest {
         assertTrue(customerOnly.jobs().stream().noneMatch(job -> job.plotterJobId().equals(otherCustomer)));
     }
 
+    @Test
+    void filtersInternalMagyenJobsWithoutUsingACustomerId() {
+        UUID plotterCustomerId = PlotterCustomerFixture.create(createCustomerUseCase);
+        UUID magyenCustomerId = createCustomerUseCase.execute(
+                new CreateCustomerCommand("Magyen interno " + UUID.randomUUID())
+        ).customerId();
+        UUID orderId = createOrder(magyenCustomerId);
+        CreateInventoryItemResult roll = createPaperRoll();
+
+        UUID externalJob = createExternal(plotterCustomerId, roll, LocalDate.of(2099, 11, 8));
+        UUID internalJob = createPlotterJobUseCase.execute(new CreatePlotterJobCommand(
+                null,
+                orderId,
+                LocalDate.of(2099, 11, 9),
+                roll.inventoryItemId(),
+                new BigDecimal("1.0000"),
+                new BigDecimal("8000"),
+                "interno agrupado",
+                PlotterJobType.INTERNAL_MAGYEN,
+                null
+        )).plotterJobId();
+
+        GetPlotterJobsResult internalOnly = getPlotterJobsUseCase.execute(
+                new GetPlotterJobsQuery(FROM, TO, null, PlotterJobType.INTERNAL_MAGYEN)
+        );
+        assertTrue(internalOnly.jobs().stream().anyMatch(job -> job.plotterJobId().equals(internalJob)));
+        assertTrue(internalOnly.jobs().stream().allMatch(job -> job.jobType() == PlotterJobType.INTERNAL_MAGYEN));
+        assertTrue(internalOnly.jobs().stream().noneMatch(job -> job.plotterJobId().equals(externalJob)));
+
+        GetPlotterJobsResult plotterCustomer = getPlotterJobsUseCase.execute(
+                new GetPlotterJobsQuery(FROM, TO, plotterCustomerId, null)
+        );
+        assertEquals(1, plotterCustomer.jobs().size());
+        assertEquals(externalJob, plotterCustomer.jobs().getFirst().plotterJobId());
+        assertEquals(PlotterJobType.EXTERNAL, plotterCustomer.jobs().getFirst().jobType());
+    }
+
     private UUID createExternal(UUID customerId, CreateInventoryItemResult roll, LocalDate date) {
         return createPlotterJobUseCase.execute(new CreatePlotterJobCommand(
                 customerId,

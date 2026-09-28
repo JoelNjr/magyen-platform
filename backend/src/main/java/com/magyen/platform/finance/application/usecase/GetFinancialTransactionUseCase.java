@@ -41,7 +41,8 @@ public class GetFinancialTransactionUseCase {
                 transaction.getDescription(),
                 transaction.getObservation(),
                 transaction.getSourceType(),
-                transaction.getSourceId()
+                transaction.getSourceId(),
+                transaction.getOrderId()
         );
     }
 }

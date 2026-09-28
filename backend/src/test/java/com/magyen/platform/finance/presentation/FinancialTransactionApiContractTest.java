@@ -61,6 +61,7 @@ class FinancialTransactionApiContractTest {
                 .andExpect(jsonPath("$.observation").value("Factura agosto"))
                 .andExpect(jsonPath("$.sourceType").value("SERVICE"))
                 .andExpect(jsonPath("$.sourceId").value(nullValue()))
+                .andExpect(jsonPath("$.orderId").value(nullValue()))
                 .andReturn();
 
         String transactionId = com.jayway.jsonpath.JsonPath.read(

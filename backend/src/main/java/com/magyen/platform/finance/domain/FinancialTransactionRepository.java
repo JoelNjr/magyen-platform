@@ -26,6 +26,12 @@ public interface FinancialTransactionRepository {
     );
 
     /**
+     * Movimientos con referencia blanda a una Orden comercial.
+     * No incluye movimientos históricos sin {@code orderId}.
+     */
+    List<FinancialTransaction> findByOrderId(UUID orderId);
+
+    /**
      * Lista todos los movimientos ordenados del más reciente al más antiguo.
      */
     List<FinancialTransaction> findAllNewestFirst();

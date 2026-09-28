@@ -111,6 +111,9 @@ export async function getOrders(params = {}) {
     params: {
       fromDate: params.fromDate || undefined,
       toDate: params.toDate || undefined,
+      search: params.search || undefined,
+      acceptsDirectCost: params.acceptsDirectCost || undefined,
+      limit: params.limit || undefined,
     },
   })
   return response.data

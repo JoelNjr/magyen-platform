@@ -7,6 +7,7 @@ import com.magyen.platform.commercial.application.OrderPaymentFloorGuard;
 import com.magyen.platform.commercial.application.port.CommercialCatalogPort;
 import com.magyen.platform.commercial.application.port.CommercialDocumentPdfPort;
 import com.magyen.platform.commercial.application.port.CommercialSellerEmployeePort;
+import com.magyen.platform.commercial.application.port.OrderAttributedExpensePort;
 import com.magyen.platform.commercial.application.port.OrderPaymentCollectionPort;
 import com.magyen.platform.commercial.application.port.PlotterOrderCostPort;
 import com.magyen.platform.commercial.application.port.ProductionOrderCostPort;
@@ -51,6 +52,7 @@ import com.magyen.platform.commercial.domain.QuotationRepository;
 import com.magyen.platform.commercial.domain.SellerRepository;
 import com.magyen.platform.commercial.infrastructure.administration.CommercialCatalogAdapter;
 import com.magyen.platform.commercial.infrastructure.finance.CommercialSellerEmployeeAdapter;
+import com.magyen.platform.commercial.infrastructure.finance.OrderAttributedExpenseAdapter;
 import com.magyen.platform.commercial.infrastructure.finance.OrderPaymentCollectionAdapter;
 import com.magyen.platform.commercial.infrastructure.pdf.OpenPdfCommercialDocumentAdapter;
 import com.magyen.platform.commercial.infrastructure.plotter.PlotterOrderCostAdapter;
@@ -68,6 +70,7 @@ import com.magyen.platform.administration.application.usecase.ListAdministration
 import com.magyen.platform.finance.application.usecase.GetPayrollEmployeeUseCase;
 import com.magyen.platform.finance.application.usecase.GetPayrollEmployeesUseCase;
 import com.magyen.platform.finance.application.usecase.GetPaymentsByOrderUseCase;
+import com.magyen.platform.finance.application.usecase.SumManualOrderExpensesUseCase;
 import com.magyen.platform.plotter.application.usecase.GetInternalPlotterOrderCostsUseCase;
 import com.magyen.platform.production.application.usecase.GetProductionCostsByCommercialOrderUseCase;
 import org.springframework.context.annotation.Bean;
@@ -327,6 +330,13 @@ public class CommercialConfiguration {
     }
 
     @Bean
+    public OrderAttributedExpensePort orderAttributedExpensePort(
+            SumManualOrderExpensesUseCase sumManualOrderExpensesUseCase
+    ) {
+        return new OrderAttributedExpenseAdapter(sumManualOrderExpensesUseCase);
+    }
+
+    @Bean
     public ProductionOrderCostPort productionOrderCostPort(
             GetProductionCostsByCommercialOrderUseCase getProductionCostsByCommercialOrderUseCase
     ) {
@@ -346,14 +356,16 @@ public class CommercialConfiguration {
             CustomerNameResolver customerNameResolver,
             OrderPaymentCollectionPort orderPaymentCollectionPort,
             ProductionOrderCostPort productionOrderCostPort,
-            PlotterOrderCostPort plotterOrderCostPort
+            PlotterOrderCostPort plotterOrderCostPort,
+            OrderAttributedExpensePort orderAttributedExpensePort
     ) {
         return new GetOrderProfitabilityUseCase(
                 orderRepository,
                 customerNameResolver,
                 orderPaymentCollectionPort,
                 productionOrderCostPort,
-                plotterOrderCostPort
+                plotterOrderCostPort,
+                orderAttributedExpensePort
         );
     }
 

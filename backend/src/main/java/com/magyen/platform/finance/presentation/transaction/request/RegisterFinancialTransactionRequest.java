@@ -17,6 +17,7 @@ public record RegisterFinancialTransactionRequest(
         String description,
         String observation,
         String sourceType,
-        UUID sourceId
+        UUID sourceId,
+        UUID orderId
 ) {
 }

@@ -24,6 +24,7 @@ import EmptyState from '../../home/components/EmptyState'
 import {
   formatPlotterDate,
   formatPlotterMoney,
+  formatPlotterPendingMonthLabel,
   formatPlotterStatusLabel,
 } from '../presentation/plotterJobPresentation'
 import { getPlotterPendingBalances } from '../services/plotterService'
@@ -35,7 +36,8 @@ function PlotterPendingBalancesPage() {
   const [balances, setBalances] = useState(null)
   const [loading, setLoading] = useState(true)
   const [failed, setFailed] = useState(false)
-  const [expandedCustomerId, setExpandedCustomerId] = useState('')
+  const [expandedMonthKey, setExpandedMonthKey] = useState('')
+  const [expandedCustomerKey, setExpandedCustomerKey] = useState('')
 
   useEffect(() => {
     let active = true
@@ -45,6 +47,8 @@ function PlotterPendingBalancesPage() {
       .then((data) => {
         if (active) {
           setBalances(data)
+          const firstMonth = Array.isArray(data?.months) ? data.months[0] : null
+          setExpandedMonthKey(firstMonth ? `${firstMonth.year}-${firstMonth.month}` : '')
           setLoading(false)
         }
       })
@@ -60,7 +64,7 @@ function PlotterPendingBalancesPage() {
     }
   }, [])
 
-  const customers = Array.isArray(balances?.customers) ? balances.customers : []
+  const months = Array.isArray(balances?.months) ? balances.months : []
   const negativeBalances = Array.isArray(balances?.negativeBalances)
     ? balances.negativeBalances
     : []
@@ -78,8 +82,8 @@ function PlotterPendingBalancesPage() {
       <PageHeader title="Saldos pendientes" />
 
       <Alert severity="info">
-        Saldo pendiente de trabajos externos de Plotter. Es histórico y no
-        depende del mes seleccionado en el listado de trabajos. Los trabajos
+        Saldo pendiente de trabajos externos de Plotter, agrupado por la fecha
+        del trabajo. No depende del mes seleccionado en el listado. Los trabajos
         internos, la merma y los trabajos ya pagados no aparecen como deuda.
       </Alert>
 
@@ -118,135 +122,183 @@ function PlotterPendingBalancesPage() {
             </Typography>
           </Paper>
 
-          {customers.length === 0 ? (
+          {months.length === 0 ? (
             <EmptyState
               title="No hay saldos pendientes"
               message="Los trabajos externos están saldados o todavía no hay ventas de Plotter."
             />
           ) : (
-            <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell sx={headerCellSx} />
-                    <TableCell sx={headerCellSx}>Cliente</TableCell>
-                    <TableCell align="right" sx={headerCellSx}>
-                      Trabajos abiertos
-                    </TableCell>
-                    <TableCell align="right" sx={headerCellSx}>
-                      Facturado
-                    </TableCell>
-                    <TableCell align="right" sx={headerCellSx}>
-                      Pagado
-                    </TableCell>
-                    <TableCell align="right" sx={headerCellSx}>
-                      Pendiente
-                    </TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {customers.map((customer) => {
-                    const expanded = expandedCustomerId === customer.customerId
-                    return (
-                      <Fragment key={customer.customerId}>
-                        <TableRow hover>
-                          <TableCell>
-                            <IconButton
-                              size="small"
-                              aria-label={expanded ? 'Ocultar trabajos' : 'Ver trabajos'}
-                              onClick={() =>
-                                setExpandedCustomerId(expanded ? '' : customer.customerId)
-                              }
-                            >
-                              {expanded ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
-                            </IconButton>
-                          </TableCell>
-                          <TableCell>{customer.customerName || '—'}</TableCell>
-                          <TableCell align="right">{customer.openJobCount}</TableCell>
-                          <TableCell align="right">
-                            {formatPlotterMoney(customer.billedAmount)}
-                          </TableCell>
-                          <TableCell align="right">
-                            {formatPlotterMoney(customer.paidAmount)}
-                          </TableCell>
-                          <TableCell align="right">
-                            {formatPlotterMoney(customer.outstandingAmount)}
-                          </TableCell>
-                        </TableRow>
-                        <TableRow key={`${customer.customerId}-detail`}>
-                          <TableCell colSpan={6} sx={{ py: 0, borderBottom: expanded ? undefined : 0 }}>
-                            <Collapse in={expanded} timeout="auto" unmountOnExit>
-                              <Stack spacing={1} sx={{ py: 2 }}>
-                                <Typography variant="subtitle2">
-                                  {customer.customerName} · Pendiente{' '}
-                                  {formatPlotterMoney(customer.outstandingAmount)}
-                                </Typography>
-                                <Table size="small">
-                                  <TableHead>
-                                    <TableRow>
-                                      <TableCell>Trabajo</TableCell>
-                                      <TableCell>Fecha</TableCell>
-                                      <TableCell align="right">Total</TableCell>
-                                      <TableCell align="right">Pagado</TableCell>
-                                      <TableCell align="right">Pendiente</TableCell>
-                                      <TableCell>Estado</TableCell>
-                                    </TableRow>
-                                  </TableHead>
-                                  <TableBody>
-                                    {(customer.jobs || []).map((job) => (
-                                      <TableRow key={job.plotterJobId}>
-                                        <TableCell>
-                                          <Button
-                                            size="small"
-                                            onClick={() =>
-                                              navigate(`/plotter/jobs/${job.plotterJobId}`)
-                                            }
-                                          >
-                                            {job.plotterJobId}
-                                          </Button>
-                                        </TableCell>
-                                        <TableCell>{formatPlotterDate(job.creationDate)}</TableCell>
-                                        <TableCell align="right">
-                                          {formatPlotterMoney(job.totalAmount)}
-                                        </TableCell>
-                                        <TableCell align="right">
-                                          {formatPlotterMoney(job.paidAmount)}
-                                        </TableCell>
-                                        <TableCell align="right">
-                                          {formatPlotterMoney(job.outstandingAmount)}
-                                        </TableCell>
-                                        <TableCell>
-                                          <Chip
-                                            size="small"
-                                            label={formatPlotterStatusLabel(job.status)}
-                                          />
-                                        </TableCell>
-                                      </TableRow>
-                                    ))}
-                                  </TableBody>
-                                </Table>
-                              </Stack>
-                            </Collapse>
-                          </TableCell>
-                        </TableRow>
-                      </Fragment>
-                    )
-                  })}
-                  <TableRow>
-                    <TableCell />
-                    <TableCell sx={headerCellSx}>Total pendiente</TableCell>
-                    <TableCell align="right" sx={headerCellSx}>
-                      {balances.openJobCount}
-                    </TableCell>
-                    <TableCell />
-                    <TableCell />
-                    <TableCell align="right" sx={headerCellSx}>
-                      {formatPlotterMoney(balances.outstandingAmount)}
-                    </TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </TableContainer>
+            <Stack spacing={2}>
+              {months.map((month) => {
+                const monthKey = `${month.year}-${month.month}`
+                const monthExpanded = expandedMonthKey === monthKey
+                return (
+                  <Paper key={monthKey} sx={{ overflow: 'hidden' }}>
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      sx={{ alignItems: 'center', px: 1, py: 1 }}
+                    >
+                      <IconButton
+                        size="small"
+                        aria-label={monthExpanded ? 'Ocultar mes' : 'Ver mes'}
+                        onClick={() => {
+                          setExpandedMonthKey(monthExpanded ? '' : monthKey)
+                          setExpandedCustomerKey('')
+                        }}
+                      >
+                        {monthExpanded ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
+                      </IconButton>
+                      <Typography variant="h6" sx={{ flexGrow: 1 }}>
+                        {formatPlotterPendingMonthLabel(month.year, month.month)}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Total pendiente del mes {formatPlotterMoney(month.outstandingAmount)}
+                      </Typography>
+                    </Stack>
+                    <Collapse in={monthExpanded} timeout="auto" unmountOnExit>
+                      <TableContainer sx={{ overflowX: 'auto' }}>
+                        <Table size="small">
+                          <TableHead>
+                            <TableRow>
+                              <TableCell sx={headerCellSx} />
+                              <TableCell sx={headerCellSx}>Cliente</TableCell>
+                              <TableCell align="right" sx={headerCellSx}>
+                                Trabajos abiertos
+                              </TableCell>
+                              <TableCell align="right" sx={headerCellSx}>
+                                Facturado
+                              </TableCell>
+                              <TableCell align="right" sx={headerCellSx}>
+                                Pagado
+                              </TableCell>
+                              <TableCell align="right" sx={headerCellSx}>
+                                Pendiente
+                              </TableCell>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {(month.customers || []).map((customer) => {
+                              const customerKey = `${monthKey}-${customer.customerId}`
+                              const expanded = expandedCustomerKey === customerKey
+                              return (
+                                <Fragment key={customerKey}>
+                                  <TableRow hover>
+                                    <TableCell>
+                                      <IconButton
+                                        size="small"
+                                        aria-label={expanded ? 'Ocultar trabajos' : 'Ver trabajos'}
+                                        onClick={() =>
+                                          setExpandedCustomerKey(expanded ? '' : customerKey)
+                                        }
+                                      >
+                                        {expanded ? (
+                                          <KeyboardArrowUpIcon />
+                                        ) : (
+                                          <KeyboardArrowDownIcon />
+                                        )}
+                                      </IconButton>
+                                    </TableCell>
+                                    <TableCell>{customer.customerName || '—'}</TableCell>
+                                    <TableCell align="right">{customer.openJobCount}</TableCell>
+                                    <TableCell align="right">
+                                      {formatPlotterMoney(customer.billedAmount)}
+                                    </TableCell>
+                                    <TableCell align="right">
+                                      {formatPlotterMoney(customer.paidAmount)}
+                                    </TableCell>
+                                    <TableCell align="right">
+                                      {formatPlotterMoney(customer.outstandingAmount)}
+                                    </TableCell>
+                                  </TableRow>
+                                  <TableRow>
+                                    <TableCell
+                                      colSpan={6}
+                                      sx={{ py: 0, borderBottom: expanded ? undefined : 0 }}
+                                    >
+                                      <Collapse in={expanded} timeout="auto" unmountOnExit>
+                                        <Stack spacing={1} sx={{ py: 2, pl: 2 }}>
+                                          <Typography variant="subtitle2">
+                                            {customer.customerName} · Pendiente{' '}
+                                            {formatPlotterMoney(customer.outstandingAmount)}
+                                          </Typography>
+                                          <Table size="small">
+                                            <TableHead>
+                                              <TableRow>
+                                                <TableCell>Trabajo</TableCell>
+                                                <TableCell>Fecha</TableCell>
+                                                <TableCell align="right">Total</TableCell>
+                                                <TableCell align="right">Pagado</TableCell>
+                                                <TableCell align="right">Pendiente</TableCell>
+                                                <TableCell>Estado</TableCell>
+                                              </TableRow>
+                                            </TableHead>
+                                            <TableBody>
+                                              {(customer.jobs || []).map((job) => (
+                                                <TableRow key={job.plotterJobId}>
+                                                  <TableCell>
+                                                    <Button
+                                                      size="small"
+                                                      onClick={() =>
+                                                        navigate(`/plotter/jobs/${job.plotterJobId}`)
+                                                      }
+                                                    >
+                                                      {job.plotterJobId}
+                                                    </Button>
+                                                  </TableCell>
+                                                  <TableCell>
+                                                    {formatPlotterDate(job.creationDate)}
+                                                  </TableCell>
+                                                  <TableCell align="right">
+                                                    {formatPlotterMoney(job.totalAmount)}
+                                                  </TableCell>
+                                                  <TableCell align="right">
+                                                    {formatPlotterMoney(job.paidAmount)}
+                                                  </TableCell>
+                                                  <TableCell align="right">
+                                                    {formatPlotterMoney(job.outstandingAmount)}
+                                                  </TableCell>
+                                                  <TableCell>
+                                                    <Chip
+                                                      size="small"
+                                                      label={formatPlotterStatusLabel(job.status)}
+                                                    />
+                                                  </TableCell>
+                                                </TableRow>
+                                              ))}
+                                            </TableBody>
+                                          </Table>
+                                        </Stack>
+                                      </Collapse>
+                                    </TableCell>
+                                  </TableRow>
+                                </Fragment>
+                              )
+                            })}
+                            <TableRow>
+                              <TableCell />
+                              <TableCell sx={headerCellSx}>Total pendiente del mes</TableCell>
+                              <TableCell align="right" sx={headerCellSx}>
+                                {month.openJobCount}
+                              </TableCell>
+                              <TableCell align="right" sx={headerCellSx}>
+                                {formatPlotterMoney(month.billedAmount)}
+                              </TableCell>
+                              <TableCell align="right" sx={headerCellSx}>
+                                {formatPlotterMoney(month.paidAmount)}
+                              </TableCell>
+                              <TableCell align="right" sx={headerCellSx}>
+                                {formatPlotterMoney(month.outstandingAmount)}
+                              </TableCell>
+                            </TableRow>
+                          </TableBody>
+                        </Table>
+                      </TableContainer>
+                    </Collapse>
+                  </Paper>
+                )
+              })}
+            </Stack>
           )}
 
           {negativeBalances.length > 0 && (

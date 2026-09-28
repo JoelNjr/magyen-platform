@@ -273,11 +273,16 @@ function CreatePlotterJobDialog({
             <>
               <TextField
                 select
-                label="Orden comercial"
+                label="Orden comercial asociada"
                 value={form.orderId}
                 onChange={(event) => updateField('orderId', event.target.value)}
                 fullWidth
                 disabled={submitting || loadingLookups}
+                helperText={
+                  !loadingLookups && (orders || []).length === 0
+                    ? 'No hay órdenes abiertas para asociar.'
+                    : 'Solo órdenes abiertas: confirmadas, en producción o listas para entrega.'
+                }
               >
                 {(orders || []).map((order) => (
                   <MenuItem key={order.orderId} value={order.orderId}>

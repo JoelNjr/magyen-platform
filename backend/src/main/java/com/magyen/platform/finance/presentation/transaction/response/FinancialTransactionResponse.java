@@ -16,6 +16,7 @@ public record FinancialTransactionResponse(
         String description,
         String observation,
         String sourceType,
-        UUID sourceId
+        UUID sourceId,
+        UUID orderId
 ) {
 }

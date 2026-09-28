@@ -5,6 +5,7 @@ import {
   Alert,
   Button,
   Chip,
+  ListSubheader,
   MenuItem,
   Paper,
   Skeleton,
@@ -21,8 +22,7 @@ import {
 } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
 import CreateCustomerDialog from '../../commercial/components/CreateCustomerDialog'
-import { customersForExternalPlotter } from '../../commercial/presentation/customerCategory'
-import { createCustomer, getCustomers, getOrders } from '../../commercial/services/commercialService'
+import { createCustomer, getCustomers } from '../../commercial/services/commercialService'
 import { getInventoryItems, getPlotterPaperRolls } from '../../inventory/services/inventoryService'
 import CreatePlotterJobDialog from '../components/CreatePlotterJobDialog'
 import RegisterPlotterPaymentDialog from '../components/RegisterPlotterPaymentDialog'
@@ -37,7 +37,20 @@ import {
   getPlotterJobTypeChipProps,
   isExternalPlotterPaymentComplete,
 } from '../presentation/plotterJobPresentation'
-import { createPlotterJob, getPlotterJobs, registerPlotterPayment } from '../services/plotterService'
+import {
+  ALL_PLOTTER_JOBS_FILTER,
+  ALL_PLOTTER_JOBS_FILTER_LABEL,
+  INTERNAL_MAGYEN_FILTER_LABEL,
+  INTERNAL_MAGYEN_JOBS_FILTER,
+  externalPlotterCustomerOptions,
+  toPlotterJobsQuery,
+} from '../presentation/plotterJobFilters'
+import {
+  createPlotterJob,
+  getOpenCommercialOrdersForPlotter,
+  getPlotterJobs,
+  registerPlotterPayment,
+} from '../services/plotterService'
 import MonthPeriodNavigator from '../../../shared/period/MonthPeriodNavigator'
 import { formatMonthPeriodLabel, getCalendarMonthRange } from '../../../shared/period/monthPeriod'
 import PageHeader from '../../../layout/PageHeader'
@@ -79,7 +92,7 @@ function PlotterJobsPage() {
   const navigate = useNavigate()
   const initialPeriod = useMemo(() => getCalendarMonthRange(), [])
   const [period, setPeriod] = useState(initialPeriod)
-  const [customerId, setCustomerId] = useState('')
+  const [jobFilter, setJobFilter] = useState(ALL_PLOTTER_JOBS_FILTER)
   const [jobs, setJobs] = useState([])
   const [customers, setCustomers] = useState([])
   const [orders, setOrders] = useState([])
@@ -100,6 +113,11 @@ function PlotterJobsPage() {
   const [creatingCustomer, setCreatingCustomer] = useState(false)
   const [createCustomerFailed, setCreateCustomerFailed] = useState(false)
   const [createdPlotterCustomerId, setCreatedPlotterCustomerId] = useState('')
+
+  const plotterCustomers = useMemo(
+    () => externalPlotterCustomerOptions(customers),
+    [customers]
+  )
 
   const customerNameById = useMemo(() => {
     const map = new Map()
@@ -129,11 +147,7 @@ function PlotterJobsPage() {
     setFailed(false)
 
     try {
-      const data = await getPlotterJobs({
-        fromDate: period.fromDate,
-        toDate: period.toDate,
-        customerId,
-      })
+      const data = await getPlotterJobs(toPlotterJobsQuery(jobFilter, period))
       setJobs(Array.isArray(data?.jobs) ? data.jobs : [])
       setLoading(false)
     } catch {
@@ -141,7 +155,7 @@ function PlotterJobsPage() {
       setFailed(true)
       setLoading(false)
     }
-  }, [period.fromDate, period.toDate, customerId])
+  }, [period.fromDate, period.toDate, jobFilter])
 
   async function loadLookups() {
     setLoadingLookups(true)
@@ -149,7 +163,7 @@ function PlotterJobsPage() {
     try {
       const [customersData, ordersData, rollsData, inventoryData] = await Promise.all([
         getCustomers(),
-        getOrders(),
+        getOpenCommercialOrdersForPlotter(),
         getPlotterPaperRolls(),
         getInventoryItems(),
       ])
@@ -327,14 +341,16 @@ function PlotterJobsPage() {
           <TextField
             select
             label="Cliente"
-            value={customerId}
-            onChange={(event) => setCustomerId(event.target.value)}
+            value={jobFilter}
+            onChange={(event) => setJobFilter(event.target.value)}
             disabled={loading || loadingLookups}
-            sx={{ minWidth: { sm: 280 } }}
-            helperText="Incluye trabajos internos de ese cliente. La deuda sigue siendo solo externa."
+            sx={{ minWidth: { sm: 320 } }}
+            helperText="Los trabajos internos van juntos. Los clientes individuales son solo Plotter."
           >
-            <MenuItem value="">Todos los clientes</MenuItem>
-            {customers.map((customer) => (
+            <MenuItem value={ALL_PLOTTER_JOBS_FILTER}>{ALL_PLOTTER_JOBS_FILTER_LABEL}</MenuItem>
+            <MenuItem value={INTERNAL_MAGYEN_JOBS_FILTER}>{INTERNAL_MAGYEN_FILTER_LABEL}</MenuItem>
+            <ListSubheader>Clientes externos</ListSubheader>
+            {plotterCustomers.map((customer) => (
               <MenuItem key={customer.customerId} value={customer.customerId}>
                 {customer.name}
               </MenuItem>

@@ -52,6 +52,12 @@ public class FinancialTransactionEntity {
     @Column(name = "source_id")
     private UUID sourceId;
 
+    /**
+     * Referencia blanda a la Orden comercial. No sustituye {@code source_id}.
+     */
+    @Column(name = "order_id")
+    private UUID orderId;
+
     public FinancialTransactionEntity() {
     }
 
@@ -125,5 +131,13 @@ public class FinancialTransactionEntity {
 
     public void setSourceId(UUID sourceId) {
         this.sourceId = sourceId;
+    }
+
+    public UUID getOrderId() {
+        return orderId;
+    }
+
+    public void setOrderId(UUID orderId) {
+        this.orderId = orderId;
     }
 }

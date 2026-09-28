@@ -6,8 +6,14 @@ export async function getPlotterJobs(params = {}) {
       fromDate: params.fromDate || undefined,
       toDate: params.toDate || undefined,
       customerId: params.customerId || undefined,
+      jobType: params.jobType || undefined,
     },
   })
+  return response.data
+}
+
+export async function getOpenCommercialOrdersForPlotter() {
+  const response = await httpClient.get('/plotter/open-commercial-orders')
   return response.data
 }
 

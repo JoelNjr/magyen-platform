@@ -10,6 +10,12 @@ import {
   Stack,
   TextField,
 } from '@mui/material'
+import Autocomplete from '@mui/material/Autocomplete'
+import { getOrders } from '../../commercial/services/commercialService'
+import {
+  associatedOrderSubmitValue,
+  formatAssociatedOrderLabel,
+} from '../presentation/associatedOrderPresentation'
 import {
   EXPENSE_CATEGORY_OPTIONS,
   INCOME_CATEGORY_OPTIONS,
@@ -24,7 +30,10 @@ const EMPTY_FORM = {
   category: 'SERVICES',
   description: '',
   observation: '',
+  orderId: '',
 }
+
+const NO_ORDER = { orderId: '', customerName: '', orderNumber: '' }
 
 function RegisterFinancialTransactionDialog({
   open,
@@ -35,6 +44,9 @@ function RegisterFinancialTransactionDialog({
 }) {
   const [form, setForm] = useState(EMPTY_FORM)
   const [validationError, setValidationError] = useState('')
+  const [orderSearch, setOrderSearch] = useState('')
+  const [orderOptions, setOrderOptions] = useState([])
+  const [loadingOrders, setLoadingOrders] = useState(false)
 
   useEffect(() => {
     if (!open) {
@@ -47,7 +59,46 @@ function RegisterFinancialTransactionDialog({
       ...EMPTY_FORM,
       transactionDate: toIsoDate(new Date()),
     })
+    setOrderSearch('')
+    setOrderOptions([])
   }, [open])
+
+  useEffect(() => {
+    if (!open || form.type !== 'EXPENSE') {
+      return undefined
+    }
+
+    let active = true
+    const timer = setTimeout(() => {
+      setLoadingOrders(true)
+      getOrders({
+        search: orderSearch.trim(),
+        acceptsDirectCost: true,
+        limit: 20,
+      })
+        .then((data) => {
+          if (!active) {
+            return
+          }
+          setOrderOptions(Array.isArray(data?.orders) ? data.orders : [])
+        })
+        .catch(() => {
+          if (active) {
+            setOrderOptions([])
+          }
+        })
+        .finally(() => {
+          if (active) {
+            setLoadingOrders(false)
+          }
+        })
+    }, 300)
+
+    return () => {
+      active = false
+      clearTimeout(timer)
+    }
+  }, [open, form.type, orderSearch])
 
   function handleClose() {
     if (submitting) {
@@ -61,6 +112,9 @@ function RegisterFinancialTransactionDialog({
       const next = { ...current, [field]: value }
       if (field === 'type') {
         next.category = value === 'INCOME' ? 'SALES' : 'SERVICES'
+        if (value !== 'EXPENSE') {
+          next.orderId = ''
+        }
       }
       return next
     })
@@ -97,11 +151,16 @@ function RegisterFinancialTransactionDialog({
       observation: observation || null,
       sourceType: 'MANUAL',
       sourceId: null,
+      orderId: associatedOrderSubmitValue(form.orderId, form.type),
     })
   }
 
   const categoryOptions =
     form.type === 'INCOME' ? INCOME_CATEGORY_OPTIONS : EXPENSE_CATEGORY_OPTIONS
+  const selectedOrder =
+    orderOptions.find((order) => order.orderId === form.orderId) ||
+    (form.orderId ? { orderId: form.orderId, orderNumber: form.orderId } : NO_ORDER)
+  const orderChoices = [NO_ORDER, ...orderOptions.filter((order) => order.orderId)]
 
   return (
     <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
@@ -155,6 +214,42 @@ function RegisterFinancialTransactionDialog({
               </MenuItem>
             ))}
           </TextField>
+          {form.type === 'EXPENSE' ? (
+            <Autocomplete
+              fullWidth
+              options={orderChoices}
+              value={selectedOrder}
+              loading={loadingOrders}
+              disabled={submitting}
+              onChange={(_, order) => updateField('orderId', order?.orderId || '')}
+              onInputChange={(_, value, reason) => {
+                if (reason === 'input') {
+                  setOrderSearch(value)
+                }
+              }}
+              getOptionLabel={(option) => formatAssociatedOrderLabel(option)}
+              isOptionEqualToValue={(option, selected) =>
+                (option?.orderId || '') === (selected?.orderId || '')
+              }
+              noOptionsText="No hay pedidos para asociar"
+              loadingText="Buscando pedidos..."
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Pedido asociado (opcional)"
+                  helperText="Sin pedido no cambia la rentabilidad. Un gasto asociado entra en Costos otros."
+                />
+              )}
+            />
+          ) : (
+            <TextField
+              label="Pedido asociado (opcional)"
+              value="Sin pedido"
+              fullWidth
+              disabled
+              helperText="Solo un gasto puede asociarse a un pedido."
+            />
+          )}
           <TextField
             label="Descripción"
             value={form.description}

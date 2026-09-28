@@ -2,6 +2,7 @@ package com.magyen.platform.plotter.infrastructure.configuration;
 
 import com.magyen.platform.commercial.application.usecase.GetCustomersUseCase;
 import com.magyen.platform.commercial.application.usecase.GetOrderUseCase;
+import com.magyen.platform.commercial.application.usecase.GetOrdersUseCase;
 import com.magyen.platform.finance.application.usecase.EnsurePlotterInternalServiceLedgerUseCase;
 import com.magyen.platform.finance.application.usecase.RegisterPlotterPaymentIncomeUseCase;
 import com.magyen.platform.inventory.application.usecase.ConsumeInventoryMaterialUseCase;
@@ -19,6 +20,7 @@ import com.magyen.platform.plotter.application.port.PlotterPaymentFinancePort;
 import com.magyen.platform.plotter.infrastructure.commercial.PlotterCommercialOrderAdapter;
 import com.magyen.platform.plotter.application.usecase.CreatePlotterJobUseCase;
 import com.magyen.platform.plotter.application.usecase.GetInternalPlotterOrderCostsUseCase;
+import com.magyen.platform.plotter.application.usecase.GetOpenCommercialOrdersForPlotterUseCase;
 import com.magyen.platform.plotter.application.usecase.GetPlotterJobUseCase;
 import com.magyen.platform.plotter.application.usecase.GetPlotterJobsUseCase;
 import com.magyen.platform.plotter.application.usecase.GetPlotterPaymentsUseCase;
@@ -90,9 +92,10 @@ public class PlotterConfiguration {
     @Bean
     public PlotterCommercialOrderPort plotterCommercialOrderPort(
             GetOrderUseCase getOrderUseCase,
+            GetOrdersUseCase getOrdersUseCase,
             GetCustomersUseCase getCustomersUseCase
     ) {
-        return new PlotterCommercialOrderAdapter(getOrderUseCase, getCustomersUseCase);
+        return new PlotterCommercialOrderAdapter(getOrderUseCase, getOrdersUseCase, getCustomersUseCase);
     }
 
     @Bean
@@ -150,6 +153,13 @@ public class PlotterConfiguration {
                 plotterPaymentRepository,
                 plotterCommercialOrderPort
         );
+    }
+
+    @Bean
+    public GetOpenCommercialOrdersForPlotterUseCase getOpenCommercialOrdersForPlotterUseCase(
+            PlotterCommercialOrderPort plotterCommercialOrderPort
+    ) {
+        return new GetOpenCommercialOrdersForPlotterUseCase(plotterCommercialOrderPort);
     }
 
     @Bean

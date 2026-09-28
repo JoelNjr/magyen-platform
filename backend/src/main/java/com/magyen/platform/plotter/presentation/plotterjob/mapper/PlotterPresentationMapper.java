@@ -9,6 +9,7 @@ import com.magyen.platform.plotter.application.dto.GetPlotterPaymentsQuery;
 import com.magyen.platform.plotter.application.dto.GetPlotterPaymentsResult;
 import com.magyen.platform.plotter.application.dto.GetPlotterPendingBalancesResult;
 import com.magyen.platform.plotter.application.dto.GetPlotterProfitabilityResult;
+import com.magyen.platform.plotter.application.dto.PlotterCustomerPendingBalance;
 import com.magyen.platform.plotter.application.dto.PlotterInternalOrderCostItem;
 import com.magyen.platform.plotter.application.dto.RegisterPlotterPaymentCommand;
 import com.magyen.platform.plotter.application.dto.RegisterPlotterPaymentResult;
@@ -166,23 +167,18 @@ public class PlotterPresentationMapper {
         Objects.requireNonNull(result, "GetPlotterPendingBalancesResult must not be null");
         return new GetPlotterPendingBalancesResponse(
                 result.customers().stream()
-                        .map(customer -> new GetPlotterPendingBalancesResponse.CustomerBalanceResponse(
-                                customer.customerId(),
-                                customer.customerName(),
-                                customer.openJobCount(),
-                                customer.billedAmount(),
-                                customer.paidAmount(),
-                                customer.outstandingAmount(),
-                                customer.jobs().stream()
-                                        .map(job -> new GetPlotterPendingBalancesResponse.JobBalanceResponse(
-                                                job.plotterJobId(),
-                                                job.creationDate(),
-                                                job.totalAmount(),
-                                                job.paidAmount(),
-                                                job.outstandingAmount(),
-                                                job.status().name()
-                                        ))
-                                        .toList()
+                        .map(this::toCustomerBalanceResponse)
+                        .toList(),
+                result.months().stream()
+                        .map(month -> new GetPlotterPendingBalancesResponse.MonthBalanceResponse(
+                                month.year(),
+                                month.month(),
+                                month.customers().stream().map(this::toCustomerBalanceResponse).toList(),
+                                month.openJobCount(),
+                                month.customerCount(),
+                                month.billedAmount(),
+                                month.paidAmount(),
+                                month.outstandingAmount()
                         ))
                         .toList(),
                 result.openJobCount(),
@@ -199,6 +195,29 @@ public class PlotterPresentationMapper {
                                 item.totalAmount(),
                                 item.paidAmount(),
                                 item.outstandingAmount()
+                        ))
+                        .toList()
+        );
+    }
+
+    private GetPlotterPendingBalancesResponse.CustomerBalanceResponse toCustomerBalanceResponse(
+            PlotterCustomerPendingBalance customer
+    ) {
+        return new GetPlotterPendingBalancesResponse.CustomerBalanceResponse(
+                customer.customerId(),
+                customer.customerName(),
+                customer.openJobCount(),
+                customer.billedAmount(),
+                customer.paidAmount(),
+                customer.outstandingAmount(),
+                customer.jobs().stream()
+                        .map(job -> new GetPlotterPendingBalancesResponse.JobBalanceResponse(
+                                job.plotterJobId(),
+                                job.creationDate(),
+                                job.totalAmount(),
+                                job.paidAmount(),
+                                job.outstandingAmount(),
+                                job.status().name()
                         ))
                         .toList()
         );

@@ -6,6 +6,7 @@ import com.magyen.platform.plotter.application.dto.GetPlotterJobsResult;
 import com.magyen.platform.plotter.application.port.PlotterCommercialOrderPort;
 import com.magyen.platform.plotter.domain.PlotterJob;
 import com.magyen.platform.plotter.domain.PlotterJobRepository;
+import com.magyen.platform.plotter.domain.PlotterJobType;
 import com.magyen.platform.plotter.domain.PlotterPayment;
 import com.magyen.platform.plotter.domain.PlotterPaymentRepository;
 import com.magyen.platform.plotter.domain.exception.PlotterDomainException;
@@ -54,6 +55,7 @@ public class GetPlotterJobsUseCase {
 
         List<GetPlotterJobResult> jobs = plotterJobRepository.findAll().stream()
                 .filter(job -> matchesCustomer(job, query.customerId()))
+                .filter(job -> matchesJobType(job, query.jobType()))
                 .filter(job -> inRange(job.getCreationDate(), query.fromDate(), query.toDate()))
                 .map(this::toResult)
                 .toList();
@@ -77,6 +79,13 @@ public class GetPlotterJobsUseCase {
             return true;
         }
         return customerId.equals(job.getCustomerId());
+    }
+
+    private static boolean matchesJobType(PlotterJob job, PlotterJobType jobType) {
+        if (jobType == null) {
+            return true;
+        }
+        return job.getJobType() == jobType;
     }
 
     private static boolean inRange(LocalDate businessDate, LocalDate fromDate, LocalDate toDate) {

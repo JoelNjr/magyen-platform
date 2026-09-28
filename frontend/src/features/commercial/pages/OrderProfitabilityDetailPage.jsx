@@ -212,7 +212,9 @@ function OrderProfitabilityDetailPage() {
               <Stack spacing={0.5}>
                 <Typography variant="h5">Costos de producción</Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Atribución de costo de producción. No es un gasto de Finanzas.
+                  Materiales, mano de obra y Plotter siguen la atribución de
+                  producción. Costos otros incluye esos costos adicionales y los
+                  gastos de Finanzas asociados a este pedido.
                 </Typography>
               </Stack>
               <ResultRow
@@ -226,7 +228,7 @@ function OrderProfitabilityDetailPage() {
                 tone="cost"
               />
               <ResultRow
-                label="Otros costos directos"
+                label="Costos otros"
                 value={formatProfitabilityMoney(profitability.otherDirectCost)}
                 tone="cost"
               />

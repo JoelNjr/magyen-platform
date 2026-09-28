@@ -2,13 +2,17 @@ package com.magyen.platform.plotter.infrastructure.commercial;
 
 import com.magyen.platform.commercial.application.dto.GetOrderCommand;
 import com.magyen.platform.commercial.application.dto.GetOrderResult;
+import com.magyen.platform.commercial.application.dto.OrderResult;
 import com.magyen.platform.commercial.application.usecase.GetCustomersUseCase;
 import com.magyen.platform.commercial.application.usecase.GetOrderUseCase;
+import com.magyen.platform.commercial.application.usecase.GetOrdersUseCase;
+import com.magyen.platform.commercial.domain.OrderStatus;
 import com.magyen.platform.plotter.application.port.PlotterCommercialOrderPort;
 import com.magyen.platform.plotter.application.port.PlotterCommercialOrderView;
 import com.magyen.platform.plotter.domain.exception.PlotterDomainException;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -19,13 +23,16 @@ import java.util.UUID;
 public class PlotterCommercialOrderAdapter implements PlotterCommercialOrderPort {
 
     private final GetOrderUseCase getOrderUseCase;
+    private final GetOrdersUseCase getOrdersUseCase;
     private final GetCustomersUseCase getCustomersUseCase;
 
     public PlotterCommercialOrderAdapter(
             GetOrderUseCase getOrderUseCase,
+            GetOrdersUseCase getOrdersUseCase,
             GetCustomersUseCase getCustomersUseCase
     ) {
         this.getOrderUseCase = Objects.requireNonNull(getOrderUseCase, "Get order use case must not be null");
+        this.getOrdersUseCase = Objects.requireNonNull(getOrdersUseCase, "Get orders use case must not be null");
         this.getCustomersUseCase = Objects.requireNonNull(
                 getCustomersUseCase,
                 "Get customers use case must not be null"
@@ -40,6 +47,26 @@ public class PlotterCommercialOrderAdapter implements PlotterCommercialOrderPort
     }
 
     @Override
+    public PlotterCommercialOrderView requireOrderOpenForPlotterJob(UUID orderId) {
+        PlotterCommercialOrderView order = requireExistingOrder(orderId);
+        if (!order.openForPlotterJob()) {
+            throw new PlotterDomainException(
+                    "Internal Magyen plotter jobs require an open commercial order. Current status: "
+                            + order.status()
+            );
+        }
+        return order;
+    }
+
+    @Override
+    public List<PlotterCommercialOrderView> findOrdersOpenForPlotterJob() {
+        return getOrdersUseCase.execute().orders().stream()
+                .filter(order -> order.status() != null && order.status().allowsCommercialContentEditing())
+                .map(PlotterCommercialOrderAdapter::toListView)
+                .toList();
+    }
+
+    @Override
     public Optional<PlotterCommercialOrderView> findOrder(UUID orderId) {
         Objects.requireNonNull(orderId, "Order id must not be null");
 
@@ -50,7 +77,7 @@ public class PlotterCommercialOrderAdapter implements PlotterCommercialOrderPort
             return Optional.empty();
         }
 
-        return Optional.of(toView(order));
+        return Optional.of(toDetailView(order));
     }
 
     @Override
@@ -78,18 +105,56 @@ public class PlotterCommercialOrderAdapter implements PlotterCommercialOrderPort
         }
     }
 
-    private static PlotterCommercialOrderView toView(GetOrderResult order) {
+    private static PlotterCommercialOrderView toDetailView(GetOrderResult order) {
         LocalDate deliveryDate = order.deliveryCommitment() == null
                 ? null
                 : order.deliveryCommitment().promisedDeliveryDate();
-        return new PlotterCommercialOrderView(
+        return toView(
                 order.orderId(),
                 order.orderNumber(),
                 order.description(),
                 order.customerId(),
                 order.customerName(),
                 order.confirmationDate(),
-                deliveryDate
+                deliveryDate,
+                order.status()
+        );
+    }
+
+    private static PlotterCommercialOrderView toListView(OrderResult order) {
+        return toView(
+                order.orderId(),
+                order.orderNumber(),
+                order.description(),
+                order.customerId(),
+                order.customerName(),
+                order.confirmationDate(),
+                order.promisedDeliveryDate(),
+                order.status()
+        );
+    }
+
+    private static PlotterCommercialOrderView toView(
+            UUID orderId,
+            String orderNumber,
+            String description,
+            UUID customerId,
+            String customerName,
+            LocalDate confirmationDate,
+            LocalDate deliveryDate,
+            OrderStatus status
+    ) {
+        boolean openForPlotterJob = status != null && status.allowsCommercialContentEditing();
+        return new PlotterCommercialOrderView(
+                orderId,
+                orderNumber,
+                description,
+                customerId,
+                customerName,
+                confirmationDate,
+                deliveryDate,
+                status == null ? null : status.name(),
+                openForPlotterJob
         );
     }
 }

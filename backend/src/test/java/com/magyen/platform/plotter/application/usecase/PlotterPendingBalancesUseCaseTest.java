@@ -23,6 +23,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.YearMonth;
+import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -172,6 +174,65 @@ class PlotterPendingBalancesUseCaseTest {
                 .noneMatch(job -> negativeJobId.equals(job.plotterJobId())));
         assertTrue(beforeMonthConcept.outstandingAmount().compareTo(BigDecimal.ZERO) > 0);
         assertEquals(financeBefore + 2, financialTransactionRepository.findAllNewestFirst().size());
+
+        PlotterCustomerPendingBalance januaryCustomer = customerInMonth(
+                beforeMonthConcept,
+                2020,
+                1,
+                customerId
+        );
+        assertEquals(new BigDecimal("100.00"), januaryCustomer.outstandingAmount());
+        assertEquals(LocalDate.of(2020, 1, 15), januaryCustomer.jobs().getFirst().creationDate());
+
+        PlotterCustomerPendingBalance februaryCustomer = customerInMonth(
+                beforeMonthConcept,
+                2020,
+                2,
+                customerId
+        );
+        assertEquals(new BigDecimal("80.00"), februaryCustomer.billedAmount());
+        assertEquals(new BigDecimal("30.00"), februaryCustomer.paidAmount());
+        assertEquals(new BigDecimal("50.00"), februaryCustomer.outstandingAmount());
+
+        PlotterCustomerPendingBalance aprilCustomer = customerInMonth(
+                beforeMonthConcept,
+                2020,
+                4,
+                otherCustomerId
+        );
+        assertEquals(new BigDecimal("30.00"), aprilCustomer.outstandingAmount());
+
+        assertTrue(beforeMonthConcept.months().stream()
+                .filter(month -> month.year() == 2020 && month.month() == 3)
+                .flatMap(month -> month.customers().stream())
+                .filter(item -> customerId.equals(item.customerId()))
+                .findAny()
+                .isEmpty());
+
+        List<YearMonth> monthOrder = beforeMonthConcept.months().stream()
+                .map(month -> YearMonth.of(month.year(), month.month()))
+                .toList();
+        assertTrue(monthOrder.indexOf(YearMonth.of(2020, 4)) < monthOrder.indexOf(YearMonth.of(2020, 2)));
+        assertTrue(monthOrder.indexOf(YearMonth.of(2020, 2)) < monthOrder.indexOf(YearMonth.of(2020, 1)));
+
+        BigDecimal groupedOutstanding = beforeMonthConcept.months().stream()
+                .map(month -> month.outstandingAmount())
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        assertEquals(0, groupedOutstanding.compareTo(beforeMonthConcept.outstandingAmount()));
+    }
+
+    private static PlotterCustomerPendingBalance customerInMonth(
+            GetPlotterPendingBalancesResult result,
+            int year,
+            int month,
+            UUID customerId
+    ) {
+        return result.months().stream()
+                .filter(item -> item.year() == year && item.month() == month)
+                .flatMap(item -> item.customers().stream())
+                .filter(item -> customerId.equals(item.customerId()))
+                .findFirst()
+                .orElseThrow();
     }
 
     private com.magyen.platform.plotter.application.dto.CreatePlotterJobResult createExternal(

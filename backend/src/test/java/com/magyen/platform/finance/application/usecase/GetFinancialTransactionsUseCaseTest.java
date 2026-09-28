@@ -96,6 +96,13 @@ class GetFinancialTransactionsUseCaseTest {
         }
 
         @Override
+        public List<FinancialTransaction> findByOrderId(UUID orderId) {
+            return transactions.values().stream()
+                    .filter(transaction -> orderId.equals(transaction.getOrderId()))
+                    .toList();
+        }
+
+        @Override
         public List<FinancialTransaction> findAllNewestFirst() {
             return transactions.values().stream()
                     .sorted(Comparator.comparing(FinancialTransaction::getTransactionDate).reversed())

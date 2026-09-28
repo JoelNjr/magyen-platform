@@ -2,6 +2,7 @@ package com.magyen.platform.plotter.application.usecase;
 
 import com.magyen.platform.plotter.application.dto.GetPlotterPendingBalancesResult;
 import com.magyen.platform.plotter.application.dto.PlotterCustomerPendingBalance;
+import com.magyen.platform.plotter.application.dto.PlotterMonthPendingBalance;
 import com.magyen.platform.plotter.application.dto.PlotterNegativeBalanceItem;
 import com.magyen.platform.plotter.application.dto.PlotterPendingJobBalance;
 import com.magyen.platform.plotter.application.port.PlotterCommercialOrderPort;
@@ -12,6 +13,7 @@ import com.magyen.platform.plotter.domain.PlotterPaymentRepository;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -24,7 +26,8 @@ import java.util.UUID;
  * Lee la deuda de trabajos externos de Plotter. No persiste saldo ni crea
  * movimientos de Finance. No usa el saldo comercial de las órdenes.
  * <p>
- * El cálculo es histórico completo: no aplica el mes del listado de trabajos.
+ * El cálculo sigue siendo histórico. {@code months} solo agrupa esa misma deuda
+ * por {@link PlotterJob#getCreationDate()}, que es la fecha del trabajo.
  */
 public class GetPlotterPendingBalancesUseCase {
 
@@ -60,6 +63,7 @@ public class GetPlotterPendingBalancesUseCase {
         BigDecimal outstanding = money(BigDecimal.ZERO);
         int openJobCount = 0;
         Map<UUID, CustomerAccumulator> customers = new LinkedHashMap<>();
+        Map<YearMonth, Map<UUID, CustomerAccumulator>> months = new LinkedHashMap<>();
         List<PlotterNegativeBalanceItem> negativeBalances = new ArrayList<>();
 
         for (PlotterJob job : plotterJobRepository.findAll()) {
@@ -96,25 +100,64 @@ public class GetPlotterPendingBalancesUseCase {
             outstanding = outstanding.add(jobOutstanding);
             customers.computeIfAbsent(job.getCustomerId(), CustomerAccumulator::new)
                     .add(job, paidAmount, jobOutstanding);
+            months.computeIfAbsent(YearMonth.from(job.getCreationDate()), key -> new LinkedHashMap<>())
+                    .computeIfAbsent(job.getCustomerId(), CustomerAccumulator::new)
+                    .add(job, paidAmount, jobOutstanding);
         }
 
-        List<PlotterCustomerPendingBalance> customerBalances = customers.values().stream()
-                .map(accumulator -> accumulator.toResult(this::customerName))
-                .sorted(Comparator
-                        .comparing(PlotterCustomerPendingBalance::outstandingAmount).reversed()
-                        .thenComparing(balance -> balance.customerName() == null ? "" : balance.customerName()))
+        List<PlotterCustomerPendingBalance> customerBalances = toCustomerBalances(customers);
+        List<PlotterMonthPendingBalance> monthBalances = months.entrySet().stream()
+                .sorted(Map.Entry.<YearMonth, Map<UUID, CustomerAccumulator>>comparingByKey().reversed())
+                .map(entry -> toMonthBalance(entry.getKey(), entry.getValue()))
                 .toList();
 
         negativeBalances.sort(Comparator.comparing(PlotterNegativeBalanceItem::creationDate));
 
         return new GetPlotterPendingBalancesResult(
                 List.copyOf(customerBalances),
+                List.copyOf(monthBalances),
                 openJobCount,
                 customerBalances.size(),
                 externalBilled,
                 externalPaid,
                 outstanding,
                 List.copyOf(negativeBalances)
+        );
+    }
+
+    private List<PlotterCustomerPendingBalance> toCustomerBalances(Map<UUID, CustomerAccumulator> customers) {
+        return customers.values().stream()
+                .map(accumulator -> accumulator.toResult(this::customerName))
+                .sorted(Comparator
+                        .comparing(PlotterCustomerPendingBalance::outstandingAmount).reversed()
+                        .thenComparing(balance -> balance.customerName() == null ? "" : balance.customerName()))
+                .toList();
+    }
+
+    private PlotterMonthPendingBalance toMonthBalance(
+            YearMonth period,
+            Map<UUID, CustomerAccumulator> customers
+    ) {
+        List<PlotterCustomerPendingBalance> customerBalances = toCustomerBalances(customers);
+        BigDecimal billed = money(BigDecimal.ZERO);
+        BigDecimal paid = money(BigDecimal.ZERO);
+        BigDecimal monthOutstanding = money(BigDecimal.ZERO);
+        int jobs = 0;
+        for (PlotterCustomerPendingBalance customer : customerBalances) {
+            billed = billed.add(customer.billedAmount());
+            paid = paid.add(customer.paidAmount());
+            monthOutstanding = monthOutstanding.add(customer.outstandingAmount());
+            jobs += customer.openJobCount();
+        }
+        return new PlotterMonthPendingBalance(
+                period.getYear(),
+                period.getMonthValue(),
+                customerBalances,
+                jobs,
+                customerBalances.size(),
+                billed,
+                paid,
+                monthOutstanding
         );
     }
 

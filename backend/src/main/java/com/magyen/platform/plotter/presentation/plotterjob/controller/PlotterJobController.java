@@ -11,6 +11,7 @@ import com.magyen.platform.plotter.application.usecase.GetPlotterJobUseCase;
 import com.magyen.platform.plotter.application.usecase.GetPlotterJobsUseCase;
 import com.magyen.platform.plotter.application.usecase.GetPlotterPaymentsUseCase;
 import com.magyen.platform.plotter.application.usecase.RegisterPlotterPaymentUseCase;
+import com.magyen.platform.plotter.domain.PlotterJobType;
 import com.magyen.platform.plotter.presentation.plotterjob.mapper.PlotterPresentationMapper;
 import com.magyen.platform.plotter.presentation.plotterjob.request.CreatePlotterJobRequest;
 import com.magyen.platform.plotter.presentation.plotterjob.request.RegisterPlotterPaymentRequest;
@@ -80,10 +81,14 @@ public class PlotterJobController {
     public ResponseEntity<GetPlotterJobsResponse> getPlotterJobs(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
-            @RequestParam(required = false) UUID customerId
+            @RequestParam(required = false) UUID customerId,
+            @RequestParam(required = false) String jobType
     ) {
+        PlotterJobType parsedJobType = jobType == null || jobType.isBlank()
+                ? null
+                : PlotterJobType.of(jobType);
         GetPlotterJobsResult result = getPlotterJobsUseCase.execute(
-                new GetPlotterJobsQuery(fromDate, toDate, customerId)
+                new GetPlotterJobsQuery(fromDate, toDate, customerId, parsedJobType)
         );
         return ResponseEntity.ok(plotterPresentationMapper.toGetJobsResponse(result));
     }

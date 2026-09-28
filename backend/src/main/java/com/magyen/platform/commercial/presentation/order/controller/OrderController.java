@@ -153,9 +153,14 @@ public class OrderController {
     @GetMapping
     public ResponseEntity<GetOrdersResponse> getOrders(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Boolean acceptsDirectCost,
+            @RequestParam(required = false) Integer limit
     ) {
-        GetOrdersResult result = getOrdersUseCase.execute(new GetOrdersQuery(fromDate, toDate));
+        GetOrdersResult result = getOrdersUseCase.execute(
+                new GetOrdersQuery(fromDate, toDate, search, acceptsDirectCost, limit)
+        );
         GetOrdersResponse response = orderPresentationMapper.toResponse(result);
         return ResponseEntity.ok(response);
     }

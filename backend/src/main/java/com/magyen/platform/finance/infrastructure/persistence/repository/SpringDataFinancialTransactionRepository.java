@@ -31,6 +31,8 @@ public interface SpringDataFinancialTransactionRepository
             UUID sourceId
     );
 
+    List<FinancialTransactionEntity> findByOrderId(UUID orderId);
+
     @Query("""
             select coalesce(sum(ledger.amount), 0)
             from FinancialTransactionEntity ledger

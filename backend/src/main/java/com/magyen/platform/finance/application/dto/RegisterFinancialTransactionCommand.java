@@ -18,6 +18,19 @@ public record RegisterFinancialTransactionCommand(
         String description,
         String observation,
         FinancialTransactionSourceType sourceType,
-        UUID sourceId
+        UUID sourceId,
+        UUID orderId
 ) {
+    public RegisterFinancialTransactionCommand(
+            FinancialTransactionType type,
+            BigDecimal amount,
+            LocalDate transactionDate,
+            String category,
+            String description,
+            String observation,
+            FinancialTransactionSourceType sourceType,
+            UUID sourceId
+    ) {
+        this(type, amount, transactionDate, category, description, observation, sourceType, sourceId, null);
+    }
 }
