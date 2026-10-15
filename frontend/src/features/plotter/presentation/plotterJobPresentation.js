@@ -153,6 +153,73 @@ export function isExternalPlotterPaymentComplete(job) {
   return !Number.isNaN(outstanding) && outstanding <= 0
 }
 
+export function parseHistoricalOrderMonth(value) {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}$/.test(value)) {
+    return null
+  }
+
+  const [yearText, monthText] = value.split('-')
+  const year = Number(yearText)
+  const month = Number(monthText)
+  if (!Number.isInteger(year) || year < 1 || !Number.isInteger(month) || month < 1 || month > 12) {
+    return null
+  }
+
+  return { year, month }
+}
+
+export function isEligibleHistoricalPlotterOrderStatus(status) {
+  return status === 'DELIVERED' || status === 'CLOSED'
+}
+
+export function plotterOrdersForRegistration(openOrders, historicalOrders, historicalRegistration) {
+  if (historicalRegistration) {
+    return (historicalOrders || []).filter((order) =>
+      isEligibleHistoricalPlotterOrderStatus(order?.status)
+    )
+  }
+
+  return (openOrders || []).filter(
+    (order) => !isEligibleHistoricalPlotterOrderStatus(order?.status)
+  )
+}
+
+export function formatCommercialOrderStatusLabel(status) {
+  switch (status) {
+    case 'CONFIRMED':
+      return 'Confirmada'
+    case 'IN_PRODUCTION':
+      return 'En producción'
+    case 'READY_FOR_DELIVERY':
+      return 'Lista para entrega'
+    case 'DELIVERED':
+      return 'Entregada'
+    case 'CLOSED':
+      return 'Cerrada'
+    default:
+      return status || '—'
+  }
+}
+
+export function formatHistoricalPlotterOrderOption(order) {
+  const identity = formatPlotterOrderLabel(order)
+  const customer = order?.customerName || 'Sin cliente'
+  const date = formatPlotterDate(order?.confirmationDate)
+  const status = formatCommercialOrderStatusLabel(order?.status)
+  return `${identity} — ${customer} — ${date} — ${status}`
+}
+
+export function withHistoricalPlotterRegistration(payload, enabled) {
+  if (!enabled) {
+    return payload
+  }
+
+  return {
+    ...payload,
+    historicalRegistration: true,
+  }
+}
+
 export function formatPlotterOrderLabel(jobOrOrder) {
   const orderNumber = jobOrOrder?.orderNumber
   if (!orderNumber) {

@@ -30,6 +30,10 @@ import java.util.UUID;
  * <p>
  * Atomicidad: PlotterJob, el OUT y los asientos internos comparten transacción.
  * Idempotencia: el mismo {@code plotterJobId} no consume papel ni duplica asientos.
+ * <p>
+ * El registro atrasado ({@code historicalRegistration}) acepta un pedido DELIVERED o
+ * CLOSED sin cambiar su estado, totales ni pagos. La fecha enviada es la fecha de
+ * negocio del trabajo; no se sustituye por el día de captura.
  */
 public class CreatePlotterJobUseCase {
 
@@ -66,6 +70,7 @@ public class CreatePlotterJobUseCase {
     public CreatePlotterJobResult execute(CreatePlotterJobCommand command) {
         Objects.requireNonNull(command, "Command must not be null");
         validateCommand(command);
+        rejectInvalidHistoricalRegistration(command);
 
         if (command.plotterJobId() != null) {
             var existing = plotterJobRepository.findById(command.plotterJobId());
@@ -114,8 +119,9 @@ public class CreatePlotterJobUseCase {
             if (orderId == null) {
                 throw new PlotterDomainException("Internal Magyen plotter jobs require a commercial order");
             }
-            PlotterCommercialOrderView commercialOrder =
-                    plotterCommercialOrderPort.requireOrderOpenForPlotterJob(orderId);
+            PlotterCommercialOrderView commercialOrder = command.historicalRegistration()
+                    ? plotterCommercialOrderPort.requireOrderEligibleForHistoricalPlotterJob(orderId)
+                    : plotterCommercialOrderPort.requireOrderOpenForPlotterJob(orderId);
             customerId = commercialOrder.customerId();
             validateJobDate(creationDate, commercialOrder);
         } else if (orderId != null) {
@@ -151,6 +157,22 @@ public class CreatePlotterJobUseCase {
         ensureInternalServiceLedger(savedPlotterJob);
 
         return PlotterJobReadMapper.toCreateResult(savedPlotterJob, plotterCommercialOrderPort);
+    }
+
+    private static void rejectInvalidHistoricalRegistration(CreatePlotterJobCommand command) {
+        if (!command.historicalRegistration()) {
+            return;
+        }
+        if (!resolveJobType(command).isInternal()) {
+            throw new PlotterDomainException(
+                    "Historical Plotter registration applies only to internal Magyen jobs"
+            );
+        }
+        if (command.creationDate() == null) {
+            throw new PlotterDomainException(
+                    "Historical Plotter registration requires the actual work date"
+            );
+        }
     }
 
     private static PlotterJobType resolveJobType(CreatePlotterJobCommand command) {

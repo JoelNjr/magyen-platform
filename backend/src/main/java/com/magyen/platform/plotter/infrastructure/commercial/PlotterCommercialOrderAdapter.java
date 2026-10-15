@@ -2,6 +2,7 @@ package com.magyen.platform.plotter.infrastructure.commercial;
 
 import com.magyen.platform.commercial.application.dto.GetOrderCommand;
 import com.magyen.platform.commercial.application.dto.GetOrderResult;
+import com.magyen.platform.commercial.application.dto.GetOrdersQuery;
 import com.magyen.platform.commercial.application.dto.OrderResult;
 import com.magyen.platform.commercial.application.usecase.GetCustomersUseCase;
 import com.magyen.platform.commercial.application.usecase.GetOrderUseCase;
@@ -64,6 +65,33 @@ public class PlotterCommercialOrderAdapter implements PlotterCommercialOrderPort
                 .filter(order -> order.status() != null && order.status().allowsCommercialContentEditing())
                 .map(PlotterCommercialOrderAdapter::toListView)
                 .toList();
+    }
+
+    @Override
+    public PlotterCommercialOrderView requireOrderEligibleForHistoricalPlotterJob(UUID orderId) {
+        PlotterCommercialOrderView order = requireExistingOrder(orderId);
+        if (!isHistoricalPlotterStatus(order.status())) {
+            throw new PlotterDomainException(
+                    "Historical Plotter registration applies only to delivered or closed commercial orders. "
+                            + "Current status: " + order.status()
+            );
+        }
+        return order;
+    }
+
+    @Override
+    public List<PlotterCommercialOrderView> findOrdersEligibleForHistoricalPlotterJob(
+            LocalDate fromDate,
+            LocalDate toDate
+    ) {
+        return getOrdersUseCase.execute(new GetOrdersQuery(fromDate, toDate)).orders().stream()
+                .filter(order -> order.status() == OrderStatus.DELIVERED || order.status() == OrderStatus.CLOSED)
+                .map(PlotterCommercialOrderAdapter::toListView)
+                .toList();
+    }
+
+    private static boolean isHistoricalPlotterStatus(String status) {
+        return OrderStatus.DELIVERED.name().equals(status) || OrderStatus.CLOSED.name().equals(status);
     }
 
     @Override

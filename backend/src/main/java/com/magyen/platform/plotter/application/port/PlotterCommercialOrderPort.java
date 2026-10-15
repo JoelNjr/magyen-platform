@@ -1,5 +1,6 @@
 package com.magyen.platform.plotter.application.port;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -24,6 +25,21 @@ public interface PlotterCommercialOrderPort {
      * Órdenes que todavía pueden recibir un trabajo INTERNAL_MAGYEN.
      */
     List<PlotterCommercialOrderView> findOrdersOpenForPlotterJob();
+
+    /**
+     * Exige un pedido entregado o cerrado para un registro atrasado.
+     * No reabre el pedido ni altera su estado comercial.
+     */
+    PlotterCommercialOrderView requireOrderEligibleForHistoricalPlotterJob(UUID orderId);
+
+    /**
+     * Pedidos entregados o cerrados cuya confirmación cae en el rango.
+     * Los pedidos abiertos siguen en {@link #findOrdersOpenForPlotterJob()}.
+     */
+    List<PlotterCommercialOrderView> findOrdersEligibleForHistoricalPlotterJob(
+            LocalDate fromDate,
+            LocalDate toDate
+    );
 
     Optional<PlotterCommercialOrderView> findOrder(UUID orderId);
 

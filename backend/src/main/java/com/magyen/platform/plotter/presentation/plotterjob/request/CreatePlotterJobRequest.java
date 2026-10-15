@@ -16,6 +16,7 @@ public record CreatePlotterJobRequest(
         UUID paperInventoryItemId,
         BigDecimal printedMeters,
         BigDecimal pricePerMeter,
-        String observations
+        String observations,
+        Boolean historicalRegistration
 ) {
 }

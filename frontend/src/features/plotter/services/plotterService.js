@@ -17,6 +17,13 @@ export async function getOpenCommercialOrdersForPlotter() {
   return response.data
 }
 
+export async function getHistoricalCommercialOrdersForPlotter({ year, month }) {
+  const response = await httpClient.get('/plotter/historical-commercial-orders', {
+    params: { year, month },
+  })
+  return response.data
+}
+
 export async function getPlotterPendingBalances() {
   const response = await httpClient.get('/plotter/pending-balances')
   return response.data

@@ -20,6 +20,7 @@ import com.magyen.platform.plotter.application.port.PlotterPaymentFinancePort;
 import com.magyen.platform.plotter.infrastructure.commercial.PlotterCommercialOrderAdapter;
 import com.magyen.platform.plotter.application.usecase.CreatePlotterJobUseCase;
 import com.magyen.platform.plotter.application.usecase.GetInternalPlotterOrderCostsUseCase;
+import com.magyen.platform.plotter.application.usecase.GetHistoricalCommercialOrdersForPlotterUseCase;
 import com.magyen.platform.plotter.application.usecase.GetOpenCommercialOrdersForPlotterUseCase;
 import com.magyen.platform.plotter.application.usecase.GetPlotterJobUseCase;
 import com.magyen.platform.plotter.application.usecase.GetPlotterJobsUseCase;
@@ -160,6 +161,13 @@ public class PlotterConfiguration {
             PlotterCommercialOrderPort plotterCommercialOrderPort
     ) {
         return new GetOpenCommercialOrdersForPlotterUseCase(plotterCommercialOrderPort);
+    }
+
+    @Bean
+    public GetHistoricalCommercialOrdersForPlotterUseCase getHistoricalCommercialOrdersForPlotterUseCase(
+            PlotterCommercialOrderPort plotterCommercialOrderPort
+    ) {
+        return new GetHistoricalCommercialOrdersForPlotterUseCase(plotterCommercialOrderPort);
     }
 
     @Bean

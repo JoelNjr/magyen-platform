@@ -12,6 +12,8 @@ import java.util.UUID;
  * {@code plotterJobId} es opcional: el mismo identificador no consume papel dos veces.
  * {@code jobType} nulo se resuelve como {@code EXTERNAL} si no hay orden, o
  * {@code INTERNAL_MAGYEN} si hay orden.
+ * {@code historicalRegistration} solo autoriza un INTERNAL_MAGYEN sobre un pedido
+ * entregado o cerrado. No cambia el pedido y exige la fecha real del trabajo.
  */
 public record CreatePlotterJobCommand(
         UUID customerId,
@@ -22,8 +24,34 @@ public record CreatePlotterJobCommand(
         BigDecimal pricePerMeter,
         String observations,
         PlotterJobType jobType,
-        UUID plotterJobId
+        UUID plotterJobId,
+        boolean historicalRegistration
 ) {
+    public CreatePlotterJobCommand(
+            UUID customerId,
+            UUID orderId,
+            LocalDate creationDate,
+            UUID paperInventoryItemId,
+            BigDecimal printedMeters,
+            BigDecimal pricePerMeter,
+            String observations,
+            PlotterJobType jobType,
+            UUID plotterJobId
+    ) {
+        this(
+                customerId,
+                orderId,
+                creationDate,
+                paperInventoryItemId,
+                printedMeters,
+                pricePerMeter,
+                observations,
+                jobType,
+                plotterJobId,
+                false
+        );
+    }
+
     public CreatePlotterJobCommand(
             UUID customerId,
             UUID orderId,
@@ -42,7 +70,8 @@ public record CreatePlotterJobCommand(
                 pricePerMeter,
                 observations,
                 null,
-                null
+                null,
+                false
         );
     }
 }

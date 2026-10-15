@@ -87,6 +87,10 @@ class AuthorizationApiContractTest {
         mockMvc.perform(authorized(get("/api/v1/production-orders"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/inventory"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/plotter/jobs"), accessToken)).andExpect(status().isOk());
+        mockMvc.perform(authorized(get("/api/v1/plotter/historical-commercial-orders"), accessToken)
+                        .param("year", "2026")
+                        .param("month", "9"))
+                .andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/orders/profitability"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(patch("/api/v1/orders/" + UNKNOWN_ID + "/deliver"), accessToken)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -145,6 +149,24 @@ class AuthorizationApiContractTest {
         mockMvc.perform(authorized(patch("/api/v1/inventory/materials/MISSING-MAT/deactivate"), accessToken))
                 .andExpect(status().isBadRequest());
         mockMvc.perform(authorized(get("/api/v1/plotter/jobs"), accessToken)).andExpect(status().isOk());
+        mockMvc.perform(authorized(get("/api/v1/plotter/historical-commercial-orders"), accessToken)
+                        .param("year", "2026")
+                        .param("month", "9"))
+                .andExpect(status().isOk());
+        mockMvc.perform(authorized(post("/api/v1/plotter/jobs"), accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "jobType": "INTERNAL_MAGYEN",
+                                  "historicalRegistration": true,
+                                  "orderId": "%s",
+                                  "creationDate": "2026-09-12",
+                                  "paperInventoryItemId": "%s",
+                                  "printedMeters": 1,
+                                  "pricePerMeter": 5000
+                                }
+                                """.formatted(UNKNOWN_ID, UNKNOWN_ID)))
+                .andExpect(status().isBadRequest());
         mockMvc.perform(authorized(get("/api/v1/orders/profitability"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(patch("/api/v1/orders/" + UNKNOWN_ID + "/deliver"), accessToken)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -291,6 +313,26 @@ class AuthorizationApiContractTest {
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.status").value(401));
         mockMvc.perform(get("/api/v1/home/dashboard"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401));
+        mockMvc.perform(get("/api/v1/plotter/historical-commercial-orders")
+                        .param("year", "2026")
+                        .param("month", "9"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401));
+        mockMvc.perform(post("/api/v1/plotter/jobs")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "jobType": "INTERNAL_MAGYEN",
+                                  "historicalRegistration": true,
+                                  "orderId": "%s",
+                                  "creationDate": "2026-09-12",
+                                  "paperInventoryItemId": "%s",
+                                  "printedMeters": 1,
+                                  "pricePerMeter": 5000
+                                }
+                                """.formatted(UNKNOWN_ID, UNKNOWN_ID)))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.status").value(401));
         mockMvc.perform(get("/api/v1/home/profitability"))

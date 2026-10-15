@@ -50,7 +50,8 @@ public class PlotterPresentationMapper {
                 request.pricePerMeter(),
                 request.observations(),
                 jobType,
-                request.plotterJobId()
+                request.plotterJobId(),
+                Boolean.TRUE.equals(request.historicalRegistration())
         );
     }
 

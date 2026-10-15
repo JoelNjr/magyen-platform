@@ -2,10 +2,12 @@ import { useEffect, useMemo, useState } from 'react'
 import {
   Alert,
   Button,
+  Checkbox,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
+  FormControlLabel,
   MenuItem,
   Stack,
   TextField,
@@ -14,19 +16,38 @@ import {
 import { customersForExternalPlotter } from '../../commercial/presentation/customerCategory'
 import {
   calculatePlotterTotalPreview,
+  formatCommercialOrderStatusLabel,
+  formatHistoricalPlotterOrderOption,
   formatPlotterJobTypeLabel,
   formatPlotterMoney,
   formatPlotterNumber,
   formatPlotterOrderLabel,
   isInternalPlotterJob,
   isWastePlotterJob,
+  parseHistoricalOrderMonth,
+  plotterOrdersForRegistration,
+  withHistoricalPlotterRegistration,
 } from '../presentation/plotterJobPresentation'
+import { getHistoricalCommercialOrdersForPlotter } from '../services/plotterService'
 
 function toIsoDate(date = new Date()) {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const day = String(date.getDate()).padStart(2, '0')
   return `${year}-${month}-${day}`
+}
+
+function historicalOrderHelperText(parsedMonth, loading, count) {
+  if (!parsedMonth) {
+    return 'Elige el mes de confirmación para ver pedidos entregados o cerrados.'
+  }
+  if (loading) {
+    return 'Buscando pedidos de ese mes…'
+  }
+  if (count === 0) {
+    return 'No hay pedidos entregados o cerrados en ese mes.'
+  }
+  return 'Pedidos entregados o cerrados. El estado comercial no cambia. Un pedido puede tener varios trabajos.'
 }
 
 function createPlotterJobId() {
@@ -46,6 +67,8 @@ const EMPTY_FORM = {
   pricePerMeter: '',
   observations: '',
   plotterJobId: '',
+  historicalRegistration: false,
+  historicalMonth: '',
 }
 
 function CreatePlotterJobDialog({
@@ -63,6 +86,9 @@ function CreatePlotterJobDialog({
 }) {
   const [form, setForm] = useState(EMPTY_FORM)
   const [validationError, setValidationError] = useState('')
+  const [historicalOrders, setHistoricalOrders] = useState([])
+  const [historicalLookupError, setHistoricalLookupError] = useState('')
+  const [historicalLookupLoading, setHistoricalLookupLoading] = useState(false)
 
   useEffect(() => {
     if (!open) {
@@ -76,6 +102,9 @@ function CreatePlotterJobDialog({
       creationDate: toIsoDate(),
       plotterJobId: createPlotterJobId(),
     })
+    setHistoricalOrders([])
+    setHistoricalLookupError('')
+    setHistoricalLookupLoading(false)
   }, [open])
 
   useEffect(() => {
@@ -90,9 +119,16 @@ function CreatePlotterJobDialog({
     [customers]
   )
 
+  const historicalRegistration = isInternalPlotterJob(form.jobType) && form.historicalRegistration
+  const parsedHistoricalMonth = parseHistoricalOrderMonth(form.historicalMonth)
+  const selectableOrders = useMemo(
+    () => plotterOrdersForRegistration(orders, historicalOrders, historicalRegistration),
+    [orders, historicalOrders, historicalRegistration]
+  )
+
   const selectedOrder = useMemo(
-    () => (orders || []).find((order) => order.orderId === form.orderId) || null,
-    [orders, form.orderId]
+    () => selectableOrders.find((order) => order.orderId === form.orderId) || null,
+    [selectableOrders, form.orderId]
   )
 
   const selectedRoll = useMemo(
@@ -120,6 +156,42 @@ function CreatePlotterJobDialog({
     return meters * unitCost
   }, [form.printedMeters, selectedRoll])
 
+  useEffect(() => {
+    const year = parsedHistoricalMonth?.year
+    const month = parsedHistoricalMonth?.month
+    if (!open || !historicalRegistration || !year || !month) {
+      return undefined
+    }
+
+    let cancelled = false
+    setHistoricalLookupLoading(true)
+    setHistoricalLookupError('')
+
+    getHistoricalCommercialOrdersForPlotter({ year, month })
+      .then((data) => {
+        if (cancelled) {
+          return
+        }
+        setHistoricalOrders(Array.isArray(data?.orders) ? data.orders : [])
+      })
+      .catch(() => {
+        if (cancelled) {
+          return
+        }
+        setHistoricalOrders([])
+        setHistoricalLookupError('No se pudieron consultar los pedidos de ese mes.')
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setHistoricalLookupLoading(false)
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [open, historicalRegistration, parsedHistoricalMonth?.year, parsedHistoricalMonth?.month])
+
   function handleClose() {
     if (submitting) {
       return
@@ -134,13 +206,46 @@ function CreatePlotterJobDialog({
         next.customerId = ''
         next.orderId = ''
         next.pricePerMeter = ''
+        next.historicalRegistration = false
+        next.historicalMonth = ''
+        if (!next.creationDate) {
+          next.creationDate = toIsoDate()
+        }
+      }
+      if (field === 'historicalMonth') {
+        next.orderId = ''
+        next.customerId = ''
       }
       if (field === 'orderId') {
-        const order = (orders || []).find((item) => item.orderId === value)
+        const order = plotterOrdersForRegistration(
+          orders,
+          historicalOrders,
+          isInternalPlotterJob(current.jobType) && current.historicalRegistration
+        ).find((item) => item.orderId === value)
         next.customerId = order?.customerId || ''
       }
       return next
     })
+    if (field === 'jobType' || field === 'historicalMonth') {
+      setHistoricalOrders([])
+      setHistoricalLookupError('')
+      setHistoricalLookupLoading(false)
+    }
+    setValidationError('')
+  }
+
+  function updateHistoricalRegistration(enabled) {
+    setHistoricalOrders([])
+    setHistoricalLookupError('')
+    setHistoricalLookupLoading(false)
+    setForm((current) => ({
+      ...current,
+      historicalRegistration: enabled,
+      historicalMonth: enabled ? current.historicalMonth : '',
+      orderId: '',
+      customerId: '',
+      creationDate: enabled ? '' : toIsoDate(),
+    }))
     setValidationError('')
   }
 
@@ -157,7 +262,9 @@ function CreatePlotterJobDialog({
 
     if (!jobType || !paperInventoryItemId || !printedMetersRaw || !creationDate) {
       setValidationError(
-        'Tipo de trabajo, fecha, rollo de papel y metros impresos son obligatorios.'
+        historicalRegistration && !creationDate
+          ? 'Indica la fecha real de impresión. Un registro atrasado no usa la fecha de hoy.'
+          : 'Tipo de trabajo, fecha, rollo de papel y metros impresos son obligatorios.'
       )
       return
     }
@@ -209,7 +316,7 @@ function CreatePlotterJobDialog({
     }
 
     setValidationError('')
-    onSubmit({
+    onSubmit(withHistoricalPlotterRegistration({
       jobType,
       plotterJobId: form.plotterJobId || createPlotterJobId(),
       customerId: isExternal ? form.customerId : undefined,
@@ -219,7 +326,7 @@ function CreatePlotterJobDialog({
       printedMeters,
       pricePerMeter,
       observations: observations || null,
-    })
+    }, historicalRegistration))
   }
 
   return (
@@ -228,8 +335,8 @@ function CreatePlotterJobDialog({
 
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
-          {(validationError || errorMessage) && (
-            <Alert severity="error">{validationError || errorMessage}</Alert>
+          {(validationError || errorMessage || historicalLookupError) && (
+            <Alert severity="error">{validationError || errorMessage || historicalLookupError}</Alert>
           )}
 
           <TextField
@@ -271,23 +378,63 @@ function CreatePlotterJobDialog({
 
           {isInternal && (
             <>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={form.historicalRegistration}
+                    onChange={(event) => updateHistoricalRegistration(event.target.checked)}
+                    disabled={submitting}
+                  />
+                }
+                label="Registrar trabajo atrasado"
+              />
+              {historicalRegistration ? (
+                <Alert severity="warning">
+                  Registro atrasado de un trabajo que ya se imprimió. El pedido permanece
+                  en su estado actual. Indica la fecha real de impresión; no se sustituye
+                  por hoy. Un pedido puede tener varios trabajos de Plotter.
+                </Alert>
+              ) : null}
+              {historicalRegistration && (
+                <TextField
+                  label="Mes de confirmación del pedido"
+                  type="month"
+                  value={form.historicalMonth}
+                  onChange={(event) => updateField('historicalMonth', event.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                  fullWidth
+                  disabled={submitting}
+                  helperText="Busca pedidos de meses anteriores sin cargar todo el histórico."
+                />
+              )}
               <TextField
                 select
                 label="Orden comercial asociada"
                 value={form.orderId}
                 onChange={(event) => updateField('orderId', event.target.value)}
                 fullWidth
-                disabled={submitting || loadingLookups}
+                disabled={
+                  submitting
+                  || (!historicalRegistration && loadingLookups)
+                  || (historicalRegistration && (!parsedHistoricalMonth || historicalLookupLoading))
+                }
                 helperText={
-                  !loadingLookups && (orders || []).length === 0
-                    ? 'No hay órdenes abiertas para asociar.'
-                    : 'Solo órdenes abiertas: confirmadas, en producción o listas para entrega.'
+                  historicalRegistration
+                    ? historicalOrderHelperText(
+                        parsedHistoricalMonth,
+                        historicalLookupLoading,
+                        selectableOrders.length
+                      )
+                    : !loadingLookups && selectableOrders.length === 0
+                      ? 'No hay órdenes abiertas para asociar.'
+                      : 'Solo órdenes abiertas: confirmadas, en producción o listas para entrega.'
                 }
               >
-                {(orders || []).map((order) => (
+                {selectableOrders.map((order) => (
                   <MenuItem key={order.orderId} value={order.orderId}>
-                    {formatPlotterOrderLabel(order)}
-                    {order.customerName ? ` — ${order.customerName}` : ''}
+                    {historicalRegistration
+                      ? formatHistoricalPlotterOrderOption(order)
+                      : `${formatPlotterOrderLabel(order)}${order.customerName ? ` — ${order.customerName}` : ''}`}
                   </MenuItem>
                 ))}
               </TextField>
@@ -298,6 +445,12 @@ function CreatePlotterJobDialog({
                 InputProps={{ readOnly: true }}
                 helperText="Se toma de la orden comercial."
               />
+              {historicalRegistration && selectedOrder ? (
+                <Typography variant="body2" color="text.secondary">
+                  Estado actual: {formatCommercialOrderStatusLabel(selectedOrder.status)}.
+                  Confirmación: {selectedOrder.confirmationDate || '—'}. El registro no reabre el pedido.
+                </Typography>
+              ) : null}
             </>
           )}
 
@@ -332,13 +485,19 @@ function CreatePlotterJobDialog({
           {form.jobType && (
             <>
               <TextField
-                label="Fecha del trabajo"
+                label={historicalRegistration ? 'Fecha real de impresión' : 'Fecha del trabajo'}
                 type="date"
                 value={form.creationDate}
                 onChange={(event) => updateField('creationDate', event.target.value)}
                 InputLabelProps={{ shrink: true }}
                 fullWidth
                 disabled={submitting}
+                required={historicalRegistration}
+                helperText={
+                  historicalRegistration
+                    ? 'Fecha en que se imprimió el trabajo. No uses la fecha de hoy si el trabajo es de otro mes.'
+                    : undefined
+                }
               />
 
               <TextField
