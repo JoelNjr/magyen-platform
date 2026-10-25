@@ -226,6 +226,46 @@ public class Quotation {
         this.total = newTotal;
     }
 
+    /**
+     * Crea un ítem nuevo con los datos de negocio del original y lo inserta inmediatamente después.
+     * <p>
+     * La tela y la especificación llegan ya validadas por Application. No reutiliza el identificador
+     * del original ni altera sus datos. El total se recalcula con el descuento vigente.
+     */
+    public UUID duplicateItem(
+            UUID sourceItemId,
+            String fabric,
+            String secondaryFabric,
+            ProductSpecification productSpecification
+    ) {
+        Objects.requireNonNull(sourceItemId, "Item id must not be null");
+        int index = indexOfItem(sourceItemId);
+        if (index < 0) {
+            throw new QuotationDomainException("Quotation item not found: " + sourceItemId);
+        }
+
+        QuotationItem source = items.get(index);
+        validateQuantity(source.getQuantity());
+        validateUnitPrice(source.getUnitPrice());
+
+        QuotationItem duplicate = QuotationItem.create(
+                source.getProductName(),
+                source.getQuantity(),
+                fabric,
+                secondaryFabric,
+                source.getColor(),
+                source.getUnitPrice(),
+                productSpecification
+        );
+        List<QuotationItem> proposedItems = new ArrayList<>(items);
+        proposedItems.add(index + 1, duplicate);
+        Money newTotal = totalFor(proposedItems, this.discount);
+
+        items.add(index + 1, duplicate);
+        this.total = newTotal;
+        return duplicate.getId();
+    }
+
     public void removeItem(UUID itemId) {
         Objects.requireNonNull(itemId, "Item id must not be null");
 

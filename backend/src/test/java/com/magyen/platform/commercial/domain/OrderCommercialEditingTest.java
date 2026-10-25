@@ -40,6 +40,53 @@ class OrderCommercialEditingTest {
     }
 
     @Test
+    void promisedDeliveryDateCanMoveToThePastWithoutChangingDeliveryOrTotals() {
+        Order order = orderWithStatus(OrderStatus.IN_PRODUCTION, item("Camiseta", 10, "20000"));
+        LocalDate actualBefore = order.getActualDeliveryDate();
+        Money totalBefore = order.getTotal();
+        OrderStatus statusBefore = order.getStatus();
+
+        order.changePromisedDeliveryDate(order.getConfirmationDate());
+
+        assertEquals(order.getConfirmationDate(), order.getDeliveryCommitment().getPromisedDeliveryDate());
+        assertEquals(actualBefore, order.getActualDeliveryDate());
+        assertEquals(statusBefore, order.getStatus());
+        assertEquals(totalBefore, order.getTotal());
+        assertNull(order.getDeliveryCommitment().getDeliveryObservations());
+    }
+
+    @Test
+    void promisedDeliveryDateBeforeConfirmationIsRejected() {
+        Order order = orderWithStatus(OrderStatus.CONFIRMED, item("Camiseta", 10, "20000"));
+        LocalDate original = order.getDeliveryCommitment().getPromisedDeliveryDate();
+
+        OrderDomainException exception = assertThrows(
+                OrderDomainException.class,
+                () -> order.changePromisedDeliveryDate(order.getConfirmationDate().minusDays(1))
+        );
+
+        assertTrue(exception.getMessage().contains("before confirmation date"));
+        assertEquals(original, order.getDeliveryCommitment().getPromisedDeliveryDate());
+    }
+
+    @Test
+    void deliveredAndClosedRejectPromisedDeliveryDateChanges() {
+        for (OrderStatus status : List.of(OrderStatus.DELIVERED, OrderStatus.CLOSED)) {
+            Order order = orderWithStatus(status, item("Camiseta", 10, "20000"));
+            LocalDate original = order.getDeliveryCommitment().getPromisedDeliveryDate();
+
+            OrderDomainException exception = assertThrows(
+                    OrderDomainException.class,
+                    () -> order.changePromisedDeliveryDate(original.plusDays(3))
+            );
+
+            assertTrue(exception.getMessage().contains("CONFIRMED, IN_PRODUCTION or READY_FOR_DELIVERY"));
+            assertEquals(status, order.getStatus());
+            assertEquals(original, order.getDeliveryCommitment().getPromisedDeliveryDate());
+        }
+    }
+
+    @Test
     void deliveredAndClosedRejectCommercialEdits() {
         for (OrderStatus status : List.of(OrderStatus.DELIVERED, OrderStatus.CLOSED)) {
             Order order = orderWithStatus(status, item("Camiseta", 10, "20000"));

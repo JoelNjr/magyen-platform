@@ -71,6 +71,7 @@ function OrdersTableHead() {
           Estado
         </TableCell>
         <TableCell sx={headerCellSx}>Fecha de confirmación</TableCell>
+        <TableCell sx={headerCellSx}>Entrega programada</TableCell>
         <TableCell sx={headerCellSx}>Vendedor</TableCell>
         <TableCell align="right" sx={headerCellSx}>
           Total
@@ -265,6 +266,9 @@ function OrdersPage() {
                     <Skeleton width={100} />
                   </TableCell>
                   <TableCell>
+                    <Skeleton width={100} />
+                  </TableCell>
+                  <TableCell>
                     <Skeleton width="70%" />
                   </TableCell>
                   <TableCell align="right">
@@ -344,6 +348,9 @@ function OrdersPage() {
                     </TableCell>
                     <TableCell>
                       {formatDisplayDate(order.confirmationDate)}
+                    </TableCell>
+                    <TableCell>
+                      {formatDisplayDate(order.promisedDeliveryDate)}
                     </TableCell>
                     <TableCell>{order.sellerName || '—'}</TableCell>
                     <TableCell align="right">

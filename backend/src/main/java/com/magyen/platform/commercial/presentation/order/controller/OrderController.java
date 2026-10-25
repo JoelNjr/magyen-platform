@@ -23,6 +23,7 @@ import com.magyen.platform.commercial.application.dto.RemoveOrderItemResult;
 import com.magyen.platform.commercial.application.dto.ReplaceOrderItemSizesCommand;
 import com.magyen.platform.commercial.application.dto.ReplaceOrderItemSizesResult;
 import com.magyen.platform.commercial.application.dto.StartOrderProductionCommand;
+import com.magyen.platform.commercial.application.dto.UpdatePromisedDeliveryDateCommand;
 import com.magyen.platform.commercial.application.dto.UpdateOrderItemCommand;
 import com.magyen.platform.commercial.application.dto.UpdateOrderItemProductSpecificationCommand;
 import com.magyen.platform.commercial.application.dto.UpdateOrderItemProductSpecificationResult;
@@ -41,6 +42,7 @@ import com.magyen.platform.commercial.application.usecase.MarkOrderReadyForDeliv
 import com.magyen.platform.commercial.application.usecase.RemoveOrderItemUseCase;
 import com.magyen.platform.commercial.application.usecase.ReplaceOrderItemSizesUseCase;
 import com.magyen.platform.commercial.application.usecase.StartOrderProductionUseCase;
+import com.magyen.platform.commercial.application.usecase.UpdatePromisedDeliveryDateUseCase;
 import com.magyen.platform.commercial.application.usecase.UpdateOrderItemProductSpecificationUseCase;
 import com.magyen.platform.commercial.application.usecase.UpdateOrderItemUseCase;
 import com.magyen.platform.commercial.presentation.order.mapper.OrderPresentationMapper;
@@ -49,6 +51,7 @@ import com.magyen.platform.commercial.presentation.order.request.ApplyOrderDisco
 import com.magyen.platform.commercial.presentation.order.request.CreateOrderRequest;
 import com.magyen.platform.commercial.presentation.order.request.DeliverOrderRequest;
 import com.magyen.platform.commercial.presentation.order.request.ReplaceOrderItemSizesRequest;
+import com.magyen.platform.commercial.presentation.order.request.UpdatePromisedDeliveryDateRequest;
 import com.magyen.platform.commercial.presentation.order.request.UpdateOrderItemProductSpecificationRequest;
 import com.magyen.platform.commercial.presentation.order.request.UpdateOrderItemRequest;
 import com.magyen.platform.commercial.presentation.order.response.AddOrderItemResponse;
@@ -64,6 +67,7 @@ import com.magyen.platform.commercial.presentation.order.response.MarkOrderReady
 import com.magyen.platform.commercial.presentation.order.response.RemoveOrderItemResponse;
 import com.magyen.platform.commercial.presentation.order.response.ReplaceOrderItemSizesResponse;
 import com.magyen.platform.commercial.presentation.order.response.StartOrderProductionResponse;
+import com.magyen.platform.commercial.presentation.order.response.UpdatePromisedDeliveryDateResponse;
 import com.magyen.platform.commercial.presentation.order.response.UpdateOrderItemProductSpecificationResponse;
 import com.magyen.platform.commercial.presentation.order.response.UpdateOrderItemResponse;
 import org.springframework.http.HttpHeaders;
@@ -109,6 +113,7 @@ public class OrderController {
     private final StartOrderProductionUseCase startOrderProductionUseCase;
     private final MarkOrderReadyForDeliveryUseCase markOrderReadyForDeliveryUseCase;
     private final DeliverOrderUseCase deliverOrderUseCase;
+    private final UpdatePromisedDeliveryDateUseCase updatePromisedDeliveryDateUseCase;
     private final CloseOrderUseCase closeOrderUseCase;
     private final OrderPresentationMapper orderPresentationMapper;
 
@@ -128,6 +133,7 @@ public class OrderController {
             StartOrderProductionUseCase startOrderProductionUseCase,
             MarkOrderReadyForDeliveryUseCase markOrderReadyForDeliveryUseCase,
             DeliverOrderUseCase deliverOrderUseCase,
+            UpdatePromisedDeliveryDateUseCase updatePromisedDeliveryDateUseCase,
             CloseOrderUseCase closeOrderUseCase,
             OrderPresentationMapper orderPresentationMapper
     ) {
@@ -146,6 +152,7 @@ public class OrderController {
         this.startOrderProductionUseCase = startOrderProductionUseCase;
         this.markOrderReadyForDeliveryUseCase = markOrderReadyForDeliveryUseCase;
         this.deliverOrderUseCase = deliverOrderUseCase;
+        this.updatePromisedDeliveryDateUseCase = updatePromisedDeliveryDateUseCase;
         this.closeOrderUseCase = closeOrderUseCase;
         this.orderPresentationMapper = orderPresentationMapper;
     }
@@ -232,6 +239,18 @@ public class OrderController {
     ) {
         DeliverOrderCommand command = orderPresentationMapper.toDeliverOrderCommand(orderId, request);
         return ResponseEntity.ok(orderPresentationMapper.toResponse(deliverOrderUseCase.execute(command)));
+    }
+
+    @PatchMapping("/{orderId}/promised-delivery-date")
+    public ResponseEntity<UpdatePromisedDeliveryDateResponse> updatePromisedDeliveryDate(
+            @PathVariable UUID orderId,
+            @RequestBody UpdatePromisedDeliveryDateRequest request
+    ) {
+        UpdatePromisedDeliveryDateCommand command =
+                orderPresentationMapper.toUpdatePromisedDeliveryDateCommand(orderId, request);
+        return ResponseEntity.ok(orderPresentationMapper.toResponse(
+                updatePromisedDeliveryDateUseCase.execute(command)
+        ));
     }
 
     @PatchMapping("/{orderId}/close")

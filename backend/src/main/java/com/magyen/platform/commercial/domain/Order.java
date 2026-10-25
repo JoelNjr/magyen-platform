@@ -26,7 +26,7 @@ public class Order {
     private final UUID quotationId;
     private final LocalDate confirmationDate;
     private OrderStatus status;
-    private final DeliveryCommitment deliveryCommitment;
+    private DeliveryCommitment deliveryCommitment;
     private LocalDate actualDeliveryDate;
     private PaymentSummary paymentSummary;
     private final UUID sellerId;
@@ -451,6 +451,26 @@ public class Order {
         this.discount = resolvedDiscount;
         this.total = newTotal;
         synchronizePaymentSummary();
+    }
+
+    /**
+     * Corrige la fecha prometida. Conserva las observaciones de entrega.
+     * <p>
+     * No modifica la fecha real, la confirmación, el estado, los totales ni los pagos.
+     * DELIVERED y CLOSED permanecen congelados.
+     */
+    public void changePromisedDeliveryDate(LocalDate promisedDeliveryDate) {
+        ensureCommercialContentEditable();
+        if (promisedDeliveryDate == null) {
+            throw new OrderDomainException("Promised delivery date must not be null");
+        }
+
+        DeliveryCommitment updatedCommitment = DeliveryCommitment.of(
+                promisedDeliveryDate,
+                deliveryCommitment.getDeliveryObservations()
+        );
+        validateDeliveryCommitment(confirmationDate, updatedCommitment);
+        this.deliveryCommitment = updatedCommitment;
     }
 
     /**

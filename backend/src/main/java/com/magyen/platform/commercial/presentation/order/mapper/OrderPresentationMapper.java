@@ -31,6 +31,8 @@ import com.magyen.platform.commercial.application.dto.ReplaceOrderItemSizesComma
 import com.magyen.platform.commercial.application.dto.ReplaceOrderItemSizesResult;
 import com.magyen.platform.commercial.application.dto.SizeBreakdownCommand;
 import com.magyen.platform.commercial.application.dto.SizeBreakdownResult;
+import com.magyen.platform.commercial.application.dto.UpdatePromisedDeliveryDateCommand;
+import com.magyen.platform.commercial.application.dto.UpdatePromisedDeliveryDateResult;
 import com.magyen.platform.commercial.application.dto.UpdateOrderItemCommand;
 import com.magyen.platform.commercial.application.dto.UpdateOrderItemProductSpecificationCommand;
 import com.magyen.platform.commercial.application.dto.UpdateOrderItemProductSpecificationResult;
@@ -41,6 +43,7 @@ import com.magyen.platform.commercial.presentation.order.request.CreateOrderRequ
 import com.magyen.platform.commercial.presentation.order.request.DeliverOrderRequest;
 import com.magyen.platform.commercial.presentation.order.request.ReplaceOrderItemSizesRequest;
 import com.magyen.platform.commercial.presentation.order.request.SizeBreakdownRequest;
+import com.magyen.platform.commercial.presentation.order.request.UpdatePromisedDeliveryDateRequest;
 import com.magyen.platform.commercial.presentation.order.request.UpdateOrderItemProductSpecificationRequest;
 import com.magyen.platform.commercial.presentation.order.request.UpdateOrderItemRequest;
 import com.magyen.platform.commercial.presentation.order.response.AddOrderItemResponse;
@@ -61,6 +64,7 @@ import com.magyen.platform.commercial.presentation.order.response.RemoveOrderIte
 import com.magyen.platform.commercial.presentation.order.response.ReplaceOrderItemSizesResponse;
 import com.magyen.platform.commercial.presentation.order.response.SizeBreakdownResponse;
 import com.magyen.platform.commercial.presentation.order.response.StartOrderProductionResponse;
+import com.magyen.platform.commercial.presentation.order.response.UpdatePromisedDeliveryDateResponse;
 import com.magyen.platform.commercial.presentation.order.response.UpdateOrderItemProductSpecificationResponse;
 import com.magyen.platform.commercial.presentation.order.response.UpdateOrderItemResponse;
 import com.magyen.platform.commercial.presentation.quotation.request.ProductSpecificationRequest;
@@ -132,6 +136,30 @@ public class OrderPresentationMapper {
             throw new IllegalArgumentException("Delivery date must not be null");
         }
         return new DeliverOrderCommand(orderId, request.deliveryDate());
+    }
+
+    public UpdatePromisedDeliveryDateCommand toUpdatePromisedDeliveryDateCommand(
+            UUID orderId,
+            UpdatePromisedDeliveryDateRequest request
+    ) {
+        Objects.requireNonNull(orderId, "Order id must not be null");
+        Objects.requireNonNull(request, "Update promised delivery date request must not be null");
+        if (request.promisedDeliveryDate() == null) {
+            throw new IllegalArgumentException("Promised delivery date must not be null");
+        }
+        return new UpdatePromisedDeliveryDateCommand(orderId, request.promisedDeliveryDate());
+    }
+
+    public UpdatePromisedDeliveryDateResponse toResponse(UpdatePromisedDeliveryDateResult result) {
+        Objects.requireNonNull(result, "Update promised delivery date result must not be null");
+        return new UpdatePromisedDeliveryDateResponse(
+                result.orderId(),
+                result.confirmationDate(),
+                result.promisedDeliveryDate(),
+                result.actualDeliveryDate(),
+                result.status().name(),
+                result.totalAmount()
+        );
     }
 
     public CloseOrderCommand toCloseOrderCommand(UUID orderId) {
@@ -280,6 +308,7 @@ public class OrderPresentationMapper {
                 order.quotationNumber(),
                 order.quotationNumberDisplay(),
                 order.confirmationDate(),
+                order.promisedDeliveryDate(),
                 order.status().name(),
                 order.sellerId(),
                 order.sellerName(),

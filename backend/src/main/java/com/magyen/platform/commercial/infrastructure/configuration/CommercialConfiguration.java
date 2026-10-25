@@ -20,6 +20,7 @@ import com.magyen.platform.commercial.application.usecase.ApproveQuotationUseCas
 import com.magyen.platform.commercial.application.usecase.CloseOrderUseCase;
 import com.magyen.platform.commercial.application.usecase.CreateCustomerUseCase;
 import com.magyen.platform.commercial.application.usecase.CreateOrderFromQuotationUseCase;
+import com.magyen.platform.commercial.application.usecase.DuplicateQuotationItemUseCase;
 import com.magyen.platform.commercial.application.usecase.CreateQuotationUseCase;
 import com.magyen.platform.commercial.application.usecase.DeliverOrderUseCase;
 import com.magyen.platform.commercial.application.usecase.GetCommercialCatalogsUseCase;
@@ -44,6 +45,8 @@ import com.magyen.platform.commercial.application.usecase.StartOrderProductionUs
 import com.magyen.platform.commercial.application.usecase.UpdateCustomerUseCase;
 import com.magyen.platform.commercial.application.usecase.UpdateOrderItemProductSpecificationUseCase;
 import com.magyen.platform.commercial.application.usecase.UpdateOrderItemUseCase;
+import com.magyen.platform.commercial.application.usecase.UpdatePromisedDeliveryDateUseCase;
+import com.magyen.platform.commercial.application.usecase.UpdateQuotationDeliveryDateUseCase;
 import com.magyen.platform.commercial.application.usecase.UpdateQuotationItemUseCase;
 import com.magyen.platform.commercial.domain.CustomerRepository;
 import com.magyen.platform.commercial.domain.OrderRepository;
@@ -214,6 +217,21 @@ public class CommercialConfiguration {
             CommercialCatalogValidator commercialCatalogValidator
     ) {
         return new UpdateQuotationItemUseCase(quotationRepository, commercialCatalogValidator);
+    }
+
+    @Bean
+    public DuplicateQuotationItemUseCase duplicateQuotationItemUseCase(
+            QuotationRepository quotationRepository,
+            CommercialCatalogValidator commercialCatalogValidator
+    ) {
+        return new DuplicateQuotationItemUseCase(quotationRepository, commercialCatalogValidator);
+    }
+
+    @Bean
+    public UpdateQuotationDeliveryDateUseCase updateQuotationDeliveryDateUseCase(
+            QuotationRepository quotationRepository
+    ) {
+        return new UpdateQuotationDeliveryDateUseCase(quotationRepository);
     }
 
     @Bean
@@ -444,6 +462,11 @@ public class CommercialConfiguration {
     @Bean
     public MarkOrderReadyForDeliveryUseCase markOrderReadyForDeliveryUseCase(OrderRepository orderRepository) {
         return new MarkOrderReadyForDeliveryUseCase(orderRepository);
+    }
+
+    @Bean
+    public UpdatePromisedDeliveryDateUseCase updatePromisedDeliveryDateUseCase(OrderRepository orderRepository) {
+        return new UpdatePromisedDeliveryDateUseCase(orderRepository);
     }
 
     @Bean

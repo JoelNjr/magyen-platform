@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import AddIcon from '@mui/icons-material/Add'
 import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined'
+import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined'
 import {
@@ -34,7 +35,12 @@ import {
   canShowApplyQuotationToOrder,
   getQuotationOrderSynchronizationNotes,
 } from '../presentation/quotationOrderSynchronizationPresentation'
+import {
+  buildUpdateQuotationDeliveryDateRequest,
+  validateQuotationDeliveryDate,
+} from '../presentation/deliveryDateEditingPresentation'
 import { formatDisplayDate } from '../presentation/formatDisplayDate'
+import { findQuotationItemById } from '../presentation/quotationItemDuplicationPresentation'
 import { formatQuotationNumber } from '../presentation/formatQuotationNumber'
 import {
   buildCustomerNameMap,
@@ -43,6 +49,7 @@ import {
 import {
   addQuotationItem,
   applyQuotationChangesToOrder,
+  duplicateQuotationItem,
   applyQuotationDiscount,
   approveQuotation,
   createOrder,
@@ -51,6 +58,7 @@ import {
   getQuotation,
   previewQuotationOrderSynchronization,
   removeQuotationItem,
+  updateQuotationDeliveryDate,
   updateQuotationItem,
 } from '../services/commercialService'
 import PageHeader, { BrandAccentLine } from '../../../layout/PageHeader'
@@ -205,6 +213,11 @@ function QuotationDetailPage() {
   const [discountInput, setDiscountInput] = useState('')
   const [applyingDiscount, setApplyingDiscount] = useState(false)
   const [discountError, setDiscountError] = useState('')
+  const [deliveryDateInput, setDeliveryDateInput] = useState('')
+  const [savingDeliveryDate, setSavingDeliveryDate] = useState(false)
+  const [deliveryDateError, setDeliveryDateError] = useState('')
+  const [duplicatingItemId, setDuplicatingItemId] = useState(null)
+  const [duplicateItemError, setDuplicateItemError] = useState('')
   const [orderSyncPreview, setOrderSyncPreview] = useState(null)
   const [applyDialogOpen, setApplyDialogOpen] = useState(false)
   const [applyingToOrder, setApplyingToOrder] = useState(false)
@@ -217,7 +230,9 @@ function QuotationDetailPage() {
     creatingOrder ||
     generatingPdf ||
     applyingDiscount ||
-    applyingToOrder
+    applyingToOrder ||
+    savingDeliveryDate ||
+    Boolean(duplicatingItemId)
 
   useEffect(() => {
     setLoading(true)
@@ -228,6 +243,7 @@ function QuotationDetailPage() {
     getQuotation(quotationId)
       .then((data) => {
         setQuotation(data)
+        setDeliveryDateInput(data?.deliveryDate || '')
         setDiscountInput(
           data?.discountAmount == null ? '0' : String(data.discountAmount)
         )
@@ -264,6 +280,7 @@ function QuotationDetailPage() {
   async function refreshQuotation() {
     const refreshedQuotation = await getQuotation(quotation.quotationId)
     setQuotation(refreshedQuotation)
+    setDeliveryDateInput(refreshedQuotation?.deliveryDate || '')
     setDiscountInput(
       refreshedQuotation?.discountAmount == null
         ? '0'
@@ -304,6 +321,73 @@ function QuotationDetailPage() {
       )
     } finally {
       setApplyingDiscount(false)
+    }
+  }
+
+  async function handleSaveDeliveryDate() {
+    if (pageBusy || !quotation) {
+      return
+    }
+    const validation = validateQuotationDeliveryDate(
+      deliveryDateInput,
+      quotation.creationDate
+    )
+    if (validation) {
+      setDeliveryDateError(validation)
+      return
+    }
+    setDeliveryDateError('')
+    setSavingDeliveryDate(true)
+    try {
+      await updateQuotationDeliveryDate(
+        quotation.quotationId,
+        buildUpdateQuotationDeliveryDateRequest(deliveryDateInput)
+      )
+      await refreshQuotation()
+      setSuccessMessage(
+        quotation.orderId
+          ? 'Fecha de la cotización actualizada. La fecha prometida de la orden no cambió.'
+          : 'Fecha de entrega actualizada.'
+      )
+      setSuccessOpen(true)
+    } catch (error) {
+      setDeliveryDateError(
+        resolveApiErrorMessage(error, 'No fue posible actualizar la fecha de entrega.')
+      )
+    } finally {
+      setSavingDeliveryDate(false)
+    }
+  }
+
+  async function handleDuplicateItem(item) {
+    if (pageBusy || !quotation || !item?.itemId) {
+      return
+    }
+    setDuplicatingItemId(item.itemId)
+    setDuplicateItemError('')
+    try {
+      const duplicated = await duplicateQuotationItem(quotation.quotationId, item.itemId)
+      const refreshedQuotation = await getQuotation(quotation.quotationId)
+      setQuotation(refreshedQuotation)
+      setDeliveryDateInput(refreshedQuotation?.deliveryDate || '')
+      setDiscountInput(
+        refreshedQuotation?.discountAmount == null
+          ? '0'
+          : String(refreshedQuotation.discountAmount)
+      )
+      const copy = findQuotationItemById(refreshedQuotation?.items, duplicated.itemId)
+      setSuccessMessage('Ítem duplicado. Puedes ajustar la copia.')
+      setSuccessOpen(true)
+      if (copy) {
+        setEditingItem(copy)
+        setDialogOpen(true)
+      }
+    } catch (error) {
+      setDuplicateItemError(
+        resolveApiErrorMessage(error, 'No fue posible duplicar el ítem.')
+      )
+    } finally {
+      setDuplicatingItemId(null)
     }
   }
 
@@ -741,9 +825,38 @@ function QuotationDetailPage() {
 
               <Grid size={{ xs: 12, md: 6 }}>
                 <DetailField label="Fecha entrega">
-                  <Typography>
-                    {formatDisplayDate(quotation.deliveryDate)}
-                  </Typography>
+                  <Stack spacing={1}>
+                    <Stack
+                      direction={{ xs: 'column', sm: 'row' }}
+                      spacing={1}
+                      alignItems={{ sm: 'center' }}
+                    >
+                      <TextField
+                        type="date"
+                        size="small"
+                        value={deliveryDateInput}
+                        onChange={(event) => setDeliveryDateInput(event.target.value)}
+                        disabled={pageBusy}
+                        inputProps={{ 'aria-label': 'Fecha de entrega de la cotización' }}
+                        sx={{ maxWidth: { sm: 220 } }}
+                      />
+                      <Button
+                        variant="outlined"
+                        onClick={handleSaveDeliveryDate}
+                        disabled={pageBusy}
+                      >
+                        {savingDeliveryDate ? 'Guardando...' : 'Guardar fecha'}
+                      </Button>
+                    </Stack>
+                    {quotation.orderId ? (
+                      <Typography variant="body2" color="text.secondary">
+                        Esta fecha es de la cotización. No cambia la fecha prometida de la orden.
+                      </Typography>
+                    ) : null}
+                    {deliveryDateError ? (
+                      <Alert severity="error">{deliveryDateError}</Alert>
+                    ) : null}
+                  </Stack>
                 </DetailField>
               </Grid>
 
@@ -838,6 +951,18 @@ function QuotationDetailPage() {
                               spacing={0.5}
                               justifyContent="flex-end"
                             >
+                              <Tooltip title="Duplicar ítem">
+                                <span>
+                                  <IconButton
+                                    aria-label="Duplicar ítem"
+                                    size="small"
+                                    disabled={pageBusy}
+                                    onClick={() => handleDuplicateItem(item)}
+                                  >
+                                    <ContentCopyOutlinedIcon fontSize="small" />
+                                  </IconButton>
+                                </span>
+                              </Tooltip>
                               <Tooltip title="Editar">
                                 <span>
                                   <IconButton
@@ -870,6 +995,10 @@ function QuotationDetailPage() {
                   </Table>
                 </TableContainer>
               )}
+
+              {duplicateItemError ? (
+                <Alert severity="error">{duplicateItemError}</Alert>
+              ) : null}
 
               <Divider />
 

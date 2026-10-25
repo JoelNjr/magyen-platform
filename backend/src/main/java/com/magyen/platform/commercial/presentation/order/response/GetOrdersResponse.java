@@ -25,6 +25,7 @@ public record GetOrdersResponse(
             Long quotationNumber,
             String quotationNumberDisplay,
             LocalDate confirmationDate,
+            LocalDate promisedDeliveryDate,
             String status,
             UUID sellerId,
             String sellerName,

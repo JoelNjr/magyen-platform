@@ -62,6 +62,21 @@ export async function addQuotationItem(quotationId, payload) {
   return response.data
 }
 
+export async function duplicateQuotationItem(quotationId, itemId) {
+  const response = await httpClient.post(
+    `/quotations/${quotationId}/items/${itemId}/duplicate`
+  )
+  return response.data
+}
+
+export async function updateQuotationDeliveryDate(quotationId, payload) {
+  const response = await httpClient.patch(
+    `/quotations/${quotationId}/delivery-date`,
+    payload
+  )
+  return response.data
+}
+
 export async function updateQuotationItem(quotationId, itemId, payload) {
   const response = await httpClient.put(
     `/quotations/${quotationId}/items/${itemId}`,
@@ -192,6 +207,14 @@ export async function startOrderProduction(orderId) {
 
 export async function markOrderReadyForDelivery(orderId) {
   const response = await httpClient.patch(`/orders/${orderId}/ready-for-delivery`)
+  return response.data
+}
+
+export async function updatePromisedDeliveryDate(orderId, promisedDeliveryDate) {
+  const response = await httpClient.patch(
+    `/orders/${orderId}/promised-delivery-date`,
+    { promisedDeliveryDate }
+  )
   return response.data
 }
 

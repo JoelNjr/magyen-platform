@@ -8,6 +8,8 @@ import com.magyen.platform.commercial.application.dto.AddQuotationItemCommand;
 import com.magyen.platform.commercial.application.dto.AddQuotationItemResult;
 import com.magyen.platform.commercial.application.dto.ApproveQuotationCommand;
 import com.magyen.platform.commercial.application.dto.ApproveQuotationResult;
+import com.magyen.platform.commercial.application.dto.DuplicateQuotationItemCommand;
+import com.magyen.platform.commercial.application.dto.DuplicateQuotationItemResult;
 import com.magyen.platform.commercial.application.dto.CreateQuotationCommand;
 import com.magyen.platform.commercial.application.dto.CreateQuotationResult;
 import com.magyen.platform.commercial.application.dto.GetQuotationCommand;
@@ -19,32 +21,39 @@ import com.magyen.platform.commercial.application.dto.PreviewQuotationOrderSynch
 import com.magyen.platform.commercial.application.dto.PreviewQuotationOrderSynchronizationResult;
 import com.magyen.platform.commercial.application.dto.RemoveQuotationItemCommand;
 import com.magyen.platform.commercial.application.dto.RemoveQuotationItemResult;
+import com.magyen.platform.commercial.application.dto.UpdateQuotationDeliveryDateCommand;
+import com.magyen.platform.commercial.application.dto.UpdateQuotationDeliveryDateResult;
 import com.magyen.platform.commercial.application.dto.UpdateQuotationItemCommand;
 import com.magyen.platform.commercial.application.dto.UpdateQuotationItemResult;
 import com.magyen.platform.commercial.application.usecase.ApplyQuotationChangesToOrderUseCase;
 import com.magyen.platform.commercial.application.usecase.ApplyQuotationDiscountUseCase;
 import com.magyen.platform.commercial.application.usecase.AddQuotationItemUseCase;
 import com.magyen.platform.commercial.application.usecase.ApproveQuotationUseCase;
+import com.magyen.platform.commercial.application.usecase.DuplicateQuotationItemUseCase;
 import com.magyen.platform.commercial.application.usecase.CreateQuotationUseCase;
 import com.magyen.platform.commercial.application.usecase.GetQuotationUseCase;
 import com.magyen.platform.commercial.application.usecase.GetQuotationsUseCase;
 import com.magyen.platform.commercial.application.usecase.GenerateQuotationPdfUseCase;
 import com.magyen.platform.commercial.application.usecase.PreviewQuotationOrderSynchronizationUseCase;
 import com.magyen.platform.commercial.application.usecase.RemoveQuotationItemUseCase;
+import com.magyen.platform.commercial.application.usecase.UpdateQuotationDeliveryDateUseCase;
 import com.magyen.platform.commercial.application.usecase.UpdateQuotationItemUseCase;
 import com.magyen.platform.commercial.presentation.quotation.mapper.QuotationPresentationMapper;
 import com.magyen.platform.commercial.presentation.quotation.request.ApplyQuotationDiscountRequest;
 import com.magyen.platform.commercial.presentation.quotation.request.AddQuotationItemRequest;
 import com.magyen.platform.commercial.presentation.quotation.request.CreateQuotationRequest;
+import com.magyen.platform.commercial.presentation.quotation.request.UpdateQuotationDeliveryDateRequest;
 import com.magyen.platform.commercial.presentation.quotation.response.ApplyQuotationChangesToOrderResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.ApplyQuotationDiscountResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.AddQuotationItemResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.ApproveQuotationResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.CreateQuotationResponse;
+import com.magyen.platform.commercial.presentation.quotation.response.DuplicateQuotationItemResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.PreviewQuotationOrderSynchronizationResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.GetQuotationResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.GetQuotationsResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.RemoveQuotationItemResponse;
+import com.magyen.platform.commercial.presentation.quotation.response.UpdateQuotationDeliveryDateResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.UpdateQuotationItemResponse;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -78,6 +87,8 @@ public class QuotationController {
     private final ApproveQuotationUseCase approveQuotationUseCase;
     private final AddQuotationItemUseCase addQuotationItemUseCase;
     private final UpdateQuotationItemUseCase updateQuotationItemUseCase;
+    private final DuplicateQuotationItemUseCase duplicateQuotationItemUseCase;
+    private final UpdateQuotationDeliveryDateUseCase updateQuotationDeliveryDateUseCase;
     private final RemoveQuotationItemUseCase removeQuotationItemUseCase;
     private final GetQuotationsUseCase getQuotationsUseCase;
     private final GetQuotationUseCase getQuotationUseCase;
@@ -92,6 +103,8 @@ public class QuotationController {
             ApproveQuotationUseCase approveQuotationUseCase,
             AddQuotationItemUseCase addQuotationItemUseCase,
             UpdateQuotationItemUseCase updateQuotationItemUseCase,
+            DuplicateQuotationItemUseCase duplicateQuotationItemUseCase,
+            UpdateQuotationDeliveryDateUseCase updateQuotationDeliveryDateUseCase,
             RemoveQuotationItemUseCase removeQuotationItemUseCase,
             GetQuotationsUseCase getQuotationsUseCase,
             GetQuotationUseCase getQuotationUseCase,
@@ -105,6 +118,8 @@ public class QuotationController {
         this.approveQuotationUseCase = approveQuotationUseCase;
         this.addQuotationItemUseCase = addQuotationItemUseCase;
         this.updateQuotationItemUseCase = updateQuotationItemUseCase;
+        this.duplicateQuotationItemUseCase = duplicateQuotationItemUseCase;
+        this.updateQuotationDeliveryDateUseCase = updateQuotationDeliveryDateUseCase;
         this.removeQuotationItemUseCase = removeQuotationItemUseCase;
         this.getQuotationsUseCase = getQuotationsUseCase;
         this.getQuotationUseCase = getQuotationUseCase;
@@ -183,6 +198,31 @@ public class QuotationController {
         UpdateQuotationItemResult result = updateQuotationItemUseCase.execute(command);
         UpdateQuotationItemResponse response = quotationPresentationMapper.toUpdateItemResponse(result);
 
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{quotationId}/items/{itemId}/duplicate")
+    public ResponseEntity<DuplicateQuotationItemResponse> duplicateQuotationItem(
+            @PathVariable UUID quotationId,
+            @PathVariable UUID itemId
+    ) {
+        DuplicateQuotationItemCommand command =
+                quotationPresentationMapper.toDuplicateItemCommand(quotationId, itemId);
+        DuplicateQuotationItemResult result = duplicateQuotationItemUseCase.execute(command);
+        DuplicateQuotationItemResponse response = quotationPresentationMapper.toDuplicateItemResponse(result);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PatchMapping("/{quotationId}/delivery-date")
+    public ResponseEntity<UpdateQuotationDeliveryDateResponse> updateDeliveryDate(
+            @PathVariable UUID quotationId,
+            @RequestBody UpdateQuotationDeliveryDateRequest request
+    ) {
+        UpdateQuotationDeliveryDateCommand command =
+                quotationPresentationMapper.toUpdateDeliveryDateCommand(quotationId, request);
+        UpdateQuotationDeliveryDateResult result = updateQuotationDeliveryDateUseCase.execute(command);
+        UpdateQuotationDeliveryDateResponse response =
+                quotationPresentationMapper.toUpdateDeliveryDateResponse(result);
         return ResponseEntity.ok(response);
     }
 

@@ -8,6 +8,8 @@ import com.magyen.platform.commercial.application.dto.AddQuotationItemCommand;
 import com.magyen.platform.commercial.application.dto.AddQuotationItemResult;
 import com.magyen.platform.commercial.application.dto.ApproveQuotationCommand;
 import com.magyen.platform.commercial.application.dto.ApproveQuotationResult;
+import com.magyen.platform.commercial.application.dto.DuplicateQuotationItemCommand;
+import com.magyen.platform.commercial.application.dto.DuplicateQuotationItemResult;
 import com.magyen.platform.commercial.application.dto.CreateQuotationCommand;
 import com.magyen.platform.commercial.application.dto.CreateQuotationResult;
 import com.magyen.platform.commercial.application.dto.GetQuotationCommand;
@@ -20,11 +22,14 @@ import com.magyen.platform.commercial.application.dto.RemoveQuotationItemResult;
 import com.magyen.platform.commercial.application.dto.PreviewQuotationOrderSynchronizationQuery;
 import com.magyen.platform.commercial.application.dto.PreviewQuotationOrderSynchronizationResult;
 import com.magyen.platform.commercial.application.dto.SizeBreakdownResult;
+import com.magyen.platform.commercial.application.dto.UpdateQuotationDeliveryDateCommand;
+import com.magyen.platform.commercial.application.dto.UpdateQuotationDeliveryDateResult;
 import com.magyen.platform.commercial.application.dto.UpdateQuotationItemCommand;
 import com.magyen.platform.commercial.application.dto.UpdateQuotationItemResult;
 import com.magyen.platform.commercial.presentation.quotation.request.ApplyQuotationDiscountRequest;
 import com.magyen.platform.commercial.presentation.quotation.request.AddQuotationItemRequest;
 import com.magyen.platform.commercial.presentation.quotation.request.CreateQuotationRequest;
+import com.magyen.platform.commercial.presentation.quotation.request.UpdateQuotationDeliveryDateRequest;
 import com.magyen.platform.commercial.presentation.quotation.request.ProductSpecificationRequest;
 import com.magyen.platform.commercial.presentation.order.response.SizeBreakdownResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.ApplyQuotationChangesToOrderResponse;
@@ -32,6 +37,7 @@ import com.magyen.platform.commercial.presentation.quotation.response.ApplyQuota
 import com.magyen.platform.commercial.presentation.quotation.response.AddQuotationItemResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.ApproveQuotationResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.CreateQuotationResponse;
+import com.magyen.platform.commercial.presentation.quotation.response.DuplicateQuotationItemResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.GetQuotationResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.PreviewQuotationOrderSynchronizationResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.GetQuotationsResponse;
@@ -39,6 +45,7 @@ import com.magyen.platform.commercial.presentation.quotation.response.GetQuotati
 import com.magyen.platform.commercial.presentation.quotation.response.ProductSpecificationResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.QuotationItemResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.RemoveQuotationItemResponse;
+import com.magyen.platform.commercial.presentation.quotation.response.UpdateQuotationDeliveryDateResponse;
 import com.magyen.platform.commercial.presentation.quotation.response.UpdateQuotationItemResponse;
 
 import java.util.List;
@@ -163,6 +170,49 @@ public class QuotationPresentationMapper {
         return new UpdateQuotationItemResponse(
                 result.quotationId(),
                 result.itemId(),
+                result.totalAmount()
+        );
+    }
+
+    public UpdateQuotationDeliveryDateCommand toUpdateDeliveryDateCommand(
+            UUID quotationId,
+            UpdateQuotationDeliveryDateRequest request
+    ) {
+        Objects.requireNonNull(quotationId, "Quotation id must not be null");
+        Objects.requireNonNull(request, "UpdateQuotationDeliveryDateRequest must not be null");
+        if (request.deliveryDate() == null) {
+            throw new IllegalArgumentException("Delivery date must not be null");
+        }
+        return new UpdateQuotationDeliveryDateCommand(quotationId, request.deliveryDate());
+    }
+
+    public UpdateQuotationDeliveryDateResponse toUpdateDeliveryDateResponse(
+            UpdateQuotationDeliveryDateResult result
+    ) {
+        Objects.requireNonNull(result, "UpdateQuotationDeliveryDateResult must not be null");
+        return new UpdateQuotationDeliveryDateResponse(
+                result.quotationId(),
+                result.creationDate(),
+                result.deliveryDate(),
+                result.status().name(),
+                result.totalAmount()
+        );
+    }
+
+    public DuplicateQuotationItemCommand toDuplicateItemCommand(UUID quotationId, UUID itemId) {
+        Objects.requireNonNull(quotationId, "Quotation id must not be null");
+        Objects.requireNonNull(itemId, "Item id must not be null");
+        return new DuplicateQuotationItemCommand(quotationId, itemId);
+    }
+
+    public DuplicateQuotationItemResponse toDuplicateItemResponse(DuplicateQuotationItemResult result) {
+        Objects.requireNonNull(result, "DuplicateQuotationItemResult must not be null");
+        return new DuplicateQuotationItemResponse(
+                result.quotationId(),
+                result.sourceItemId(),
+                result.itemId(),
+                result.subtotalAmount(),
+                result.discountAmount(),
                 result.totalAmount()
         );
     }

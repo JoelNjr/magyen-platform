@@ -34,6 +34,10 @@ import RegisterOrderPaymentDialog from '../components/RegisterOrderPaymentDialog
 import ManageOrderItemProductSpecificationDialog from '../components/ManageOrderItemProductSpecificationDialog'
 import ManageOrderItemSizesDialog from '../components/ManageOrderItemSizesDialog'
 import RemoveOrderItemDialog from '../components/RemoveOrderItemDialog'
+import {
+  buildUpdatePromisedDeliveryDateRequest,
+  validatePromisedDeliveryDate,
+} from '../presentation/deliveryDateEditingPresentation'
 import { formatDisplayDate } from '../presentation/formatDisplayDate'
 import {
   formatLaborProductionCost,
@@ -76,6 +80,7 @@ import {
   removeOrderItem,
   startOrderProduction,
   updateOrderItem,
+  updatePromisedDeliveryDate,
 } from '../services/commercialService'
 import PageHeader, { BrandAccentLine } from '../../../layout/PageHeader'
 import {
@@ -357,6 +362,9 @@ function OrderDetailPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const [order, setOrder] = useState(null)
+  const [promisedDeliveryDateInput, setPromisedDeliveryDateInput] = useState('')
+  const [savingPromisedDeliveryDate, setSavingPromisedDeliveryDate] = useState(false)
+  const [promisedDeliveryDateError, setPromisedDeliveryDateError] = useState('')
   const [customerNameById, setCustomerNameById] = useState({})
   const [loading, setLoading] = useState(true)
   const [failed, setFailed] = useState(false)
@@ -509,6 +517,40 @@ function OrderDetailPage() {
       setPaymentsTotalPaid(null)
       setPaymentsRemainingBalance(null)
       setPaymentsFailed(true)
+    }
+  }
+
+  useEffect(() => {
+    setPromisedDeliveryDateInput(order?.deliveryCommitment?.promisedDeliveryDate || '')
+    setPromisedDeliveryDateError('')
+  }, [order?.orderId, order?.deliveryCommitment?.promisedDeliveryDate])
+
+  async function handleSavePromisedDeliveryDate() {
+    if (!order || savingPromisedDeliveryDate || !canEditOrderCommercialContent(order.status)) {
+      return
+    }
+    const validation = validatePromisedDeliveryDate(
+      promisedDeliveryDateInput,
+      order.confirmationDate
+    )
+    if (validation) {
+      setPromisedDeliveryDateError(validation)
+      return
+    }
+    setPromisedDeliveryDateError('')
+    setSavingPromisedDeliveryDate(true)
+    try {
+      await updatePromisedDeliveryDate(
+        order.orderId,
+        buildUpdatePromisedDeliveryDateRequest(promisedDeliveryDateInput).promisedDeliveryDate
+      )
+      await refreshOrderAfterSave('Fecha de entrega programada actualizada.')
+    } catch (error) {
+      setPromisedDeliveryDateError(
+        resolveApiErrorMessage(error, 'No fue posible actualizar la fecha programada.')
+      )
+    } finally {
+      setSavingPromisedDeliveryDate(false)
     }
   }
 
@@ -971,11 +1013,42 @@ function OrderDetailPage() {
 
               <Grid size={{ xs: 12, md: 6 }}>
                 <DetailField label="Fecha de entrega programada">
-                  <Typography>
-                    {formatDisplayDate(
-                      deliveryCommitment?.promisedDeliveryDate
-                    )}
-                  </Typography>
+                  {canEditCommercialContent ? (
+                    <Stack spacing={1}>
+                      <Stack
+                        direction={{ xs: 'column', sm: 'row' }}
+                        spacing={1}
+                        alignItems={{ sm: 'center' }}
+                      >
+                        <TextField
+                          type="date"
+                          size="small"
+                          value={promisedDeliveryDateInput}
+                          onChange={(event) => setPromisedDeliveryDateInput(event.target.value)}
+                          disabled={savingPromisedDeliveryDate}
+                          inputProps={{ 'aria-label': 'Fecha de entrega programada' }}
+                          sx={{ maxWidth: { sm: 220 } }}
+                        />
+                        <Button
+                          variant="outlined"
+                          onClick={handleSavePromisedDeliveryDate}
+                          disabled={savingPromisedDeliveryDate}
+                        >
+                          {savingPromisedDeliveryDate ? 'Guardando...' : 'Guardar fecha'}
+                        </Button>
+                      </Stack>
+                      <Typography variant="body2" color="text.secondary">
+                        Corrige solo la fecha prometida. La fecha real, el estado y los totales no cambian.
+                      </Typography>
+                      {promisedDeliveryDateError ? (
+                        <Alert severity="error">{promisedDeliveryDateError}</Alert>
+                      ) : null}
+                    </Stack>
+                  ) : (
+                    <Typography>
+                      {formatDisplayDate(deliveryCommitment?.promisedDeliveryDate)}
+                    </Typography>
+                  )}
                 </DetailField>
               </Grid>
 
