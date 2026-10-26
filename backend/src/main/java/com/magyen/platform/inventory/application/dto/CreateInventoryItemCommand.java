@@ -1,6 +1,7 @@
 package com.magyen.platform.inventory.application.dto;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 /**
  * Entrada del caso de uso para crear un material de inventario.
@@ -19,7 +20,8 @@ public record CreateInventoryItemCommand(
         BigDecimal unitCost,
         String materialType,
         boolean plotterPaperRoll,
-        InventoryAcquisitionCommand acquisition
+        InventoryAcquisitionCommand acquisition,
+        UUID plotterMachineId
 ) {
     public CreateInventoryItemCommand(
             String code,
@@ -29,7 +31,7 @@ public record CreateInventoryItemCommand(
             BigDecimal stock,
             BigDecimal minimumStock
     ) {
-        this(code, name, category, unitOfMeasure, stock, minimumStock, null, null, null, false, null);
+        this(code, name, category, unitOfMeasure, stock, minimumStock, null, null, null, false, null, null);
     }
 
     public CreateInventoryItemCommand(
@@ -41,7 +43,7 @@ public record CreateInventoryItemCommand(
             BigDecimal minimumStock,
             String description
     ) {
-        this(code, name, category, unitOfMeasure, stock, minimumStock, description, null, null, false, null);
+        this(code, name, category, unitOfMeasure, stock, minimumStock, description, null, null, false, null, null);
     }
 
     public CreateInventoryItemCommand(
@@ -54,7 +56,7 @@ public record CreateInventoryItemCommand(
             String description,
             BigDecimal unitCost
     ) {
-        this(code, name, category, unitOfMeasure, stock, minimumStock, description, unitCost, null, false, null);
+        this(code, name, category, unitOfMeasure, stock, minimumStock, description, unitCost, null, false, null, null);
     }
 
     public CreateInventoryItemCommand(
@@ -80,6 +82,36 @@ public record CreateInventoryItemCommand(
                 unitCost,
                 materialType,
                 plotterPaperRoll,
+                null,
+                null
+        );
+    }
+
+    public CreateInventoryItemCommand(
+            String code,
+            String name,
+            String category,
+            String unitOfMeasure,
+            BigDecimal stock,
+            BigDecimal minimumStock,
+            String description,
+            BigDecimal unitCost,
+            String materialType,
+            boolean plotterPaperRoll,
+            InventoryAcquisitionCommand acquisition
+    ) {
+        this(
+                code,
+                name,
+                category,
+                unitOfMeasure,
+                stock,
+                minimumStock,
+                description,
+                unitCost,
+                materialType,
+                plotterPaperRoll,
+                acquisition,
                 null
         );
     }

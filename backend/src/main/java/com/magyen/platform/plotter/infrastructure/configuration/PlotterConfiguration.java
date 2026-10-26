@@ -18,7 +18,12 @@ import com.magyen.platform.plotter.application.port.PlotterInkAcquisitionPort;
 import com.magyen.platform.plotter.application.port.PlotterPaperAcquisitionPort;
 import com.magyen.platform.plotter.application.port.PlotterPaymentFinancePort;
 import com.magyen.platform.plotter.infrastructure.commercial.PlotterCommercialOrderAdapter;
+import com.magyen.platform.inventory.application.port.PaperRollMachinePort;
+import com.magyen.platform.inventory.application.usecase.AssignPaperRollMachineUseCase;
+import com.magyen.platform.plotter.application.usecase.ChangePlotterMachineActiveUseCase;
 import com.magyen.platform.plotter.application.usecase.CreatePlotterJobUseCase;
+import com.magyen.platform.plotter.application.usecase.GetPlotterMachineOperationsUseCase;
+import com.magyen.platform.plotter.application.usecase.GetPlotterMachinesUseCase;
 import com.magyen.platform.plotter.application.usecase.GetInternalPlotterOrderCostsUseCase;
 import com.magyen.platform.plotter.application.usecase.GetHistoricalCommercialOrdersForPlotterUseCase;
 import com.magyen.platform.plotter.application.usecase.GetOpenCommercialOrdersForPlotterUseCase;
@@ -29,7 +34,10 @@ import com.magyen.platform.plotter.application.usecase.GetPlotterPendingBalances
 import com.magyen.platform.plotter.application.usecase.GetPlotterProfitabilityUseCase;
 import com.magyen.platform.plotter.application.usecase.RegisterPlotterPaymentUseCase;
 import com.magyen.platform.plotter.domain.PlotterJobRepository;
+import com.magyen.platform.plotter.domain.PlotterMachineRepository;
 import com.magyen.platform.plotter.domain.PlotterPaymentRepository;
+import com.magyen.platform.plotter.infrastructure.inventory.PaperRollMachineAdapter;
+import com.magyen.platform.plotter.infrastructure.persistence.mapper.PlotterMachinePersistenceMapper;
 import com.magyen.platform.plotter.infrastructure.finance.PlotterInternalServiceFinanceAdapter;
 import com.magyen.platform.plotter.infrastructure.finance.PlotterPaymentFinanceAdapter;
 import com.magyen.platform.plotter.infrastructure.inventory.PlotterInventoryCostAdapter;
@@ -58,6 +66,16 @@ public class PlotterConfiguration {
     @Bean
     public PlotterPersistenceMapper plotterPersistenceMapper() {
         return new PlotterPersistenceMapper();
+    }
+
+    @Bean
+    public PlotterMachinePersistenceMapper plotterMachinePersistenceMapper() {
+        return new PlotterMachinePersistenceMapper();
+    }
+
+    @Bean
+    public PaperRollMachinePort paperRollMachinePort(PlotterMachineRepository plotterMachineRepository) {
+        return new PaperRollMachineAdapter(plotterMachineRepository);
     }
 
     @Bean
@@ -133,13 +151,15 @@ public class PlotterConfiguration {
             PlotterJobRepository plotterJobRepository,
             PlotterJobInventoryPort plotterJobInventoryPort,
             PlotterCommercialOrderPort plotterCommercialOrderPort,
-            PlotterInternalServiceFinancePort plotterInternalServiceFinancePort
+            PlotterInternalServiceFinancePort plotterInternalServiceFinancePort,
+            PlotterMachineRepository plotterMachineRepository
     ) {
         return new CreatePlotterJobUseCase(
                 plotterJobRepository,
                 plotterJobInventoryPort,
                 plotterCommercialOrderPort,
-                plotterInternalServiceFinancePort
+                plotterInternalServiceFinancePort,
+                plotterMachineRepository
         );
     }
 
@@ -147,12 +167,14 @@ public class PlotterConfiguration {
     public GetPlotterJobUseCase getPlotterJobUseCase(
             PlotterJobRepository plotterJobRepository,
             PlotterPaymentRepository plotterPaymentRepository,
-            PlotterCommercialOrderPort plotterCommercialOrderPort
+            PlotterCommercialOrderPort plotterCommercialOrderPort,
+            PlotterMachineRepository plotterMachineRepository
     ) {
         return new GetPlotterJobUseCase(
                 plotterJobRepository,
                 plotterPaymentRepository,
-                plotterCommercialOrderPort
+                plotterCommercialOrderPort,
+                plotterMachineRepository
         );
     }
 
@@ -174,13 +196,50 @@ public class PlotterConfiguration {
     public GetPlotterJobsUseCase getPlotterJobsUseCase(
             PlotterJobRepository plotterJobRepository,
             PlotterPaymentRepository plotterPaymentRepository,
-            PlotterCommercialOrderPort plotterCommercialOrderPort
+            PlotterCommercialOrderPort plotterCommercialOrderPort,
+            PlotterMachineRepository plotterMachineRepository
     ) {
         return new GetPlotterJobsUseCase(
                 plotterJobRepository,
                 plotterPaymentRepository,
-                plotterCommercialOrderPort
+                plotterCommercialOrderPort,
+                plotterMachineRepository
         );
+    }
+
+    @Bean
+    public GetPlotterMachinesUseCase getPlotterMachinesUseCase(
+            PlotterMachineRepository plotterMachineRepository
+    ) {
+        return new GetPlotterMachinesUseCase(plotterMachineRepository);
+    }
+
+    @Bean
+    public ChangePlotterMachineActiveUseCase changePlotterMachineActiveUseCase(
+            PlotterMachineRepository plotterMachineRepository
+    ) {
+        return new ChangePlotterMachineActiveUseCase(plotterMachineRepository);
+    }
+
+    @Bean
+    public GetPlotterMachineOperationsUseCase getPlotterMachineOperationsUseCase(
+            PlotterJobRepository plotterJobRepository,
+            PlotterPaymentRepository plotterPaymentRepository,
+            PlotterMachineRepository plotterMachineRepository
+    ) {
+        return new GetPlotterMachineOperationsUseCase(
+                plotterJobRepository,
+                plotterPaymentRepository,
+                plotterMachineRepository
+        );
+    }
+
+    @Bean
+    public AssignPaperRollMachineUseCase assignPaperRollMachineUseCase(
+            com.magyen.platform.inventory.domain.InventoryItemRepository inventoryItemRepository,
+            PaperRollMachinePort paperRollMachinePort
+    ) {
+        return new AssignPaperRollMachineUseCase(inventoryItemRepository, paperRollMachinePort);
     }
 
     @Bean

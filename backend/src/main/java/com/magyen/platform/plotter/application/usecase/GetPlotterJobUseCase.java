@@ -5,6 +5,7 @@ import com.magyen.platform.plotter.application.dto.GetPlotterJobResult;
 import com.magyen.platform.plotter.application.port.PlotterCommercialOrderPort;
 import com.magyen.platform.plotter.domain.PlotterJob;
 import com.magyen.platform.plotter.domain.PlotterJobRepository;
+import com.magyen.platform.plotter.domain.PlotterMachineRepository;
 import com.magyen.platform.plotter.domain.PlotterPayment;
 import com.magyen.platform.plotter.domain.PlotterPaymentRepository;
 
@@ -20,11 +21,13 @@ public class GetPlotterJobUseCase {
     private final PlotterJobRepository plotterJobRepository;
     private final PlotterPaymentRepository plotterPaymentRepository;
     private final PlotterCommercialOrderPort plotterCommercialOrderPort;
+    private final PlotterMachineRepository plotterMachineRepository;
 
     public GetPlotterJobUseCase(
             PlotterJobRepository plotterJobRepository,
             PlotterPaymentRepository plotterPaymentRepository,
-            PlotterCommercialOrderPort plotterCommercialOrderPort
+            PlotterCommercialOrderPort plotterCommercialOrderPort,
+            PlotterMachineRepository plotterMachineRepository
     ) {
         this.plotterJobRepository = Objects.requireNonNull(
                 plotterJobRepository,
@@ -37,6 +40,10 @@ public class GetPlotterJobUseCase {
         this.plotterCommercialOrderPort = Objects.requireNonNull(
                 plotterCommercialOrderPort,
                 "Plotter commercial order port must not be null"
+        );
+        this.plotterMachineRepository = Objects.requireNonNull(
+                plotterMachineRepository,
+                "Plotter machine repository must not be null"
         );
     }
 
@@ -59,7 +66,17 @@ public class GetPlotterJobUseCase {
                 job,
                 paidAmount,
                 outstandingAmount,
-                plotterCommercialOrderPort
+                plotterCommercialOrderPort,
+                machineName(job.getPlotterMachineId())
         );
+    }
+
+    private String machineName(java.util.UUID plotterMachineId) {
+        if (plotterMachineId == null) {
+            return null;
+        }
+        return plotterMachineRepository.findById(plotterMachineId)
+                .map(machine -> machine.getName())
+                .orElse(null);
     }
 }

@@ -43,6 +43,9 @@ public class PlotterJobEntity {
     @Column(name = "paper_inventory_item_id", nullable = false)
     private UUID paperInventoryItemId;
 
+    @Column(name = "machine_id")
+    private UUID machineId;
+
     @Column(name = "printed_meters", nullable = false, precision = 19, scale = 4)
     private BigDecimal printedMeters;
 
@@ -108,6 +111,14 @@ public class PlotterJobEntity {
 
     public void setPaperInventoryItemId(UUID paperInventoryItemId) {
         this.paperInventoryItemId = paperInventoryItemId;
+    }
+
+    public UUID getMachineId() {
+        return machineId;
+    }
+
+    public void setMachineId(UUID machineId) {
+        this.machineId = machineId;
     }
 
     public BigDecimal getPrintedMeters() {

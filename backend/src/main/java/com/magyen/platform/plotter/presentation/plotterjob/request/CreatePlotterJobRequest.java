@@ -17,6 +17,7 @@ public record CreatePlotterJobRequest(
         BigDecimal printedMeters,
         BigDecimal pricePerMeter,
         String observations,
-        Boolean historicalRegistration
+        Boolean historicalRegistration,
+        UUID plotterMachineId
 ) {
 }

@@ -29,6 +29,12 @@ import {
   withHistoricalPlotterRegistration,
 } from '../presentation/plotterJobPresentation'
 import { getHistoricalCommercialOrdersForPlotter } from '../services/plotterService'
+import {
+  activePlotterMachines,
+  defaultPlotterMachineId,
+  eligiblePaperRolls,
+  rollAfterMachineChange,
+} from '../presentation/plotterMachinePresentation'
 
 function toIsoDate(date = new Date()) {
   const year = date.getFullYear()
@@ -62,6 +68,7 @@ const EMPTY_FORM = {
   customerId: '',
   orderId: '',
   creationDate: '',
+  plotterMachineId: '',
   paperInventoryItemId: '',
   printedMeters: '',
   pricePerMeter: '',
@@ -80,6 +87,7 @@ function CreatePlotterJobDialog({
   customers,
   orders,
   paperRolls,
+  plotterMachines,
   loadingLookups,
   createdCustomerId = '',
   onCreateCustomer,
@@ -108,6 +116,21 @@ function CreatePlotterJobDialog({
   }, [open])
 
   useEffect(() => {
+    if (!open) {
+      return
+    }
+    const defaultMachineId = defaultPlotterMachineId(plotterMachines)
+    if (!defaultMachineId) {
+      return
+    }
+    setForm((current) => (
+      current.plotterMachineId
+        ? current
+        : { ...current, plotterMachineId: defaultMachineId }
+    ))
+  }, [open, plotterMachines])
+
+  useEffect(() => {
     if (!createdCustomerId) {
       return
     }
@@ -131,11 +154,19 @@ function CreatePlotterJobDialog({
     [selectableOrders, form.orderId]
   )
 
+  const selectableMachines = useMemo(
+    () => activePlotterMachines(plotterMachines),
+    [plotterMachines]
+  )
+  const selectableRolls = useMemo(
+    () => eligiblePaperRolls(paperRolls, form.plotterMachineId),
+    [paperRolls, form.plotterMachineId]
+  )
   const selectedRoll = useMemo(
     () =>
-      (paperRolls || []).find((roll) => roll.inventoryItemId === form.paperInventoryItemId) ||
+      selectableRolls.find((roll) => roll.inventoryItemId === form.paperInventoryItemId) ||
       null,
-    [paperRolls, form.paperInventoryItemId]
+    [selectableRolls, form.paperInventoryItemId]
   )
 
   const isInternal = isInternalPlotterJob(form.jobType)
@@ -202,6 +233,13 @@ function CreatePlotterJobDialog({
   function updateField(field, value) {
     setForm((current) => {
       const next = { ...current, [field]: value }
+      if (field === 'plotterMachineId') {
+        next.paperInventoryItemId = rollAfterMachineChange(
+          current.paperInventoryItemId,
+          paperRolls,
+          value
+        )
+      }
       if (field === 'jobType') {
         next.customerId = ''
         next.orderId = ''
@@ -256,15 +294,16 @@ function CreatePlotterJobDialog({
 
     const jobType = form.jobType
     const creationDate = form.creationDate
+    const plotterMachineId = form.plotterMachineId
     const paperInventoryItemId = form.paperInventoryItemId
     const printedMetersRaw = form.printedMeters.trim()
     const observations = form.observations.trim()
 
-    if (!jobType || !paperInventoryItemId || !printedMetersRaw || !creationDate) {
+    if (!jobType || !plotterMachineId || !paperInventoryItemId || !printedMetersRaw || !creationDate) {
       setValidationError(
         historicalRegistration && !creationDate
           ? 'Indica la fecha real de impresión. Un registro atrasado no usa la fecha de hoy.'
-          : 'Tipo de trabajo, fecha, rollo de papel y metros impresos son obligatorios.'
+          : 'Tipo de trabajo, máquina, fecha, rollo de papel y metros impresos son obligatorios.'
       )
       return
     }
@@ -322,6 +361,7 @@ function CreatePlotterJobDialog({
       customerId: isExternal ? form.customerId : undefined,
       orderId: isInternal ? form.orderId : undefined,
       creationDate,
+      plotterMachineId,
       paperInventoryItemId,
       printedMeters,
       pricePerMeter,
@@ -502,18 +542,41 @@ function CreatePlotterJobDialog({
 
               <TextField
                 select
+                label="Máquina"
+                value={form.plotterMachineId}
+                onChange={(event) => updateField('plotterMachineId', event.target.value)}
+                fullWidth
+                disabled={submitting || loadingLookups}
+                required
+                helperText={
+                  selectableMachines.length === 0
+                    ? 'No hay máquinas activas. Selecciona una máquina antes de registrar el trabajo.'
+                    : 'El rollo debe estar asignado a esta máquina.'
+                }
+              >
+                {selectableMachines.map((machine) => (
+                  <MenuItem key={machine.plotterMachineId} value={machine.plotterMachineId}>
+                    {machine.name}
+                  </MenuItem>
+                ))}
+              </TextField>
+
+              <TextField
+                select
                 label="Papel de inventario"
                 value={form.paperInventoryItemId}
                 onChange={(event) => updateField('paperInventoryItemId', event.target.value)}
                 fullWidth
-                disabled={submitting || loadingLookups}
+                disabled={submitting || loadingLookups || !form.plotterMachineId}
                 helperText={
-                  (paperRolls || []).length === 0
-                    ? 'No hay rollos de papel Plotter disponibles.'
-                    : 'Selecciona el rollo real de inventario. Unidad: metro.'
+                  !form.plotterMachineId
+                    ? 'Selecciona la máquina para ver sus rollos.'
+                    : selectableRolls.length === 0
+                      ? 'No hay rollos con stock asignados a esta máquina.'
+                      : 'Selecciona el rollo real de inventario. Unidad: metro.'
                 }
               >
-                {(paperRolls || []).map((roll) => (
+                {selectableRolls.map((roll) => (
                   <MenuItem key={roll.inventoryItemId} value={roll.inventoryItemId}>
                     {roll.paperRollNumber ? `${roll.paperRollNumber} — ${roll.name || roll.materialCode}` : (roll.name || roll.materialCode)} —{' '}
                     {formatPlotterNumber(roll.stock)} m

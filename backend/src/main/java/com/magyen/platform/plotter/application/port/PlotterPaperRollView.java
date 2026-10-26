@@ -10,6 +10,7 @@ public record PlotterPaperRollView(
         UUID inventoryItemId,
         String paperRollNumber,
         BigDecimal availableMeters,
-        String unitOfMeasure
+        String unitOfMeasure,
+        UUID plotterMachineId
 ) {
 }

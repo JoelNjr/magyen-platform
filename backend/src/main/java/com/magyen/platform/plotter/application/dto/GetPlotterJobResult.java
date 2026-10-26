@@ -26,6 +26,8 @@ public record GetPlotterJobResult(
         BigDecimal paidAmount,
         BigDecimal outstandingAmount,
         PlotterJobStatus status,
-        String observations
+        String observations,
+        UUID plotterMachineId,
+        String machineName
 ) {
 }

@@ -21,6 +21,8 @@ public record CreatePlotterJobResponse(
         BigDecimal pricePerMeter,
         BigDecimal totalAmount,
         String status,
-        String observations
+        String observations,
+        UUID plotterMachineId,
+        String machineName
 ) {
 }

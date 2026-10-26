@@ -23,6 +23,7 @@ public record GetInventoryItemResult(
         BigDecimal unitCost,
         InventoryMaterialType materialType,
         String paperRollNumber,
-        boolean plotterPaperRoll
+        boolean plotterPaperRoll,
+        UUID plotterMachineId
 ) {
 }

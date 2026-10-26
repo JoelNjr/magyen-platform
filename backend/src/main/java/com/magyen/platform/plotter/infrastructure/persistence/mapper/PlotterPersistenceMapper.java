@@ -20,6 +20,7 @@ public class PlotterPersistenceMapper {
         entity.setOrderId(plotterJob.getOrderId());
         entity.setCreationDate(plotterJob.getCreationDate());
         entity.setPaperInventoryItemId(plotterJob.getPaperInventoryItemId());
+        entity.setMachineId(plotterJob.getPlotterMachineId());
         entity.setPrintedMeters(plotterJob.getPrintedMeters());
         entity.setPricePerMeter(plotterJob.getPricePerMeter());
         entity.setTotalAmount(plotterJob.getTotalAmount());
@@ -42,7 +43,8 @@ public class PlotterPersistenceMapper {
                 entity.getPricePerMeter(),
                 entity.getTotalAmount(),
                 entity.getStatus(),
-                entity.getObservations()
+                entity.getObservations(),
+                entity.getMachineId()
         );
     }
 }

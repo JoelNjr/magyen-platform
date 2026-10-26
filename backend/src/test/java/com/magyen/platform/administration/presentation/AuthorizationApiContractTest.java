@@ -240,6 +240,32 @@ class AuthorizationApiContractTest {
     }
 
     @Test
+    void operatorCannotAssignAPlotterMachineToAPaperRoll() throws Exception {
+        String accessToken = loginAs(AuthenticationRole.OPERATOR);
+
+        mockMvc.perform(authorized(post("/api/v1/inventory/" + UNKNOWN_ID + "/plotter-machine"), accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "plotterMachineId": "6f0c1a10-0001-4a01-8a01-000000000001"
+                                }
+                                """))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403));
+        mockMvc.perform(authorized(
+                        patch("/api/v1/plotter/machines/6f0c1a10-0002-4a02-8a02-000000000002/active"),
+                        accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "active": false
+                                }
+                                """))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403));
+    }
+
+    @Test
     void operatorCannotManagePayrollEmployees() throws Exception {
         String accessToken = loginAs(AuthenticationRole.OPERATOR);
 

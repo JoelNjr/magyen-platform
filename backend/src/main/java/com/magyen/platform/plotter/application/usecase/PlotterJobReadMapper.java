@@ -19,7 +19,8 @@ final class PlotterJobReadMapper {
 
     static CreatePlotterJobResult toCreateResult(
             PlotterJob plotterJob,
-            PlotterCommercialOrderPort commercialOrderPort
+            PlotterCommercialOrderPort commercialOrderPort,
+            String machineName
     ) {
         Identity identity = resolveIdentity(plotterJob, commercialOrderPort);
         return new CreatePlotterJobResult(
@@ -36,7 +37,9 @@ final class PlotterJobReadMapper {
                 plotterJob.getPricePerMeter(),
                 plotterJob.getTotalAmount(),
                 plotterJob.getStatus(),
-                plotterJob.getObservations()
+                plotterJob.getObservations(),
+                plotterJob.getPlotterMachineId(),
+                machineName
         );
     }
 
@@ -44,7 +47,8 @@ final class PlotterJobReadMapper {
             PlotterJob plotterJob,
             BigDecimal paidAmount,
             BigDecimal outstandingAmount,
-            PlotterCommercialOrderPort commercialOrderPort
+            PlotterCommercialOrderPort commercialOrderPort,
+            String machineName
     ) {
         Identity identity = resolveIdentity(plotterJob, commercialOrderPort);
         return new GetPlotterJobResult(
@@ -63,7 +67,9 @@ final class PlotterJobReadMapper {
                 paidAmount,
                 outstandingAmount,
                 plotterJob.getStatus(),
-                plotterJob.getObservations()
+                plotterJob.getObservations(),
+                plotterJob.getPlotterMachineId(),
+                machineName
         );
     }
 

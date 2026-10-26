@@ -14,8 +14,10 @@ import {
   TableBody,
   TableCell,
   TableContainer,
+  MenuItem,
   TableHead,
   TableRow,
+  TextField,
   Typography,
 } from '@mui/material'
 import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom'
@@ -47,9 +49,15 @@ import {
   getInventoryMovements,
   registerInventoryMovement,
   registerInventoryPurchase,
+  assignPaperRollMachine,
   updateInventoryMinimumStock,
   updateInventoryUnitCost,
 } from '../services/inventoryService'
+import { getPlotterMachines } from '../../plotter/services/plotterService'
+import {
+  activePlotterMachines,
+  formatPlotterMachineLabel,
+} from '../../plotter/presentation/plotterMachinePresentation'
 import { BrandAccentLine } from '../../../layout/PageHeader'
 
 const headerCellSx = { fontWeight: 'bold' }
@@ -112,6 +120,10 @@ function InventoryDetailPage() {
   const [unitCostDialogOpen, setUnitCostDialogOpen] = useState(false)
   const [updatingUnitCost, setUpdatingUnitCost] = useState(false)
   const [unitCostError, setUnitCostError] = useState('')
+  const [plotterMachines, setPlotterMachines] = useState([])
+  const [assignmentMachineId, setAssignmentMachineId] = useState('')
+  const [assigningMachine, setAssigningMachine] = useState(false)
+  const [assignmentError, setAssignmentError] = useState('')
 
   const [movementDialogOpen, setMovementDialogOpen] = useState(false)
   const [registeringMovement, setRegisteringMovement] = useState(false)
@@ -125,7 +137,46 @@ function InventoryDetailPage() {
   const [successMessage, setSuccessMessage] = useState('')
 
   const pageBusy =
-    updatingMinimumStock || updatingUnitCost || registeringMovement || purchasing
+    updatingMinimumStock || updatingUnitCost || registeringMovement || purchasing || assigningMachine
+
+  useEffect(() => {
+    if (!item?.plotterPaperRoll) {
+      return undefined
+    }
+    let active = true
+    getPlotterMachines()
+      .then((data) => {
+        if (active) {
+          setPlotterMachines(Array.isArray(data?.machines) ? data.machines : [])
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setPlotterMachines([])
+        }
+      })
+    return () => {
+      active = false
+    }
+  }, [item?.plotterPaperRoll])
+
+  async function handleAssignMachine() {
+    if (!assignmentMachineId || assigningMachine) {
+      return
+    }
+    setAssigningMachine(true)
+    setAssignmentError('')
+    try {
+      await assignPaperRollMachine(inventoryItemId, assignmentMachineId)
+      await refreshDetail()
+      setSuccessMessage('Rollo asignado a la máquina. La asignación queda fija.')
+      setSuccessOpen(true)
+    } catch (error) {
+      setAssignmentError(resolveApiErrorMessage(error, 'No fue posible asignar la máquina.'))
+    } finally {
+      setAssigningMachine(false)
+    }
+  }
 
   async function refreshDetail() {
     const inventoryItem = await getInventoryItem(inventoryItemId)
@@ -424,7 +475,39 @@ function InventoryDetailPage() {
                 {item.materialType
                   ? ` · ${formatMaterialTypeLabel(item.materialType)}`
                   : ''}
+                {item.plotterPaperRoll
+                  ? ` · ${formatPlotterMachineLabel(
+                      item.plotterMachineId,
+                      plotterMachines.find((machine) => machine.plotterMachineId === item.plotterMachineId)?.name
+                    )}`
+                  : ''}
               </Typography>
+              {item.plotterPaperRoll && !item.plotterMachineId && canConfigureUnitCost && (
+                <Stack spacing={1} sx={{ maxWidth: 420, pt: 1 }}>
+                  {assignmentError && <Alert severity="error">{assignmentError}</Alert>}
+                  <TextField
+                    select
+                    label="Asignar máquina"
+                    value={assignmentMachineId}
+                    onChange={(event) => setAssignmentMachineId(event.target.value)}
+                    disabled={assigningMachine}
+                    helperText="Solo un administrador puede fijar la máquina de un rollo sin asignación. Después no se cambia."
+                  >
+                    {activePlotterMachines(plotterMachines).map((machine) => (
+                      <MenuItem key={machine.plotterMachineId} value={machine.plotterMachineId}>
+                        {machine.name}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                  <Button
+                    variant="contained"
+                    onClick={handleAssignMachine}
+                    disabled={assigningMachine || !assignmentMachineId}
+                  >
+                    {assigningMachine ? 'Asignando...' : 'Asignar máquina'}
+                  </Button>
+                </Stack>
+              )}
             </Stack>
 
             <Paper sx={{ p: { xs: 2.5, sm: 3 } }}>

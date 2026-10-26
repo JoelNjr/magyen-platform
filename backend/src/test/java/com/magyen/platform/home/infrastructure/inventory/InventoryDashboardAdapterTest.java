@@ -114,7 +114,8 @@ class InventoryDashboardAdapterTest {
                 null,
                 materialType,
                 paperRollNumber,
-                plotterPaperRoll
+                plotterPaperRoll,
+                null
         );
     }
 }

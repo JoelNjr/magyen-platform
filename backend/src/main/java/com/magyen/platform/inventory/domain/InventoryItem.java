@@ -27,6 +27,7 @@ public class InventoryItem {
     private final String description;
     private final InventoryMaterialType materialType;
     private final String paperRollNumber;
+    private UUID plotterMachineId;
     private final InventoryUnitOfMeasure unitOfMeasure;
     private BigDecimal stock;
     private BigDecimal minimumStock;
@@ -45,7 +46,8 @@ public class InventoryItem {
             BigDecimal stock,
             BigDecimal minimumStock,
             BigDecimal unitCost,
-            InventoryItemStatus status
+            InventoryItemStatus status,
+            UUID plotterMachineId
     ) {
         this.id = Objects.requireNonNull(id, "Inventory item id must not be null");
         this.materialCode = Objects.requireNonNull(materialCode, "Material code must not be null");
@@ -54,12 +56,33 @@ public class InventoryItem {
         this.description = normalizeDescription(description);
         this.materialType = Objects.requireNonNull(materialType, "Material type must not be null");
         this.paperRollNumber = normalizePaperRollNumber(paperRollNumber);
+        this.plotterMachineId = plotterMachineId;
         this.unitOfMeasure = Objects.requireNonNull(unitOfMeasure, "Unit of measure must not be null");
         this.stock = requireNonNegativeStock(stock, "Stock must not be negative");
         this.minimumStock = requireValidMinimumStock(minimumStock);
         this.unitCost = requireValidUnitCost(unitCost);
         this.status = Objects.requireNonNull(status, "Status must not be null");
         validatePlotterPaperRollConsistency();
+        validatePlotterMachineAssignment();
+    }
+
+    /**
+     * Asigna la máquina de un rollo que todavía no tiene máquina.
+     * La asignación queda fija: no existe un cambio posterior.
+     */
+    public void assignPlotterMachine(UUID machineId) {
+        if (!isPlotterPaperRoll()) {
+            throw new InventoryDomainException(
+                    "Only Plotter paper rolls can be assigned to a Plotter machine"
+            );
+        }
+        if (machineId == null) {
+            throw new InventoryDomainException("Plotter machine must not be null");
+        }
+        if (this.plotterMachineId != null) {
+            throw new InventoryDomainException("Plotter machine assignment cannot be changed");
+        }
+        this.plotterMachineId = machineId;
     }
 
     /**
@@ -145,7 +168,8 @@ public class InventoryItem {
                 stock,
                 minimumStock,
                 unitCost,
-                InventoryItemStatus.ACTIVE
+                InventoryItemStatus.ACTIVE,
+                null
         );
     }
 
@@ -252,6 +276,38 @@ public class InventoryItem {
             InventoryMaterialType materialType,
             String paperRollNumber
     ) {
+        return reconstitute(
+                id,
+                materialCode,
+                name,
+                category,
+                unitOfMeasure,
+                stock,
+                minimumStock,
+                status,
+                description,
+                unitCost,
+                materialType,
+                paperRollNumber,
+                null
+        );
+    }
+
+    public static InventoryItem reconstitute(
+            UUID id,
+            MaterialCode materialCode,
+            String name,
+            String category,
+            String unitOfMeasure,
+            BigDecimal stock,
+            BigDecimal minimumStock,
+            InventoryItemStatus status,
+            String description,
+            BigDecimal unitCost,
+            InventoryMaterialType materialType,
+            String paperRollNumber,
+            UUID plotterMachineId
+    ) {
         return new InventoryItem(
                 id,
                 materialCode,
@@ -264,7 +320,8 @@ public class InventoryItem {
                 stock,
                 minimumStock,
                 unitCost,
-                status
+                status,
+                plotterMachineId
         );
     }
 
@@ -498,6 +555,10 @@ public class InventoryItem {
         return paperRollNumber;
     }
 
+    public UUID getPlotterMachineId() {
+        return plotterMachineId;
+    }
+
     /**
      * Indica si el material es un rollo de papel elegible para Plotter.
      */
@@ -643,6 +704,17 @@ public class InventoryItem {
             return null;
         }
         return paperRollNumber.trim();
+    }
+
+    private void validatePlotterMachineAssignment() {
+        if (plotterMachineId == null) {
+            return;
+        }
+        if (paperRollNumber == null || materialType != InventoryMaterialType.PAPER) {
+            throw new InventoryDomainException(
+                    "Only Plotter paper rolls can be assigned to a Plotter machine"
+            );
+        }
     }
 
     private void validatePlotterPaperRollConsistency() {

@@ -1,5 +1,6 @@
 package com.magyen.platform.inventory.infrastructure.configuration;
 
+import com.magyen.platform.inventory.application.port.PaperRollMachinePort;
 import com.magyen.platform.inventory.application.usecase.ConsumeInventoryMaterialUseCase;
 import com.magyen.platform.inventory.application.usecase.CreateInventoryItemUseCase;
 import com.magyen.platform.inventory.application.usecase.DeactivateInventoryMaterialUseCase;
@@ -50,13 +51,15 @@ public class InventoryConfiguration {
             InventoryItemRepository inventoryItemRepository,
             PaperRollNumberGenerator paperRollNumberGenerator,
             MaterialCodeGenerator materialCodeGenerator,
-            RegisterInventoryPurchaseUseCase registerInventoryPurchaseUseCase
+            RegisterInventoryPurchaseUseCase registerInventoryPurchaseUseCase,
+            PaperRollMachinePort paperRollMachinePort
     ) {
         return new CreateInventoryItemUseCase(
                 inventoryItemRepository,
                 paperRollNumberGenerator,
                 materialCodeGenerator,
-                registerInventoryPurchaseUseCase
+                registerInventoryPurchaseUseCase,
+                paperRollMachinePort
         );
     }
 

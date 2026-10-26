@@ -26,7 +26,8 @@ final class InventoryItemReadMapper {
                 inventoryItem.getUnitCost(),
                 inventoryItem.getMaterialType(),
                 inventoryItem.getPaperRollNumber(),
-                inventoryItem.isPlotterPaperRoll()
+                inventoryItem.isPlotterPaperRoll(),
+                inventoryItem.getPlotterMachineId()
         );
     }
 }

@@ -46,9 +46,15 @@ import {
   toPlotterJobsQuery,
 } from '../presentation/plotterJobFilters'
 import {
+  formatPlotterMachineLabel,
+  toPlotterMachineQuery,
+} from '../presentation/plotterMachinePresentation'
+import {
   createPlotterJob,
   getOpenCommercialOrdersForPlotter,
   getPlotterJobs,
+  getPlotterMachineOperations,
+  getPlotterMachines,
   registerPlotterPayment,
 } from '../services/plotterService'
 import MonthPeriodNavigator from '../../../shared/period/MonthPeriodNavigator'
@@ -58,7 +64,7 @@ import EmptyState from '../../home/components/EmptyState'
 
 const headerCellSx = { fontWeight: 'bold' }
 const SKELETON_ROW_COUNT = 4
-const TABLE_COLUMN_COUNT = 11
+const TABLE_COLUMN_COUNT = 12
 
 function resolveApiErrorMessage(error, fallbackMessage) {
   return error?.response?.data?.message || fallbackMessage
@@ -72,6 +78,7 @@ function PlotterJobsTableHead() {
         <TableCell sx={headerCellSx}>Cliente</TableCell>
         <TableCell sx={headerCellSx}>Orden</TableCell>
         <TableCell sx={headerCellSx}>Fecha</TableCell>
+        <TableCell sx={headerCellSx}>Máquina</TableCell>
         <TableCell sx={headerCellSx}>Rollo</TableCell>
         <TableCell sx={headerCellSx}>Metros</TableCell>
         <TableCell sx={headerCellSx}>Total</TableCell>
@@ -93,6 +100,9 @@ function PlotterJobsPage() {
   const initialPeriod = useMemo(() => getCalendarMonthRange(), [])
   const [period, setPeriod] = useState(initialPeriod)
   const [jobFilter, setJobFilter] = useState(ALL_PLOTTER_JOBS_FILTER)
+  const [machineFilter, setMachineFilter] = useState('')
+  const [plotterMachines, setPlotterMachines] = useState([])
+  const [machineOperations, setMachineOperations] = useState([])
   const [jobs, setJobs] = useState([])
   const [customers, setCustomers] = useState([])
   const [orders, setOrders] = useState([])
@@ -147,25 +157,36 @@ function PlotterJobsPage() {
     setFailed(false)
 
     try {
-      const data = await getPlotterJobs(toPlotterJobsQuery(jobFilter, period))
+      const machineQuery = toPlotterMachineQuery(machineFilter)
+      const [data, operations] = await Promise.all([
+        getPlotterJobs({ ...toPlotterJobsQuery(jobFilter, period), ...machineQuery }),
+        getPlotterMachineOperations({
+          fromDate: period.fromDate,
+          toDate: period.toDate,
+          ...machineQuery,
+        }),
+      ])
       setJobs(Array.isArray(data?.jobs) ? data.jobs : [])
+      setMachineOperations(Array.isArray(operations?.machines) ? operations.machines : [])
       setLoading(false)
     } catch {
       setJobs([])
+      setMachineOperations([])
       setFailed(true)
       setLoading(false)
     }
-  }, [period.fromDate, period.toDate, jobFilter])
+  }, [period.fromDate, period.toDate, jobFilter, machineFilter])
 
   async function loadLookups() {
     setLoadingLookups(true)
 
     try {
-      const [customersData, ordersData, rollsData, inventoryData] = await Promise.all([
+      const [customersData, ordersData, rollsData, inventoryData, machinesData] = await Promise.all([
         getCustomers(),
         getOpenCommercialOrdersForPlotter(),
         getPlotterPaperRolls(),
         getInventoryItems(),
+        getPlotterMachines(),
       ])
       setCustomers(
         Array.isArray(customersData?.customers) ? customersData.customers : []
@@ -175,11 +196,13 @@ function PlotterJobsPage() {
       setInventoryLookup(
         Array.isArray(inventoryData?.items) ? inventoryData.items : []
       )
+      setPlotterMachines(Array.isArray(machinesData?.machines) ? machinesData.machines : [])
     } catch {
       setCustomers([])
       setOrders([])
       setPaperRolls([])
       setInventoryLookup([])
+      setPlotterMachines([])
     } finally {
       setLoadingLookups(false)
     }
@@ -356,7 +379,41 @@ function PlotterJobsPage() {
               </MenuItem>
             ))}
           </TextField>
+          <TextField
+            select
+            label="Máquina"
+            value={machineFilter}
+            onChange={(event) => setMachineFilter(event.target.value)}
+            disabled={loading || loadingLookups}
+            sx={{ minWidth: { sm: 220 } }}
+            helperText="Metros por fecha del trabajo. Ingreso externo por fecha del pago."
+          >
+            <MenuItem value="">Todas</MenuItem>
+            <MenuItem value="UNASSIGNED">Sin identificar</MenuItem>
+            {plotterMachines.map((machine) => (
+              <MenuItem key={machine.plotterMachineId} value={machine.plotterMachineId}>
+                {machine.name}
+              </MenuItem>
+            ))}
+          </TextField>
         </Stack>
+
+        {!loading && !failed && machineOperations.length > 0 && (
+          <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+            {machineOperations.map((operation) => (
+              <Paper key={operation.plotterMachineId || 'unassigned'} sx={{ p: 2, flex: 1 }}>
+                <Typography variant="subtitle2">
+                  {formatPlotterMachineLabel(operation.plotterMachineId, operation.machineName)}
+                </Typography>
+                <Typography variant="body2">
+                  {operation.jobCount} trabajos · {formatPlotterNumber(operation.printedMeters)} m impresos ·{' '}
+                  {formatPlotterNumber(operation.wasteMeters)} m merma · ingreso externo{' '}
+                  {formatPlotterMoney(operation.externalRevenue)}
+                </Typography>
+              </Paper>
+            ))}
+          </Stack>
+        )}
 
         {loading && (
           <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
@@ -414,6 +471,9 @@ function PlotterJobsPage() {
                       <TableCell>{customerLabel}</TableCell>
                       <TableCell>{formatPlotterOrderLabel(job)}</TableCell>
                       <TableCell>{formatPlotterDate(job.creationDate)}</TableCell>
+                      <TableCell>
+                        {formatPlotterMachineLabel(job.plotterMachineId, job.machineName)}
+                      </TableCell>
                       <TableCell>{paperLabel}</TableCell>
                       <TableCell>
                         {formatPlotterNumber(job.printedMeters)} m
@@ -489,6 +549,7 @@ function PlotterJobsPage() {
           customerName: customerNameById.get(order.customerId) || '',
         }))}
         paperRolls={paperRolls}
+        plotterMachines={plotterMachines}
         loadingLookups={loadingLookups}
         createdCustomerId={createdPlotterCustomerId}
         onCreateCustomer={() => {

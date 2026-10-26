@@ -25,7 +25,8 @@ public record CreatePlotterJobCommand(
         String observations,
         PlotterJobType jobType,
         UUID plotterJobId,
-        boolean historicalRegistration
+        boolean historicalRegistration,
+        UUID plotterMachineId
 ) {
     public CreatePlotterJobCommand(
             UUID customerId,
@@ -48,7 +49,35 @@ public record CreatePlotterJobCommand(
                 observations,
                 jobType,
                 plotterJobId,
-                false
+                false,
+                null
+        );
+    }
+
+    public CreatePlotterJobCommand(
+            UUID customerId,
+            UUID orderId,
+            LocalDate creationDate,
+            UUID paperInventoryItemId,
+            BigDecimal printedMeters,
+            BigDecimal pricePerMeter,
+            String observations,
+            PlotterJobType jobType,
+            UUID plotterJobId,
+            boolean historicalRegistration
+    ) {
+        this(
+                customerId,
+                orderId,
+                creationDate,
+                paperInventoryItemId,
+                printedMeters,
+                pricePerMeter,
+                observations,
+                jobType,
+                plotterJobId,
+                historicalRegistration,
+                null
         );
     }
 
@@ -71,7 +100,8 @@ public record CreatePlotterJobCommand(
                 observations,
                 null,
                 null,
-                false
+                false,
+                null
         );
     }
 }

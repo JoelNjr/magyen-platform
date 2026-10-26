@@ -330,7 +330,7 @@ class DeactivateInventoryMaterialUseCaseTest {
     }
 
     private InventoryItem saveIsolatedPaper(BigDecimal stock) {
-        return inventoryItemRepository.save(InventoryItem.create(
+        InventoryItem roll = InventoryItem.create(
                 MaterialCode.of("PAP-" + UUID.randomUUID().toString().substring(0, 8)),
                 "Papel Plotter",
                 "PAPER",
@@ -341,7 +341,9 @@ class DeactivateInventoryMaterialUseCaseTest {
                 new BigDecimal("4500.00"),
                 InventoryMaterialType.PAPER,
                 uniqueRollNumber()
-        ));
+        );
+        roll.assignPlotterMachine(UUID.fromString("6f0c1a10-0001-4a01-8a01-000000000001"));
+        return inventoryItemRepository.save(roll);
     }
 
     private static String uniqueRollNumber() {

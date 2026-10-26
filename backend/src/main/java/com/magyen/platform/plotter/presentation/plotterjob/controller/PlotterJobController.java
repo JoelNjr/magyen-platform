@@ -82,13 +82,22 @@ public class PlotterJobController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
             @RequestParam(required = false) UUID customerId,
-            @RequestParam(required = false) String jobType
+            @RequestParam(required = false) String jobType,
+            @RequestParam(required = false) UUID machineId,
+            @RequestParam(required = false, defaultValue = "false") boolean unassignedMachine
     ) {
         PlotterJobType parsedJobType = jobType == null || jobType.isBlank()
                 ? null
                 : PlotterJobType.of(jobType);
         GetPlotterJobsResult result = getPlotterJobsUseCase.execute(
-                new GetPlotterJobsQuery(fromDate, toDate, customerId, parsedJobType)
+                new GetPlotterJobsQuery(
+                        fromDate,
+                        toDate,
+                        customerId,
+                        parsedJobType,
+                        machineId,
+                        unassignedMachine
+                )
         );
         return ResponseEntity.ok(plotterPresentationMapper.toGetJobsResponse(result));
     }

@@ -71,6 +71,8 @@ public class SecurityConfiguration {
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/v1/finance/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/inventory/*/unit-cost").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/inventory/*/plotter-machine").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/plotter/machines/*/active").hasRole("ADMIN")
                         .requestMatchers("/api/v1/reports/**").hasRole("ADMIN")
                         .requestMatchers("/api/v1/notifications").hasRole("ADMIN")
                         .anyRequest().authenticated()

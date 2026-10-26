@@ -10,6 +10,8 @@ import com.magyen.platform.plotter.application.port.PlotterPaperRollView;
 import com.magyen.platform.plotter.domain.PlotterJob;
 import com.magyen.platform.plotter.domain.PlotterJobRepository;
 import com.magyen.platform.plotter.domain.PlotterJobType;
+import com.magyen.platform.plotter.domain.PlotterMachine;
+import com.magyen.platform.plotter.domain.PlotterMachineRepository;
 import com.magyen.platform.plotter.domain.exception.PlotterDomainException;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,12 +43,14 @@ public class CreatePlotterJobUseCase {
     private final PlotterJobInventoryPort plotterJobInventoryPort;
     private final PlotterCommercialOrderPort plotterCommercialOrderPort;
     private final PlotterInternalServiceFinancePort plotterInternalServiceFinancePort;
+    private final PlotterMachineRepository plotterMachineRepository;
 
     public CreatePlotterJobUseCase(
             PlotterJobRepository plotterJobRepository,
             PlotterJobInventoryPort plotterJobInventoryPort,
             PlotterCommercialOrderPort plotterCommercialOrderPort,
-            PlotterInternalServiceFinancePort plotterInternalServiceFinancePort
+            PlotterInternalServiceFinancePort plotterInternalServiceFinancePort,
+            PlotterMachineRepository plotterMachineRepository
     ) {
         this.plotterJobRepository = Objects.requireNonNull(
                 plotterJobRepository,
@@ -63,6 +67,10 @@ public class CreatePlotterJobUseCase {
         this.plotterInternalServiceFinancePort = Objects.requireNonNull(
                 plotterInternalServiceFinancePort,
                 "Plotter internal service finance port must not be null"
+        );
+        this.plotterMachineRepository = Objects.requireNonNull(
+                plotterMachineRepository,
+                "Plotter machine repository must not be null"
         );
     }
 
@@ -82,13 +90,23 @@ public class CreatePlotterJobUseCase {
                         existing.get().getObservations()
                 );
                 ensureInternalServiceLedger(existing.get());
-                return PlotterJobReadMapper.toCreateResult(existing.get(), plotterCommercialOrderPort);
+                return PlotterJobReadMapper.toCreateResult(
+                        existing.get(),
+                        plotterCommercialOrderPort,
+                        machineName(existing.get().getPlotterMachineId())
+                );
             }
         }
 
+        PlotterMachine machine = resolveActiveMachine(command.plotterMachineId());
         PlotterPaperRollView paperRoll = plotterJobInventoryPort.requirePlotterPaperRoll(
                 command.paperInventoryItemId()
         );
+        if (!machine.getId().equals(paperRoll.plotterMachineId())) {
+            throw new PlotterDomainException(
+                    "Paper roll is assigned to a different Plotter machine"
+            );
+        }
 
         if (command.printedMeters().compareTo(paperRoll.availableMeters()) > 0) {
             throw new PlotterDomainException(
@@ -143,7 +161,8 @@ public class CreatePlotterJobUseCase {
                 command.paperInventoryItemId(),
                 command.printedMeters(),
                 pricePerMeter,
-                command.observations()
+                command.observations(),
+                machine.getId()
         );
 
         PlotterJob savedPlotterJob = plotterJobRepository.save(plotterJob);
@@ -156,7 +175,35 @@ public class CreatePlotterJobUseCase {
         );
         ensureInternalServiceLedger(savedPlotterJob);
 
-        return PlotterJobReadMapper.toCreateResult(savedPlotterJob, plotterCommercialOrderPort);
+        return PlotterJobReadMapper.toCreateResult(
+                savedPlotterJob,
+                plotterCommercialOrderPort,
+                machine.getName()
+        );
+    }
+
+    private PlotterMachine resolveActiveMachine(UUID plotterMachineId) {
+        if (plotterMachineId == null) {
+            return plotterMachineRepository.findDefaultActive()
+                    .orElseThrow(() -> new PlotterDomainException("Select an active Plotter machine"));
+        }
+        PlotterMachine machine = plotterMachineRepository.findById(plotterMachineId)
+                .orElseThrow(() -> new PlotterDomainException(
+                        "Plotter machine not found: " + plotterMachineId
+                ));
+        if (!machine.isActive()) {
+            throw new PlotterDomainException("Plotter machine is inactive: " + plotterMachineId);
+        }
+        return machine;
+    }
+
+    private String machineName(UUID plotterMachineId) {
+        if (plotterMachineId == null) {
+            return null;
+        }
+        return plotterMachineRepository.findById(plotterMachineId)
+                .map(PlotterMachine::getName)
+                .orElse(null);
     }
 
     private static void rejectInvalidHistoricalRegistration(CreatePlotterJobCommand command) {

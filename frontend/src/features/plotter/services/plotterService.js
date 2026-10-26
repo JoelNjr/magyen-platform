@@ -7,6 +7,8 @@ export async function getPlotterJobs(params = {}) {
       toDate: params.toDate || undefined,
       customerId: params.customerId || undefined,
       jobType: params.jobType || undefined,
+      machineId: params.machineId || undefined,
+      unassignedMachine: params.unassignedMachine || undefined,
     },
   })
   return response.data
@@ -24,8 +26,23 @@ export async function getHistoricalCommercialOrdersForPlotter({ year, month }) {
   return response.data
 }
 
-export async function getPlotterPendingBalances() {
-  const response = await httpClient.get('/plotter/pending-balances')
+export async function getPlotterPendingBalances(params = {}) {
+  const response = await httpClient.get('/plotter/pending-balances', {
+    params: {
+      machineId: params.machineId || undefined,
+      unassignedMachine: params.unassignedMachine || undefined,
+    },
+  })
+  return response.data
+}
+
+export async function getPlotterMachines() {
+  const response = await httpClient.get('/plotter/machines')
+  return response.data
+}
+
+export async function getPlotterMachineOperations(params = {}) {
+  const response = await httpClient.get('/plotter/machine-operations', { params })
   return response.data
 }
 

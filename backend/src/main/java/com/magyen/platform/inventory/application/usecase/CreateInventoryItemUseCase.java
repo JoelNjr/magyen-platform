@@ -2,6 +2,7 @@ package com.magyen.platform.inventory.application.usecase;
 
 import com.magyen.platform.inventory.application.dto.CreateInventoryItemCommand;
 import com.magyen.platform.inventory.application.dto.CreateInventoryItemResult;
+import com.magyen.platform.inventory.application.port.PaperRollMachinePort;
 import com.magyen.platform.inventory.application.dto.InventoryAcquisitionCommand;
 import com.magyen.platform.inventory.application.dto.RegisterInventoryPurchaseCommand;
 import com.magyen.platform.inventory.domain.InventoryItem;
@@ -19,6 +20,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Crea un material de inventario con código generado y, si aplica, una sola compra.
@@ -34,12 +36,14 @@ public class CreateInventoryItemUseCase {
     private final PaperRollNumberGenerator paperRollNumberGenerator;
     private final MaterialCodeGenerator materialCodeGenerator;
     private final RegisterInventoryPurchaseUseCase registerInventoryPurchaseUseCase;
+    private final PaperRollMachinePort paperRollMachinePort;
 
     public CreateInventoryItemUseCase(
             InventoryItemRepository inventoryItemRepository,
             PaperRollNumberGenerator paperRollNumberGenerator,
             MaterialCodeGenerator materialCodeGenerator,
-            RegisterInventoryPurchaseUseCase registerInventoryPurchaseUseCase
+            RegisterInventoryPurchaseUseCase registerInventoryPurchaseUseCase,
+            PaperRollMachinePort paperRollMachinePort
     ) {
         this.inventoryItemRepository = Objects.requireNonNull(
                 inventoryItemRepository,
@@ -56,6 +60,10 @@ public class CreateInventoryItemUseCase {
         this.registerInventoryPurchaseUseCase = Objects.requireNonNull(
                 registerInventoryPurchaseUseCase,
                 "Register inventory purchase use case must not be null"
+        );
+        this.paperRollMachinePort = Objects.requireNonNull(
+                paperRollMachinePort,
+                "Paper roll machine port must not be null"
         );
     }
 
@@ -93,6 +101,13 @@ public class CreateInventoryItemUseCase {
                 materialType,
                 paperRollNumber
         );
+        if (paperRoll) {
+            inventoryItem.assignPlotterMachine(resolvePaperRollMachine(command.plotterMachineId()));
+        } else if (command.plotterMachineId() != null) {
+            throw new InventoryDomainException(
+                    "Only Plotter paper rolls can be assigned to a Plotter machine"
+            );
+        }
 
         InventoryItem savedInventoryItem = inventoryItemRepository.save(inventoryItem);
 
@@ -277,7 +292,15 @@ public class CreateInventoryItemUseCase {
                 inventoryItem.getUnitCost(),
                 inventoryItem.getMaterialType(),
                 inventoryItem.getPaperRollNumber(),
-                inventoryItem.isPlotterPaperRoll()
+                inventoryItem.isPlotterPaperRoll(),
+                inventoryItem.getPlotterMachineId()
         );
+    }
+
+    private UUID resolvePaperRollMachine(UUID plotterMachineId) {
+        if (plotterMachineId == null) {
+            return paperRollMachinePort.requireDefaultActiveMachine();
+        }
+        return paperRollMachinePort.requireActiveMachine(plotterMachineId);
     }
 }

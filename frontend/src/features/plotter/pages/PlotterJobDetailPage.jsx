@@ -40,6 +40,7 @@ import {
   isInternalPlotterJob,
   isWastePlotterJob,
 } from '../presentation/plotterJobPresentation'
+import { formatPlotterMachineLabel } from '../presentation/plotterMachinePresentation'
 import {
   getPlotterJob,
   getPlotterPayments,
@@ -268,6 +269,13 @@ function PlotterJobDetailPage() {
             <Grid item xs={12} sm={6} md={4}>
               <DetailField label="Estado">
                 <Chip size="small" {...statusChip} />
+              </DetailField>
+            </Grid>
+            <Grid item xs={12} sm={6} md={4}>
+              <DetailField label="Máquina">
+                <Typography>
+                  {formatPlotterMachineLabel(job.plotterMachineId, job.machineName)}
+                </Typography>
               </DetailField>
             </Grid>
             <Grid item xs={12} sm={6} md={4}>

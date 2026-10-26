@@ -1,6 +1,7 @@
 package com.magyen.platform.inventory.presentation.inventoryitem.request;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 /**
  * Payload HTTP para crear un material de inventario.
@@ -16,6 +17,7 @@ public record CreateInventoryItemRequest(
         BigDecimal unitCost,
         String materialType,
         Boolean plotterPaperRoll,
-        InventoryAcquisitionRequest acquisition
+        InventoryAcquisitionRequest acquisition,
+        UUID plotterMachineId
 ) {
 }

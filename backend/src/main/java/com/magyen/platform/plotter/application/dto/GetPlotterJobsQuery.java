@@ -16,13 +16,24 @@ public record GetPlotterJobsQuery(
         LocalDate fromDate,
         LocalDate toDate,
         UUID customerId,
-        PlotterJobType jobType
+        PlotterJobType jobType,
+        UUID plotterMachineId,
+        boolean unassignedMachineOnly
 ) {
     public GetPlotterJobsQuery(LocalDate fromDate, LocalDate toDate) {
-        this(fromDate, toDate, null, null);
+        this(fromDate, toDate, null, null, null, false);
     }
 
     public GetPlotterJobsQuery(LocalDate fromDate, LocalDate toDate, UUID customerId) {
-        this(fromDate, toDate, customerId, null);
+        this(fromDate, toDate, customerId, null, null, false);
+    }
+
+    public GetPlotterJobsQuery(
+            LocalDate fromDate,
+            LocalDate toDate,
+            UUID customerId,
+            PlotterJobType jobType
+    ) {
+        this(fromDate, toDate, customerId, jobType, null, false);
     }
 }

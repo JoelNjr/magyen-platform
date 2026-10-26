@@ -27,6 +27,7 @@ public class InventoryPersistenceMapper {
         inventoryItemEntity.setCategory(inventoryItem.getCategory());
         inventoryItemEntity.setMaterialType(inventoryItem.getMaterialType());
         inventoryItemEntity.setPaperRollNumber(inventoryItem.getPaperRollNumber());
+        inventoryItemEntity.setPlotterMachineId(inventoryItem.getPlotterMachineId());
         inventoryItemEntity.setDescription(inventoryItem.getDescription());
         inventoryItemEntity.setUnitOfMeasure(inventoryItem.getUnitOfMeasure());
         inventoryItemEntity.setStock(inventoryItem.getStock());
@@ -51,7 +52,8 @@ public class InventoryPersistenceMapper {
                 inventoryItemEntity.getDescription(),
                 inventoryItemEntity.getUnitCost(),
                 inventoryItemEntity.getMaterialType(),
-                inventoryItemEntity.getPaperRollNumber()
+                inventoryItemEntity.getPaperRollNumber(),
+                inventoryItemEntity.getPlotterMachineId()
         );
     }
 

@@ -7,6 +7,7 @@ import {
   IconButton,
   Paper,
   Skeleton,
+  MenuItem,
   Stack,
   Table,
   TableBody,
@@ -14,6 +15,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TextField,
   Typography,
 } from '@mui/material'
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
@@ -27,7 +29,8 @@ import {
   formatPlotterPendingMonthLabel,
   formatPlotterStatusLabel,
 } from '../presentation/plotterJobPresentation'
-import { getPlotterPendingBalances } from '../services/plotterService'
+import { toPlotterMachineQuery } from '../presentation/plotterMachinePresentation'
+import { getPlotterMachines, getPlotterPendingBalances } from '../services/plotterService'
 
 const headerCellSx = { fontWeight: 'bold' }
 
@@ -38,12 +41,32 @@ function PlotterPendingBalancesPage() {
   const [failed, setFailed] = useState(false)
   const [expandedMonthKey, setExpandedMonthKey] = useState('')
   const [expandedCustomerKey, setExpandedCustomerKey] = useState('')
+  const [machineFilter, setMachineFilter] = useState('')
+  const [plotterMachines, setPlotterMachines] = useState([])
+
+  useEffect(() => {
+    let active = true
+    getPlotterMachines()
+      .then((data) => {
+        if (active) {
+          setPlotterMachines(Array.isArray(data?.machines) ? data.machines : [])
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setPlotterMachines([])
+        }
+      })
+    return () => {
+      active = false
+    }
+  }, [])
 
   useEffect(() => {
     let active = true
     setLoading(true)
     setFailed(false)
-    getPlotterPendingBalances()
+    getPlotterPendingBalances(toPlotterMachineQuery(machineFilter))
       .then((data) => {
         if (active) {
           setBalances(data)
@@ -62,7 +85,7 @@ function PlotterPendingBalancesPage() {
     return () => {
       active = false
     }
-  }, [])
+  }, [machineFilter])
 
   const months = Array.isArray(balances?.months) ? balances.months : []
   const negativeBalances = Array.isArray(balances?.negativeBalances)
@@ -78,6 +101,22 @@ function PlotterPendingBalancesPage() {
       >
         Volver a trabajos
       </Button>
+      <TextField
+        select
+        label="Máquina"
+        value={machineFilter}
+        onChange={(event) => setMachineFilter(event.target.value)}
+        sx={{ maxWidth: 280 }}
+        helperText="El saldo sigue siendo histórico. Este filtro solo elige la máquina."
+      >
+        <MenuItem value="">Todas</MenuItem>
+        <MenuItem value="UNASSIGNED">Sin identificar</MenuItem>
+        {plotterMachines.map((machine) => (
+          <MenuItem key={machine.plotterMachineId} value={machine.plotterMachineId}>
+            {machine.name}
+          </MenuItem>
+        ))}
+      </TextField>
 
       <PageHeader title="Saldos pendientes" />
 

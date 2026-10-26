@@ -51,7 +51,8 @@ public class PlotterPresentationMapper {
                 request.observations(),
                 jobType,
                 request.plotterJobId(),
-                Boolean.TRUE.equals(request.historicalRegistration())
+                Boolean.TRUE.equals(request.historicalRegistration()),
+                request.plotterMachineId()
         );
     }
 
@@ -72,7 +73,9 @@ public class PlotterPresentationMapper {
                 result.pricePerMeter(),
                 result.totalAmount(),
                 result.status().name(),
-                result.observations()
+                result.observations(),
+                result.plotterMachineId(),
+                result.machineName()
         );
     }
 
@@ -100,7 +103,9 @@ public class PlotterPresentationMapper {
                 result.paidAmount(),
                 result.outstandingAmount(),
                 result.status().name(),
-                result.observations()
+                result.observations(),
+                result.plotterMachineId(),
+                result.machineName()
         );
     }
 

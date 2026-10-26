@@ -63,6 +63,12 @@ public class InventoryPresentationMapper {
     public CreateInventoryItemCommand toCommand(CreateInventoryItemRequest request) {
         Objects.requireNonNull(request, "CreateInventoryItemRequest must not be null");
 
+        boolean paperRoll = Boolean.TRUE.equals(request.plotterPaperRoll())
+                || "PAPER".equalsIgnoreCase(request.materialType());
+        if (paperRoll && request.plotterMachineId() == null) {
+            throw new InventoryDomainException("Plotter paper rolls require a Plotter machine");
+        }
+
         return new CreateInventoryItemCommand(
                 request.code(),
                 request.name(),
@@ -74,7 +80,8 @@ public class InventoryPresentationMapper {
                 request.unitCost(),
                 request.materialType(),
                 Boolean.TRUE.equals(request.plotterPaperRoll()),
-                toAcquisitionCommand(request.acquisition())
+                toAcquisitionCommand(request.acquisition()),
+                request.plotterMachineId()
         );
     }
 
@@ -109,7 +116,8 @@ public class InventoryPresentationMapper {
                 result.unitCost(),
                 result.materialType().name(),
                 result.paperRollNumber(),
-                result.plotterPaperRoll()
+                result.plotterPaperRoll(),
+                result.plotterMachineId()
         );
     }
 
@@ -140,7 +148,8 @@ public class InventoryPresentationMapper {
                 result.unitCost(),
                 result.materialType().name(),
                 result.paperRollNumber(),
-                result.plotterPaperRoll()
+                result.plotterPaperRoll(),
+                result.plotterMachineId()
         );
     }
 

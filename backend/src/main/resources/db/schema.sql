@@ -366,6 +366,7 @@ CREATE TABLE inventory_items (
     category            varchar(255)    NOT NULL,
     material_type       varchar(30)     NOT NULL,
     paper_roll_number   varchar(50)     NULL,
+    plotter_machine_id  uuid            NULL,
     description         varchar(2000)   NULL,
     unit_of_measure     varchar(50)     NOT NULL,
     stock               numeric(19, 4)  NOT NULL,
@@ -390,6 +391,14 @@ CREATE INDEX idx_inventory_items_status
 
 CREATE INDEX idx_inventory_items_material_type
     ON inventory_items (material_type);
+
+CREATE INDEX idx_inventory_items_plotter_machine_id
+    ON inventory_items (plotter_machine_id);
+
+-- plotter_machine_id solo en rollos (paper_roll_number presente). Sin FK: la máquina vive en Plotter.
+ALTER TABLE inventory_items
+    ADD CONSTRAINT inventory_items_plotter_machine_paper_only
+    CHECK (plotter_machine_id IS NULL OR paper_roll_number IS NOT NULL);
 
 -- Numeración operacional de rollos de papel Plotter (RP-001, RP-002, ...).
 -- Los huecos son aceptables si una transacción falla tras reservar el valor.
@@ -433,6 +442,26 @@ CREATE UNIQUE INDEX uq_inventory_movements_source
       AND source_id IS NOT NULL;
 
 -- Plotter module
+-- Aggregate: PlotterMachine. Identificador estable; el nombre es solo presentación.
+
+CREATE TABLE plotter_machines (
+    id                          uuid            NOT NULL,
+    name                        varchar(100)    NOT NULL,
+    active                      boolean         NOT NULL,
+    default_for_registration    boolean         NOT NULL,
+    CONSTRAINT plotter_machines_pkey PRIMARY KEY (id),
+    CONSTRAINT uq_plotter_machines_name UNIQUE (name)
+);
+
+CREATE UNIQUE INDEX uq_plotter_machines_single_default
+    ON plotter_machines (default_for_registration)
+    WHERE default_for_registration = true;
+
+-- Semilla inicial. Plotter 1 es el default de registro. Los ids no cambian con el nombre.
+INSERT INTO plotter_machines (id, name, active, default_for_registration) VALUES
+    ('6f0c1a10-0001-4a01-8a01-000000000001', 'Plotter 1', true, true),
+    ('6f0c1a10-0002-4a02-8a02-000000000002', 'Plotter 2', true, false);
+
 -- Aggregate: PlotterJob
 -- Soft refs: customer_id (Commercial), order_id (Commercial), paper_inventory_item_id (Inventory) — no FKs
 -- job_type: INTERNAL_MAGYEN | EXTERNAL | WASTE
@@ -447,6 +476,7 @@ CREATE TABLE plotter_jobs (
     order_id                    uuid            NULL,
     creation_date               date            NOT NULL,
     paper_inventory_item_id     uuid            NOT NULL,
+    machine_id                  uuid            NULL,
     printed_meters              numeric(19, 4)  NOT NULL,
     price_per_meter             numeric(19, 2)  NOT NULL,
     total_amount                numeric(19, 2)  NOT NULL,
@@ -472,6 +502,9 @@ CREATE INDEX idx_plotter_jobs_status
 
 CREATE INDEX idx_plotter_jobs_paper_inventory_item_id
     ON plotter_jobs (paper_inventory_item_id);
+
+CREATE INDEX idx_plotter_jobs_machine_id
+    ON plotter_jobs (machine_id);
 
 -- Aggregate: PlotterPayment (pagos de cliente sobre trabajo de Plotter — SPR-036 Inc. 8)
 -- Soft ref: plotter_job_id — no FK JPA

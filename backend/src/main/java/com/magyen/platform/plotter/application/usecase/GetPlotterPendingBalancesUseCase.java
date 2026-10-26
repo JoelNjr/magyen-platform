@@ -58,6 +58,19 @@ public class GetPlotterPendingBalancesUseCase {
     }
 
     public GetPlotterPendingBalancesResult execute() {
+        return execute(null, false);
+    }
+
+    /**
+     * {@code plotterMachineId} nulo y {@code unassignedMachineOnly} falso conservan el saldo histórico completo.
+     * La deuda sigue agrupándose por la fecha del trabajo.
+     */
+    public GetPlotterPendingBalancesResult execute(UUID plotterMachineId, boolean unassignedMachineOnly) {
+        if (plotterMachineId != null && unassignedMachineOnly) {
+            throw new com.magyen.platform.plotter.domain.exception.PlotterDomainException(
+                    "Choose either a Plotter machine or unassigned jobs"
+            );
+        }
         BigDecimal externalBilled = money(BigDecimal.ZERO);
         BigDecimal externalPaid = money(BigDecimal.ZERO);
         BigDecimal outstanding = money(BigDecimal.ZERO);
@@ -68,6 +81,9 @@ public class GetPlotterPendingBalancesUseCase {
 
         for (PlotterJob job : plotterJobRepository.findAll()) {
             if (!job.getJobType().isExternal() || job.getStatus() == PlotterJobStatus.CANCELLED) {
+                continue;
+            }
+            if (!matchesMachine(job, plotterMachineId, unassignedMachineOnly)) {
                 continue;
             }
             BigDecimal paidAmount = PlotterPaymentBalanceCalculator.sumPaid(
@@ -166,6 +182,20 @@ public class GetPlotterPendingBalancesUseCase {
             return null;
         }
         return plotterCommercialOrderPort.findCustomerName(customerId).orElse(null);
+    }
+
+    private static boolean matchesMachine(
+            PlotterJob job,
+            UUID plotterMachineId,
+            boolean unassignedMachineOnly
+    ) {
+        if (unassignedMachineOnly) {
+            return job.getPlotterMachineId() == null;
+        }
+        if (plotterMachineId == null) {
+            return true;
+        }
+        return plotterMachineId.equals(job.getPlotterMachineId());
     }
 
     private static BigDecimal money(BigDecimal amount) {

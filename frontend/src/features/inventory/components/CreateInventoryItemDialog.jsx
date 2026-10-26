@@ -15,6 +15,11 @@ import {
   INVENTORY_MATERIAL_TYPE_OPTIONS,
   INVENTORY_UNIT_OPTIONS,
 } from '../presentation/inventoryStatusPresentation'
+import { getPlotterMachines } from '../../plotter/services/plotterService'
+import {
+  activePlotterMachines,
+  defaultPlotterMachineId,
+} from '../../plotter/presentation/plotterMachinePresentation'
 
 const EMPTY_FORM = {
   materialType: '',
@@ -28,6 +33,7 @@ const EMPTY_FORM = {
   purchaseUnitCost: '',
   purchaseTotalCost: '',
   purchaseDate: '',
+  plotterMachineId: '',
 }
 
 function todayIsoDate() {
@@ -61,6 +67,7 @@ function CreateInventoryItemDialog({
 }) {
   const [form, setForm] = useState(EMPTY_FORM)
   const [validationError, setValidationError] = useState('')
+  const [plotterMachines, setPlotterMachines] = useState([])
 
   useEffect(() => {
     if (!open) {
@@ -78,6 +85,38 @@ function CreateInventoryItemDialog({
       return next.materialType === 'PAPER' ? applyPaperDefaults(next) : next
     })
   }, [open, initialMaterialType])
+
+  useEffect(() => {
+    if (!open) {
+      return undefined
+    }
+    let active = true
+    getPlotterMachines()
+      .then((data) => {
+        if (!active) {
+          return
+        }
+        const machines = Array.isArray(data?.machines) ? data.machines : []
+        setPlotterMachines(machines)
+        const defaultMachineId = defaultPlotterMachineId(machines)
+        if (!defaultMachineId) {
+          return
+        }
+        setForm((current) => (
+          current.plotterMachineId
+            ? current
+            : { ...current, plotterMachineId: defaultMachineId }
+        ))
+      })
+      .catch(() => {
+        if (active) {
+          setPlotterMachines([])
+        }
+      })
+    return () => {
+      active = false
+    }
+  }, [open])
 
   function handleClose() {
     if (submitting) {
@@ -182,6 +221,10 @@ function CreateInventoryItemDialog({
         setValidationError('La fecha de compra es obligatoria.')
         return
       }
+      if (!form.plotterMachineId) {
+        setValidationError('Selecciona la máquina de Plotter que usará este rollo.')
+        return
+      }
 
       setValidationError('')
       onSubmit({
@@ -193,6 +236,7 @@ function CreateInventoryItemDialog({
         description: description || null,
         materialType,
         plotterPaperRoll: true,
+        plotterMachineId: form.plotterMachineId,
         acquisition: {
           purchaseId: createPurchaseId(),
           quantity,
@@ -308,6 +352,25 @@ function CreateInventoryItemDialog({
               </MenuItem>
             ))}
           </TextField>
+
+          {isPaper && (
+            <TextField
+              select
+              label="Máquina de Plotter"
+              value={form.plotterMachineId}
+              onChange={(event) => updateField('plotterMachineId', event.target.value)}
+              fullWidth
+              disabled={submitting}
+              required
+              helperText="La asignación queda fija. El rollo no se puede pasar a otra máquina."
+            >
+              {activePlotterMachines(plotterMachines).map((machine) => (
+                <MenuItem key={machine.plotterMachineId} value={machine.plotterMachineId}>
+                  {machine.name}
+                </MenuItem>
+              ))}
+            </TextField>
+          )}
 
           {isPaper && (
             <Alert severity="info">

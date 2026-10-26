@@ -59,11 +59,18 @@ public class PlotterJobInventoryAdapter implements PlotterJobInventoryPort {
             );
         }
 
+        if (inventoryItem.getPlotterMachineId() == null) {
+            throw new PlotterDomainException(
+                    "Paper roll has no Plotter machine assignment: " + inventoryItem.getPaperRollNumber()
+            );
+        }
+
         return new PlotterPaperRollView(
                 inventoryItem.getId(),
                 inventoryItem.getPaperRollNumber(),
                 inventoryItem.getStock(),
-                inventoryItem.getUnitOfMeasure()
+                inventoryItem.getUnitOfMeasure(),
+                inventoryItem.getPlotterMachineId()
         );
     }
 

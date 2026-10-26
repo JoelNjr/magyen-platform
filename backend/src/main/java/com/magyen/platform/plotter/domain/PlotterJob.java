@@ -26,6 +26,7 @@ public class PlotterJob {
     private final UUID orderId;
     private final LocalDate creationDate;
     private final UUID paperInventoryItemId;
+    private final UUID plotterMachineId;
     private final BigDecimal printedMeters;
     private final BigDecimal pricePerMeter;
     private final BigDecimal totalAmount;
@@ -43,7 +44,8 @@ public class PlotterJob {
             BigDecimal pricePerMeter,
             BigDecimal totalAmount,
             PlotterJobStatus status,
-            String observations
+            String observations,
+            UUID plotterMachineId
     ) {
         this.id = Objects.requireNonNull(id, "Plotter job id must not be null");
         this.jobType = Objects.requireNonNull(jobType, "Plotter job type must not be null");
@@ -54,6 +56,7 @@ public class PlotterJob {
                 paperInventoryItemId,
                 "Paper inventory item id must not be null"
         );
+        this.plotterMachineId = plotterMachineId;
         this.printedMeters = requirePositiveMeters(printedMeters);
         this.pricePerMeter = requireValidPricePerMeter(pricePerMeter);
         this.totalAmount = Objects.requireNonNull(totalAmount, "Total amount must not be null");
@@ -140,7 +143,48 @@ public class PlotterJob {
                 normalizedPrice,
                 totalAmount,
                 PlotterJobStatus.REGISTERED,
-                observations
+                observations,
+                null
+        );
+    }
+
+    /**
+     * Crea un trabajo nuevo en una máquina activa. El identificador de máquina es obligatorio.
+     */
+    public static PlotterJob create(
+            UUID id,
+            PlotterJobType jobType,
+            UUID customerId,
+            UUID orderId,
+            LocalDate creationDate,
+            UUID paperInventoryItemId,
+            BigDecimal printedMeters,
+            BigDecimal pricePerMeter,
+            String observations,
+            UUID plotterMachineId
+    ) {
+        if (plotterMachineId == null) {
+            throw new PlotterDomainException("Plotter machine must not be null");
+        }
+        UUID jobId = id == null ? UUID.randomUUID() : id;
+        PlotterJobType resolvedType = Objects.requireNonNull(jobType, "Plotter job type must not be null");
+        BigDecimal normalizedMeters = requirePositiveMeters(printedMeters);
+        BigDecimal normalizedPrice = requireValidPricePerMeter(pricePerMeter);
+        BigDecimal totalAmount = calculateTotalAmount(normalizedMeters, normalizedPrice);
+
+        return new PlotterJob(
+                jobId,
+                resolvedType,
+                customerId,
+                orderId,
+                creationDate,
+                paperInventoryItemId,
+                normalizedMeters,
+                normalizedPrice,
+                totalAmount,
+                PlotterJobStatus.REGISTERED,
+                observations,
+                plotterMachineId
         );
     }
 
@@ -210,6 +254,36 @@ public class PlotterJob {
             PlotterJobStatus status,
             String observations
     ) {
+        return reconstitute(
+                id,
+                jobType,
+                customerId,
+                orderId,
+                creationDate,
+                paperInventoryItemId,
+                printedMeters,
+                pricePerMeter,
+                totalAmount,
+                status,
+                observations,
+                null
+        );
+    }
+
+    public static PlotterJob reconstitute(
+            UUID id,
+            PlotterJobType jobType,
+            UUID customerId,
+            UUID orderId,
+            LocalDate creationDate,
+            UUID paperInventoryItemId,
+            BigDecimal printedMeters,
+            BigDecimal pricePerMeter,
+            BigDecimal totalAmount,
+            PlotterJobStatus status,
+            String observations,
+            UUID plotterMachineId
+    ) {
         return new PlotterJob(
                 id,
                 jobType,
@@ -221,7 +295,8 @@ public class PlotterJob {
                 pricePerMeter,
                 totalAmount,
                 status,
-                observations
+                observations,
+                plotterMachineId
         );
     }
 
@@ -253,6 +328,13 @@ public class PlotterJob {
 
     public UUID getPaperInventoryItemId() {
         return paperInventoryItemId;
+    }
+
+    /**
+     * Máquina que ejecutó el trabajo. {@code null} solo en historia que no pudo identificarse.
+     */
+    public UUID getPlotterMachineId() {
+        return plotterMachineId;
     }
 
     public BigDecimal getPrintedMeters() {

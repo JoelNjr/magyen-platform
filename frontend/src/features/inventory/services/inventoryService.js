@@ -36,6 +36,13 @@ export async function createInventoryItem(payload) {
   return response.data
 }
 
+export async function assignPaperRollMachine(inventoryItemId, plotterMachineId) {
+  const response = await httpClient.post(`/inventory/${inventoryItemId}/plotter-machine`, {
+    plotterMachineId,
+  })
+  return response.data
+}
+
 export async function updateInventoryMinimumStock(inventoryItemId, minimumStock) {
   const response = await httpClient.patch(
     `/inventory/${inventoryItemId}/minimum-stock`,

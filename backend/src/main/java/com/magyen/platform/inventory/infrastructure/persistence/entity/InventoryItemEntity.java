@@ -39,6 +39,9 @@ public class InventoryItemEntity {
     @Column(name = "paper_roll_number", unique = true, length = 50)
     private String paperRollNumber;
 
+    @Column(name = "plotter_machine_id")
+    private UUID plotterMachineId;
+
     @Column(name = "description", length = 2000)
     private String description;
 
@@ -107,6 +110,14 @@ public class InventoryItemEntity {
 
     public void setPaperRollNumber(String paperRollNumber) {
         this.paperRollNumber = paperRollNumber;
+    }
+
+    public UUID getPlotterMachineId() {
+        return plotterMachineId;
+    }
+
+    public void setPlotterMachineId(UUID plotterMachineId) {
+        this.plotterMachineId = plotterMachineId;
     }
 
     public String getDescription() {

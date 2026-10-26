@@ -6,7 +6,10 @@ import com.magyen.platform.plotter.presentation.plotterjob.response.GetPlotterPe
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.UUID;
 
 /**
  * Lectura all-time de saldos pendientes de trabajos externos de Plotter.
@@ -29,9 +32,12 @@ public class PlotterPendingBalanceController {
     }
 
     @GetMapping
-    public ResponseEntity<GetPlotterPendingBalancesResponse> getPendingBalances() {
+    public ResponseEntity<GetPlotterPendingBalancesResponse> getPendingBalances(
+            @RequestParam(required = false) UUID machineId,
+            @RequestParam(required = false, defaultValue = "false") boolean unassignedMachine
+    ) {
         return ResponseEntity.ok(plotterPresentationMapper.toPendingBalancesResponse(
-                getPlotterPendingBalancesUseCase.execute()
+                getPlotterPendingBalancesUseCase.execute(machineId, unassignedMachine)
         ));
     }
 }

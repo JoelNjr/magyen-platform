@@ -7,6 +7,7 @@ import com.magyen.platform.plotter.application.port.PlotterCommercialOrderPort;
 import com.magyen.platform.plotter.domain.PlotterJob;
 import com.magyen.platform.plotter.domain.PlotterJobRepository;
 import com.magyen.platform.plotter.domain.PlotterJobType;
+import com.magyen.platform.plotter.domain.PlotterMachineRepository;
 import com.magyen.platform.plotter.domain.PlotterPayment;
 import com.magyen.platform.plotter.domain.PlotterPaymentRepository;
 import com.magyen.platform.plotter.domain.exception.PlotterDomainException;
@@ -14,8 +15,10 @@ import com.magyen.platform.plotter.domain.exception.PlotterDomainException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Caso de uso que lista los trabajos de plotter.
@@ -25,11 +28,13 @@ public class GetPlotterJobsUseCase {
     private final PlotterJobRepository plotterJobRepository;
     private final PlotterPaymentRepository plotterPaymentRepository;
     private final PlotterCommercialOrderPort plotterCommercialOrderPort;
+    private final PlotterMachineRepository plotterMachineRepository;
 
     public GetPlotterJobsUseCase(
             PlotterJobRepository plotterJobRepository,
             PlotterPaymentRepository plotterPaymentRepository,
-            PlotterCommercialOrderPort plotterCommercialOrderPort
+            PlotterCommercialOrderPort plotterCommercialOrderPort,
+            PlotterMachineRepository plotterMachineRepository
     ) {
         this.plotterJobRepository = Objects.requireNonNull(
                 plotterJobRepository,
@@ -43,6 +48,10 @@ public class GetPlotterJobsUseCase {
                 plotterCommercialOrderPort,
                 "Plotter commercial order port must not be null"
         );
+        this.plotterMachineRepository = Objects.requireNonNull(
+                plotterMachineRepository,
+                "Plotter machine repository must not be null"
+        );
     }
 
     public GetPlotterJobsResult execute() {
@@ -51,13 +60,19 @@ public class GetPlotterJobsUseCase {
 
     public GetPlotterJobsResult execute(GetPlotterJobsQuery query) {
         Objects.requireNonNull(query, "Query must not be null");
+        if (query.plotterMachineId() != null && query.unassignedMachineOnly()) {
+            throw new PlotterDomainException("Choose either a Plotter machine or unassigned jobs");
+        }
         validateRange(query.fromDate(), query.toDate());
 
+        Map<UUID, String> machineNames = plotterMachineRepository.findAll().stream()
+                .collect(Collectors.toMap(machine -> machine.getId(), machine -> machine.getName()));
         List<GetPlotterJobResult> jobs = plotterJobRepository.findAll().stream()
                 .filter(job -> matchesCustomer(job, query.customerId()))
                 .filter(job -> matchesJobType(job, query.jobType()))
+                .filter(job -> matchesMachine(job, query))
                 .filter(job -> inRange(job.getCreationDate(), query.fromDate(), query.toDate()))
-                .map(this::toResult)
+                .map(job -> toResult(job, machineNames))
                 .toList();
         return new GetPlotterJobsResult(List.copyOf(jobs));
     }
@@ -81,6 +96,16 @@ public class GetPlotterJobsUseCase {
         return customerId.equals(job.getCustomerId());
     }
 
+    private static boolean matchesMachine(PlotterJob job, GetPlotterJobsQuery query) {
+        if (query.unassignedMachineOnly()) {
+            return job.getPlotterMachineId() == null;
+        }
+        if (query.plotterMachineId() == null) {
+            return true;
+        }
+        return query.plotterMachineId().equals(job.getPlotterMachineId());
+    }
+
     private static boolean matchesJobType(PlotterJob job, PlotterJobType jobType) {
         if (jobType == null) {
             return true;
@@ -95,17 +120,21 @@ public class GetPlotterJobsUseCase {
         return businessDate != null && !businessDate.isBefore(fromDate) && !businessDate.isAfter(toDate);
     }
 
-    private GetPlotterJobResult toResult(PlotterJob job) {
+    private GetPlotterJobResult toResult(PlotterJob job, Map<UUID, String> machineNames) {
         List<PlotterPayment> payments =
                 plotterPaymentRepository.findByPlotterJobIdNewestFirst(job.getId());
         BigDecimal paidAmount = PlotterPaymentBalanceCalculator.sumPaid(payments);
         BigDecimal outstandingAmount =
                 PlotterPaymentBalanceCalculator.collectableOutstanding(job, paidAmount);
+        String machineName = job.getPlotterMachineId() == null
+                ? null
+                : machineNames.get(job.getPlotterMachineId());
         return PlotterJobReadMapper.toGetResult(
                 job,
                 paidAmount,
                 outstandingAmount,
-                plotterCommercialOrderPort
+                plotterCommercialOrderPort,
+                machineName
         );
     }
 }
