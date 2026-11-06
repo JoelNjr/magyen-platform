@@ -291,12 +291,14 @@ public class FinanceConfiguration {
     public PayRecurringFinancialObligationOccurrenceUseCase payRecurringFinancialObligationOccurrenceUseCase(
             RecurringFinancialObligationOccurrenceRepository occurrenceRepository,
             RecurringFinancialObligationRepository recurringFinancialObligationRepository,
-            FinancialTransactionRepository financialTransactionRepository
+            FinancialTransactionRepository financialTransactionRepository,
+            Clock clock
     ) {
         return new PayRecurringFinancialObligationOccurrenceUseCase(
                 occurrenceRepository,
                 recurringFinancialObligationRepository,
-                financialTransactionRepository
+                financialTransactionRepository,
+                clock
         );
     }
 

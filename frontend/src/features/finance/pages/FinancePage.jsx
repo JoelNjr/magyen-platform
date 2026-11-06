@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import AddIcon from '@mui/icons-material/Add'
 import AccountBalanceWalletOutlinedIcon from '@mui/icons-material/AccountBalanceWalletOutlined'
 import EventRepeatOutlinedIcon from '@mui/icons-material/EventRepeatOutlined'
@@ -23,6 +23,7 @@ import {
 import ConfirmFinanceActionDialog from '../components/ConfirmFinanceActionDialog'
 import CreateRecurringFinancialObligationDialog from '../components/CreateRecurringFinancialObligationDialog'
 import GenerateOccurrencesDialog from '../components/GenerateOccurrencesDialog'
+import PayObligationOccurrenceDialog from '../components/PayObligationOccurrenceDialog'
 import PayrollFinanceSection from '../components/PayrollFinanceSection'
 import RegisterFinancialTransactionDialog from '../components/RegisterFinancialTransactionDialog'
 import UpdateRecurringFinancialObligationDialog from '../components/UpdateRecurringFinancialObligationDialog'
@@ -39,6 +40,10 @@ import {
   getTransactionTypeLabel,
   resolveApiErrorMessage,
 } from '../presentation/financePresentation'
+import {
+  buildPayObligationRequest,
+  canSubmitObligationPayment,
+} from '../presentation/obligationPaymentPresentation.js'
 import {
   cancelObligationOccurrence,
   createRecurringFinancialObligation,
@@ -109,6 +114,9 @@ function FinancePage() {
   const [transactionsFailed, setTransactionsFailed] = useState(false)
 
   const [payingOccurrenceId, setPayingOccurrenceId] = useState(null)
+  const [payTarget, setPayTarget] = useState(null)
+  const [payError, setPayError] = useState('')
+  const payRequestLock = useRef(false)
   const [cancelTarget, setCancelTarget] = useState(null)
   const [cancelling, setCancelling] = useState(false)
   const [cancelError, setCancelError] = useState('')
@@ -274,25 +282,50 @@ function FinancePage() {
     loadTransactions(nextFrom, nextTo)
   }
 
-  async function handlePayOccurrence(occurrence) {
-    if (payingOccurrenceId) {
+  function openPayDialog(occurrence) {
+    if (payRequestLock.current || payingOccurrenceId) {
+      return
+    }
+    setPayError('')
+    setPayTarget(occurrence)
+  }
+
+  async function handleConfirmPay(paymentDate) {
+    if (
+      payRequestLock.current
+      || !payTarget
+      || !canSubmitObligationPayment({
+        submitting: Boolean(payingOccurrenceId),
+        paymentDate,
+      })
+    ) {
       return
     }
 
+    payRequestLock.current = true
+    const occurrence = payTarget
     setPayingOccurrenceId(occurrence.occurrenceId)
+    setPayError('')
     try {
-      await payObligationOccurrence(occurrence.occurrenceId)
+      await payObligationOccurrence(
+        occurrence.occurrenceId,
+        buildPayObligationRequest(paymentDate)
+      )
+      setPayTarget(null)
       await Promise.all([
         reloadCommitmentViews(),
         loadSummary(fromDate, toDate),
         loadTransactions(fromDate, toDate),
       ])
-      showSuccess(`Pago registrado: ${occurrence.obligationName}.`)
+      showSuccess(
+        `Pago registrado: ${occurrence.obligationName}. Fecha de pago ${formatFinanceDate(paymentDate)}.`
+      )
     } catch (error) {
-      showError(
+      setPayError(
         resolveApiErrorMessage(error, 'No fue posible marcar el pago.')
       )
     } finally {
+      payRequestLock.current = false
       setPayingOccurrenceId(null)
     }
   }
@@ -436,7 +469,7 @@ function FinancePage() {
           size="small"
           variant="contained"
           disabled={Boolean(payingOccurrenceId)}
-          onClick={() => handlePayOccurrence(occurrence)}
+          onClick={() => openPayDialog(occurrence)}
         >
           {isPaying ? 'Pagando...' : 'Marcar como pagado'}
         </Button>
@@ -1041,6 +1074,21 @@ function FinancePage() {
         onSubmit={handleRegisterTransaction}
         submitting={registering}
         errorMessage={registerError}
+      />
+
+      <PayObligationOccurrenceDialog
+        key={payTarget?.occurrenceId ?? 'pay-occurrence'}
+        open={Boolean(payTarget)}
+        occurrence={payTarget}
+        onClose={() => {
+          if (!payingOccurrenceId && !payRequestLock.current) {
+            setPayTarget(null)
+            setPayError('')
+          }
+        }}
+        onConfirm={handleConfirmPay}
+        submitting={Boolean(payingOccurrenceId)}
+        errorMessage={payError}
       />
 
       <ConfirmFinanceActionDialog

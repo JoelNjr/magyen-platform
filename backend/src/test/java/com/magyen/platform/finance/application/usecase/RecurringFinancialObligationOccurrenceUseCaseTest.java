@@ -29,7 +29,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
 
@@ -368,7 +371,8 @@ class RecurringFinancialObligationOccurrenceUseCaseTest {
                 new PayRecurringFinancialObligationOccurrenceUseCase(
                         occurrenceRepository,
                         recurringFinancialObligationRepository,
-                        failingTransactionRepository
+                        failingTransactionRepository,
+                        Clock.systemDefaultZone()
                 );
 
         assertThrows(
@@ -387,5 +391,148 @@ class RecurringFinancialObligationOccurrenceUseCaseTest {
                         .filter(transaction -> occurrence.occurrenceId().equals(transaction.getSourceId()))
                         .count()
         );
+    }
+
+    @Test
+    void paymentDateInOctoberIsUsedWhenTheClockIsNovemberSixth() {
+        CreateRecurringFinancialObligationOccurrenceResult occurrence = createOctoberOccurrence();
+        BigDecimal octoberBefore = expenseBetween(LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 31));
+        BigDecimal novemberBefore = expenseBetween(LocalDate.of(2026, 11, 1), LocalDate.of(2026, 11, 30));
+
+        PayRecurringFinancialObligationOccurrenceResult paid = payUseCase(clockOn(LocalDate.of(2026, 11, 6)))
+                .execute(new PayRecurringFinancialObligationOccurrenceCommand(
+                        occurrence.occurrenceId(),
+                        LocalDate.of(2026, 10, 31),
+                        LocalDateTime.of(2026, 11, 6, 18, 30),
+                        null
+                ));
+
+        assertEquals(LocalDate.of(2026, 10, 15), paid.dueDate());
+        assertEquals(obligation.obligationId(), paid.recurringObligationId());
+        assertEquals(RecurringObligationOccurrenceStatus.PAID, paid.status());
+        assertEquals(LocalDateTime.of(2026, 10, 31, 0, 0), paid.paidDate());
+
+        FinancialTransaction transaction = financialTransactionRepository
+                .findById(paid.financialTransactionId())
+                .orElseThrow();
+        assertEquals(LocalDate.of(2026, 10, 31), transaction.getTransactionDate());
+        assertEquals(FinancialTransactionType.EXPENSE, transaction.getType());
+        assertEquals(FinancialTransactionSourceType.RECURRING_OBLIGATION, transaction.getSourceType());
+        assertEquals(occurrence.occurrenceId(), transaction.getSourceId());
+        assertEquals(new BigDecimal("120000.00"), transaction.getAmount().getValue());
+        assertEquals("SERVICES", transaction.getCategory());
+        assertEquals("Payment of recurring obligation: Internet", transaction.getDescription());
+
+        RecurringFinancialObligationOccurrence stored =
+                occurrenceRepository.findById(occurrence.occurrenceId()).orElseThrow();
+        assertEquals(LocalDate.of(2026, 10, 15), stored.getDueDate());
+        assertEquals(transaction.getId(), stored.getFinancialTransactionId());
+
+        assertEquals(
+                0,
+                octoberBefore.add(new BigDecimal("120000.00")).compareTo(
+                        expenseBetween(LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 31))
+                )
+        );
+        assertEquals(
+                0,
+                novemberBefore.compareTo(expenseBetween(LocalDate.of(2026, 11, 1), LocalDate.of(2026, 11, 30)))
+        );
+
+        assertEquals(1, countForOccurrence(occurrence.occurrenceId()));
+        assertThrows(
+                RecurringObligationOccurrenceAlreadyPaidException.class,
+                () -> payUseCase(clockOn(LocalDate.of(2026, 11, 6))).execute(
+                        new PayRecurringFinancialObligationOccurrenceCommand(
+                                occurrence.occurrenceId(),
+                                LocalDate.of(2026, 10, 30),
+                                null,
+                                null
+                        )
+                )
+        );
+        assertEquals(1, countForOccurrence(occurrence.occurrenceId()));
+        assertEquals(
+                transaction.getId(),
+                financialTransactionRepository.findBySourceTypeAndSourceId(
+                        FinancialTransactionSourceType.RECURRING_OBLIGATION,
+                        occurrence.occurrenceId()
+                ).orElseThrow().getId()
+        );
+    }
+
+    @Test
+    void paymentDateInAPreviousMonthIsAcceptedWithoutChangingTheOccurrencePeriod() {
+        CreateRecurringFinancialObligationOccurrenceResult occurrence = createOctoberOccurrence();
+
+        PayRecurringFinancialObligationOccurrenceResult paid = payUseCase(clockOn(LocalDate.of(2026, 11, 6)))
+                .execute(new PayRecurringFinancialObligationOccurrenceCommand(
+                        occurrence.occurrenceId(),
+                        LocalDate.of(2026, 9, 30),
+                        null,
+                        null
+                ));
+
+        FinancialTransaction transaction = financialTransactionRepository
+                .findById(paid.financialTransactionId())
+                .orElseThrow();
+        assertEquals(LocalDate.of(2026, 9, 30), transaction.getTransactionDate());
+        assertEquals(LocalDateTime.of(2026, 9, 30, 0, 0), paid.paidDate());
+        assertEquals(LocalDate.of(2026, 10, 15), paid.dueDate());
+        assertEquals(occurrence.occurrenceId(), transaction.getSourceId());
+        assertEquals(FinancialTransactionSourceType.RECURRING_OBLIGATION, transaction.getSourceType());
+    }
+
+    @Test
+    void omittedPaymentDateKeepsTheClockForExistingCallers() {
+        CreateRecurringFinancialObligationOccurrenceResult occurrence = createOctoberOccurrence();
+
+        PayRecurringFinancialObligationOccurrenceResult paid = payUseCase(clockOn(LocalDate.of(2026, 11, 6)))
+                .execute(new PayRecurringFinancialObligationOccurrenceCommand(occurrence.occurrenceId()));
+
+        FinancialTransaction transaction = financialTransactionRepository
+                .findById(paid.financialTransactionId())
+                .orElseThrow();
+        assertEquals(LocalDate.of(2026, 11, 6), transaction.getTransactionDate());
+        assertEquals(LocalDateTime.of(2026, 11, 6, 0, 0), paid.paidDate());
+        assertEquals(LocalDate.of(2026, 10, 15), paid.dueDate());
+    }
+
+    private CreateRecurringFinancialObligationOccurrenceResult createOctoberOccurrence() {
+        return createOccurrenceUseCase.execute(
+                new CreateRecurringFinancialObligationOccurrenceCommand(
+                        obligation.obligationId(),
+                        LocalDate.of(2026, 10, 15),
+                        null
+                )
+        );
+    }
+
+    private PayRecurringFinancialObligationOccurrenceUseCase payUseCase(Clock clock) {
+        return new PayRecurringFinancialObligationOccurrenceUseCase(
+                occurrenceRepository,
+                recurringFinancialObligationRepository,
+                financialTransactionRepository,
+                clock
+        );
+    }
+
+    private static Clock clockOn(LocalDate date) {
+        return Clock.fixed(date.atStartOfDay(ZoneId.systemDefault()).toInstant(), ZoneId.systemDefault());
+    }
+
+    private BigDecimal expenseBetween(LocalDate fromDate, LocalDate toDate) {
+        return financialTransactionRepository.sumAmountByTypeBetween(
+                FinancialTransactionType.EXPENSE,
+                fromDate,
+                toDate
+        );
+    }
+
+    private long countForOccurrence(UUID occurrenceId) {
+        return financialTransactionRepository.findAllNewestFirst().stream()
+                .filter(transaction -> occurrenceId.equals(transaction.getSourceId())
+                        && transaction.getSourceType() == FinancialTransactionSourceType.RECURRING_OBLIGATION)
+                .count();
     }
 }

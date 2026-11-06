@@ -16,6 +16,8 @@ import com.magyen.platform.finance.domain.exception.FinanceDomainException;
 import com.magyen.platform.finance.domain.exception.RecurringObligationOccurrenceAlreadyPaidException;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
@@ -24,17 +26,22 @@ import java.util.Objects;
  * <p>
  * Atomicidad: el movimiento del ledger y el estado PAID se persisten en la misma transacción.
  * El monto proviene del snapshot de la ocurrencia, no del valor actual de la obligación.
+ * <p>
+ * La fecha del gasto es la fecha real de pago. El período de la ocurrencia
+ * ({@code dueDate}) no se modifica y no sustituye a esa fecha.
  */
 public class PayRecurringFinancialObligationOccurrenceUseCase {
 
     private final RecurringFinancialObligationOccurrenceRepository occurrenceRepository;
     private final RecurringFinancialObligationRepository recurringFinancialObligationRepository;
     private final FinancialTransactionRepository financialTransactionRepository;
+    private final Clock clock;
 
     public PayRecurringFinancialObligationOccurrenceUseCase(
             RecurringFinancialObligationOccurrenceRepository occurrenceRepository,
             RecurringFinancialObligationRepository recurringFinancialObligationRepository,
-            FinancialTransactionRepository financialTransactionRepository
+            FinancialTransactionRepository financialTransactionRepository,
+            Clock clock
     ) {
         this.occurrenceRepository = Objects.requireNonNull(
                 occurrenceRepository,
@@ -48,6 +55,7 @@ public class PayRecurringFinancialObligationOccurrenceUseCase {
                 financialTransactionRepository,
                 "Financial transaction repository must not be null"
         );
+        this.clock = Objects.requireNonNull(clock, "Clock must not be null");
     }
 
     @Transactional
@@ -78,7 +86,7 @@ public class PayRecurringFinancialObligationOccurrenceUseCase {
                         "Recurring financial obligation not found: " + occurrence.getRecurringObligationId()
                 ));
 
-        LocalDateTime paidAt = command.paidAt() == null ? LocalDateTime.now() : command.paidAt();
+        PaymentStamp paymentStamp = resolvePaymentStamp(command);
         FinancialCategory category = obligation.getType().toExpenseCategory();
         String description = "Payment of recurring obligation: " + obligation.getName();
         String observation = command.observation() != null ? command.observation() : occurrence.getObservation();
@@ -86,7 +94,7 @@ public class PayRecurringFinancialObligationOccurrenceUseCase {
         FinancialTransaction transaction = FinancialTransaction.create(
                 FinancialTransactionType.EXPENSE,
                 occurrence.getExpectedAmount(),
-                paidAt.toLocalDate(),
+                paymentStamp.transactionDate(),
                 category.name(),
                 description,
                 observation,
@@ -95,7 +103,7 @@ public class PayRecurringFinancialObligationOccurrenceUseCase {
         );
 
         FinancialTransaction savedTransaction = financialTransactionRepository.save(transaction);
-        occurrence.markPaid(savedTransaction.getId(), paidAt);
+        occurrence.markPaid(savedTransaction.getId(), paymentStamp.paidAt());
         RecurringFinancialObligationOccurrence savedOccurrence = occurrenceRepository.save(occurrence);
 
         return new PayRecurringFinancialObligationOccurrenceResult(
@@ -109,5 +117,24 @@ public class PayRecurringFinancialObligationOccurrenceUseCase {
                 savedTransaction.getAmount().getValue(),
                 savedTransaction.getCategory()
         );
+    }
+
+    /**
+     * Una {@code paymentDate} informada manda sobre el reloj y sobre {@code paidAt}.
+     * El reloj solo cubre a los llamadores que no envían fecha.
+     */
+    private PaymentStamp resolvePaymentStamp(PayRecurringFinancialObligationOccurrenceCommand command) {
+        if (command.paymentDate() != null) {
+            LocalDate paymentDate = command.paymentDate();
+            return new PaymentStamp(paymentDate, paymentDate.atStartOfDay());
+        }
+        if (command.paidAt() != null) {
+            return new PaymentStamp(command.paidAt().toLocalDate(), command.paidAt());
+        }
+        LocalDateTime now = LocalDateTime.now(clock);
+        return new PaymentStamp(now.toLocalDate(), now);
+    }
+
+    private record PaymentStamp(LocalDate transactionDate, LocalDateTime paidAt) {
     }
 }

@@ -34,6 +34,9 @@ import com.magyen.platform.finance.presentation.occurrence.response.GetUpcomingF
 import com.magyen.platform.finance.presentation.occurrence.response.PayRecurringFinancialObligationOccurrenceResponse;
 import com.magyen.platform.finance.presentation.occurrence.response.RecurringFinancialObligationOccurrenceResponse;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -105,9 +108,29 @@ public class RecurringFinancialObligationOccurrencePresentationMapper {
         }
         return new PayRecurringFinancialObligationOccurrenceCommand(
                 occurrenceId,
+                parsePaymentDate(request.paymentDate()),
                 request.paidAt(),
                 request.observation()
         );
+    }
+
+    /**
+     * {@code null} significa que el llamador no envió fecha. Un texto vacío o
+     * una fecha de calendario imposible se rechaza y no se sustituye por hoy.
+     */
+    private static LocalDate parsePaymentDate(String paymentDate) {
+        if (paymentDate == null) {
+            return null;
+        }
+        String normalized = paymentDate.trim();
+        if (normalized.isEmpty()) {
+            throw new IllegalArgumentException("Payment date is required");
+        }
+        try {
+            return LocalDate.parse(normalized, DateTimeFormatter.ISO_LOCAL_DATE);
+        } catch (DateTimeParseException exception) {
+            throw new IllegalArgumentException("Payment date must be a valid ISO date");
+        }
     }
 
     public CancelRecurringFinancialObligationOccurrenceCommand toCancelCommand(UUID occurrenceId) {
