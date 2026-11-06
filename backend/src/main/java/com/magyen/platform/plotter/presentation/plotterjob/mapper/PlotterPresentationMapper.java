@@ -1,6 +1,11 @@
 package com.magyen.platform.plotter.presentation.plotterjob.mapper;
 
+import com.magyen.platform.plotter.application.dto.CorrectPlotterJobDateCommand;
 import com.magyen.platform.plotter.application.dto.CreatePlotterJobCommand;
+import com.magyen.platform.plotter.application.dto.GetPlotterCustomerAccountResult;
+import com.magyen.platform.plotter.application.dto.GetPlotterCustomerAccountsResult;
+import com.magyen.platform.plotter.application.dto.RegisterPlotterCustomerPaymentCommand;
+import com.magyen.platform.plotter.application.dto.RegisterPlotterCustomerPaymentResult;
 import com.magyen.platform.plotter.application.dto.CreatePlotterJobResult;
 import com.magyen.platform.plotter.application.dto.GetPlotterJobQuery;
 import com.magyen.platform.plotter.application.dto.GetPlotterJobResult;
@@ -14,9 +19,16 @@ import com.magyen.platform.plotter.application.dto.PlotterInternalOrderCostItem;
 import com.magyen.platform.plotter.application.dto.RegisterPlotterPaymentCommand;
 import com.magyen.platform.plotter.application.dto.RegisterPlotterPaymentResult;
 import com.magyen.platform.plotter.domain.PlotterJobType;
+import com.magyen.platform.plotter.presentation.plotterjob.request.CorrectPlotterJobDateRequest;
 import com.magyen.platform.plotter.presentation.plotterjob.request.CreatePlotterJobRequest;
+import com.magyen.platform.plotter.presentation.plotterjob.request.RegisterPlotterCustomerPaymentRequest;
 import com.magyen.platform.plotter.presentation.plotterjob.request.RegisterPlotterPaymentRequest;
 import com.magyen.platform.plotter.presentation.plotterjob.response.CreatePlotterJobResponse;
+import com.magyen.platform.plotter.presentation.plotterjob.response.GetPlotterCustomerAccountResponse;
+import com.magyen.platform.plotter.presentation.plotterjob.response.GetPlotterCustomerAccountsResponse;
+import com.magyen.platform.plotter.presentation.plotterjob.response.PlotterAccountMovementResponse;
+import com.magyen.platform.plotter.presentation.plotterjob.response.PlotterCustomerAccountSummaryResponse;
+import com.magyen.platform.plotter.presentation.plotterjob.response.RegisterPlotterCustomerPaymentResponse;
 import com.magyen.platform.plotter.presentation.plotterjob.response.GetPlotterJobResponse;
 import com.magyen.platform.plotter.presentation.plotterjob.response.GetPlotterJobsResponse;
 import com.magyen.platform.plotter.presentation.plotterjob.response.GetPlotterPendingBalancesResponse;
@@ -52,7 +64,8 @@ public class PlotterPresentationMapper {
                 jobType,
                 request.plotterJobId(),
                 Boolean.TRUE.equals(request.historicalRegistration()),
-                request.plotterMachineId()
+                request.plotterMachineId(),
+                request.commercialValue()
         );
     }
 
@@ -256,6 +269,80 @@ public class PlotterPresentationMapper {
                 result.externalPaidAmount(),
                 result.externalOutstandingAmount(),
                 result.internalOrders().stream().map(this::toInternalOrderResponse).toList()
+        );
+    }
+
+    public CorrectPlotterJobDateCommand toCorrectDateCommand(
+            UUID plotterJobId,
+            CorrectPlotterJobDateRequest request
+    ) {
+        Objects.requireNonNull(request, "Correct plotter job date request must not be null");
+        return new CorrectPlotterJobDateCommand(plotterJobId, request.creationDate());
+    }
+
+    public RegisterPlotterCustomerPaymentCommand toCustomerPaymentCommand(
+            UUID customerId,
+            RegisterPlotterCustomerPaymentRequest request
+    ) {
+        Objects.requireNonNull(request, "Register plotter customer payment request must not be null");
+        return new RegisterPlotterCustomerPaymentCommand(
+                customerId,
+                request.amount(),
+                request.paymentDate(),
+                request.observations(),
+                request.registrationKey()
+        );
+    }
+
+    public RegisterPlotterCustomerPaymentResponse toCustomerPaymentResponse(
+            RegisterPlotterCustomerPaymentResult result
+    ) {
+        return new RegisterPlotterCustomerPaymentResponse(
+                result.paymentId(),
+                result.customerId(),
+                result.amount(),
+                result.paymentDate(),
+                result.observations(),
+                result.debitTotal(),
+                result.paymentTotal(),
+                result.outstandingAmount(),
+                result.alreadyRegistered()
+        );
+    }
+
+    public GetPlotterCustomerAccountsResponse toCustomerAccountsResponse(GetPlotterCustomerAccountsResult result) {
+        return new GetPlotterCustomerAccountsResponse(result.customers().stream()
+                .map(customer -> new PlotterCustomerAccountSummaryResponse(
+                        customer.customerId(),
+                        customer.customerName(),
+                        customer.debitTotal(),
+                        customer.paymentTotal(),
+                        customer.outstandingAmount(),
+                        customer.jobCount()
+                ))
+                .toList());
+    }
+
+    public GetPlotterCustomerAccountResponse toCustomerAccountResponse(GetPlotterCustomerAccountResult result) {
+        return new GetPlotterCustomerAccountResponse(
+                result.customerId(),
+                result.customerName(),
+                result.debitTotal(),
+                result.paymentTotal(),
+                result.outstandingAmount(),
+                result.movements().stream()
+                        .map(movement -> new PlotterAccountMovementResponse(
+                                movement.movementType(),
+                                movement.movementDate(),
+                                movement.plotterJobId(),
+                                movement.paymentId(),
+                                movement.description(),
+                                movement.printedMeters(),
+                                movement.plotterMachineId(),
+                                movement.machineName(),
+                                movement.amount()
+                        ))
+                        .toList()
         );
     }
 

@@ -2,6 +2,8 @@ package com.magyen.platform.inventory.infrastructure.configuration;
 
 import com.magyen.platform.inventory.application.port.PaperRollMachinePort;
 import com.magyen.platform.inventory.application.usecase.ConsumeInventoryMaterialUseCase;
+import com.magyen.platform.inventory.application.usecase.CorrectPlotterPaperConsumptionUseCase;
+import com.magyen.platform.inventory.application.usecase.ReversePlotterPaperConsumptionUseCase;
 import com.magyen.platform.inventory.application.usecase.CreateInventoryItemUseCase;
 import com.magyen.platform.inventory.application.usecase.DeactivateInventoryMaterialUseCase;
 import com.magyen.platform.inventory.application.usecase.DecreaseInventoryStockUseCase;
@@ -154,6 +156,28 @@ public class InventoryConfiguration {
             InventoryItemRepository inventoryItemRepository
     ) {
         return new RegisterInventoryMovementUseCase(inventoryItemRepository);
+    }
+
+    @Bean
+    public CorrectPlotterPaperConsumptionUseCase correctPlotterPaperConsumptionUseCase(
+            InventoryItemRepository inventoryItemRepository,
+            InventoryMovementRepository inventoryMovementRepository
+    ) {
+        return new CorrectPlotterPaperConsumptionUseCase(
+                inventoryItemRepository,
+                inventoryMovementRepository
+        );
+    }
+
+    @Bean
+    public ReversePlotterPaperConsumptionUseCase reversePlotterPaperConsumptionUseCase(
+            InventoryItemRepository inventoryItemRepository,
+            InventoryMovementRepository inventoryMovementRepository
+    ) {
+        return new ReversePlotterPaperConsumptionUseCase(
+                inventoryItemRepository,
+                inventoryMovementRepository
+        );
     }
 
     @Bean

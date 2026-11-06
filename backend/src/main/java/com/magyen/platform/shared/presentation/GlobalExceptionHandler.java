@@ -18,6 +18,7 @@ import com.magyen.platform.finance.domain.exception.RecurringObligationOccurrenc
 import com.magyen.platform.home.domain.exception.HomeDomainException;
 import com.magyen.platform.inventory.domain.exception.InventoryDomainException;
 import com.magyen.platform.plotter.domain.exception.PlotterDomainException;
+import com.magyen.platform.plotter.domain.exception.PlotterRegistrationConflictException;
 import com.magyen.platform.production.domain.exception.ProductionDomainException;
 import com.magyen.platform.production.domain.exception.ProductionLaborWorkAlreadyPaidException;
 import com.magyen.platform.production.domain.exception.ProductionOrderAlreadyExistsException;
@@ -398,6 +399,21 @@ public class GlobalExceptionHandler {
         );
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
+
+    @ExceptionHandler(PlotterRegistrationConflictException.class)
+    public ResponseEntity<ErrorResponse> handlePlotterRegistrationConflict(
+            PlotterRegistrationConflictException exception,
+            HttpServletRequest request
+    ) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.CONFLICT.value(),
+                HttpStatus.CONFLICT.getReasonPhrase(),
+                exception.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
     }
 
     @ExceptionHandler(PlotterDomainException.class)

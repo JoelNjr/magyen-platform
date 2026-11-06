@@ -72,6 +72,8 @@ const EMPTY_FORM = {
   paperInventoryItemId: '',
   printedMeters: '',
   pricePerMeter: '',
+  commercialValue: '',
+  commercialValueTouched: false,
   observations: '',
   plotterJobId: '',
   historicalRegistration: false,
@@ -244,11 +246,26 @@ function CreatePlotterJobDialog({
         next.customerId = ''
         next.orderId = ''
         next.pricePerMeter = ''
+        next.commercialValue = ''
+        next.commercialValueTouched = false
         next.historicalRegistration = false
         next.historicalMonth = ''
         if (!next.creationDate) {
           next.creationDate = toIsoDate()
         }
+      }
+      if (
+        (field === 'printedMeters' || field === 'pricePerMeter') &&
+        !current.commercialValueTouched
+      ) {
+        const preview = calculatePlotterTotalPreview(
+          field === 'printedMeters' ? value : next.printedMeters,
+          field === 'pricePerMeter' ? value : next.pricePerMeter
+        )
+        next.commercialValue = preview == null ? '' : String(preview)
+      }
+      if (field === 'commercialValue') {
+        next.commercialValueTouched = true
       }
       if (field === 'historicalMonth') {
         next.orderId = ''
@@ -325,6 +342,19 @@ function CreatePlotterJobDialog({
     }
 
     let pricePerMeter = 0
+    let commercialValue
+    if (isExternal) {
+      const commercialValueRaw = form.commercialValue.trim()
+      if (!commercialValueRaw) {
+        setValidationError('El valor comercial del trabajo es obligatorio para la cuenta del cliente.')
+        return
+      }
+      commercialValue = Number(commercialValueRaw)
+      if (Number.isNaN(commercialValue) || commercialValue <= 0) {
+        setValidationError('El valor comercial debe ser un número mayor que cero.')
+        return
+      }
+    }
     if (!isWaste) {
       const pricePerMeterRaw = form.pricePerMeter.trim()
       if (!pricePerMeterRaw) {
@@ -365,6 +395,7 @@ function CreatePlotterJobDialog({
       paperInventoryItemId,
       printedMeters,
       pricePerMeter,
+      commercialValue: isExternal ? commercialValue : undefined,
       observations: observations || null,
     }, historicalRegistration))
   }
@@ -638,17 +669,20 @@ function CreatePlotterJobDialog({
               )}
 
               {isExternal && (
-                <Stack spacing={0.5}>
-                  <Typography variant="body2" color="text.secondary">
-                    Total cobrado (vista previa)
-                  </Typography>
-                  <Typography variant="h6">
-                    {salePreview === null ? '—' : formatPlotterMoney(salePreview)}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    El total definitivo lo calcula el servidor.
-                  </Typography>
-                </Stack>
+                <TextField
+                  label="Valor comercial"
+                  value={form.commercialValue}
+                  onChange={(event) => updateField('commercialValue', event.target.value)}
+                  fullWidth
+                  disabled={submitting}
+                  required
+                  helperText={
+                    salePreview === null
+                      ? 'Este valor es el débito de la cuenta. Puede diferir de metros × precio.'
+                      : `Sugerido por metros × precio: ${formatPlotterMoney(salePreview)}. Corrígelo si el acuerdo es otro. Este valor es el débito de la cuenta.`
+                  }
+                  inputProps={{ inputMode: 'decimal' }}
+                />
               )}
 
               <TextField

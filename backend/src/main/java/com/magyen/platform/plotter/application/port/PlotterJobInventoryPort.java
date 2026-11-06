@@ -27,4 +27,22 @@ public interface PlotterJobInventoryPort {
             UUID plotterJobId,
             String observation
     );
+
+    /**
+     * Ajusta el único consumo del trabajo. No crea un segundo OUT.
+     * Si metros y rollo no cambiaron, no mueve stock.
+     */
+    void correctPaperConsumption(
+            UUID paperInventoryItemId,
+            BigDecimal printedMeters,
+            UUID plotterJobId,
+            String observation
+    );
+
+    /**
+     * Devuelve el papel exactamente una vez. Un reintento no duplica la entrada.
+     */
+    void reversePaperConsumption(UUID plotterJobId);
+
+    boolean hasPaperConsumption(UUID plotterJobId);
 }

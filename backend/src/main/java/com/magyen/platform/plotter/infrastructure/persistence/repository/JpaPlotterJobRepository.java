@@ -65,4 +65,10 @@ public class JpaPlotterJobRepository implements PlotterJobRepository {
                 .map(plotterPersistenceMapper::toDomain)
                 .toList();
     }
+
+    @Override
+    public void deleteById(UUID id) {
+        Objects.requireNonNull(id, "Plotter job id must not be null");
+        springDataPlotterJobRepository.deleteById(id);
+    }
 }

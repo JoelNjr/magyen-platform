@@ -14,6 +14,7 @@ import com.magyen.platform.plotter.domain.exception.PlotterDomainException;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -72,6 +73,8 @@ public class GetPlotterJobsUseCase {
                 .filter(job -> matchesJobType(job, query.jobType()))
                 .filter(job -> matchesMachine(job, query))
                 .filter(job -> inRange(job.getCreationDate(), query.fromDate(), query.toDate()))
+                .sorted(Comparator.comparing(PlotterJob::getCreationDate).reversed()
+                        .thenComparing(job -> job.getId().toString()))
                 .map(job -> toResult(job, machineNames))
                 .toList();
         return new GetPlotterJobsResult(List.copyOf(jobs));

@@ -314,6 +314,11 @@ class RecurringFinancialObligationOccurrenceUseCaseTest {
             }
 
             @Override
+            public void deleteById(UUID id) {
+                throw new IllegalStateException("simulated ledger failure");
+            }
+
+            @Override
             public java.util.Optional<FinancialTransaction> findById(UUID id) {
                 return java.util.Optional.empty();
             }

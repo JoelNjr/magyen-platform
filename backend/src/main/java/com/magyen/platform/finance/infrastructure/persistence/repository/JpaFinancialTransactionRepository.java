@@ -49,6 +49,12 @@ public class JpaFinancialTransactionRepository implements FinancialTransactionRe
     }
 
     @Override
+    public void deleteById(UUID id) {
+        Objects.requireNonNull(id, "Financial transaction id must not be null");
+        springDataFinancialTransactionRepository.deleteById(id);
+    }
+
+    @Override
     public Optional<FinancialTransaction> findById(UUID id) {
         Objects.requireNonNull(id, "Financial transaction id must not be null");
 

@@ -15,6 +15,11 @@ public interface FinancialTransactionRepository {
 
     FinancialTransaction save(FinancialTransaction financialTransaction);
 
+    /**
+     * Elimina un movimiento ya persistido. El llamador debe borrar los dos lados de un par.
+     */
+    void deleteById(UUID id);
+
     Optional<FinancialTransaction> findById(UUID id);
 
     /**

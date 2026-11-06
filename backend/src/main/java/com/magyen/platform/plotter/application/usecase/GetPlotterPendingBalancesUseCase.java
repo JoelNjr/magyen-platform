@@ -9,6 +9,7 @@ import com.magyen.platform.plotter.application.port.PlotterCommercialOrderPort;
 import com.magyen.platform.plotter.domain.PlotterJob;
 import com.magyen.platform.plotter.domain.PlotterJobRepository;
 import com.magyen.platform.plotter.domain.PlotterJobStatus;
+import com.magyen.platform.plotter.domain.PlotterPayment;
 import com.magyen.platform.plotter.domain.PlotterPaymentRepository;
 
 import java.math.BigDecimal;
@@ -78,8 +79,13 @@ public class GetPlotterPendingBalancesUseCase {
         Map<UUID, CustomerAccumulator> customers = new LinkedHashMap<>();
         Map<YearMonth, Map<UUID, CustomerAccumulator>> months = new LinkedHashMap<>();
         List<PlotterNegativeBalanceItem> negativeBalances = new ArrayList<>();
+        List<PlotterJob> allJobs = plotterJobRepository.findAll();
+        Map<UUID, PlotterJob> jobsById = new LinkedHashMap<>();
+        for (PlotterJob indexed : allJobs) {
+            jobsById.put(indexed.getId(), indexed);
+        }
 
-        for (PlotterJob job : plotterJobRepository.findAll()) {
+        for (PlotterJob job : allJobs) {
             if (!job.getJobType().isExternal() || job.getStatus() == PlotterJobStatus.CANCELLED) {
                 continue;
             }
@@ -119,6 +125,22 @@ public class GetPlotterPendingBalancesUseCase {
             months.computeIfAbsent(YearMonth.from(job.getCreationDate()), key -> new LinkedHashMap<>())
                     .computeIfAbsent(job.getCustomerId(), CustomerAccumulator::new)
                     .add(job, paidAmount, jobOutstanding);
+        }
+
+        for (PlotterPayment payment : plotterPaymentRepository.findAll()) {
+            AccountCredit credit = accountCredit(payment, jobsById);
+            if (credit == null) {
+                continue;
+            }
+            externalPaid = money(externalPaid.add(credit.amount()));
+            outstanding = money(outstanding.subtract(credit.amount()));
+            CustomerAccumulator customer = customers.get(credit.customerId());
+            if (customer != null) {
+                customer.applyCredit(credit.amount());
+            }
+            months.computeIfAbsent(YearMonth.from(payment.getPaymentDate()), key -> new LinkedHashMap<>())
+                    .computeIfAbsent(credit.customerId(), CustomerAccumulator::new)
+                    .applyCredit(credit.amount());
         }
 
         List<PlotterCustomerPendingBalance> customerBalances = toCustomerBalances(customers);
@@ -177,6 +199,23 @@ public class GetPlotterPendingBalancesUseCase {
         );
     }
 
+    private AccountCredit accountCredit(PlotterPayment payment, Map<UUID, PlotterJob> jobsById) {
+        if (payment.getPlotterJobId() == null) {
+            return payment.getCustomerId() == null
+                    ? null
+                    : new AccountCredit(payment.getCustomerId(), payment.getAmount());
+        }
+        PlotterJob job = jobsById.get(payment.getPlotterJobId());
+        if (job == null || job.getStatus() != PlotterJobStatus.CANCELLED || !job.getJobType().isExternal()) {
+            return null;
+        }
+        UUID customerId = payment.getCustomerId() == null ? job.getCustomerId() : payment.getCustomerId();
+        if (customerId == null) {
+            return null;
+        }
+        return new AccountCredit(customerId, payment.getAmount());
+    }
+
     private String customerName(UUID customerId) {
         if (customerId == null) {
             return null;
@@ -202,6 +241,9 @@ public class GetPlotterPendingBalancesUseCase {
         return amount.setScale(SCALE, ROUNDING);
     }
 
+    private record AccountCredit(UUID customerId, BigDecimal amount) {
+    }
+
     private static final class CustomerAccumulator {
         private final UUID customerId;
         private BigDecimal billed = money(BigDecimal.ZERO);
@@ -225,6 +267,11 @@ public class GetPlotterPendingBalancesUseCase {
                     jobOutstanding,
                     job.getStatus()
             ));
+        }
+
+        private void applyCredit(BigDecimal amount) {
+            paid = money(paid.add(amount));
+            outstanding = money(outstanding.subtract(amount));
         }
 
         private PlotterCustomerPendingBalance toResult(java.util.function.Function<UUID, String> names) {

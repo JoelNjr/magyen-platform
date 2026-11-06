@@ -39,4 +39,29 @@ public class PlotterInternalServiceFinanceAdapter implements PlotterInternalServ
                 observation
         ));
     }
+
+    @Override
+    public void synchronizeInternalServiceLedger(
+            UUID plotterJobId,
+            BigDecimal amount,
+            LocalDate transactionDate,
+            String observation
+    ) {
+        ensurePlotterInternalServiceLedgerUseCase.synchronize(new EnsurePlotterInternalServiceLedgerCommand(
+                plotterJobId,
+                amount,
+                transactionDate,
+                observation
+        ));
+    }
+
+    @Override
+    public void reverseInternalServiceLedger(UUID plotterJobId) {
+        ensurePlotterInternalServiceLedgerUseCase.reversePair(plotterJobId);
+    }
+
+    @Override
+    public boolean hasInternalServiceLedger(UUID plotterJobId) {
+        return ensurePlotterInternalServiceLedgerUseCase.hasPair(plotterJobId);
+    }
 }

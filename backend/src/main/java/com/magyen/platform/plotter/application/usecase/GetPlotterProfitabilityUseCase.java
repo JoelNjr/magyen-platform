@@ -10,6 +10,7 @@ import com.magyen.platform.plotter.application.port.PlotterInventoryCostPort;
 import com.magyen.platform.plotter.application.port.PlotterInventoryCostPort.PlotterInventoryCostSnapshot;
 import com.magyen.platform.plotter.application.port.PlotterPaperAcquisitionPort;
 import com.magyen.platform.plotter.domain.PlotterJob;
+import com.magyen.platform.plotter.domain.PlotterJobStatus;
 import com.magyen.platform.plotter.domain.PlotterJobRepository;
 import com.magyen.platform.plotter.domain.PlotterJobType;
 import com.magyen.platform.plotter.domain.PlotterPayment;
@@ -90,6 +91,7 @@ public class GetPlotterProfitabilityUseCase {
         ResolvedPeriod period = resolvePeriod(query.fromDate(), query.toDate());
 
         List<PlotterJob> jobs = plotterJobRepository.findAll().stream()
+                .filter(job -> job.getStatus() != PlotterJobStatus.CANCELLED)
                 .filter(job -> !job.getCreationDate().isBefore(period.fromDate()))
                 .filter(job -> !job.getCreationDate().isAfter(period.toDate()))
                 .filter(job -> matchesScope(job, scope))
@@ -135,6 +137,17 @@ public class GetPlotterProfitabilityUseCase {
                 externalPaidAmount = externalPaidAmount.add(paidAmount);
                 externalOutstandingAmount = externalOutstandingAmount.add(outstandingAmount);
             }
+        }
+
+        if (scope != PlotterProfitabilityScope.INTERNAL && scope != PlotterProfitabilityScope.WASTE) {
+            BigDecimal unallocatedPaid = plotterPaymentRepository.findAll().stream()
+                    .filter(payment -> payment.getPlotterJobId() == null)
+                    .filter(payment -> !payment.getPaymentDate().isBefore(period.fromDate()))
+                    .filter(payment -> !payment.getPaymentDate().isAfter(period.toDate()))
+                    .map(payment -> payment.getAmount())
+                    .reduce(ZERO_MONEY, BigDecimal::add);
+            externalPaidAmount = externalPaidAmount.add(unallocatedPaid);
+            externalOutstandingAmount = externalOutstandingAmount.subtract(unallocatedPaid);
         }
 
         BigDecimal paperAcquisitionCost = plotterPaperAcquisitionPort

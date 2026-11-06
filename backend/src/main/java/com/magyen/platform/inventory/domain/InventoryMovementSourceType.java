@@ -33,6 +33,12 @@ public enum InventoryMovementSourceType {
     PLOTTER,
 
     /**
+     * Devolución única del consumo de un trabajo de plotter cancelado o sustituido.
+     * Requiere {@code sourceId} = plotterJobId. No es un segundo consumo.
+     */
+    PLOTTER_REVERSAL,
+
+    /**
      * Entrada por compra / recepción de material.
      * Requiere {@code sourceId} = purchaseId (no el inventoryItemId:
      * el mismo material puede comprarse varias veces).
@@ -69,6 +75,6 @@ public enum InventoryMovementSourceType {
     }
 
     public boolean requiresSourceId() {
-        return this == PRODUCTION || this == PLOTTER || this == PURCHASE;
+        return this == PRODUCTION || this == PLOTTER || this == PLOTTER_REVERSAL || this == PURCHASE;
     }
 }

@@ -195,6 +195,42 @@ class PlotterJobTest {
     }
 
     @Test
+    void externalCommercialValueCanDifferFromMetersTimesPriceAndKeepsTheSameJob() {
+        UUID id = UUID.randomUUID();
+        UUID machineId = UUID.randomUUID();
+        PlotterJob created = PlotterJob.create(
+                id,
+                PlotterJobType.EXTERNAL,
+                UUID.randomUUID(),
+                null,
+                LocalDate.of(2026, 8, 2),
+                UUID.randomUUID(),
+                new BigDecimal("4"),
+                new BigDecimal("1000"),
+                "Logo",
+                machineId
+        ).withExternalCommercialValue(new BigDecimal("7500"));
+
+        assertEquals(id, created.getId());
+        assertEquals(machineId, created.getPlotterMachineId());
+        assertEquals(new BigDecimal("7500.00"), created.getTotalAmount());
+        assertEquals(new BigDecimal("1000.00"), created.getPricePerMeter());
+
+        PlotterJob corrected = created.correct(
+                LocalDate.of(2026, 8, 9),
+                created.getPaperInventoryItemId(),
+                created.getPrintedMeters(),
+                created.getPricePerMeter(),
+                new BigDecimal("6200"),
+                "Logo corregido"
+        );
+        assertEquals(id, corrected.getId());
+        assertEquals(LocalDate.of(2026, 8, 9), corrected.getCreationDate());
+        assertEquals(new BigDecimal("6200.00"), corrected.getTotalAmount());
+        assertEquals(machineId, corrected.getPlotterMachineId());
+    }
+
+    @Test
     void calculatesTotalWithDecimalMeters() {
         BigDecimal total = PlotterJob.calculateTotalAmount(
                 new BigDecimal("10.5"),

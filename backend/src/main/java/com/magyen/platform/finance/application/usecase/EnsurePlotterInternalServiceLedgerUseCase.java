@@ -70,6 +70,96 @@ public class EnsurePlotterInternalServiceLedgerUseCase {
         );
     }
 
+    /**
+     * Actualiza monto y fecha de los dos lados del par. No crea asientos adicionales
+     * si el par ya existe. Si falta un solo lado, rechaza la corrección.
+     */
+    @Transactional
+    public void synchronize(EnsurePlotterInternalServiceLedgerCommand command) {
+        Objects.requireNonNull(command, "Command must not be null");
+        Objects.requireNonNull(command.plotterJobId(), "Plotter job id must not be null");
+        Objects.requireNonNull(command.amount(), "Amount must not be null");
+        Objects.requireNonNull(command.transactionDate(), "Transaction date must not be null");
+        if (command.amount().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new FinanceDomainException("Internal Plotter service amount must be greater than zero");
+        }
+
+        Optional<FinancialTransaction> existingExpense = financialTransactionRepository.findBySourceTypeAndSourceId(
+                FinancialTransactionSourceType.PLOTTER_INTERNAL_EXPENSE,
+                command.plotterJobId()
+        );
+        Optional<FinancialTransaction> existingIncome = financialTransactionRepository.findBySourceTypeAndSourceId(
+                FinancialTransactionSourceType.PLOTTER_INTERNAL_INCOME,
+                command.plotterJobId()
+        );
+        if (existingExpense.isEmpty() && existingIncome.isEmpty()) {
+            execute(command);
+            return;
+        }
+        if (existingExpense.isEmpty() || existingIncome.isEmpty()) {
+            throw new FinanceDomainException(
+                    "Internal Plotter ledger pair is incomplete for job: " + command.plotterJobId()
+            );
+        }
+
+        FinancialAmount amount = FinancialAmount.of(command.amount());
+        replaceSideIfNeeded(existingExpense.get(), amount, command.transactionDate());
+        replaceSideIfNeeded(existingIncome.get(), amount, command.transactionDate());
+    }
+
+    /**
+     * Elimina los dos lados del par interno. No deja un solo lado.
+     * Si el par ya no existe, el reintento no hace nada.
+     */
+    public boolean hasPair(UUID plotterJobId) {
+        Objects.requireNonNull(plotterJobId, "Plotter job id must not be null");
+        boolean expense = financialTransactionRepository.findBySourceTypeAndSourceId(
+                FinancialTransactionSourceType.PLOTTER_INTERNAL_EXPENSE,
+                plotterJobId
+        ).isPresent();
+        boolean income = financialTransactionRepository.findBySourceTypeAndSourceId(
+                FinancialTransactionSourceType.PLOTTER_INTERNAL_INCOME,
+                plotterJobId
+        ).isPresent();
+        return expense || income;
+    }
+
+    @Transactional
+    public void reversePair(UUID plotterJobId) {
+        Objects.requireNonNull(plotterJobId, "Plotter job id must not be null");
+        Optional<FinancialTransaction> existingExpense = financialTransactionRepository.findBySourceTypeAndSourceId(
+                FinancialTransactionSourceType.PLOTTER_INTERNAL_EXPENSE,
+                plotterJobId
+        );
+        Optional<FinancialTransaction> existingIncome = financialTransactionRepository.findBySourceTypeAndSourceId(
+                FinancialTransactionSourceType.PLOTTER_INTERNAL_INCOME,
+                plotterJobId
+        );
+        if (existingExpense.isEmpty() && existingIncome.isEmpty()) {
+            return;
+        }
+        if (existingExpense.isEmpty() || existingIncome.isEmpty()) {
+            throw new FinanceDomainException(
+                    "Internal Plotter ledger pair is incomplete for job: " + plotterJobId
+            );
+        }
+        financialTransactionRepository.deleteById(existingExpense.get().getId());
+        financialTransactionRepository.deleteById(existingIncome.get().getId());
+    }
+
+    private void replaceSideIfNeeded(
+            FinancialTransaction current,
+            FinancialAmount amount,
+            java.time.LocalDate transactionDate
+    ) {
+        boolean sameAmount = current.getAmount().getValue().compareTo(amount.getValue()) == 0;
+        boolean sameDate = current.getTransactionDate().equals(transactionDate);
+        if (sameAmount && sameDate) {
+            return;
+        }
+        financialTransactionRepository.save(current.withAmountAndDate(amount, transactionDate));
+    }
+
     private FinancialTransaction createExpense(EnsurePlotterInternalServiceLedgerCommand command) {
         return saveIdempotent(
                 FinancialTransactionType.EXPENSE,

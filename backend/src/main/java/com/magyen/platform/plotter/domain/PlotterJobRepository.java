@@ -16,4 +16,9 @@ public interface PlotterJobRepository {
     List<PlotterJob> findByOrderId(UUID orderId);
 
     List<PlotterJob> findAll();
+
+    /**
+     * Borra un trabajo sin evidencia de producción, inventario ni dinero.
+     */
+    void deleteById(UUID id);
 }

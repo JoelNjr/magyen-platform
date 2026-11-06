@@ -3,6 +3,8 @@ package com.magyen.platform.plotter.infrastructure.inventory;
 import com.magyen.platform.inventory.application.dto.ConsumeInventoryMaterialCommand;
 import com.magyen.platform.inventory.application.dto.ConsumeInventoryMaterialResult;
 import com.magyen.platform.inventory.application.usecase.ConsumeInventoryMaterialUseCase;
+import com.magyen.platform.inventory.application.usecase.CorrectPlotterPaperConsumptionUseCase;
+import com.magyen.platform.inventory.application.usecase.ReversePlotterPaperConsumptionUseCase;
 import com.magyen.platform.inventory.domain.InventoryItem;
 import com.magyen.platform.inventory.domain.InventoryItemRepository;
 import com.magyen.platform.inventory.domain.InventoryMovementSourceType;
@@ -23,10 +25,14 @@ public class PlotterJobInventoryAdapter implements PlotterJobInventoryPort {
 
     private final InventoryItemRepository inventoryItemRepository;
     private final ConsumeInventoryMaterialUseCase consumeInventoryMaterialUseCase;
+    private final CorrectPlotterPaperConsumptionUseCase correctPlotterPaperConsumptionUseCase;
+    private final ReversePlotterPaperConsumptionUseCase reversePlotterPaperConsumptionUseCase;
 
     public PlotterJobInventoryAdapter(
             InventoryItemRepository inventoryItemRepository,
-            ConsumeInventoryMaterialUseCase consumeInventoryMaterialUseCase
+            ConsumeInventoryMaterialUseCase consumeInventoryMaterialUseCase,
+            CorrectPlotterPaperConsumptionUseCase correctPlotterPaperConsumptionUseCase,
+            ReversePlotterPaperConsumptionUseCase reversePlotterPaperConsumptionUseCase
     ) {
         this.inventoryItemRepository = Objects.requireNonNull(
                 inventoryItemRepository,
@@ -35,6 +41,14 @@ public class PlotterJobInventoryAdapter implements PlotterJobInventoryPort {
         this.consumeInventoryMaterialUseCase = Objects.requireNonNull(
                 consumeInventoryMaterialUseCase,
                 "Consume inventory material use case must not be null"
+        );
+        this.correctPlotterPaperConsumptionUseCase = Objects.requireNonNull(
+                correctPlotterPaperConsumptionUseCase,
+                "Correct plotter paper consumption use case must not be null"
+        );
+        this.reversePlotterPaperConsumptionUseCase = Objects.requireNonNull(
+                reversePlotterPaperConsumptionUseCase,
+                "Reverse plotter paper consumption use case must not be null"
         );
     }
 
@@ -100,5 +114,30 @@ public class PlotterJobInventoryAdapter implements PlotterJobInventoryPort {
                 result.totalCost(),
                 result.alreadyProcessed()
         );
+    }
+
+    @Override
+    public void correctPaperConsumption(
+            UUID paperInventoryItemId,
+            BigDecimal printedMeters,
+            UUID plotterJobId,
+            String observation
+    ) {
+        correctPlotterPaperConsumptionUseCase.execute(
+                paperInventoryItemId,
+                printedMeters,
+                plotterJobId,
+                observation
+        );
+    }
+
+    @Override
+    public void reversePaperConsumption(UUID plotterJobId) {
+        reversePlotterPaperConsumptionUseCase.execute(plotterJobId);
+    }
+
+    @Override
+    public boolean hasPaperConsumption(UUID plotterJobId) {
+        return reversePlotterPaperConsumptionUseCase.hasPaperConsumption(plotterJobId);
     }
 }

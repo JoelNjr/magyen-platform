@@ -137,20 +137,43 @@ export function isExternalPlotterJob(jobType) {
   return jobType === 'EXTERNAL'
 }
 
-export function canRegisterExternalPlotterPayment(job) {
-  if (!isExternalPlotterJob(job?.jobType)) {
-    return false
-  }
-  const outstanding = Number(job?.outstandingAmount)
-  return !Number.isNaN(outstanding) && outstanding > 0
+export function canRegisterExternalPlotterPayment() {
+  return false
 }
 
-export function isExternalPlotterPaymentComplete(job) {
-  if (!isExternalPlotterJob(job?.jobType)) {
+export function canOpenExternalPlotterAccount(job) {
+  return isExternalPlotterJob(job?.jobType) && Boolean(job?.customerId)
+}
+
+export function isExternalPlotterPaymentComplete() {
+  return false
+}
+
+export function groupPlotterJobsByWorkDate(jobs) {
+  const groups = []
+  for (const job of jobs || []) {
+    const date = job?.creationDate || ''
+    const current = groups[groups.length - 1]
+    if (!current || current.date !== date) {
+      groups.push({ date, jobs: [job] })
+    } else {
+      current.jobs.push(job)
+    }
+  }
+  return groups
+}
+
+export function isPlotterDateOnlyCorrection(job, payload) {
+  if (!job || !payload || payload.creationDate === job.creationDate) {
     return false
   }
-  const outstanding = Number(job?.outstandingAmount)
-  return !Number.isNaN(outstanding) && outstanding <= 0
+  const sameRoll = payload.paperInventoryItemId === job.paperInventoryItemId
+  const sameMeters = Number(payload.printedMeters) === Number(job.printedMeters)
+  const samePrice = Number(payload.pricePerMeter || 0) === Number(job.pricePerMeter || 0)
+  const sameValue =
+    job.jobType !== 'EXTERNAL' || Number(payload.commercialValue) === Number(job.totalAmount)
+  const sameNotes = (payload.observations || '') === (job.observations || '')
+  return sameRoll && sameMeters && samePrice && sameValue && sameNotes
 }
 
 export function parseHistoricalOrderMonth(value) {

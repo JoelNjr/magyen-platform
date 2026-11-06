@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from 'react'
-import AddIcon from '@mui/icons-material/Add'
 import PaymentsOutlinedIcon from '@mui/icons-material/PaymentsOutlined'
 import PrintOutlinedIcon from '@mui/icons-material/PrintOutlined'
 import {
@@ -21,14 +20,16 @@ import {
   Typography,
 } from '@mui/material'
 import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom'
+import { useAuth } from '../../auth/AuthContext'
+import { isAdmin } from '../../auth/presentation/authPresentation'
 import { getCustomers } from '../../commercial/services/commercialService'
 import {
   getInventoryItem,
   getInventoryMovements,
 } from '../../inventory/services/inventoryService'
-import RegisterPlotterPaymentDialog from '../components/RegisterPlotterPaymentDialog'
+import EditPlotterJobDialog from '../components/EditPlotterJobDialog'
 import {
-  canRegisterExternalPlotterPayment,
+  canOpenExternalPlotterAccount,
   formatPlotterCustomerLabel,
   formatPlotterDate,
   formatPlotterMoney,
@@ -36,15 +37,18 @@ import {
   formatPlotterOrderLabel,
   getPlotterJobTypeChipProps,
   getPlotterStatusChipProps,
+  isPlotterDateOnlyCorrection,
   isExternalPlotterJob,
   isInternalPlotterJob,
   isWastePlotterJob,
 } from '../presentation/plotterJobPresentation'
 import { formatPlotterMachineLabel } from '../presentation/plotterMachinePresentation'
 import {
+  cancelPlotterJob,
+  correctPlotterJobDate,
+  editPlotterJob,
   getPlotterJob,
   getPlotterPayments,
-  registerPlotterPayment,
 } from '../services/plotterService'
 import PageHeader from '../../../layout/PageHeader'
 
@@ -66,6 +70,8 @@ function resolveApiErrorMessage(error, fallbackMessage) {
 function PlotterJobDetailPage() {
   const { plotterJobId } = useParams()
   const navigate = useNavigate()
+  const { identity } = useAuth()
+  const admin = isAdmin(identity)
 
   const [job, setJob] = useState(null)
   const [payments, setPayments] = useState([])
@@ -79,9 +85,10 @@ function PlotterJobDetailPage() {
   const [notFound, setNotFound] = useState(false)
   const [paymentsFailed, setPaymentsFailed] = useState(false)
 
-  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false)
-  const [registeringPayment, setRegisteringPayment] = useState(false)
-  const [paymentError, setPaymentError] = useState('')
+  const [editOpen, setEditOpen] = useState(false)
+  const [savingJob, setSavingJob] = useState(false)
+  const [editError, setEditError] = useState('')
+  const [actionError, setActionError] = useState('')
   const [successOpen, setSuccessOpen] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
 
@@ -171,25 +178,51 @@ function PlotterJobDetailPage() {
     loadDetail()
   }, [loadDetail])
 
-  async function handleRegisterPayment(payload) {
-    if (registeringPayment) {
+  async function handleEditJob(payload) {
+    if (savingJob || !job) {
       return
     }
-
-    setRegisteringPayment(true)
-    setPaymentError('')
+    setSavingJob(true)
+    setEditError('')
     try {
-      await registerPlotterPayment(plotterJobId, payload)
-      setPaymentDialogOpen(false)
+      if (isPlotterDateOnlyCorrection(job, payload)) {
+        await correctPlotterJobDate(job.plotterJobId, payload.creationDate)
+      } else {
+        await editPlotterJob(job.plotterJobId, payload)
+      }
+      setEditOpen(false)
       await loadDetail()
-      setSuccessMessage('Pago registrado correctamente.')
+      setSuccessMessage('Trabajo de plotter corregido.')
       setSuccessOpen(true)
     } catch (error) {
-      setPaymentError(
-        resolveApiErrorMessage(error, 'No fue posible registrar el pago.')
-      )
+      setEditError(resolveApiErrorMessage(error, 'No fue posible corregir el trabajo.'))
     } finally {
-      setRegisteringPayment(false)
+      setSavingJob(false)
+    }
+  }
+
+  async function handleCancelJob() {
+    if (!job || job.status === 'CANCELLED') {
+      return
+    }
+    const confirmed = window.confirm(
+      'Anular este trabajo revierte el consumo de papel y el débito pendiente. Los pagos ya recibidos se conservan.'
+    )
+    if (!confirmed) {
+      return
+    }
+    setActionError('')
+    try {
+      const result = await cancelPlotterJob(job.plotterJobId)
+      if (result?.deleted) {
+        navigate('/plotter')
+        return
+      }
+      await loadDetail()
+      setSuccessMessage('Trabajo de plotter anulado.')
+      setSuccessOpen(true)
+    } catch (error) {
+      setActionError(resolveApiErrorMessage(error, 'No fue posible anular el trabajo.'))
     }
   }
 
@@ -229,7 +262,7 @@ function PlotterJobDetailPage() {
   const internalJob = isInternalPlotterJob(job.jobType)
   const wasteJob = isWastePlotterJob(job.jobType)
   const externalJob = isExternalPlotterJob(job.jobType)
-  const canRegisterPayment = canRegisterExternalPlotterPayment(job)
+  const cancelled = job.status === 'CANCELLED'
 
   return (
     <>
@@ -238,7 +271,24 @@ function PlotterJobDetailPage() {
           title="Trabajo de Plotter"
           subtitle={<Chip size="small" {...getPlotterJobTypeChipProps(job.jobType)} />}
           actions={
-          <Button onClick={() => navigate('/plotter')}>Volver</Button>
+            <Stack direction="row" spacing={1}>
+              <Button onClick={() => navigate('/plotter')}>Volver</Button>
+              {admin && !cancelled && (
+                <Button
+                  onClick={() => {
+                    setEditError('')
+                    setEditOpen(true)
+                  }}
+                >
+                  Editar
+                </Button>
+              )}
+              {admin && !cancelled && (
+                <Button color="warning" onClick={handleCancelJob}>
+                  Anular
+                </Button>
+              )}
+            </Stack>
           }
         />
 
@@ -353,17 +403,14 @@ function PlotterJobDetailPage() {
                 <PaymentsOutlinedIcon color="action" />
                 <Typography variant="h6">Resumen de pago</Typography>
               </Stack>
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                disabled={!canRegisterPayment || registeringPayment}
-                onClick={() => {
-                  setPaymentError('')
-                  setPaymentDialogOpen(true)
-                }}
-              >
-                {canRegisterPayment ? 'Registrar pago' : 'Pago completado'}
-              </Button>
+              {canOpenExternalPlotterAccount(job) && (
+                <Button
+                  variant="contained"
+                  onClick={() => navigate(`/plotter/customer-accounts/${job.customerId}`)}
+                >
+                  Ver cuenta
+                </Button>
+              )}
             </Stack>
 
             <Grid container spacing={2}>
@@ -475,19 +522,19 @@ function PlotterJobDetailPage() {
         </Paper>
       </Stack>
 
-      <RegisterPlotterPaymentDialog
-        open={paymentDialogOpen}
-        totalAmount={job.totalAmount}
-        paidAmount={job.paidAmount}
-        outstandingAmount={job.outstandingAmount}
+      {actionError && <Alert severity="error">{actionError}</Alert>}
+      <EditPlotterJobDialog
+        open={editOpen}
+        job={job}
         onClose={() => {
-          if (!registeringPayment) {
-            setPaymentDialogOpen(false)
+          if (!savingJob) {
+            setEditOpen(false)
+            setEditError('')
           }
         }}
-        onSubmit={handleRegisterPayment}
-        submitting={registeringPayment}
-        errorMessage={paymentError}
+        onSubmit={handleEditJob}
+        submitting={savingJob}
+        errorMessage={editError}
       />
 
       <Snackbar

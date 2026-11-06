@@ -56,4 +56,18 @@ public class JpaPlotterPaymentRepository implements PlotterPaymentRepository {
                 .map(persistenceMapper::toDomain)
                 .toList();
     }
+
+    @Override
+    public List<PlotterPayment> findAll() {
+        return springDataRepository.findAll().stream()
+                .map(persistenceMapper::toDomain)
+                .toList();
+    }
+
+    @Override
+    public Optional<PlotterPayment> findByRegistrationKey(UUID registrationKey) {
+        Objects.requireNonNull(registrationKey, "Registration key must not be null");
+        return springDataRepository.findByRegistrationKey(registrationKey)
+                .map(persistenceMapper::toDomain);
+    }
 }

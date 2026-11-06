@@ -118,6 +118,39 @@ class AuthorizationApiContractTest {
         mockMvc.perform(authorized(get("/api/v1/reports/sales"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/admin/users"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/admin/catalogs"), accessToken)).andExpect(status().isOk());
+        mockMvc.perform(authorized(get("/api/v1/plotter/customer-accounts"), accessToken)).andExpect(status().isOk());
+        mockMvc.perform(authorized(get("/api/v1/plotter/jobs/" + UNKNOWN_ID + "/payments"), accessToken))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(authorized(put("/api/v1/plotter/jobs/" + UNKNOWN_ID), accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "creationDate": "2026-08-04",
+                                  "printedMeters": 1,
+                                  "pricePerMeter": 1000
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(authorized(patch("/api/v1/plotter/jobs/" + UNKNOWN_ID + "/work-date"), accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"creationDate\":\"2026-08-04\"}"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(authorized(post("/api/v1/plotter/jobs/" + UNKNOWN_ID + "/cancellation"), accessToken))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(authorized(post("/api/v1/plotter/customer-accounts/" + UNKNOWN_ID + "/payments"), accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "amount": 1000,
+                                  "paymentDate": "2026-08-04",
+                                  "registrationKey": "6f0c1a10-0003-4a03-8a03-000000000003"
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(authorized(post("/api/v1/plotter/jobs/" + UNKNOWN_ID + "/payments"), accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"amount\":1000,\"paymentDate\":\"2026-08-04\"}"))
+                .andExpect(status().isGone());
     }
 
     @Test
@@ -180,6 +213,49 @@ class AuthorizationApiContractTest {
                 .andExpect(status().isBadRequest());
         mockMvc.perform(authorized(get("/api/v1/plotter/profitability"), accessToken)).andExpect(status().isOk());
         mockMvc.perform(authorized(get("/api/v1/commercial-catalogs"), accessToken)).andExpect(status().isOk());
+        mockMvc.perform(authorized(get("/api/v1/plotter/customer-accounts"), accessToken)).andExpect(status().isOk());
+        mockMvc.perform(authorized(get("/api/v1/plotter/jobs/" + UNKNOWN_ID + "/payments"), accessToken))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(authorized(post("/api/v1/plotter/jobs/" + UNKNOWN_ID + "/payments"), accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"amount\":1000,\"paymentDate\":\"2026-08-04\"}"))
+                .andExpect(status().isGone());
+    }
+
+    @Test
+    void operatorCannotRegisterPlotterPaymentsOrCorrectJobs() throws Exception {
+        String accessToken = loginAs(AuthenticationRole.OPERATOR);
+
+        mockMvc.perform(authorized(put("/api/v1/plotter/jobs/" + UNKNOWN_ID), accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "creationDate": "2026-08-04",
+                                  "printedMeters": 1,
+                                  "pricePerMeter": 1000
+                                }
+                                """))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403));
+        mockMvc.perform(authorized(patch("/api/v1/plotter/jobs/" + UNKNOWN_ID + "/work-date"), accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"creationDate\":\"2026-08-04\"}"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403));
+        mockMvc.perform(authorized(post("/api/v1/plotter/jobs/" + UNKNOWN_ID + "/cancellation"), accessToken))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403));
+        mockMvc.perform(authorized(post("/api/v1/plotter/customer-accounts/" + UNKNOWN_ID + "/payments"), accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "amount": 1000,
+                                  "paymentDate": "2026-08-04",
+                                  "registrationKey": "6f0c1a10-0003-4a03-8a03-000000000003"
+                                }
+                                """))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403));
     }
 
     @Test
@@ -359,6 +435,35 @@ class AuthorizationApiContractTest {
                                   "pricePerMeter": 5000
                                 }
                                 """.formatted(UNKNOWN_ID, UNKNOWN_ID)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401));
+        mockMvc.perform(put("/api/v1/plotter/jobs/" + UNKNOWN_ID)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401));
+        mockMvc.perform(patch("/api/v1/plotter/jobs/" + UNKNOWN_ID + "/work-date")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"creationDate\":\"2026-08-04\"}"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401));
+        mockMvc.perform(post("/api/v1/plotter/jobs/" + UNKNOWN_ID + "/cancellation"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401));
+        mockMvc.perform(get("/api/v1/plotter/customer-accounts"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401));
+        mockMvc.perform(post("/api/v1/plotter/customer-accounts/" + UNKNOWN_ID + "/payments")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"amount\":1000,\"paymentDate\":\"2026-08-04\"}"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401));
+        mockMvc.perform(get("/api/v1/plotter/jobs/" + UNKNOWN_ID + "/payments"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401));
+        mockMvc.perform(post("/api/v1/plotter/jobs/" + UNKNOWN_ID + "/payments")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"amount\":1000,\"paymentDate\":\"2026-08-04\"}"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.status").value(401));
         mockMvc.perform(get("/api/v1/home/profitability"))

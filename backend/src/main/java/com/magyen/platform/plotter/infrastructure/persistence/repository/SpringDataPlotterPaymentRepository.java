@@ -4,6 +4,7 @@ import com.magyen.platform.plotter.infrastructure.persistence.entity.PlotterPaym
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -12,4 +13,6 @@ import java.util.UUID;
 public interface SpringDataPlotterPaymentRepository extends JpaRepository<PlotterPaymentEntity, UUID> {
 
     List<PlotterPaymentEntity> findByPlotterJobIdOrderByPaymentDateDescIdDesc(UUID plotterJobId);
+
+    Optional<PlotterPaymentEntity> findByRegistrationKey(UUID registrationKey);
 }

@@ -111,6 +111,11 @@ class RegisterProductionLaborPaymentExpenseUseCaseTest {
         }
 
         @Override
+        public void deleteById(UUID id) {
+            transactions.remove(id);
+        }
+
+        @Override
         public Optional<FinancialTransaction> findById(UUID id) {
             return Optional.ofNullable(transactions.get(id));
         }

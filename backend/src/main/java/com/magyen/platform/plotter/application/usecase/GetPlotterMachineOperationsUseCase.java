@@ -4,6 +4,7 @@ import com.magyen.platform.plotter.application.dto.GetPlotterMachineOperationsQu
 import com.magyen.platform.plotter.application.dto.GetPlotterMachineOperationsResult;
 import com.magyen.platform.plotter.application.dto.PlotterMachineOperationResult;
 import com.magyen.platform.plotter.domain.PlotterJob;
+import com.magyen.platform.plotter.domain.PlotterJobStatus;
 import com.magyen.platform.plotter.domain.PlotterJobRepository;
 import com.magyen.platform.plotter.domain.PlotterMachine;
 import com.magyen.platform.plotter.domain.PlotterMachineRepository;
@@ -88,6 +89,9 @@ public class GetPlotterMachineOperationsUseCase {
         }
 
         for (PlotterJob job : plotterJobRepository.findAll()) {
+            if (job.getStatus() == PlotterJobStatus.CANCELLED) {
+                continue;
+            }
             if (!belongsToSelection(job.getPlotterMachineId(), query)) {
                 continue;
             }

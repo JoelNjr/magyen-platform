@@ -271,6 +271,38 @@ public final class InventoryMovement {
         return sourceId;
     }
 
+    /**
+     * Reescribe el único OUT de Plotter tras corregir metros o rollo.
+     * Conserva el id y el origen para no duplicar el consumo.
+     */
+    public InventoryMovement rewritePlotterConsumption(
+            UUID inventoryItemId,
+            BigDecimal quantity,
+            BigDecimal resultingStock,
+            BigDecimal unitCost,
+            String observation
+    ) {
+        BigDecimal snapshotUnitCost = normalizeMoney(unitCost);
+        BigDecimal snapshotTotalCost = null;
+        if (snapshotUnitCost != null) {
+            snapshotTotalCost = quantity.multiply(snapshotUnitCost).setScale(MONEY_SCALE, MONEY_ROUNDING);
+        }
+        return new InventoryMovement(
+                this.id,
+                inventoryItemId,
+                InventoryMovementType.OUT,
+                quantity,
+                this.unitOfMeasure,
+                this.movementDate,
+                observation,
+                resultingStock,
+                snapshotUnitCost,
+                snapshotTotalCost,
+                this.sourceType,
+                this.sourceId
+        );
+    }
+
     @Override
     public boolean equals(Object other) {
         if (this == other) {

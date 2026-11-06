@@ -15,7 +15,9 @@ public class PlotterPaymentPersistenceMapper {
 
         PlotterPaymentEntity entity = new PlotterPaymentEntity();
         entity.setId(payment.getId());
+        entity.setCustomerId(payment.getCustomerId());
         entity.setPlotterJobId(payment.getPlotterJobId());
+        entity.setRegistrationKey(payment.getRegistrationKey());
         entity.setAmount(payment.getAmount());
         entity.setPaymentDate(payment.getPaymentDate());
         entity.setObservations(payment.getObservations());
@@ -27,7 +29,9 @@ public class PlotterPaymentPersistenceMapper {
 
         return PlotterPayment.reconstitute(
                 entity.getId(),
+                entity.getCustomerId(),
                 entity.getPlotterJobId(),
+                entity.getRegistrationKey(),
                 entity.getAmount(),
                 entity.getPaymentDate(),
                 entity.getObservations()

@@ -72,9 +72,40 @@ export async function getPlotterPayments(plotterJobId) {
   return response.data
 }
 
-export async function registerPlotterPayment(plotterJobId, payload) {
+export async function editPlotterJob(plotterJobId, payload) {
+  const response = await httpClient.put(`/plotter/jobs/${plotterJobId}`, payload)
+  return response.data
+}
+
+export async function correctPlotterJobDate(plotterJobId, creationDate) {
+  const response = await httpClient.patch(`/plotter/jobs/${plotterJobId}/work-date`, {
+    creationDate,
+  })
+  return response.data
+}
+
+export async function cancelPlotterJob(plotterJobId) {
+  const response = await httpClient.post(`/plotter/jobs/${plotterJobId}/cancellation`)
+  return response.data
+}
+
+export async function getPlotterCustomerAccounts(params = {}) {
+  const response = await httpClient.get('/plotter/customer-accounts', {
+    params: {
+      customerId: params.customerId || undefined,
+    },
+  })
+  return response.data
+}
+
+export async function getPlotterCustomerAccount(customerId) {
+  const response = await httpClient.get(`/plotter/customer-accounts/${customerId}`)
+  return response.data
+}
+
+export async function registerPlotterCustomerPayment(customerId, payload) {
   const response = await httpClient.post(
-    `/plotter/jobs/${plotterJobId}/payments`,
+    `/plotter/customer-accounts/${customerId}/payments`,
     payload
   )
   return response.data

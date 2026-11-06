@@ -14,6 +14,8 @@ import java.util.UUID;
  * {@code INTERNAL_MAGYEN} si hay orden.
  * {@code historicalRegistration} solo autoriza un INTERNAL_MAGYEN sobre un pedido
  * entregado o cerrado. No cambia el pedido y exige la fecha real del trabajo.
+ * {@code commercialValue} es el débito de la cuenta externa. Si viene nulo, el
+ * trabajo externo usa metros × precio de referencia.
  */
 public record CreatePlotterJobCommand(
         UUID customerId,
@@ -26,8 +28,38 @@ public record CreatePlotterJobCommand(
         PlotterJobType jobType,
         UUID plotterJobId,
         boolean historicalRegistration,
-        UUID plotterMachineId
+        UUID plotterMachineId,
+        BigDecimal commercialValue
 ) {
+    public CreatePlotterJobCommand(
+            UUID customerId,
+            UUID orderId,
+            LocalDate creationDate,
+            UUID paperInventoryItemId,
+            BigDecimal printedMeters,
+            BigDecimal pricePerMeter,
+            String observations,
+            PlotterJobType jobType,
+            UUID plotterJobId,
+            boolean historicalRegistration,
+            UUID plotterMachineId
+    ) {
+        this(
+                customerId,
+                orderId,
+                creationDate,
+                paperInventoryItemId,
+                printedMeters,
+                pricePerMeter,
+                observations,
+                jobType,
+                plotterJobId,
+                historicalRegistration,
+                plotterMachineId,
+                null
+        );
+    }
+
     public CreatePlotterJobCommand(
             UUID customerId,
             UUID orderId,

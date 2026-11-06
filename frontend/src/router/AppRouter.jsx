@@ -22,6 +22,8 @@ import IntelligencePage from '../features/intelligence/pages/IntelligencePage'
 import InventoryDetailPage from '../features/inventory/pages/InventoryDetailPage'
 import InventoryMaterialDetailPage from '../features/inventory/pages/InventoryMaterialDetailPage'
 import InventoryPage from '../features/inventory/pages/InventoryPage'
+import PlotterCustomerAccountDetailPage from '../features/plotter/pages/PlotterCustomerAccountDetailPage'
+import PlotterCustomerAccountsPage from '../features/plotter/pages/PlotterCustomerAccountsPage'
 import PlotterJobDetailPage from '../features/plotter/pages/PlotterJobDetailPage'
 import PlotterJobsPage from '../features/plotter/pages/PlotterJobsPage'
 import PlotterPendingBalancesPage from '../features/plotter/pages/PlotterPendingBalancesPage'
@@ -100,6 +102,14 @@ function AppRouter() {
             <Route
               path="plotter/profitability"
               element={<PlotterProfitabilityPage />}
+            />
+            <Route
+              path="plotter/customer-accounts/:customerId"
+              element={<PlotterCustomerAccountDetailPage />}
+            />
+            <Route
+              path="plotter/customer-accounts"
+              element={<PlotterCustomerAccountsPage />}
             />
             <Route
               path="plotter/jobs/:plotterJobId"

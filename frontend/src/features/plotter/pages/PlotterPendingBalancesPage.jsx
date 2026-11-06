@@ -121,9 +121,10 @@ function PlotterPendingBalancesPage() {
       <PageHeader title="Saldos pendientes" />
 
       <Alert severity="info">
-        Saldo pendiente de trabajos externos de Plotter, agrupado por la fecha
-        del trabajo. No depende del mes seleccionado en el listado. Los trabajos
-        internos, la merma y los trabajos ya pagados no aparecen como deuda.
+        Libro histórico de trabajos externos con saldo por trabajo. Los pagos
+        nuevos se registran en la cuenta del cliente y no se asignan a un
+        trabajo. Los trabajos internos, la merma y los trabajos ya cubiertos no
+        aparecen como deuda abierta.
       </Alert>
 
       {loading && <Skeleton variant="rounded" height={180} />}
@@ -257,10 +258,20 @@ function PlotterPendingBalancesPage() {
                                     >
                                       <Collapse in={expanded} timeout="auto" unmountOnExit>
                                         <Stack spacing={1} sx={{ py: 2, pl: 2 }}>
-                                          <Typography variant="subtitle2">
-                                            {customer.customerName} · Pendiente{' '}
-                                            {formatPlotterMoney(customer.outstandingAmount)}
-                                          </Typography>
+                                          <Stack direction="row" spacing={1} alignItems="center">
+                                            <Typography variant="subtitle2">
+                                              {customer.customerName} · Pendiente{' '}
+                                              {formatPlotterMoney(customer.outstandingAmount)}
+                                            </Typography>
+                                            <Button
+                                              size="small"
+                                              onClick={() =>
+                                                navigate(`/plotter/customer-accounts/${customer.customerId}`)
+                                              }
+                                            >
+                                              Ver cuenta
+                                            </Button>
+                                          </Stack>
                                           <Table size="small">
                                             <TableHead>
                                               <TableRow>

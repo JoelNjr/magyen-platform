@@ -486,6 +486,48 @@ public class InventoryItem {
         );
     }
 
+    /**
+     * Devuelve metros consumidos por un trabajo de Plotter sin exigir que el material siga activo.
+     * El movimiento IN queda identificado como {@link InventoryMovementSourceType#PLOTTER_REVERSAL}.
+     */
+    public InventoryMovement restorePlotterConsumption(
+            BigDecimal quantity,
+            UUID plotterJobId,
+            LocalDateTime movementDate
+    ) {
+        Objects.requireNonNull(plotterJobId, "Plotter job id must not be null");
+        Objects.requireNonNull(movementDate, "Movement date must not be null");
+        this.stock = applyIn(quantity);
+        return InventoryMovement.record(
+                this.id,
+                InventoryMovementType.IN,
+                quantity,
+                this.unitOfMeasure,
+                movementDate,
+                "Reversión de consumo de trabajo Plotter",
+                this.stock,
+                this.unitCost,
+                InventoryMovementSourceType.PLOTTER_REVERSAL,
+                plotterJobId
+        );
+    }
+
+    /**
+     * Ajusta el stock del rollo que ya tiene el OUT del trabajo, sin crear otro movimiento.
+     * Cantidad positiva consume de más; negativa devuelve metros.
+     */
+    public void applyPlotterConsumptionDelta(BigDecimal delta) {
+        Objects.requireNonNull(delta, "Consumption delta must not be null");
+        int comparison = delta.compareTo(BigDecimal.ZERO);
+        if (comparison > 0) {
+            this.stock = applyOut(delta);
+            return;
+        }
+        if (comparison < 0) {
+            this.stock = applyIn(delta.abs());
+        }
+    }
+
     public void activate() {
         if (status == InventoryItemStatus.ACTIVE) {
             return;

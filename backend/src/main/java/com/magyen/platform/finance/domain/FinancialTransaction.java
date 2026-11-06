@@ -215,6 +215,24 @@ public class FinancialTransaction {
      * <p>
      * Se usa para acumular pagos de mano de obra en el movimiento semanal.
      */
+    /**
+     * Corrige monto y fecha del mismo movimiento. No crea otro asiento.
+     */
+    public FinancialTransaction withAmountAndDate(FinancialAmount newAmount, LocalDate newDate) {
+        return new FinancialTransaction(
+                id,
+                type,
+                newAmount,
+                newDate,
+                category,
+                description,
+                observation,
+                sourceType,
+                sourceId,
+                orderId
+        );
+    }
+
     public FinancialTransaction withAmountAndDescription(FinancialAmount newAmount, String newDescription) {
         return new FinancialTransaction(
                 id,

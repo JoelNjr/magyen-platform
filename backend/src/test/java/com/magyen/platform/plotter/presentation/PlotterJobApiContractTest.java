@@ -143,32 +143,18 @@ class PlotterJobApiContractTest {
                                         }
                                         """)
                 )
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.amount").value(24000.0))
-                .andExpect(jsonPath("$.paidAmount").value(24000.0))
-                .andExpect(jsonPath("$.outstandingAmount").value(60000.0));
+                .andExpect(status().isGone())
+                .andExpect(jsonPath("$.status").value(410));
 
         mockMvc.perform(get("/api/v1/plotter/jobs/{plotterJobId}/payments", plotterJobId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.payments.length()").value(1))
-                .andExpect(jsonPath("$.paidAmount").value(24000.0))
-                .andExpect(jsonPath("$.outstandingAmount").value(60000.0));
-
-        mockMvc.perform(
-                        post("/api/v1/plotter/jobs/{plotterJobId}/payments", plotterJobId)
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content("""
-                                        {
-                                          "amount": 100000,
-                                          "paymentDate": "2026-08-11"
-                                        }
-                                        """)
-                )
-                .andExpect(status().isBadRequest());
+                .andExpect(jsonPath("$.payments.length()").value(0))
+                .andExpect(jsonPath("$.paidAmount").value(0.0))
+                .andExpect(jsonPath("$.outstandingAmount").value(84000.0));
     }
 
     @Test
-    void listExposesExternalPaymentBalanceAndRegistersPaymentThroughTheSameEndpoint() throws Exception {
+    void listKeepsJobBalancesWhenTheLegacyPaymentEndpointIsGone() throws Exception {
         UUID customerId = PlotterCustomerFixture.create(createCustomerUseCase);
 
         MvcResult unpaidResult = mockMvc.perform(
@@ -222,9 +208,7 @@ class PlotterJobApiContractTest {
                                         }
                                         """)
                 )
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.paidAmount").value(30000.0))
-                .andExpect(jsonPath("$.outstandingAmount").value(50000.0));
+                .andExpect(status().isGone());
 
         mockMvc.perform(get("/api/v1/plotter/jobs/{plotterJobId}", unpaidJobId))
                 .andExpect(status().isOk())
@@ -234,8 +218,8 @@ class PlotterJobApiContractTest {
 
         mockMvc.perform(get("/api/v1/plotter/jobs/{plotterJobId}", partialJobId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.paidAmount").value(30000.0))
-                .andExpect(jsonPath("$.outstandingAmount").value(50000.0));
+                .andExpect(jsonPath("$.paidAmount").value(0.0))
+                .andExpect(jsonPath("$.outstandingAmount").value(80000.0));
 
         mockMvc.perform(
                         post("/api/v1/plotter/jobs/{plotterJobId}/payments", unpaidJobId)
@@ -247,14 +231,12 @@ class PlotterJobApiContractTest {
                                         }
                                         """)
                 )
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.paidAmount").value(100000.0))
-                .andExpect(jsonPath("$.outstandingAmount").value(0.0));
+                .andExpect(status().isGone());
 
         mockMvc.perform(get("/api/v1/plotter/jobs/{plotterJobId}", unpaidJobId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.paidAmount").value(100000.0))
-                .andExpect(jsonPath("$.outstandingAmount").value(0.0));
+                .andExpect(jsonPath("$.paidAmount").value(0.0))
+                .andExpect(jsonPath("$.outstandingAmount").value(100000.0));
     }
 
     @Test
@@ -427,7 +409,7 @@ class PlotterJobApiContractTest {
                                         }
                                         """)
                 )
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isGone());
     }
 
     @Test
@@ -473,7 +455,7 @@ class PlotterJobApiContractTest {
                                         }
                                         """)
                 )
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isGone());
 
         mockMvc.perform(
                         get("/api/v1/plotter/jobs")

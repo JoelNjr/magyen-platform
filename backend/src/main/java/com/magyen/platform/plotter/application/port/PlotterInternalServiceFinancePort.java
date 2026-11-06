@@ -15,4 +15,21 @@ public interface PlotterInternalServiceFinancePort {
             LocalDate transactionDate,
             String observation
     );
+
+    /**
+     * Crea el par si no existe, o actualiza monto y fecha de los dos lados.
+     */
+    void synchronizeInternalServiceLedger(
+            UUID plotterJobId,
+            BigDecimal amount,
+            LocalDate transactionDate,
+            String observation
+    );
+
+    /**
+     * Elimina los dos lados del par. Idempotente si ya no existen.
+     */
+    void reverseInternalServiceLedger(UUID plotterJobId);
+
+    boolean hasInternalServiceLedger(UUID plotterJobId);
 }

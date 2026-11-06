@@ -357,6 +357,109 @@ public class PlotterJob {
         return observations;
     }
 
+    public boolean isCancelled() {
+        return status == PlotterJobStatus.CANCELLED;
+    }
+
+    /**
+     * Valor comercial de un trabajo externo. Puede diferir de metros × precio de referencia.
+     * Ese valor es el único débito de la cuenta del cliente.
+     */
+    public PlotterJob withExternalCommercialValue(BigDecimal commercialValue) {
+        if (!jobType.isExternal()) {
+            throw new PlotterDomainException(
+                    "Only external plotter jobs carry a customer account commercial value"
+            );
+        }
+        if (isCancelled()) {
+            throw new PlotterDomainException("Cancelled plotter jobs cannot be corrected");
+        }
+        return new PlotterJob(
+                id,
+                jobType,
+                customerId,
+                orderId,
+                creationDate,
+                paperInventoryItemId,
+                printedMeters,
+                pricePerMeter,
+                requirePositiveCommercialValue(commercialValue),
+                status,
+                observations,
+                plotterMachineId
+        );
+    }
+
+    /**
+     * Corrige datos operativos conservando el id, el cliente, la orden, el tipo y la máquina.
+     */
+    public PlotterJob correct(
+            LocalDate creationDate,
+            UUID paperInventoryItemId,
+            BigDecimal printedMeters,
+            BigDecimal pricePerMeter,
+            BigDecimal externalCommercialValue,
+            String observations
+    ) {
+        if (isCancelled()) {
+            throw new PlotterDomainException("Cancelled plotter jobs cannot be corrected");
+        }
+        BigDecimal normalizedMeters = requirePositiveMeters(printedMeters);
+        BigDecimal normalizedPrice = jobType.isWaste()
+                ? BigDecimal.ZERO.setScale(MONEY_SCALE, MONEY_ROUNDING)
+                : requireValidPricePerMeter(pricePerMeter);
+        if (jobType.isInternal() && normalizedPrice.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new PlotterDomainException("Internal Plotter price per meter must be greater than zero");
+        }
+        BigDecimal nextTotal;
+        if (jobType.isWaste()) {
+            nextTotal = BigDecimal.ZERO.setScale(MONEY_SCALE, MONEY_ROUNDING);
+        } else if (jobType.isInternal()) {
+            nextTotal = calculateTotalAmount(normalizedMeters, normalizedPrice);
+        } else if (externalCommercialValue == null) {
+            nextTotal = totalAmount;
+        } else {
+            nextTotal = requirePositiveCommercialValue(externalCommercialValue);
+        }
+        return new PlotterJob(
+                id,
+                jobType,
+                customerId,
+                orderId,
+                creationDate,
+                paperInventoryItemId,
+                normalizedMeters,
+                normalizedPrice,
+                nextTotal,
+                status,
+                observations,
+                plotterMachineId
+        );
+    }
+
+    /**
+     * Anula el trabajo y conserva la fila como evidencia. No borra pagos ni movimientos.
+     */
+    public PlotterJob cancel() {
+        if (isCancelled()) {
+            return this;
+        }
+        return new PlotterJob(
+                id,
+                jobType,
+                customerId,
+                orderId,
+                creationDate,
+                paperInventoryItemId,
+                printedMeters,
+                pricePerMeter,
+                totalAmount,
+                PlotterJobStatus.CANCELLED,
+                observations,
+                plotterMachineId
+        );
+    }
+
     private static void validateBusinessIdentity(PlotterJobType jobType, UUID customerId, UUID orderId) {
         if (jobType.isWaste()) {
             if (customerId != null) {
@@ -383,6 +486,16 @@ public class PlotterJob {
             throw new PlotterDomainException("Printed meters must be greater than zero");
         }
         return printedMeters;
+    }
+
+    private static BigDecimal requirePositiveCommercialValue(BigDecimal commercialValue) {
+        if (commercialValue == null) {
+            throw new PlotterDomainException("External plotter commercial value must not be null");
+        }
+        if (commercialValue.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new PlotterDomainException("External plotter commercial value must be greater than zero");
+        }
+        return commercialValue.setScale(MONEY_SCALE, MONEY_ROUNDING);
     }
 
     private static BigDecimal requireValidPricePerMeter(BigDecimal pricePerMeter) {

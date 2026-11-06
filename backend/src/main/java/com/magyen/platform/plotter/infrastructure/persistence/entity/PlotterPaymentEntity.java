@@ -22,8 +22,17 @@ public class PlotterPaymentEntity {
     @Column(name = "id", nullable = false, updatable = false)
     private UUID id;
 
-    @Column(name = "plotter_job_id", nullable = false, updatable = false)
+    @Column(name = "customer_id")
+    private UUID customerId;
+
+    /**
+     * Nulo en pagos de cuenta corriente. Los pagos históricos siguen apuntando al trabajo.
+     */
+    @Column(name = "plotter_job_id")
     private UUID plotterJobId;
+
+    @Column(name = "registration_key")
+    private UUID registrationKey;
 
     @Column(name = "amount", nullable = false, precision = 19, scale = 2, updatable = false)
     private BigDecimal amount;
@@ -45,12 +54,28 @@ public class PlotterPaymentEntity {
         this.id = id;
     }
 
+    public UUID getCustomerId() {
+        return customerId;
+    }
+
+    public void setCustomerId(UUID customerId) {
+        this.customerId = customerId;
+    }
+
     public UUID getPlotterJobId() {
         return plotterJobId;
     }
 
     public void setPlotterJobId(UUID plotterJobId) {
         this.plotterJobId = plotterJobId;
+    }
+
+    public UUID getRegistrationKey() {
+        return registrationKey;
+    }
+
+    public void setRegistrationKey(UUID registrationKey) {
+        this.registrationKey = registrationKey;
     }
 
     public BigDecimal getAmount() {

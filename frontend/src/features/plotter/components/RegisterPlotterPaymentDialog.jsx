@@ -27,9 +27,13 @@ const EMPTY_FORM = {
 
 function RegisterPlotterPaymentDialog({
   open,
+  title = 'Registrar pago',
+  totalLabel = 'Total del trabajo',
+  paidLabel = 'Total pagado',
   totalAmount,
   paidAmount,
   outstandingAmount,
+  registrationKey,
   onClose,
   onSubmit,
   submitting,
@@ -94,12 +98,13 @@ function RegisterPlotterPaymentDialog({
       amount,
       paymentDate: form.paymentDate,
       observations: observations || null,
+      registrationKey: registrationKey || undefined,
     })
   }
 
   return (
     <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
-      <DialogTitle>Registrar pago</DialogTitle>
+      <DialogTitle>{title}</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
           {(validationError || errorMessage) && (
@@ -107,10 +112,10 @@ function RegisterPlotterPaymentDialog({
           )}
           <Stack spacing={0.5}>
             <Typography variant="body2" color="text.secondary">
-              Total del trabajo: {formatPlotterMoney(totalAmount)}
+              {totalLabel}: {formatPlotterMoney(totalAmount)}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Total pagado: {formatPlotterMoney(paidAmount)}
+              {paidLabel}: {formatPlotterMoney(paidAmount)}
             </Typography>
             <Typography variant="body2">
               Saldo pendiente: {formatPlotterMoney(outstandingAmount)}

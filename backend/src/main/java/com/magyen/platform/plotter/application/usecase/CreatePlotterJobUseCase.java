@@ -164,6 +164,16 @@ public class CreatePlotterJobUseCase {
                 command.observations(),
                 machine.getId()
         );
+        if (jobType.isExternal()) {
+            BigDecimal commercialValue = command.commercialValue() == null
+                    ? plotterJob.getTotalAmount()
+                    : command.commercialValue();
+            plotterJob = plotterJob.withExternalCommercialValue(commercialValue);
+        } else if (command.commercialValue() != null) {
+            throw new PlotterDomainException(
+                    "Commercial value applies only to external plotter jobs"
+            );
+        }
 
         PlotterJob savedPlotterJob = plotterJobRepository.save(plotterJob);
 

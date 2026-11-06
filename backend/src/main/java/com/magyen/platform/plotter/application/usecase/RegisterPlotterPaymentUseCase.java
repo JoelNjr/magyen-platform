@@ -15,10 +15,10 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Registra un pago de cliente sobre un trabajo de Plotter y sincroniza el ledger Finance.
+ * Conserva el registro histórico de un pago ligado a un trabajo.
  * <p>
- * No cambia el estado del trabajo. El saldo pendiente se calcula desde pagos de Plotter,
- * no desde movimientos del ledger.
+ * El HTTP {@code POST /api/v1/plotter/jobs/{id}/payments} ya no llama este caso de uso.
+ * El único registro activo es el pago de la cuenta del cliente.
  */
 public class RegisterPlotterPaymentUseCase {
 
@@ -74,7 +74,8 @@ public class RegisterPlotterPaymentUseCase {
         BigDecimal outstandingAmount =
                 PlotterPaymentBalanceCalculator.outstanding(job.getTotalAmount(), paidAmount);
 
-        PlotterPayment payment = PlotterPayment.create(
+        PlotterPayment payment = PlotterPayment.createForJob(
+                job.getCustomerId(),
                 job.getId(),
                 command.amount(),
                 command.paymentDate(),

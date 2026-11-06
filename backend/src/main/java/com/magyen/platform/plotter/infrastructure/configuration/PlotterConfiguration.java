@@ -6,6 +6,8 @@ import com.magyen.platform.commercial.application.usecase.GetOrdersUseCase;
 import com.magyen.platform.finance.application.usecase.EnsurePlotterInternalServiceLedgerUseCase;
 import com.magyen.platform.finance.application.usecase.RegisterPlotterPaymentIncomeUseCase;
 import com.magyen.platform.inventory.application.usecase.ConsumeInventoryMaterialUseCase;
+import com.magyen.platform.inventory.application.usecase.CorrectPlotterPaperConsumptionUseCase;
+import com.magyen.platform.inventory.application.usecase.ReversePlotterPaperConsumptionUseCase;
 import com.magyen.platform.inventory.application.usecase.GetInventoryMovementBySourceUseCase;
 import com.magyen.platform.inventory.application.usecase.GetInkAcquisitionsUseCase;
 import com.magyen.platform.inventory.application.usecase.GetPaperAcquisitionsUseCase;
@@ -20,8 +22,13 @@ import com.magyen.platform.plotter.application.port.PlotterPaymentFinancePort;
 import com.magyen.platform.plotter.infrastructure.commercial.PlotterCommercialOrderAdapter;
 import com.magyen.platform.inventory.application.port.PaperRollMachinePort;
 import com.magyen.platform.inventory.application.usecase.AssignPaperRollMachineUseCase;
+import com.magyen.platform.plotter.application.usecase.CancelPlotterJobUseCase;
 import com.magyen.platform.plotter.application.usecase.ChangePlotterMachineActiveUseCase;
+import com.magyen.platform.plotter.application.usecase.CorrectPlotterJobDateUseCase;
 import com.magyen.platform.plotter.application.usecase.CreatePlotterJobUseCase;
+import com.magyen.platform.plotter.application.usecase.EditPlotterJobUseCase;
+import com.magyen.platform.plotter.application.usecase.GetPlotterCustomerAccountUseCase;
+import com.magyen.platform.plotter.application.usecase.RegisterPlotterCustomerPaymentUseCase;
 import com.magyen.platform.plotter.application.usecase.GetPlotterMachineOperationsUseCase;
 import com.magyen.platform.plotter.application.usecase.GetPlotterMachinesUseCase;
 import com.magyen.platform.plotter.application.usecase.GetInternalPlotterOrderCostsUseCase;
@@ -86,11 +93,15 @@ public class PlotterConfiguration {
     @Bean
     public PlotterJobInventoryPort plotterJobInventoryPort(
             InventoryItemRepository inventoryItemRepository,
-            ConsumeInventoryMaterialUseCase consumeInventoryMaterialUseCase
+            ConsumeInventoryMaterialUseCase consumeInventoryMaterialUseCase,
+            CorrectPlotterPaperConsumptionUseCase correctPlotterPaperConsumptionUseCase,
+            ReversePlotterPaperConsumptionUseCase reversePlotterPaperConsumptionUseCase
     ) {
         return new PlotterJobInventoryAdapter(
                 inventoryItemRepository,
-                consumeInventoryMaterialUseCase
+                consumeInventoryMaterialUseCase,
+                correctPlotterPaperConsumptionUseCase,
+                reversePlotterPaperConsumptionUseCase
         );
     }
 
@@ -273,6 +284,81 @@ public class PlotterConfiguration {
                 plotterJobRepository,
                 plotterPaymentRepository,
                 plotterCommercialOrderPort
+        );
+    }
+
+    @Bean
+    public EditPlotterJobUseCase editPlotterJobUseCase(
+            PlotterJobRepository plotterJobRepository,
+            PlotterPaymentRepository plotterPaymentRepository,
+            PlotterJobInventoryPort plotterJobInventoryPort,
+            PlotterCommercialOrderPort plotterCommercialOrderPort,
+            PlotterInternalServiceFinancePort plotterInternalServiceFinancePort
+    ) {
+        return new EditPlotterJobUseCase(
+                plotterJobRepository,
+                plotterPaymentRepository,
+                plotterJobInventoryPort,
+                plotterCommercialOrderPort,
+                plotterInternalServiceFinancePort
+        );
+    }
+
+    @Bean
+    public CorrectPlotterJobDateUseCase correctPlotterJobDateUseCase(
+            PlotterJobRepository plotterJobRepository,
+            PlotterCommercialOrderPort plotterCommercialOrderPort,
+            PlotterInternalServiceFinancePort plotterInternalServiceFinancePort
+    ) {
+        return new CorrectPlotterJobDateUseCase(
+                plotterJobRepository,
+                plotterCommercialOrderPort,
+                plotterInternalServiceFinancePort
+        );
+    }
+
+    @Bean
+    public CancelPlotterJobUseCase cancelPlotterJobUseCase(
+            PlotterJobRepository plotterJobRepository,
+            PlotterPaymentRepository plotterPaymentRepository,
+            PlotterJobInventoryPort plotterJobInventoryPort,
+            PlotterInternalServiceFinancePort plotterInternalServiceFinancePort
+    ) {
+        return new CancelPlotterJobUseCase(
+                plotterJobRepository,
+                plotterPaymentRepository,
+                plotterJobInventoryPort,
+                plotterInternalServiceFinancePort
+        );
+    }
+
+    @Bean
+    public RegisterPlotterCustomerPaymentUseCase registerPlotterCustomerPaymentUseCase(
+            PlotterJobRepository plotterJobRepository,
+            PlotterPaymentRepository plotterPaymentRepository,
+            PlotterPaymentFinancePort plotterPaymentFinancePort,
+            PlotterCommercialOrderPort plotterCommercialOrderPort
+    ) {
+        return new RegisterPlotterCustomerPaymentUseCase(
+                plotterJobRepository,
+                plotterPaymentRepository,
+                plotterPaymentFinancePort,
+                plotterCommercialOrderPort
+        );
+    }
+
+    @Bean
+    public GetPlotterCustomerAccountUseCase getPlotterCustomerAccountUseCase(
+            PlotterJobRepository plotterJobRepository,
+            PlotterPaymentRepository plotterPaymentRepository,
+            PlotterCommercialOrderPort plotterCommercialOrderPort,
+            PlotterMachineRepository plotterMachineRepository
+    ) {
+        return new GetPlotterCustomerAccountUseCase(
+                plotterJobRepository,
+                plotterPaymentRepository,
+                plotterCommercialOrderPort,
+                plotterMachineRepository
         );
     }
 

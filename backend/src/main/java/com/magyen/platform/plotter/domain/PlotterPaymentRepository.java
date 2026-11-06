@@ -17,4 +17,8 @@ public interface PlotterPaymentRepository {
      * Lista pagos de un trabajo ordenados del más reciente al más antiguo.
      */
     List<PlotterPayment> findByPlotterJobIdNewestFirst(UUID plotterJobId);
+
+    List<PlotterPayment> findAll();
+
+    Optional<PlotterPayment> findByRegistrationKey(UUID registrationKey);
 }

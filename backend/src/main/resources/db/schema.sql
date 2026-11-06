@@ -510,9 +510,14 @@ CREATE INDEX idx_plotter_jobs_machine_id
 -- Soft ref: plotter_job_id — no FK JPA
 -- No se generan automáticamente al crear el PlotterJob
 
+-- plotter_job_id es nulo en pagos de la cuenta corriente.
+-- Los pagos históricos conservan el trabajo y, tras el backfill, también customer_id.
+-- registration_key evita un segundo pago y un segundo ingreso en un reintento.
 CREATE TABLE plotter_payments (
     id                  uuid            NOT NULL,
-    plotter_job_id      uuid            NOT NULL,
+    customer_id         uuid            NULL,
+    plotter_job_id      uuid            NULL,
+    registration_key    uuid            NULL,
     amount              numeric(19, 2)  NOT NULL,
     payment_date        date            NOT NULL,
     observations        varchar(2000)   NULL,
@@ -522,8 +527,15 @@ CREATE TABLE plotter_payments (
 CREATE INDEX idx_plotter_payments_plotter_job_id
     ON plotter_payments (plotter_job_id);
 
+CREATE INDEX idx_plotter_payments_customer_id
+    ON plotter_payments (customer_id);
+
 CREATE INDEX idx_plotter_payments_payment_date
     ON plotter_payments (payment_date);
+
+CREATE UNIQUE INDEX uq_plotter_payments_registration_key
+    ON plotter_payments (registration_key)
+    WHERE registration_key IS NOT NULL;
 
 -- Finance module
 -- Aggregate: Payment (pagos de cliente sobre Orden comercial — SPR-019)
